@@ -34,6 +34,20 @@ GOOS=linux GOARCH=amd64 go build -o huobiService service/huobi/socket.go
 GOOS=linux GOARCH=amd64 go build -o apiService main.go
 ```
 
+- 也可以执行脚本`./bin/build`进行一键打包所有服务
+
+## 脚本目录
+
+- bin目录
+
+```text
+  - bin
+    - build                 // 打包服务脚本
+    - service_restart       // 重启服务脚本
+    - service_stop          // 暂停服务脚本
+    - update                // git 提交脚本
+```
+
 ## 接口文档
 
 ### 1、k线图

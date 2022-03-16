@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# 一键打包服务
+
+# 1、打包火币网socket服务
+GOOS=linux GOARCH=amd64 go build -o huobiService service/huobi/socket.go
+
+# 2、打包api接口
+GOOS=linux GOARCH=amd64 go build -o apiService main.go

@@ -3,4 +3,5 @@ tmp
 .env
 *.log
 goapi
-dump.rdb
+apiService
+huobiService
