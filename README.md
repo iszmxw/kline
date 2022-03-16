@@ -18,10 +18,6 @@
 >
 > 日志TrackId链路追踪，包含mysql语句
 
-## 通知邮箱
-
-    osxcoin@protonmail.com
-
 ## 打包编译
 
 - 打包火币网socket服务
@@ -37,14 +33,6 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 ```
 
 ## 接口文档
-
-### 公共请求字段
-
-- 可以放在header头部
-
-| 字段名      | 类型   | 说明                  |
-| ----------- | ------ | --------------------- |
-| token | string | 用户登录时获取的token |
 
 ### 1、k线图
 
