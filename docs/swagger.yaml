@@ -1,0 +1,96 @@
+definitions:
+  response._LoginHandler:
+    properties:
+      code:
+        type: string
+      msg:
+        type: string
+      reqId:
+        type: string
+      result:
+        properties:
+          token:
+            description: 登录获取的token
+            type: string
+          uid:
+            description: 用户id
+            type: integer
+        type: object
+      success:
+        type: boolean
+    type: object
+  response._OK:
+    properties:
+      code:
+        type: string
+      msg:
+        type: string
+      reqId:
+        type: string
+      result:
+        type: string
+      success:
+        type: boolean
+    type: object
+host: 127.0.0.1
+info:
+  contact:
+    email: mail@54zm.com
+    name: 追梦小窝
+    url: http://github.com/iszmxw
+  description: 3.0版本，基于之前的2.0改造的
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://127.0.0.1/docs/index.html
+  title: 用户端接口服务
+  version: "3.0"
+paths:
+  /v1/api/user/login:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 提交注册的邮箱和密码即可登录
+      parameters:
+      - description: 邮箱
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: 登录密码
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response._LoginHandler'
+      summary: 登录接口
+      tags:
+      - 登录接口
+  /v1/api/user/send_email_register:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 发送注册邮件
+      parameters:
+      - description: 邮箱
+        in: formData
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response._OK'
+      summary: 发送注册邮件
+      tags:
+      - 发送注册邮件
+swagger: "2.0"
