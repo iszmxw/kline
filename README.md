@@ -16,6 +16,8 @@
 >
 > [uber-go/zap](https://github.com/uber-go/zap)   【zap日志库】
 >
+> [gostudys/huobi_futures_go](https://github.com/gostudys/huobi_futures_go)   【火币网封装库】
+>
 > 日志TrackId链路追踪，包含mysql语句
 
 ## 打包编译
@@ -52,8 +54,9 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 
 | 字段名   | 类型   | 说明   |
 | -------- | ------ | ------ |
-| symbol | string | 例如：btc-usd |
-| period | string | 例如：1min   |
+| symbol | string | 例如：btc-usd，不传默认默认为"btc-usd" |
+| period | string | 例如：1min，不传默认默认为"1min"   |
+| limit | string | 例如：100,不传默认取出300条   |
 
 ```text
 /v1/api/kline/history?symbol=btc-usd&period=1min
@@ -63,14 +66,14 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 
 | 字段名     | 类型     | 说明      |
 | ---------- | -------- | --------- |
-| code       | string      | 错误代码  |
+| code       | string      | 错误代码，1-正常，0-异常  |
 | data       | object |     数据对象      |
-| data.HistKlineLogs       | array |     历史行情      |
-| data.beginDate       | string |     2022-03-15 14:00:27      |
-| data.endDate       | string |     2022-03-15 14:01:27      |
-| data.klineSource       | string |     来源：huobi      |
-| data.totals       | int64 |     总条数：63      |
-| data.contractCode       | string |     合约代码：ETH-USD      |
+|  - data.HistKlineLogs       | array |     历史行情      |
+|  - data.beginDate       | string |     2022-03-15 14:00:27      |
+|  - data.endDate       | string |     2022-03-15 14:01:27      |
+|  - data.klineSource       | string |     来源：huobi      |
+|  - data.totals       | int64 |     总条数：63      |
+|  - data.contractCode       | string |     合约代码：ETH-USD      |
 | reqId       | string |     请求Id     |
 
 ```json
@@ -115,7 +118,7 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
     "totals": 63,
     "contractCode": "ETH-USD"
   },
-  "message": "sukses"
+  "message": "success"
 }
 ```
 
@@ -135,10 +138,10 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 
 | 字段名   | 类型   | 说明   |
 | -------- | ------ | ------ |
-| body | string | "market.BTC-USD.index.5min" |
+| body | string | market.BTC-USD.index.5min |
 
 ```text
-"market.BTC-USD.index.1min"
+market.BTC-USD.index.1min
 ```
 
 - 返回参数
@@ -148,14 +151,14 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 | ch       | string      | "market.BTC-USD.index.5min"  |
 | ts       | long |     响应生成时间点，单位：毫秒      |
 | tick       | object array     |     tick返回，详情：推送tick参数      |
-| tick.id       | int64 |     指数K线id,也就是K线时间戳，K线起始时间          |
-| tick.vol       | string |     成交量张数为0      |
-| tick.count       | float64 |     成交笔数为0      |
-| tick.open       | string |     开盘指数价      |
-| tick.close       | string |     收盘指数价      |
-| tick.low       | string |     最低指数价      |
-| tick.high       | string |     最高指数价      |
-| tick.amount       | string |     数值为0      |
+| - tick.id       | int64 |     指数K线id,也就是K线时间戳，K线起始时间          |
+| - tick.vol       | string |     成交量张数为0      |
+| - tick.count       | string |     成交笔数为0      |
+| - tick.open       | string |     开盘指数价      |
+| - tick.close       | string |     收盘指数价      |
+| - tick.low       | string |     最低指数价      |
+| - tick.high       | string |     最高指数价      |
+| - tick.amount       | string |     数值为0      |
 
 ```json
 {

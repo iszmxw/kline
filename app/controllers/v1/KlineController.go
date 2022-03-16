@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"goapi/app/models"
 	"goapi/app/response"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
@@ -106,8 +107,13 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 
 // HistoryHandler 历史行情
 func (h *KlineController) HistoryHandler(c *gin.Context) {
+	beginDate := time.Now().Format("2006-01-02 15:04:05")
 	symbol := c.Query("symbol")
 	period := c.Query("period")
+	limit := c.Query("limit")
+	if len(limit) <= 0 {
+		limit = "300"
+	}
 	if len(symbol) <= 0 || len(period) <= 0 {
 		symbol = "btc-usd"
 		period = "1min"
@@ -116,17 +122,27 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	ch := fmt.Sprintf("market.%s.index.%s", symbol, period)
 	DB := mysql.DB.Debug()
 	// 一次取出历史记录最新三百条
-	err := DB.Model(models.KlineLog{}).Where("ch", ch).Order("log_id desc").Limit(300).Find(&data).Error
+	err := DB.Model(models.KlineLog{}).Where("ch", ch).Order("log_id desc").Limit(helpers.StringToInt(limit)).Find(&data).Error
 	if err != nil {
 		logger.Error(err)
 		c.JSON(http.StatusOK, gin.H{
 			//返回数据
+			"code": 0,
 			"data": nil,
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		//返回数据
-		"data": data,
+		"code": 1,
+		"data": gin.H{
+			"HistKlineLogs": data,
+			"beginDate":     beginDate,
+			"endDate":       time.Now().Format("2006-01-02 15:04:05"),
+			"klineSource":   "huobi",
+			"totals":        limit,
+			"contractCode":  symbol,
+		},
+		"message": "success",
 	})
 }
