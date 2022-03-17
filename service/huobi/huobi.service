@@ -1,0 +1,14 @@
+[Unit]
+Description=HuoBiSocket service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+WorkingDirectory=/mnt/hgfs/docker_company/www/site/YC/IQOptionPro/
+ExecStart=/mnt/hgfs/docker_company/www/site/YC/IQOptionPro/huobiService
+
+[Install]
+WantedBy=multi-user.target

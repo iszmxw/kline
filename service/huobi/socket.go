@@ -86,6 +86,7 @@ func main() {
 			}
 			start = "no"
 		}
+		time.Sleep(time.Second)
 	}
 }
 

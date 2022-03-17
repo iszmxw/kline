@@ -48,6 +48,44 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
     - update                // git 提交脚本
 ```
 
+## Kline服务配置
+
+- 拷贝开启自启配置文件
+
+```shell
+cp IQOptionPro/service/huobi/huobi.service /etc/systemd/system/huobi.service
+```
+
+- 根据实际情况修改配置文件参数
+
+```shell
+vim /etc/systemd/system/huobi.service
+# 程序的工作路径
+WorkingDirectory=/mnt/hgfs/docker_company/www/site/YC/IQOptionPro/
+# 程序的执行路径
+ExecStart=/mnt/hgfs/docker_company/www/site/YC/IQOptionPro/huobiService
+```
+
+- 启动服务
+
+```shell
+systemctl start huobi
+```
+
+- 查看服务状态
+
+```shell
+systemctl status huobi
+```
+
+- 开机自动启动
+
+```shell
+systemctl enable huobi
+```
+
+
+
 ## 接口文档
 
 ### 1、k线图
