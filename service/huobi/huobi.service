@@ -7,8 +7,11 @@ StartLimitIntervalSec=0
 Type=simple
 Restart=always
 RestartSec=1
-WorkingDirectory=/mnt/hgfs/docker_company/www/site/YC/IQOptionPro/
+#WorkingDirectory=/home/huobi-kline-go
+#ExecStart=/home/huobi-kline-go/huobiService
+WorkingDirectory=/mnt/hgfs/docker_compa ny/www/site/YC/IQOptionPro/
 ExecStart=/mnt/hgfs/docker_company/www/site/YC/IQOptionPro/huobiService
+#StandardOutput=null
 
 [Install]
 WantedBy=multi-user.target

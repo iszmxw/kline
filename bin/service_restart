@@ -5,9 +5,9 @@ apiService=$(ps -ef|grep "/apiService" | grep -v "grep" | awk '{print $2}')
 if [ "$apiService" ]
 then
   kill -9 "$apiService"
-  nohup ./apiService > logs/apiService.log 2>&1 & echo $!>logs/apiService.pid
+  nohup ./apiService > /dev/null 2>&1 & echo $!>logs/apiService.pid
 else
-  nohup ./apiService > logs/apiService.log 2>&1 & echo $!>logs/apiService.pid
+  nohup ./apiService > /dev/null 2>&1 & echo $!>logs/apiService.pid
 fi
 
 ## 重启 huobiService
@@ -15,7 +15,7 @@ fi
 #if [ "$huobiService" ]
 #then
 #  kill -9 "$huobiService"
-#  nohup ./huobiService > logs/huobiService.log 2>&1 & echo $!>logs/huobiService.pid
+#  nohup ./huobiService > /dev/null 2>&1 & echo $!>logs/huobiService.pid
 #else
-#  nohup ./huobiService > logs/huobiService.log 2>&1 & echo $!>logs/huobiService.pid
+#  nohup ./huobiService > /dev/null 2>&1 & echo $!>logs/huobiService.pid
 #fi

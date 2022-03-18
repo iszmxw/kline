@@ -27,6 +27,6 @@ type KlineLog struct {
 
 func (m *KlineLog) TableName() string {
 	prefix := config.GetString("database.mysql.prefix")
-	table := "kline_log"
+	table := "kline_log_v2"
 	return prefix + table
 }

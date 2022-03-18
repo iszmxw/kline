@@ -42,9 +42,9 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 
 ```text
   - bin
-    - build                 // 打包服务脚本
-    - service_restart       // 重启服务脚本
-    - service_stop          // 暂停服务脚本
+    - build                 // 打包所有服务脚本
+    - service_restart       // 重启api服务脚本
+    - service_stop          // 暂停api服务脚本
     - update                // git 提交脚本
 ```
 
@@ -53,7 +53,8 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 - 拷贝开启自启配置文件
 
 ```shell
-cp IQOptionPro/service/huobi/huobi.service /etc/systemd/system/huobi.service
+cd "进入项目根目录"
+cp service/huobi/huobi.service /etc/systemd/system/huobi.service
 ```
 
 - 根据实际情况修改配置文件参数

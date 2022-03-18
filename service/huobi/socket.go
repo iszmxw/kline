@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gostudys/huobi_futures_go/sdk/linearswap/ws"
-	"github.com/gostudys/huobi_futures_go/sdk/linearswap/ws/response/index"
+	"github.com/gostudys/huobi_contract_golang/src/ws/api"
+	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
-	"goapi/app/response"
+	res "goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
 	"goapi/pkg/logger"
@@ -37,18 +37,18 @@ func main() {
 	var Topics []topics
 	// 收集所有要订阅处理的 topic
 	Topics = append(Topics,
-		// btc-usd
+		// BTC-USD
 		// 1分钟k线图
 		topics{
-			Topic: "market.btc-usd.index.1min",
+			Topic: "market.BTC-USD.index.1min",
 		},
 		// 5分钟k线图
 		topics{
-			Topic: "market.btc-usd.index.5min",
+			Topic: "market.BTC-USD.index.5min",
 		},
 		// 15分钟k线图
 		topics{
-			Topic: "market.btc-usd.index.15min",
+			Topic: "market.BTC-USD.index.15min",
 		},
 		// ETH-USD
 		// 1分钟k线图
@@ -81,18 +81,21 @@ func main() {
 
 func SocketHuoBi(parentTopic string) {
 	Topic := strings.Split(parentTopic, ".")
-	wsixClient := new(ws.WSIndexClient).Init("")
-	wsixClient.SubIndexKLine(Topic[1], Topic[3], func(data *index.SubIndexKLineResponse) {
+	callback := make(chan struct{}, 1)
+	// websocket api
+	wsmkClient := new(api.WSIndexClient).Init("", callback)
+	wsmkClient.SubIndexKLine(Topic[1], Topic[3], func(data *response.SubIndexKLineResponse) {
 		// 火币网推送的回来的数据转换为字符串
 		msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 		if MarshalJSONErr != nil {
 			logger.Error(MarshalJSONErr)
 			return
 		}
-		logger.Info(fmt.Sprintf(
-			"SUCCESS 当前订阅的 topic 为：%v,返回的数据为：%v",
-			parentTopic, string(msgData)))
+		//logger.Info(fmt.Sprintf(
+		//	"SUCCESS 当前订阅的 topic 为：%v,返回的数据为：%v",
+		//	parentTopic, string(msgData)))
 		if len(msgData) > 0 {
+			//logger.Info(fmt.Sprintf("SUCCESS 当前订阅的 topic 为：%v", parentTopic))
 			// 收集数据缓存到redis
 			_, redisErr := redis.Add(parentTopic, msgData, 0)
 			if redisErr != nil {
@@ -100,7 +103,7 @@ func SocketHuoBi(parentTopic string) {
 				return
 			}
 			// 历史 kline 入库
-			AddData := response.KlineLogData(Topic, data)
+			AddData := res.KlineLogData(Topic, data)
 			DB := mysql.DB.Debug()
 			cErr := DB.Model(models.KlineLog{}).Create(&AddData).Error
 			if cErr != nil {
@@ -114,5 +117,6 @@ func SocketHuoBi(parentTopic string) {
 				parentTopic, data)))
 			return
 		}
+
 	}, "")
 }

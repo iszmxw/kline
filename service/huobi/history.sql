@@ -23,7 +23,7 @@ CREATE TABLE `osx_hist_kline_logs`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='K线图历史记录';
 
 
-CREATE TABLE `osx_kline_log`
+CREATE TABLE `t_kline_log_v2`
 (
     `log_id`        bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'K线表主键ID',
     `contract_code` varchar(128) NOT NULL COMMENT '合约代码 BTC-USD ',
@@ -43,4 +43,4 @@ CREATE TABLE `osx_kline_log`
     `kline_source`  varchar(64)     DEFAULT '' COMMENT 'k线来源 huobi',
     PRIMARY KEY (`log_id`),
     KEY             `contract_code` (`contract_code`)
-) ENGINE=InnoDB AUTO_INCREMENT=1779498 DEFAULT CHARSET=utf8mb4 COMMENT='K线数据表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='K线数据表';
