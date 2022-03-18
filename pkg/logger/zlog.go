@@ -36,17 +36,17 @@ func Init(Service string) {
 		zapcore.NewCore(
 			zapcore.NewConsoleEncoder(NewDevelopmentEncoderConfig),  // json格式日志（ELK渲染收集）
 			zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout)), // 打印到控制台和文件
-			level, // 日志级别
+			level,                                                   // 日志级别
 		),
 		// 打印在文件中
 		zapcore.NewCore(
 			zapcore.NewConsoleEncoder(NewDevelopmentEncoderConfig),
 			zapcore.AddSync(&lumberjack.Logger{
 				Filename:   filename, // 日志文件存放目录
-				MaxSize:    20,       // 文件大小限制,单位MB
-				MaxBackups: 5,        // 最大保留日志文件数量
+				MaxSize:    5,        // 文件大小限制,单位MB
+				MaxBackups: 100,       // 最大保留日志文件数量
 				MaxAge:     30,       // 日志文件保留天数
-				Compress:   true,     // 是否压缩处理
+				Compress:   false,    // 是否压缩处理
 			}),
 			level, // 日志级别
 		),

@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"goapi/language"
 	"goapi/pkg/logger"
 )
 
@@ -40,12 +39,6 @@ func Error(c *gin.Context, code string, msg string) {
 		logInfo = append(logInfo, zap.Any("RequestId", logger.RequestId))
 	}
 	logInfo = append(logInfo, zap.Any(code, msg))
-	// todo 语言包
-	if len(msg) <= 0 {
-		code, msg = language.Lang(c.Request.Header.Get("Language")).GetErrorCode(code)
-	} else {
-		code, _ = language.Lang(c.Request.Header.Get("Language")).GetErrorCode(code)
-	}
 	logInfo = append(logInfo, zap.Any(code, msg))
 	logger.Logger.WithOptions(zap.AddCallerSkip(1)).Info("返回错误", logInfo...)
 	Rjson(c, []interface{}{}, msg, code, false)

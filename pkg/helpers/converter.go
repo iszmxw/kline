@@ -52,3 +52,17 @@ func Struct2json(value interface{}) string {
 	}
 	return out.String()
 }
+
+// 字符串转换float64，空字符串返回 0
+
+func StrToFloat64(str string) float64 {
+	if len(str) <= 0 {
+		return 0
+	}
+	f64, Err := strconv.ParseFloat(str, 64)
+	if Err != nil {
+		logger.Error(Err)
+		f64 = 0
+	}
+	return f64
+}

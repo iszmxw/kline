@@ -193,7 +193,7 @@ systemctl enable huobi
 | body | string | market.BTC-USD.index.5min |
 
 ```text
-market.BTC-USD.index.1min
+market.btc-usd.index.1min
 ```
 
 - 返回参数

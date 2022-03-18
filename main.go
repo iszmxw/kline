@@ -48,6 +48,7 @@ func main() {
 		//初始化routes
 		_ = router.RunTLS(fmt.Sprintf(":%s", conf.GetString("app.port")), "./config/ssl.pem", "./config/ssl.key")
 	} else {
+		fmt.Println(conf.GetString("app.port"))
 		_ = router.Run(fmt.Sprintf(":%s", conf.GetString("app.port")))
 	}
 }
