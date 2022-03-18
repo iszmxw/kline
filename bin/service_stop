@@ -7,9 +7,9 @@ then
   kill -9 "$apiService"
 fi
 
-# 重启 huobiService
-huobiService=$(ps -ef|grep "/huobiService" | grep -v "grep" | awk '{print $2}')
-if [ "$huobiService" ]
-then
-  kill -9 "$huobiService"
-fi
+## 重启 huobiService
+#huobiService=$(ps -ef|grep "/huobiService" | grep -v "grep" | awk '{print $2}')
+#if [ "$huobiService" ]
+#then
+#  kill -9 "$huobiService"
+#fi
