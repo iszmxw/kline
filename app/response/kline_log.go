@@ -31,14 +31,14 @@ type WsIndex struct {
 	Ch   string `json:"ch"`
 	Ts   int64  `json:"ts"`
 	Tick struct {
-		Id     int    `json:"id"`
-		Vol    string `json:"vol"`
-		Count  string `json:"count"`
-		Open   string `json:"open"`
-		Close  string `json:"close"`
-		Low    string `json:"low"`
-		High   string `json:"high"`
-		Amount string `json:"amount"`
+		Id     int     `json:"id"`
+		Vol    string  `json:"vol"`
+		Count  float64 `json:"count"`
+		Open   string  `json:"open"`
+		Close  string  `json:"close"`
+		Low    string  `json:"low"`
+		High   string  `json:"high"`
+		Amount string  `json:"amount"`
 	} `json:"tick"`
 }
 
