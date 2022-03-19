@@ -124,6 +124,5 @@ func SocketHuoBi(parentTopic string) {
 		fmt.Println(parentTopic + "：已关闭")
 		fmt.Println(parentTopic + "：正在重新启动 Goroutine")
 		go SocketHuoBi(parentTopic)
-		time.Sleep(time.Second * 1)
 	}
 }
