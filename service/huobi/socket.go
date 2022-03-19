@@ -89,9 +89,9 @@ func SocketHuoBi(parentTopic string) {
 			logger.Error(MarshalJSONErr)
 			return
 		}
-		logger.Info(fmt.Sprintf(
-			"SUCCESS 当前订阅的 topic 为：%v,返回的数据为：%v",
-			parentTopic, string(msgData)))
+		//logger.Info(fmt.Sprintf(
+		//	"SUCCESS 当前订阅的 topic 为：%v,返回的数据为：%v",
+		//	parentTopic, string(msgData)))
 		if len(msgData) > 0 {
 			// 收集数据缓存到redis
 			_, redisErr := redis.Add(parentTopic, msgData, 0)
