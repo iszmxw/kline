@@ -209,6 +209,8 @@ github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0U
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gostudys/huobi_contract_golang v1.0.0 h1:seTjwaI7I2v2FB4QeBeRl7dSB+Ra4J2fm2TV8lU6YT8=
 github.com/gostudys/huobi_contract_golang v1.0.0/go.mod h1:cPEgP/Xqhxb/2CGg3KarcDePlV4aj+zBN4A0yGFl/TA=
+github.com/gostudys/huobi_contract_golang v1.0.1 h1:1+UNkJKUJyAPv/4wWxJnxWdBu1O580LewJ8xhG5K2fM=
+github.com/gostudys/huobi_contract_golang v1.0.1/go.mod h1:cPEgP/Xqhxb/2CGg3KarcDePlV4aj+zBN4A0yGFl/TA=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
 github.com/hashicorp/consul/api v1.10.1/go.mod h1:XjsvQN+RJGWI2TWy1/kqaE16HrR2J/FWgkYjdZQsX9M=
 github.com/hashicorp/consul/sdk v0.8.0/go.mod h1:GBvyrGALthsZObzUGsfgHZQDXjg4lOjagTIwIR1vPms=
