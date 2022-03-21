@@ -2,7 +2,10 @@ package zapgorm2
 
 import (
 	"context"
+	"errors"
 	"go.uber.org/zap"
+	"goapi/pkg/logger"
+	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 	"time"
 )
@@ -61,21 +64,21 @@ func (l Logger) Error(ctx context.Context, str string, args ...interface{}) {
 }
 
 func (l Logger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
-	//if l.LogLevel <= 0 {
-	//	return
-	//}
-	//elapsed := time.Since(begin)
-	//switch {
-	//case err != nil && l.LogLevel >= gormlogger.Error && (!l.IgnoreRecordNotFoundError || !errors.Is(err, gorm.ErrRecordNotFound)):
-	//	sql, rows := fc()
-	//	l.logger().Error("数据库操作", zap.String("RequestId", logger.RequestId), zap.Error(err), zap.Duration("elapsed", elapsed), zap.Int64("rows", rows), zap.String("sql", sql))
-	//case l.SlowThreshold != 0 && elapsed > l.SlowThreshold && l.LogLevel >= gormlogger.Warn:
-	//	sql, rows := fc()
-	//	l.logger().Warn("数据库操作", zap.String("RequestId", logger.RequestId), zap.Duration("elapsed", elapsed), zap.Int64("rows", rows), zap.String("sql", sql))
-	//case l.LogLevel >= gormlogger.Info:
-	//	sql, rows := fc()
-	//	l.logger().Debug("数据库操作", zap.String("RequestId", logger.RequestId), zap.Duration("elapsed", elapsed), zap.Int64("rows", rows), zap.String("sql", sql))
-	//}
+	if l.LogLevel <= 0 {
+		return
+	}
+	elapsed := time.Since(begin)
+	switch {
+	case err != nil && l.LogLevel >= gormlogger.Error && (!l.IgnoreRecordNotFoundError || !errors.Is(err, gorm.ErrRecordNotFound)):
+		sql, rows := fc()
+		l.logger().Error("数据库操作", zap.String("RequestId", logger.RequestId), zap.Error(err), zap.Duration("elapsed", elapsed), zap.Int64("rows", rows), zap.String("sql", sql))
+	case l.SlowThreshold != 0 && elapsed > l.SlowThreshold && l.LogLevel >= gormlogger.Warn:
+		sql, rows := fc()
+		l.logger().Warn("数据库操作", zap.String("RequestId", logger.RequestId), zap.Duration("elapsed", elapsed), zap.Int64("rows", rows), zap.String("sql", sql))
+	case l.LogLevel >= gormlogger.Info:
+		sql, rows := fc()
+		l.logger().Debug("数据库操作", zap.String("RequestId", logger.RequestId), zap.Duration("elapsed", elapsed), zap.Int64("rows", rows), zap.String("sql", sql))
+	}
 }
 
 func (l Logger) logger() *zap.Logger {
