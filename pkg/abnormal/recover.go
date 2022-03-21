@@ -19,7 +19,7 @@ func Stack(description string) {
 		logger.Error(err1)
 		logger.Error(err2)
 		logger.Error(err3)
-		err := email.SendEmail(description, errInfo, config.GetString("notify.email"))
+		err := email.SendEmail(description+"当前环境："+config.GetString("app.env"), errInfo, config.GetString("notify.email"))
 		if err != nil {
 			logger.Error(err)
 		}

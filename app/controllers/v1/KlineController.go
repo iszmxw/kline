@@ -11,10 +11,11 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/output"
 	"goapi/pkg/redis"
 	"goapi/pkg/redis_socket"
 	"goapi/pkg/websocket"
-	"net/http"
+	"strings"
 	"time"
 )
 
@@ -116,42 +117,49 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 
 // HistoryHandler 历史行情
 func (h *KlineController) HistoryHandler(c *gin.Context) {
-	beginDate := time.Now().Format("2006-01-02 15:04:05")
+	//beginDate := time.Now().Format("2006-01-02 15:04:05")
 	symbol := c.Query("symbol")
 	period := c.Query("period")
-	limit := c.Query("limit")
-	if len(limit) <= 0 {
-		limit = "300"
+	beginDate := c.Query("beginDate")
+	endDate := c.Query("endDate")
+	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
+		output.Rjson(c, nil, "beginDate 起始交易日期必填", 0)
+		return
+	}
+	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
+		output.Rjson(c, nil, "endDate 截止交易日期必填", 0)
+		return
 	}
 	if len(symbol) <= 0 || len(period) <= 0 {
-		symbol = "btc-usd"
+		symbol = "BTC-USD"
 		period = "1min"
 	}
 	var data []response.KlineLog
-	ch := fmt.Sprintf("market.%s.index.%s", symbol, period)
+	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
 	DB := mysql.DB.Debug()
 	// 一次取出历史记录最新三百条
-	err := DB.Model(models.KlineLog{}).Where("ch", ch).Order("log_id desc").Limit(helpers.StringToInt(limit)).Find(&data).Error
+	KlineDB := DB.Model(models.KlineLog{}).
+		Where("ch", ch).
+		Where("ts >= ?", beginDate).
+		Where("ts <= ?", endDate).
+		Order("log_id desc")
+	var Count int64 // 查询总条数
+	KlineDB.Count(&Count)
+	//if Count > 1000 {
+	//	Count = 1000
+	//}
+	err := KlineDB.Limit(int(Count)).Find(&data).Error
 	if err != nil {
 		logger.Error(err)
-		c.JSON(http.StatusOK, gin.H{
-			//返回数据
-			"code": 0,
-			"data": nil,
-		})
+		output.Rjson(c, nil, "no data", 0)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		//返回数据
-		"code": 1,
-		"data": gin.H{
-			"HistKlineLogs": data,
-			"beginDate":     beginDate,
-			"endDate":       time.Now().Format("2006-01-02 15:04:05"),
-			"klineSource":   "huobi",
-			"totals":        limit,
-			"contractCode":  symbol,
-		},
-		"message": "success",
-	})
+	output.Rjson(c, gin.H{
+		"HistKlineLogs": data,
+		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
+		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
+		"klineSource":   "huobi",
+		"totals":        Count,
+		"contractCode":  symbol,
+	}, "success", 1)
 }

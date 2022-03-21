@@ -32,6 +32,15 @@ func StringToInt(str string) int {
 	}
 	return i
 }
+// StringToInt64 将字符串转换为 int64
+func StringToInt64(str string) int64 {
+	i, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		logger.Error(err)
+		return 0
+	}
+	return i
+}
 
 // Uint2String 将字符串转换为 int
 func Uint2String(str string) int {

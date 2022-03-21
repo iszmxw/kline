@@ -4,4 +4,5 @@ tmp
 *.log
 goapi
 apiService
+apiService-v1.0.1
 huobiService
