@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"goapi/app/models"
+	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -49,7 +50,15 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		}
 		//对数据进行切割，读取参数
 		//如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
-		msg := string(message)
+		var SubStruct requests.Sub
+		SubErr := json.Unmarshal(message, &SubStruct)
+		if SubErr != nil {
+			logger.Error(SubErr)
+			ws.Conn.Close()
+			return
+		}
+		msg := SubStruct.Sub
+		logger.Info(SubStruct)
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
 		checkMsg := "socket_request:" + RequestId + ":" + msg
 		if redis.CheckExist(checkMsg) {
