@@ -39,9 +39,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		// 读取用户客户端ws中订阅的 topic
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
-			marketErr := ws.Close()
+			logger.Error(ReadMessageErr)
+			marketErr := ws.Conn.Close()
 			if marketErr != nil {
-				logger.Error(ReadMessageErr)
 				logger.Error(marketErr)
 			} else {
 				logger.Info("关闭成功")
@@ -56,7 +56,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		if SubErr != nil {
 			logger.Error(SubErr)
 			ws.Conn.Close()
-			return
+			break
 		}
 		msg := SubStruct.Sub
 		logger.Info(SubStruct)
@@ -69,7 +69,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		_, redisAddErr := redis.Add(checkMsg, msg, 30*60) // 半个小时内不允许重复请求
 		if redisAddErr != nil {
 			logger.Error(redisAddErr)
-			return
+			break
 		}
 		// 24 小时内一个长连接禁止重复订阅相同的 topic
 
@@ -104,6 +104,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				WriteMessageErr := ws.Conn.WriteMessage(mt, WsIndexJson)
 				ws.Mux.Unlock()
 				if WriteMessageErr != nil {
+					ws.Conn.Close()
 					// 跳出for关闭后面的推送
 					break
 				}
@@ -145,9 +146,9 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		Order("log_id desc")
 	var Count int64 // 查询总条数
 	KlineDB.Count(&Count)
-	//if Count > 1000 {
-	//	Count = 1000
-	//}
+	if Count > 2000 {
+		Count = 2000
+	}
 	err := KlineDB.Limit(int(Count)).Find(&data).Error
 	if err != nil {
 		logger.Error(err)
