@@ -6,9 +6,12 @@ import (
 	"goapi/config"
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
+	"time"
 )
 
 func init() {
+	var cstZone = time.FixedZone("CST", 8*3600) // 东八
+	time.Local = cstZone
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录

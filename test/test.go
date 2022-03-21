@@ -2,24 +2,14 @@ package main
 
 import (
 	"fmt"
-	"goapi/config"
-	"goapi/pkg/logger"
-	"math/big"
+	"time"
 )
 
 func init() {
-	// 初始化配置信息
-	config.Initialize()
-	// 定义日志目录
-	logger.Init("test")
-}
-
-func hexToBigInt(hex string) *big.Int {
-	n := new(big.Int)
-	n, _ = n.SetString(hex, 16)
-	return n
+	var cstZone = time.FixedZone("CST", 8*3600) // 东八
+	time.Local = cstZone
 }
 
 func main() {
-	fmt.Println(hexToBigInt("12a05f200"))
+	fmt.Println(time.Unix(1647870090, 0).Format("2006-01-02 15:04:05"))
 }
