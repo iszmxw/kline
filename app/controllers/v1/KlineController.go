@@ -35,7 +35,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 	logger.Info("客户端建立socket成功")
 	// 为了释放for死循环的资源
-	for {
+	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
@@ -44,6 +44,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			if marketErr != nil {
 				logger.Error(marketErr)
 			} else {
+				ws.IsClose = true // 关闭链接
 				logger.Info("关闭成功")
 			}
 			// 跳出for关闭后面的读取
@@ -56,6 +57,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		if SubErr != nil {
 			logger.Error(SubErr)
 			ws.Conn.Close()
+			ws.IsClose = true // 关闭链接
 			break
 		}
 		msg := SubStruct.Sub
@@ -76,7 +78,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		// 开启协诚处理推送消息
 		go func(ws *wss.WsConn, msg string) {
 			// 为了释放for死循环的资源
-			for {
+			for !ws.IsClose {
 				push, getErr := redis_socket.Get(msg)
 				if getErr != nil {
 					logger.Error(getErr)
@@ -104,7 +106,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				WriteMessageErr := ws.Conn.WriteMessage(mt, WsIndexJson)
 				ws.Mux.Unlock()
 				if WriteMessageErr != nil {
-					ws.Conn.Close()
+					closeErr := ws.Conn.Close()
+					if closeErr != nil {
+						logger.Error(closeErr)
+					} else {
+						ws.IsClose = true // 关闭链接
+					}
 					// 跳出for关闭后面的推送
 					break
 				}

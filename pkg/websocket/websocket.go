@@ -19,8 +19,9 @@ var upGrader = websocket.Upgrader{
 
 // WsConn 声明并发安全的ws
 type WsConn struct {
-	*websocket.Conn
-	Mux sync.RWMutex
+	*websocket.Conn              // 基础连接
+	Mux             sync.RWMutex // 锁
+	IsClose         bool         // 是否关闭
 }
 
 func GetSocket(c *gin.Context) (*WsConn, error) {
@@ -34,6 +35,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 		return &WsConn{
 			ws,
 			sync.RWMutex{},
+			false,
 		}, nil
 	} else {
 		return nil, errors.New("不是socket請求")
