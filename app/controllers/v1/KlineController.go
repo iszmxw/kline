@@ -48,7 +48,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				logger.Info("关闭成功")
 			}
 			// 跳出for关闭后面的读取
-			break
+			goto END
 		}
 		//对数据进行切割，读取参数
 		//如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
@@ -58,7 +58,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			logger.Error(SubErr)
 			ws.Conn.Close()
 			ws.IsClose = true // 关闭链接
-			break
+			goto END
 		}
 		msg := SubStruct.Sub
 		logger.Info(SubStruct)
@@ -74,7 +74,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		}
 		// 24 小时内一个长连接禁止重复订阅相同的 topic
-
+		// 链接已关闭
+		if ws.IsClose {
+			goto END
+		}
 		// 开启协诚处理推送消息
 		go func(ws *wss.WsConn, msg string) {
 			// 为了释放for死循环的资源
@@ -82,7 +85,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				push, getErr := redis_socket.Get(msg)
 				if getErr != nil {
 					logger.Error(getErr)
-					return
+					goto END
 				}
 				// 空消息跳过
 				if len(push) <= 0 {
@@ -93,12 +96,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				if WsIndexErr != nil {
 					logger.Error(errors.New("Umarshal failed:" + WsIndexErr.Error()))
 					logger.Error(WsIndexErr)
-					continue
+					break
 				}
 				WsIndexJson, WsIndexJsonErr := json.Marshal(WsIndex)
 				if WsIndexJsonErr != nil {
 					logger.Error(WsIndexJsonErr)
-					continue
+					break
 				}
 				// 1秒推送一次消息
 				time.Sleep(time.Second * 1)
@@ -113,13 +116,15 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 						ws.IsClose = true // 关闭链接
 					}
 					// 跳出for关闭后面的推送
-					break
+					goto END
 				}
 				// 返回数据给用户
 			}
+		END:
 			logger.Info("已经跳出协诚的循环推送")
 		}(ws, msg)
 	}
+END:
 	logger.Info("socket被关闭，本次链接结束")
 }
 
