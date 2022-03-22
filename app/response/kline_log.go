@@ -4,6 +4,7 @@ import (
 	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/pkg/helpers"
+	"strings"
 	"time"
 )
 
@@ -45,20 +46,20 @@ type WsIndex struct {
 // KlineLogData 组装数据
 func KlineLogData(Topic []string, data *response.SubIndexKLineResponse) *models.KlineLog {
 	var AddData models.KlineLog
-	AddData.ContractCode = Topic[1]                         // 合约代码 BTC-USD
-	AddData.Ch = data.Ch                                    // k线类型请求kline的wss请求地址
-	AddData.Ts = data.Ts                                    // kilne返回日期时间戳
-	AddData.ID = data.Tick.Id                               // 返回的id
-	AddData.Mrid = 0                                        // 返回的id
-	AddData.COpen = helpers.StrToFloat64(data.Tick.Open)    // 起始峰值
-	AddData.CClose = helpers.StrToFloat64(data.Tick.Close)  // 结束峰值
-	AddData.High = helpers.StrToFloat64(data.Tick.High)     // 最高峰值
-	AddData.Low = helpers.StrToFloat64(data.Tick.Low)       // 最低峰值
-	AddData.Amount = helpers.StrToFloat64(data.Tick.Amount) // 成交金额
-	AddData.Vol = helpers.StrToFloat64(data.Tick.Vol)       // 成交手
-	AddData.CCount = data.Tick.Count                        // 交易笔数
-	AddData.TsDate = time.Unix(data.Ts/1000, 0)             // kline返回日期
-	AddData.CreateDate = time.Now()                         // 创建日期
-	AddData.KlineSource = "huobi"                           // k线来源 huobi
+	AddData.ContractCode = strings.Replace(Topic[1], "-", "/", -1) // 合约代码 BTC-USD
+	AddData.Ch = data.Ch                                           // k线类型请求kline的wss请求地址
+	AddData.Ts = data.Ts                                           // kilne返回日期时间戳
+	AddData.ID = data.Tick.Id                                      // 返回的id
+	AddData.Mrid = 0                                               // 返回的id
+	AddData.COpen = helpers.StrToFloat64(data.Tick.Open)           // 起始峰值
+	AddData.CClose = helpers.StrToFloat64(data.Tick.Close)         // 结束峰值
+	AddData.High = helpers.StrToFloat64(data.Tick.High)            // 最高峰值
+	AddData.Low = helpers.StrToFloat64(data.Tick.Low)              // 最低峰值
+	AddData.Amount = helpers.StrToFloat64(data.Tick.Amount)        // 成交金额
+	AddData.Vol = helpers.StrToFloat64(data.Tick.Vol)              // 成交手
+	AddData.CCount = data.Tick.Count                               // 交易笔数
+	AddData.TsDate = time.Unix(data.Ts/1000, 0)                    // kline返回日期
+	AddData.CreateDate = time.Now()                                // 创建日期
+	AddData.KlineSource = "huobi"                                  // k线来源 huobi
 	return &AddData
 }

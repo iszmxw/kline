@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -12,4 +13,5 @@ func init() {
 
 func main() {
 	fmt.Println(time.Unix(1647870090, 0).Format("2006-01-02 15:04:05"))
+	fmt.Println(strings.Replace("BTC-USD-uasasas-asasas", "-", "/", -1)) // 合约代码 BTC-USD
 }

@@ -143,7 +143,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		Where("ch", ch).
 		Where("ts >= ?", beginDate).
 		Where("ts <= ?", endDate).
-		Order("log_id desc")
+		Order("ts desc")
 	var Count int64 // 查询总条数
 	KlineDB.Count(&Count)
 	if Count > 2000 {
