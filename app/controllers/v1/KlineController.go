@@ -40,13 +40,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
 			logger.Error(ReadMessageErr)
-			marketErr := ws.Conn.Close()
-			if marketErr != nil {
-				logger.Error(marketErr)
-			} else {
-				ws.IsClose = true // 关闭链接
-				logger.Info("关闭成功")
-			}
+			wss.WsClose(ws)
 			// 跳出for关闭后面的读取
 			goto END
 		}
@@ -56,13 +50,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
-			closeErr := ws.Conn.Close()
-			if closeErr != nil {
-				logger.Error(closeErr)
-				break
-			} else {
-				ws.IsClose = true // 关闭链接
-			}
+			wss.WsClose(ws)
 			goto END
 		}
 		msg := SubStruct.Sub
@@ -122,12 +110,7 @@ func PushMessage(messageType int, ws *wss.WsConn, msg string) {
 		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsIndexJson)
 		ws.Mux.Unlock()
 		if WriteMessageErr != nil {
-			closeErr := ws.Conn.Close()
-			if closeErr != nil {
-				logger.Error(closeErr)
-			} else {
-				ws.IsClose = true // 关闭链接
-			}
+			wss.WsClose(ws)
 			// 跳出for关闭后面的推送
 			goto END
 		}
