@@ -163,4 +163,5 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		"totals":        Count,
 		"contractCode":  symbol,
 	}, "success", 1)
+	return
 }

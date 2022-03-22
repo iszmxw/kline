@@ -5,7 +5,7 @@ import (
 )
 
 // Rjson 成功返回封装 参数 data interface{} 类型为可接受任意类型
-func Rjson(c *gin.Context, result interface{}, msg string, code int) {
+func Rjson(c *gin.Context, result interface{}, msg string, code int64) {
 	reqId, _ := c.Get("Tracking-Id")
 	var rdata map[string]interface{}
 	rdata = gin.H{
