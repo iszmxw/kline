@@ -56,8 +56,13 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
-			ws.Conn.Close()
-			ws.IsClose = true // 关闭链接
+			closeErr := ws.Conn.Close()
+			if closeErr != nil {
+				logger.Error(closeErr)
+				break
+			} else {
+				ws.IsClose = true // 关闭链接
+			}
 			goto END
 		}
 		msg := SubStruct.Sub
@@ -79,53 +84,57 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			goto END
 		}
 		// 开启协诚处理推送消息
-		go func(ws *wss.WsConn, msg string) {
-			// 为了释放for死循环的资源
-			for !ws.IsClose {
-				push, getErr := redis_socket.Get(msg)
-				if getErr != nil {
-					logger.Error(getErr)
-					goto END
-				}
-				// 空消息跳过
-				if len(push) <= 0 {
-					continue
-				}
-				var WsIndex *response.WsIndex
-				WsIndexErr := json.Unmarshal([]byte(push), &WsIndex)
-				if WsIndexErr != nil {
-					logger.Error(errors.New("Umarshal failed:" + WsIndexErr.Error()))
-					logger.Error(WsIndexErr)
-					break
-				}
-				WsIndexJson, WsIndexJsonErr := json.Marshal(WsIndex)
-				if WsIndexJsonErr != nil {
-					logger.Error(WsIndexJsonErr)
-					break
-				}
-				// 1秒推送一次消息
-				time.Sleep(time.Second * 1)
-				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(mt, WsIndexJson)
-				ws.Mux.Unlock()
-				if WriteMessageErr != nil {
-					closeErr := ws.Conn.Close()
-					if closeErr != nil {
-						logger.Error(closeErr)
-					} else {
-						ws.IsClose = true // 关闭链接
-					}
-					// 跳出for关闭后面的推送
-					goto END
-				}
-				// 返回数据给用户
-			}
-		END:
-			logger.Info("已经跳出协诚的循环推送")
-		}(ws, msg)
+		go PushMessage(mt, ws, msg)
 	}
 END:
 	logger.Info("socket被关闭，本次链接结束")
+}
+
+// 推送socket消息
+
+func PushMessage(messageType int, ws *wss.WsConn, msg string) {
+	// 为了释放for死循环的资源
+	for !ws.IsClose {
+		push, getErr := redis_socket.Get(msg)
+		if getErr != nil {
+			logger.Error(getErr)
+			goto END
+		}
+		// 空消息跳过
+		if len(push) <= 0 {
+			continue
+		}
+		var WsIndex *response.WsIndex
+		WsIndexErr := json.Unmarshal([]byte(push), &WsIndex)
+		if WsIndexErr != nil {
+			logger.Error(errors.New("Umarshal failed:" + WsIndexErr.Error()))
+			logger.Error(WsIndexErr)
+			break
+		}
+		WsIndexJson, WsIndexJsonErr := json.Marshal(WsIndex)
+		if WsIndexJsonErr != nil {
+			logger.Error(WsIndexJsonErr)
+			break
+		}
+		// 1秒推送一次消息
+		time.Sleep(time.Second * 1)
+		ws.Mux.Lock()
+		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsIndexJson)
+		ws.Mux.Unlock()
+		if WriteMessageErr != nil {
+			closeErr := ws.Conn.Close()
+			if closeErr != nil {
+				logger.Error(closeErr)
+			} else {
+				ws.IsClose = true // 关闭链接
+			}
+			// 跳出for关闭后面的推送
+			goto END
+		}
+		// 返回数据给用户
+	}
+END:
+	logger.Info("已经跳出协诚的循环推送")
 }
 
 // HistoryHandler 历史行情
