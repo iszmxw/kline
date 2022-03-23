@@ -8,6 +8,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
+	"goapi/pkg/abnormal"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
@@ -122,6 +123,7 @@ END:
 
 // HistoryHandler 历史行情
 func (h *KlineController) HistoryHandler(c *gin.Context) {
+	defer abnormal.Stack("历史行情", c)
 	//beginDate := time.Now().Format("2006-01-02 15:04:05")
 	symbol := c.Query("symbol")
 	period := c.Query("period")
@@ -167,5 +169,4 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		"totals":        Count,
 		"contractCode":  symbol,
 	}, "success", 1)
-	return
 }
