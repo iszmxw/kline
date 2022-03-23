@@ -14,15 +14,11 @@ func Stack(description string) {
 	if r := recover(); r != nil {
 		// 收集错误堆栈信息 异常
 		errInfo := string(debug.Stack())
-		err1 := errors.New(fmt.Sprintf(": %v\n", description))
-		err2 := errors.New(fmt.Sprintf("Recover: %v\n", r))
-		err3 := errors.New(fmt.Sprintf("详细堆栈错误信息: %v\n", errInfo))
-		logger.Error(err1)
-		logger.Error(err2)
-		logger.Error(err3)
-		//err := email.SendEmail(description+"当前环境："+config.GetString("app.env"), errInfo, config.GetString("notify.email"))
+		logger.Error(errors.New(fmt.Sprintf(": %v", description)))
+		logger.Error(errors.New(fmt.Sprintf("Recover: %v", r)))
+		logger.Error(errors.New(fmt.Sprintf("详细堆栈错误信息: %v", errInfo)))
 		Info := cmap.New().Items()
-		Info["title"] = description + fmt.Sprintf("Recover: %v\n", r)
+		Info["title"] = description + "当前环境：" + config.GetString("app.env") + fmt.Sprintf("Recover: %v", r)
 		Info["content"] = errInfo
 		err := email.SendEmail(Info, config.GetString("notify.email"))
 		if err != nil {
