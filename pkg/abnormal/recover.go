@@ -3,6 +3,7 @@ package abnormal
 import (
 	"errors"
 	"fmt"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/pkg/config"
 	"goapi/pkg/email"
 	"goapi/pkg/logger"
@@ -19,7 +20,11 @@ func Stack(description string) {
 		logger.Error(err1)
 		logger.Error(err2)
 		logger.Error(err3)
-		err := email.SendEmail(description+"当前环境："+config.GetString("app.env"), errInfo, config.GetString("notify.email"))
+		//err := email.SendEmail(description+"当前环境："+config.GetString("app.env"), errInfo, config.GetString("notify.email"))
+		Info := cmap.New().Items()
+		Info["title"] = description + fmt.Sprintf("Recover: %v\n", r)
+		Info["content"] = errInfo
+		err := email.SendEmail(Info, config.GetString("notify.email"))
 		if err != nil {
 			logger.Error(err)
 		}

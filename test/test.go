@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	cmap "github.com/orcaman/concurrent-map"
+	"goapi/config"
+	conf "goapi/pkg/config"
+	"goapi/pkg/email"
+	"goapi/pkg/logger"
 	"strings"
 	"time"
 )
@@ -9,9 +14,23 @@ import (
 func init() {
 	var cstZone = time.FixedZone("CST", 8*3600) // 东八
 	time.Local = cstZone
+	// 初始化配置信息
+	config.Initialize()
+	// 定义日志目录
+	logger.Init("apiService")
 }
 
 func main() {
 	fmt.Println(time.Unix(1647870090, 0).Format("2006-01-02 15:04:05"))
 	fmt.Println(strings.Replace("BTC-USD-uasasas-asasas", "-", "/", -1)) // 合约代码 BTC-USD
+	Info := cmap.New().Items()
+	Info["title"] = "我是邮件标题"
+	Info["content"] = "我是内容"
+	err := email.SendEmail(Info, conf.GetString("notify.email"))
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("邮件发送成功")
+	}
+	time.Sleep(time.Second * 100)
 }
