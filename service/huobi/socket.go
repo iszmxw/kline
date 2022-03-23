@@ -20,8 +20,8 @@ import (
 // socket 服务 链接火币网，获取数据缓存到redis
 
 func init() {
-	var cstZone = time.FixedZone("CST", 8*3600) // 东八
-	time.Local = cstZone
+	//var cstZone = time.FixedZone("CST", 8*3600) // 东八
+	//time.Local = cstZone
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
