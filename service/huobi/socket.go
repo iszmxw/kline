@@ -44,26 +44,10 @@ func main() {
 		topics{
 			Topic: "market.BTC-USD.index.1min",
 		},
-		// 5分钟k线图
-		topics{
-			Topic: "market.BTC-USD.index.5min",
-		},
-		// 15分钟k线图
-		topics{
-			Topic: "market.BTC-USD.index.15min",
-		},
 		// ETH-USD
 		// 1分钟k线图
 		topics{
 			Topic: "market.ETH-USD.index.1min",
-		},
-		// 5分钟k线图
-		topics{
-			Topic: "market.ETH-USD.index.5min",
-		},
-		// 15分钟k线图
-		topics{
-			Topic: "market.ETH-USD.index.15min",
 		})
 	start := "ok"
 	for {
