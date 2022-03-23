@@ -58,7 +58,7 @@ func KlineLogData(Topic []string, data *response.SubIndexKLineResponse) *models.
 	AddData.Amount = helpers.StrToFloat64(data.Tick.Amount)        // 成交金额
 	AddData.Vol = helpers.StrToFloat64(data.Tick.Vol)              // 成交手
 	AddData.CCount = data.Tick.Count                               // 交易笔数
-	AddData.TsDate = time.Unix(0, data.Ts)                         // kline返回日期
+	AddData.TsDate = time.Unix(0, data.Ts*int64(time.Millisecond)) // kline返回日期
 	AddData.CreateDate = time.Now()                                // 创建日期
 	AddData.KlineSource = "huobi"                                  // k线来源 huobi
 	return &AddData
