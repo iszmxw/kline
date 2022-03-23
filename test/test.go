@@ -21,7 +21,7 @@ func init() {
 }
 
 func main() {
-	fmt.Println(time.Unix(1647870090, 0).Format("2006-01-02 15:04:05"))
+	fmt.Println(time.Unix(0, int64(1648044310554)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999999999"))
 	fmt.Println(strings.Replace("BTC-USD-uasasas-asasas", "-", "/", -1)) // 合约代码 BTC-USD
 	Info := cmap.New().Items()
 	Info["title"] = "我是邮件标题"
