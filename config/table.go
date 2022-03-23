@@ -7,6 +7,6 @@ import (
 // 数据库连接参数
 func init() {
 	config.Add("table", config.StrMap{
-		"kline_log": config.Env("KLINE_TABLE", "kline_log_v2"),
+		"kline_log": config.Env("KLINE_TABLE", "kline_log"),
 	})
 }
