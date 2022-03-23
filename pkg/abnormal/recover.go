@@ -23,7 +23,7 @@ func Stack(description string, c *gin.Context) {
 		if c != nil {
 			url := c.Request.URL
 			method := c.Request.Method
-			Info["content"] = fmt.Sprintf("| url [%s] | method | [%s] | error [%v] |", url, method, r) + "\n<br>" + errInfo
+			Info["content"] = fmt.Sprintf("| url [%s] | method | [%s] | error [%v] |", url, method, r) + "\r\n\r\n" + errInfo
 		} else {
 			Info["content"] = errInfo
 		}

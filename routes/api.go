@@ -3,7 +3,6 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	controllers "goapi/app/controllers/v1"
-	middlewares "goapi/app/middlewares/v1"
 )
 
 var v1Group = new(controllers.Group)
@@ -13,7 +12,7 @@ func RegisterWebRoutes(router *gin.RouterGroup) {
 	// 路由分组 客户端 模块
 	ApiRoute := router.Group("/api")
 	{
-		ApiRoute.Use(middlewares.Client())
+		//ApiRoute.Use(middlewares.Client())
 		// k线图服务
 		kLine := ApiRoute.Group("/kline")
 		{
