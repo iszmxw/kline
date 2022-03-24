@@ -19,7 +19,6 @@ func SetupRoute() *gin.Engine {
 	router.Use(v1.Cors())        // 跨域
 	// v1 版本
 	apiV1 := router.Group("/v1")
-	Test := router.Group("/test")
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
 		context.String(200, "Hello World!："+requestId.(string)+"\n\n\n")
@@ -30,6 +29,5 @@ func SetupRoute() *gin.Engine {
 		//}
 	})
 	routes.RegisterWebRoutes(apiV1)
-	routes.RegisterTestRoutes(Test)
 	return router
 }
