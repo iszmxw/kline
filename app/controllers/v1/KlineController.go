@@ -152,8 +152,8 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		Order("ts desc")
 	var Count int64 // 查询总条数
 	KlineDB.Count(&Count)
-	if Count > 2000 {
-		Count = 2000
+	if Count > 3000 {
+		Count = 3000
 	}
 	err := KlineDB.Limit(int(Count)).Find(&data).Error
 	if err != nil {
