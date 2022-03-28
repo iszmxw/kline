@@ -1,13 +1,13 @@
 #!/bin/sh
 
 # 重启 apiService
-apiService=$(ps -ef|grep "/apiService" | grep -v "grep" | awk hh'{print $2}')
+apiService=$(ps -ef|grep "/apiService-running" | grep -v "grep" | awk hh'{print $2}')
 if [ "$apiService" ]
 then
   kill -9 "$apiService"
-  nohup ./apiService > /dev/null 2>&1 & echo $!>logs/apiService.pid
+  nohup ./apiService-running > /dev/null 2>&1 & echo $!>logs/apiService-running.pid
 else
-  nohup ./apiService > /dev/null 2>&1 & echo $!>logs/apiService.pid
+  nohup ./apiService-running > /dev/null 2>&1 & echo $!>logs/apiService-running.pid
 fi
 
 ## 重启 huobiService

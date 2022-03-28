@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # 重启 apiService
-apiService=$(ps -ef|grep "/apiService" | grep -v "grep" | awk '{print $2}')
+apiService=$(ps -ef|grep "/apiService-running" | grep -v "grep" | awk '{print $2}')
 if [ "$apiService" ]
 then
   kill -9 "$apiService"
