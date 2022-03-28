@@ -10,6 +10,8 @@ import (
 	res "goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
+	"goapi/pkg/elastic"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
@@ -95,6 +97,11 @@ func SocketHuoBi(parentTopic string) {
 			if cErr != nil {
 				logger.Error(cErr)
 				return
+			}
+			// 历史存入 elastic
+			putRes := elastic.IndexPut(helpers.Int64ToString(AddData.ID), AddData)
+			if !putRes {
+				logger.Error(errors.New("历史存入 elastic 失败"))
 			}
 			// 收集数据缓存到redis
 		} else {
