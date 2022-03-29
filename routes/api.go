@@ -20,6 +20,8 @@ func RegisterWebRoutes(router *gin.RouterGroup) {
 			kLine.Any("/ws_index", v1Group.KlineController.WsIndexHandler)
 			// 历史行情
 			kLine.Any("/history", v1Group.KlineController.HistoryHandler)
+			// 历史行情
+			kLine.Any("/history_es", v1Group.KlineController.HistoryEsHandler)
 		}
 	}
 }

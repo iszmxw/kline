@@ -1,14 +1,17 @@
 package v1
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/olivere/elastic"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/pkg/abnormal"
+	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
@@ -16,6 +19,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/redis_socket"
 	"goapi/pkg/websocket"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -121,7 +125,8 @@ END:
 	logger.Info("已经跳出协诚的循环推送")
 }
 
-// HistoryHandler 历史行情
+// HistoryHandler
+// 历史行情 mysql 查询
 func (h *KlineController) HistoryHandler(c *gin.Context) {
 	defer abnormal.Stack("历史行情", c)
 	//beginDate := time.Now().Format("2006-01-02 15:04:05")
@@ -163,6 +168,71 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	}
 	output.Rjson(c, gin.H{
 		"HistKlineLogs": data,
+		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
+		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
+		"klineSource":   "huobi",
+		"totals":        Count,
+		"contractCode":  symbol,
+	}, "success", 1)
+}
+
+// HistoryEsHandler
+// 历史行情Es查询
+// http://127.0.0.1:8080/v1/api/kline/history_es?symbol=ETH-USD&period=1min&beginDate=1648540103000&endDate=1648541003000
+func (h *KlineController) HistoryEsHandler(c *gin.Context) {
+	var (
+		resp    models.KlineLog   // es数据解析结构体
+		respArr []models.KlineLog // 数组重装
+		Count   = 3000            // 查询总条数
+	)
+	defer abnormal.Stack("历史行情Es查询", c)
+	symbol := c.Query("symbol")
+	period := c.Query("period")
+	beginDate := c.Query("beginDate")
+	endDate := c.Query("endDate")
+	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
+		output.Rjson(c, nil, "beginDate 起始交易日期必填", 0)
+		return
+	}
+	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
+		output.Rjson(c, nil, "endDate 截止交易日期必填", 0)
+		return
+	}
+	if len(symbol) <= 0 || len(period) <= 0 {
+		symbol = "BTC-USD"
+		period = "1min"
+	}
+	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
+	// 组合查询条件
+	boolQuery := elastic.NewBoolQuery()
+	boolQuery.Filter(
+		elastic.NewRangeQuery("ts").Gte(beginDate).Lte(endDate),
+		elastic.NewQueryStringQuery(fmt.Sprintf("*%s*", ch)))
+	searchResult, err := esdk.Client().Search().
+		Index("kline_log"). // 设置索引名
+		Query(boolQuery). // 设置查询条件
+		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
+		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
+		Size(Count). // 设置分页参数 - 每页大小
+		Pretty(true). // 查询结果返回可读性较好的JSON格式
+		Do(context.Background()) // 执行请求
+	if err != nil {
+		logger.Error(err)
+	}
+	logger.Info(fmt.Sprintf("查询消耗时间 %d ms, 结果总数: %d\n", searchResult.TookInMillis, searchResult.TotalHits()))
+	if searchResult.TotalHits() > 0 {
+		Count = int(searchResult.TotalHits())
+		// 查询结果不为空，则遍历结果
+		// 通过Each方法，将es结果的json结构转换成struct对象
+		for _, item := range searchResult.Each(reflect.TypeOf(resp)) {
+			// 转换成Article对象
+			if t, ok := item.(models.KlineLog); ok {
+				respArr = append(respArr, t)
+			}
+		}
+	}
+	output.Rjson(c, gin.H{
+		"HistKlineLogs": respArr,
 		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
 		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
 		"klineSource":   "huobi",
