@@ -10,7 +10,7 @@ import (
 	res "goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
-	"goapi/pkg/elastic"
+	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
@@ -93,13 +93,13 @@ func SocketHuoBi(parentTopic string) {
 			// 历史 kline 入库
 			AddData := res.KlineLogData(Topic, data)
 			DB := mysql.DB.Debug()
-			cErr := DB.Model(models.KlineLog{}).Create(&AddData).Error
-			if cErr != nil {
-				logger.Error(cErr)
+			result := DB.Model(models.KlineLog{}).Create(&AddData)
+			if result.Error != nil {
+				logger.Error(result.Error)
 				return
 			}
 			// 历史存入 elastic
-			putRes := elastic.IndexPut(helpers.Int64ToString(AddData.ID), AddData)
+			putRes := esdk.IndexPut(helpers.Int64ToString(AddData.LogId), AddData)
 			if !putRes {
 				logger.Error(errors.New("历史存入 elastic 失败"))
 			}

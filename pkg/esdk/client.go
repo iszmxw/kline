@@ -1,4 +1,4 @@
-package elastic
+package esdk
 
 import (
 	"github.com/olivere/elastic"
