@@ -83,6 +83,60 @@ END:
 	logger.Info("socket被关闭，本次链接结束")
 }
 
+// WsReturnRateHandler socket 负责转发数据库的 rate
+// ws://127.0.0.1:8080/v1/api/kline/ws_return_rate {"sub":"BTC-USD"}
+func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
+	RequestId := logger.RequestId
+	ws, err := wss.GetSocket(c)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	logger.Info("客户端建立socket成功")
+	// 为了释放for死循环的资源
+	for !ws.IsClose {
+		// 读取用户客户端ws中订阅的 topic
+		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
+		if ReadMessageErr != nil {
+			logger.Error(ReadMessageErr)
+			wss.WsClose(ws)
+			// 跳出for关闭后面的读取
+			goto END
+		}
+		//对数据进行切割，读取参数
+		//如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
+		var SubStruct requests.SubRate
+		SubErr := json.Unmarshal(message, &SubStruct)
+		if SubErr != nil {
+			logger.Error(SubErr)
+			wss.WsClose(ws)
+			goto END
+		}
+		msg := SubStruct.Sub
+		logger.Info(SubStruct)
+		// 2 小时内一个长连接禁止重复订阅相同的 topic
+		checkMsg := "rate:socket_request:" + RequestId + ":" + msg
+		if redis.CheckExist(checkMsg) {
+			logger.Info("该订阅已存在，请勿重新订阅")
+			continue
+		}
+		_, redisAddErr := redis.Add(checkMsg, msg, 30*60) // 半个小时内不允许重复请求
+		if redisAddErr != nil {
+			logger.Error(redisAddErr)
+			break
+		}
+		// 24 小时内一个长连接禁止重复订阅相同的 topic
+		// 链接已关闭
+		if ws.IsClose {
+			goto END
+		}
+		// 开启协诚处理推送消息
+		go PushRate(mt, ws, msg)
+	}
+END:
+	logger.Info("socket被关闭，本次链接结束")
+}
+
 // 推送socket消息
 
 func PushMessage(messageType int, ws *wss.WsConn, msg string) {
@@ -113,6 +167,48 @@ func PushMessage(messageType int, ws *wss.WsConn, msg string) {
 		time.Sleep(time.Second * 1)
 		ws.Mux.Lock()
 		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsIndexJson)
+		ws.Mux.Unlock()
+		if WriteMessageErr != nil {
+			wss.WsClose(ws)
+			// 跳出for关闭后面的推送
+			goto END
+		}
+		// 返回数据给用户
+	}
+END:
+	logger.Info("已经跳出协诚的循环推送")
+}
+
+// 推送Rate socket消息
+
+func PushRate(messageType int, ws *wss.WsConn, msg string) {
+	// 为了释放for死循环的资源
+	for !ws.IsClose {
+		// 空消息跳过
+		if len(msg) <= 0 {
+			continue
+		}
+		var PushRate response.PushRateData
+		DB := mysql.DB.Debug()
+		err := DB.Model(models.TradingAssets{}).
+			Where("item_code", "IQO").
+			Where("assets_code", msg).
+			Where("is_valid", 1).
+			Where("is_show", 1).
+			Find(&PushRate).Error
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		WsPushRateJson, WsPushRateErr := json.Marshal(PushRate)
+		if WsPushRateErr != nil {
+			logger.Error(WsPushRateErr)
+			break
+		}
+		// 1秒推送一次消息
+		time.Sleep(time.Second * 1)
+		ws.Mux.Lock()
+		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsPushRateJson)
 		ws.Mux.Unlock()
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)
@@ -208,8 +304,14 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 	boolQuery.Filter(
 		elastic.NewRangeQuery("ts").Gte(beginDate).Lte(endDate),
 		elastic.NewQueryStringQuery(fmt.Sprintf("*%s*", ch)))
-	searchResult, err := esdk.Client().Search().
-		Index("kline_log"). // 设置索引名
+	esClient, err := esdk.Client()
+	if err != nil {
+		logger.Error(err)
+		output.Rjson(c, nil, "系统错误", 0)
+		return
+	}
+	searchResult, err := esClient.Search().
+		Index("iqoptionpro_kline_log"). // 设置索引名
 		Query(boolQuery). // 设置查询条件
 		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
 		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
@@ -231,6 +333,9 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 			}
 		}
 	}
+
+	// 监控K线数据时间段的数据波动，实时调整赔率
+
 	output.Rjson(c, gin.H{
 		"HistKlineLogs": respArr,
 		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),

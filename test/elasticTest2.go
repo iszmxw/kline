@@ -17,5 +17,5 @@ type Article struct {
 func main() {
 	// 定义一篇博客
 	data := Article{_id: "666", Title: "golang es教程", Content: "go如何操作ES", Author: "tizi", Created: time.Now()}
-	fmt.Println(esdk.IndexPut(data._id, data))
+	fmt.Println(esdk.IndexPut("test_index", data._id, data))
 }

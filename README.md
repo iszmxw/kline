@@ -236,5 +236,5 @@ market.BTC-USD.index.1min
 ### 清除es数据
 
 ```bash
-curl -XDELETE http://192.168.0.221:9200/kline_log
+curl -XDELETE http://10.10.10.10:9200/kline_log
 ```

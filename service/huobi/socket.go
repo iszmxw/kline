@@ -90,6 +90,7 @@ func SocketHuoBi(parentTopic string) {
 				logger.Error(redisErr)
 				return
 			}
+			// 收集数据缓存到redis
 			// 历史 kline 入库
 			AddData := res.KlineLogData(Topic, data)
 			DB := mysql.DB.Debug()
@@ -98,12 +99,14 @@ func SocketHuoBi(parentTopic string) {
 				logger.Error(result.Error)
 				return
 			}
+			// 历史 kline 入库
 			// 历史存入 elastic
-			putRes := esdk.IndexPut(helpers.Int64ToString(AddData.LogId), AddData)
+			putRes := esdk.IndexPut(strings.ToLower(parentTopic), helpers.Int64ToString(AddData.LogId), AddData)
 			if !putRes {
 				logger.Error(errors.New("历史存入 elastic 失败"))
+				logger.Info(parentTopic)
 			}
-			// 收集数据缓存到redis
+			time.Sleep(time.Second)
 		} else {
 			logger.Error(errors.New(fmt.Sprintf(
 				"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",

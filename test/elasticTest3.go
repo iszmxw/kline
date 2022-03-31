@@ -33,7 +33,6 @@ func init() {
 }
 
 func main() {
-
 	// 执行ES请求需要提供一个上下文对象
 	var Count = 3000
 	boolQuery := elastic.NewBoolQuery()
@@ -43,8 +42,13 @@ func main() {
 	source, err2 := boolQuery.Source()
 	logger.Info(err2)
 	logger.Info(source)
-	searchResult, err := esdk.Client().Search().
-		Index("kline_log"). // 设置索引名
+	esClient, err := esdk.Client()
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	searchResult, err := esClient.Search().
+		Index("iqoptionpro_kline_log"). // 设置索引名
 		//Query(elastic.NewTermQuery("ch", "market.ETH-USD.index.1min")). // 设置查询条件
 		Type("doc"). // 设置查询条件
 		Query(boolQuery). // 设置查询条件

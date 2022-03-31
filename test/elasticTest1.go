@@ -42,7 +42,7 @@ func main() {
 	var err error
 	var exists bool
 	// 设置ES服务地址，支持多个地址
-	urlOpt := elastic.SetURL("http://192.168.0.221:9200")
+	urlOpt := elastic.SetURL("http://10.10.10.10:9200")
 	sniffOpt := elastic.SetSniff(false)
 	// 设置基于http base auth验证的账号和密码
 	//elastic.SetBasicAuth("user", "secret"))
