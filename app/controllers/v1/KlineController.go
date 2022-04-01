@@ -200,13 +200,12 @@ func PushRate(messageType int, ws *wss.WsConn, msg string) {
 			logger.Error(err)
 			return
 		}
+		logger.Info(PushRate)
 		WsPushRateJson, WsPushRateErr := json.Marshal(PushRate)
 		if WsPushRateErr != nil {
 			logger.Error(WsPushRateErr)
 			break
 		}
-		// 1秒推送一次消息
-		time.Sleep(time.Second * 1)
 		ws.Mux.Lock()
 		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsPushRateJson)
 		ws.Mux.Unlock()
@@ -215,6 +214,8 @@ func PushRate(messageType int, ws *wss.WsConn, msg string) {
 			// 跳出for关闭后面的推送
 			goto END
 		}
+		// 1秒推送一次消息
+		time.Sleep(time.Second * 5)
 		// 返回数据给用户
 	}
 END:

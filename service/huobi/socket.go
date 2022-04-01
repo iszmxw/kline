@@ -61,6 +61,8 @@ func main() {
 			}
 			start = "no"
 		}
+		// 消费消息队列，数据存入es里面
+		go MsgQueue()
 		time.Sleep(time.Second)
 	}
 }
@@ -100,11 +102,20 @@ func SocketHuoBi(parentTopic string) {
 				return
 			}
 			// 历史 kline 入库
+
+			//// 历史 kline 入队列
+			//lPushJson, lPushErr := json.Marshal(AddData)
+			//if lPushErr != nil {
+			//	logger.Error(lPushErr)
+			//	return
+			//}
+			//_, _ = redis.Lpush("kline_log", lPushJson)
+			//// 历史 kline 入队列
+
 			// 历史存入 elastic
-			putRes := esdk.IndexPut(strings.ToLower(parentTopic), helpers.Int64ToString(AddData.LogId), AddData)
+			putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
 			if !putRes {
 				logger.Error(errors.New("历史存入 elastic 失败"))
-				logger.Info(parentTopic)
 			}
 			time.Sleep(time.Second)
 		} else {
@@ -121,4 +132,31 @@ func SocketHuoBi(parentTopic string) {
 		fmt.Println(parentTopic + "：正在重新启动 Goroutine")
 		go SocketHuoBi(parentTopic)
 	}
+}
+
+// 消费消息队列
+
+func MsgQueue() {
+	for i := 1; i <= 4; i++ {
+		go func() {
+			jsonStr := redis.RPop("kline_log")
+			if len(jsonStr) > 0 {
+				var KlineLog *models.KlineLog
+				KlineLogErr := json.Unmarshal([]byte(jsonStr), &KlineLog)
+				if KlineLogErr != nil {
+					logger.Error(errors.New("Umarshal failed:" + KlineLogErr.Error()))
+					logger.Error(KlineLogErr)
+					return
+				}
+				//logger.Info("消费消息队列的数据：")
+				//logger.Info(KlineLog)
+				// 历史存入 elastic
+				putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineLog.LogId), KlineLog)
+				if !putRes {
+					logger.Error(errors.New("历史存入 elastic 失败"))
+				}
+			}
+		}()
+	}
+	time.Sleep(time.Second * 5)
 }

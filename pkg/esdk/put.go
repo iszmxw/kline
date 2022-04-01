@@ -3,6 +3,7 @@ package esdk
 import (
 	"context"
 	"goapi/pkg/logger"
+	"strings"
 )
 
 func IndexPut(index, id string, body interface{}) bool {
@@ -15,7 +16,7 @@ func IndexPut(index, id string, body interface{}) bool {
 		return false
 	}
 	_, err = esClient.Index().
-		Index(index). // 设置索引名称
+		Index(strings.ToLower(index)). // 设置索引名称
 		Type("doc").
 		Id(id). // 设置文档id
 		BodyJson(body). // 指定前面声明struct对象

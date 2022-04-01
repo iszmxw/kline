@@ -6,7 +6,6 @@ import (
 	"goapi/pkg/logger"
 	"log"
 	"os"
-	"time"
 )
 
 var EsClient *elastic.Client
@@ -19,16 +18,16 @@ func Client() (*elastic.Client, error) {
 		elastic.SetSniff(config.GetBool("elastic.sniff")),
 		// elasticsearch 服务地址，多个服务地址使用逗号分隔
 		elastic.SetURL(config.GetString("elastic.url")),
-		// 启用gzip压缩
-		elastic.SetGzip(config.GetBool("elastic.gzip")),
-		// 设置监控检查时间间隔
-		elastic.SetHealthcheckInterval(10*time.Second),
-		// 设置请求失败最大重试次数
-		elastic.SetMaxRetries(5),
+		//// 启用gzip压缩
+		//elastic.SetGzip(config.GetBool("elastic.gzip")),
+		//// 设置监控检查时间间隔
+		//elastic.SetHealthcheckInterval(10*time.Second),
+		//// 设置请求失败最大重试次数
+		//elastic.SetMaxRetries(5),
 		// 设置错误日志输出
-		elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC_ERROR ", log.LstdFlags)),
+		elastic.SetErrorLog(log.New(os.Stderr, "ERROR：", log.LstdFlags)),
 		// 设置info日志输出
-		elastic.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
+		elastic.SetInfoLog(log.New(os.Stdout, "SUCCESS：", log.LstdFlags)),
 	)
 	if err != nil {
 		logger.Info(err)
