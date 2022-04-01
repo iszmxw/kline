@@ -8,6 +8,7 @@ then
   \cp -rf apiService apiService-running
   nohup ./apiService-running > /dev/null 2>&1 & echo $!>logs/apiService-running.pid
 else
+  \cp -rf apiService apiService-running
   nohup ./apiService-running > /dev/null 2>&1 & echo $!>logs/apiService-running.pid
 fi
 

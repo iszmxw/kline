@@ -17,7 +17,7 @@ func IndexPut(index, id string, body interface{}) bool {
 	}
 	_, err = esClient.Index().
 		Index(strings.ToLower(index)). // 设置索引名称
-		Type("doc").
+		//Type("doc").
 		Id(id). // 设置文档id
 		BodyJson(body). // 指定前面声明struct对象
 		Refresh("true"). // 执行操作后刷新索引。

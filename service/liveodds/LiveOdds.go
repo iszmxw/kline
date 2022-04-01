@@ -26,20 +26,26 @@ func init() {
 }
 
 func main() {
-	var TradingAssetsList []response.TradingAssets
-	DB := mysql.DB.Debug()
-	err := DB.Model(models.TradingAssets{}).
-		Where("is_valid", 1).
-		Where("is_show", 1).
-		Find(&TradingAssetsList).Error
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	for _, item := range TradingAssetsList {
-		logger.Info(item)
-		// 搜索K线图数据
-		searchKlineData(item.ItemCode, item.AssetsCode)
+	for {
+		go func() {
+			var TradingAssetsList []response.TradingAssets
+			DB := mysql.DB.Debug()
+			err := DB.Model(models.TradingAssets{}).
+				Where("is_valid", 1).
+				Where("is_show", 1).
+				Find(&TradingAssetsList).Error
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+			for _, item := range TradingAssetsList {
+				logger.Info(item)
+				// 搜索K线图数据
+				go searchKlineData(item.ItemCode, item.AssetsCode)
+			}
+		}()
+		time.Sleep(time.Second * 60 * 5) // 休息5分钟，每5分钟计算一次赔率
+		logger.Info("休息5分钟，每5分钟计算一次赔率")
 	}
 
 }
@@ -54,7 +60,12 @@ func searchKlineData(itemCode, assetsCode string) {
 	)
 	endDate := time.Now().UnixNano() / 1e6  // 结束时间
 	beginDate := endDate - (60 * 20 * 1000) // 结束时间
-	logger.Info(fmt.Sprintf("开始时间：%v，结束时间：%v", beginDate, endDate))
+	logger.Info(fmt.Sprintf("开始时间：%v---%v，结束时间：%v---%v",
+		beginDate,
+		time.Unix(0, beginDate*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
+		endDate,
+		time.Unix(0, endDate*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
+	))
 	// 组合查询条件
 	boolQuery := elastic.NewBoolQuery()
 	boolQuery.Filter(

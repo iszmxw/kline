@@ -48,9 +48,9 @@ func main() {
 		return
 	}
 	searchResult, err := esClient.Search().
-		Index("iqoptionpro_kline_log"). // 设置索引名
+		Index("kline_log"). // 设置索引名
 		//Query(elastic.NewTermQuery("ch", "market.ETH-USD.index.1min")). // 设置查询条件
-		Type("doc"). // 设置查询条件
+		//Type("doc"). // 设置查询条件
 		Query(boolQuery). // 设置查询条件
 		Sort("ts", true). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
 		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
