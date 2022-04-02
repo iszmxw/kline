@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/olivere/elastic"
 	"goapi/app/models"
@@ -25,7 +26,17 @@ func init() {
 	bootstrap.SetupDB()
 }
 
+var (
+	period                = flag.Int64("period", 20, "时期：默认计算 20 分钟的数据")
+	startTime             = flag.Int64("startTime", 0, "开始 默认从现在开始，否则，从过去 start 分钟开始")
+	Count                 = flag.Int("Count", 3000, "分析数据条数，默认最多分析三千条")
+	defaultReturnRate     = flag.Float64("defaultReturnRate", 0.79, "赔率默认值")
+	fluctuationReturnRate = flag.Float64("fluctuationReturnRate", 0.5, "波动赔率")
+	frequency             = flag.Duration("frequency", 1, "让CUP休息几分钟分钟，默认每1分钟计算一次赔率")
+)
+
 func main() {
+	flag.Parse()
 	for {
 		go func() {
 			var TradingAssetsList []response.TradingAssets
@@ -44,8 +55,8 @@ func main() {
 				go searchKlineData(item.ItemCode, item.AssetsCode)
 			}
 		}()
-		time.Sleep(time.Second * 60 * 1) // 休息5分钟，每1分钟计算一次赔率
-		logger.Info("休息5分钟，每5分钟计算一次赔率")
+		time.Sleep(time.Minute * *frequency) // 休息1分钟，每1分钟计算一次赔率
+		logger.Info(fmt.Sprintf("休息%v分钟，每%v分钟计算一次赔率", *frequency, *frequency))
 	}
 
 }
@@ -56,10 +67,9 @@ func searchKlineData(itemCode, assetsCode string) {
 		resp     models.KlineLog   // es数据解析结构体
 		respArr  []models.KlineLog // 数组重装
 		lineData []float64         // 数组重装
-		Count    = 3000            // 分析条数
 	)
-	endDate := time.Now().UnixNano() / 1e6  // 结束时间
-	beginDate := endDate - (60 * 20 * 1000) // 结束时间
+	endDate := (time.Now().UnixNano() / 1e6) - (60 * *startTime * 1000) // 结束时间
+	beginDate := endDate - (60 * *period * 1000)                        // 结束时间
 	logger.Info(fmt.Sprintf("开始时间：%v---%v，结束时间：%v---%v",
 		beginDate,
 		time.Unix(0, beginDate*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
@@ -81,15 +91,15 @@ func searchKlineData(itemCode, assetsCode string) {
 		Query(boolQuery). // 设置查询条件
 		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
 		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
-		Size(Count). // 设置分页参数 - 每页大小
+		Size(*Count). // 设置分页参数 - 每页大小
 		Pretty(true). // 查询结果返回可读性较好的JSON格式
 		Do(context.Background()) // 执行请求
 	if err != nil {
 		logger.Error(err)
 	}
 	logger.Info(fmt.Sprintf("查询消耗时间 %d ms, 结果总数: %d\n", searchResult.TookInMillis, searchResult.TotalHits()))
-	if searchResult.TotalHits() > 0 {
-		Count = int(searchResult.TotalHits())
+	if searchResult.TotalHits() > 600 { // 有10分钟的数据才进行计算
+		*Count = int(searchResult.TotalHits())
 		// 查询结果不为空，则遍历结果
 		// 通过Each方法，将es结果的json结构转换成struct对象
 		for _, item := range searchResult.Each(reflect.TypeOf(resp)) {
@@ -99,34 +109,33 @@ func searchKlineData(itemCode, assetsCode string) {
 				lineData = append(lineData, t.CClose)
 			}
 		}
+		// 算法步骤拆分
+		// 1、取出初始值，作为线条基数，取出最后值作为线条终点，
+		// 2、计算该段线条所有的点数
+		// 3、初始值与最后的值比较，判断这段时间是涨还是跌
+		// 4、从初始值开始，第 （n） 个值与（n+1）一个值进行对比，同时判断是否涨跌，记录中间的涨跌次数，连续涨跌的权重
+		// 5、根据涨跌的次数，初始值，末位值分析
+		// 5.1、末位值大于初始值：初步认定为涨势，再次根据线条区间的涨跌次数进行计算，涨多跌少的话，认定为斜线上涨，否则为无规律线条
+		// 5.2、末位值小于初始值：初步认定为跌势，再次根据线条区间的涨跌次数进行计算，涨少跌多的话，认定为斜线下滑，否则为无规律线条
+		// 监控K线数据时间段的数据波动，实时调整赔率
+		explainData(itemCode, assetsCode, lineData, beginDate, endDate)
 	}
-	// 算法步骤拆分
-	// 1、取出初始值，作为线条基数，取出最后值作为线条终点，
-	// 2、计算该段线条所有的点数
-	// 3、初始值与最后的值比较，判断这段时间是涨还是跌
-	// 4、从初始值开始，第 （n） 个值与（n+1）一个值进行对比，同时判断是否涨跌，记录中间的涨跌次数，连续涨跌的权重
-	// 5、根据涨跌的次数，初始值，末位值分析
-	// 5.1、末位值大于初始值：初步认定为涨势，再次根据线条区间的涨跌次数进行计算，涨多跌少的话，认定为斜线上涨，否则为无规律线条
-	// 5.2、末位值小于初始值：初步认定为跌势，再次根据线条区间的涨跌次数进行计算，涨少跌多的话，认定为斜线下滑，否则为无规律线条
-	// 监控K线数据时间段的数据波动，实时调整赔率
-	explainData(itemCode, assetsCode, lineData, beginDate, endDate)
 }
 
 func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate int64) {
 	var (
-		riseCount                = 0                                              // 涨次数
-		fallCount                = 0                                              // 跌次数
-		flatCount                = 0                                              // 平次数
-		riseRate         float64 = 0                                              // 上涨率
-		fallRate         float64 = 0                                              // 下跌率
-		flatRate         float64 = 0                                              // 平滑率
-		returnRate               = 0.79                                           // 赔率默认值
-		result                   = 0                                              // 最终涨跌结果 0 不涨不跌，1-涨 2-跌
-		desc                     = map[int]interface{}{0: "平滑", 1: "上涨", 2: "下跌"} // 描述字段
+		riseCount                                                         = 0 // 涨次数
+		fallCount                                                         = 0 // 跌次数
+		flatCount                                                         = 0 // 平次数
+		riseRate         float64                                          = 0 // 上涨率
+		fallRate         float64                                          = 0 // 下跌率
+		flatRate         float64                                          = 0 // 平滑率
+		returnRate       float64                                              // 赔率
+		result           = 0                                                  // 最终涨跌结果 0 不涨不跌，1-涨 2-跌
+		desc             = map[int]interface{}{0: "平滑", 1: "上涨", 2: "下跌"}     // 描述字段
 		TradingAssets    response.TradingAssets
 		TradingAssetsLog models.TradingAssetsLog
 	)
-
 	// 所有点数
 	count := len(line)
 	// 初始值
@@ -148,7 +157,6 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 			flatCount++
 		}
 	}
-
 	// 上涨率
 	riseRate = float64(riseCount) / float64(riseCount+fallCount)
 	// 下跌率
@@ -173,9 +181,9 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 		result = 0 // 平滑
 	}
 	if result > 0 {
-		returnRate = 0.50
+		returnRate = *fluctuationReturnRate // 波动赔率
 	} else {
-		returnRate = 0.79
+		returnRate = *defaultReturnRate // 赔率默认值
 	}
 	DB := mysql.DB.Debug()
 	err := DB.Model(models.TradingAssets{}).
