@@ -44,7 +44,7 @@ func main() {
 				go searchKlineData(item.ItemCode, item.AssetsCode)
 			}
 		}()
-		time.Sleep(time.Second * 60 * 5) // 休息5分钟，每5分钟计算一次赔率
+		time.Sleep(time.Second * 60 * 1) // 休息5分钟，每1分钟计算一次赔率
 		logger.Info("休息5分钟，每5分钟计算一次赔率")
 	}
 
@@ -173,7 +173,7 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 		result = 0 // 平滑
 	}
 	if result > 0 {
-		returnRate = 0.2
+		returnRate = 0.50
 	} else {
 		returnRate = 0.79
 	}

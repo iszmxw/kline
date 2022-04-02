@@ -84,7 +84,7 @@ END:
 }
 
 // WsReturnRateHandler socket 负责转发数据库的 rate
-// ws://127.0.0.1:8080/v1/api/kline/ws_return_rate {"sub":"BTC-USD"}
+// ws://127.0.0.1:8080/v1/api/kline/ws_return_rate {"sub":"market.ETH-USD.index.1min"}
 func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 	RequestId := logger.RequestId
 	ws, err := wss.GetSocket(c)
@@ -105,7 +105,7 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		}
 		//对数据进行切割，读取参数
 		//如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
-		var SubStruct requests.SubRate
+		var SubStruct requests.Sub
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
@@ -113,9 +113,14 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 			goto END
 		}
 		msg := SubStruct.Sub
+		if len(msg) <= 0 {
+			logger.Info("空订阅，跳过")
+			continue
+		}
 		logger.Info(SubStruct)
+		Topic := strings.Split(msg, ".")
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
-		checkMsg := "rate:socket_request:" + RequestId + ":" + msg
+		checkMsg := "rate:socket_request:" + RequestId + ":" + Topic[1]
 		if redis.CheckExist(checkMsg) {
 			logger.Info("该订阅已存在，请勿重新订阅")
 			continue
