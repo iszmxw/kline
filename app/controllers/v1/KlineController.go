@@ -119,6 +119,11 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		}
 		logger.Info(SubStruct)
 		Topic := strings.Split(msg, ".")
+		if len(Topic) <= 1 {
+			logger.Info(Topic)
+			logger.Info("空订阅，跳过")
+			continue
+		}
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
 		checkMsg := "rate:socket_request:" + RequestId + ":" + Topic[1]
 		if redis.CheckExist(checkMsg) {
@@ -136,7 +141,7 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 			goto END
 		}
 		// 开启协诚处理推送消息
-		go PushRate(mt, ws, msg)
+		go PushRate(mt, ws, Topic[1])
 	}
 END:
 	logger.Info("socket被关闭，本次链接结束")
@@ -186,18 +191,18 @@ END:
 
 // 推送Rate socket消息
 
-func PushRate(messageType int, ws *wss.WsConn, msg string) {
+func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 空消息跳过
-		if len(msg) <= 0 {
+		if len(assetsCode) <= 0 {
 			continue
 		}
 		var PushRate response.PushRateData
 		DB := mysql.DB.Debug()
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", "IQO").
-			Where("assets_code", msg).
+			Where("assets_code", assetsCode).
 			Where("is_valid", 1).
 			Where("is_show", 1).
 			Find(&PushRate).Error
