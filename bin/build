@@ -8,5 +8,8 @@ GOOS=linux GOARCH=amd64 go build -o build/huobiService service/huobi/socket.go
 # 1、打包实时赔率计算服务
 GOOS=linux GOARCH=amd64 go build -o build/liveoddsService service/liveodds/calculate.go
 
+# 1、打包实时赔率计算服务
+GOOS=linux GOARCH=amd64 go build -o build/sinaService service/sina/stock.go
+
 # 2、打包api接口
 GOOS=linux GOARCH=amd64 go build -o build/apiService main.go
