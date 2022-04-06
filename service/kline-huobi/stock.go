@@ -27,7 +27,7 @@ func init() {
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
-	logger.Init("huobiService")
+	logger.Init("kline-huobi")
 	// 初始化 SQL
 	bootstrap.SetupDB()
 }
@@ -93,8 +93,14 @@ func SocketHuoBi(parentTopic string) {
 				return
 			}
 			// 收集数据缓存到redis
-			// 历史 kline 入库
+			// 历史 kline 入库 Format("2006-01-02 15:04:05")
 			AddData := res.KlineLogData(Topic, data)
+			logger.Info(fmt.Sprintf(
+				"当前系统时间：%v,货币的ts时间：%v",
+				time.Now().UnixMilli(),
+				AddData.Ts))
+			shicha := time.Now().UnixMilli() - AddData.Ts
+			logger.Info(fmt.Sprintf("shicha=%v", shicha))
 			DB := mysql.DB.Debug()
 			result := DB.Model(models.KlineLog{}).Create(&AddData)
 			if result.Error != nil {
@@ -112,11 +118,11 @@ func SocketHuoBi(parentTopic string) {
 			//_, _ = redis.Lpush("kline_log", lPushJson)
 			//// 历史 kline 入队列
 
-			// 历史存入 elastic
-			putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
-			if !putRes {
-				logger.Error(errors.New("历史存入 elastic 失败"))
-			}
+			//// 历史存入 elastic
+			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
+			//if !putRes {
+			//	logger.Error(errors.New("历史存入 elastic 失败"))
+			//}
 			time.Sleep(time.Second)
 		} else {
 			logger.Error(errors.New(fmt.Sprintf(

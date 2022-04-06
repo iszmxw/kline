@@ -4,7 +4,6 @@ import (
 	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/pkg/helpers"
-	"strings"
 	"time"
 )
 
@@ -46,7 +45,7 @@ type WsIndex struct {
 // KlineLogData 组装数据
 func KlineLogData(Topic []string, data *response.SubIndexKLineResponse) models.KlineLog {
 	return models.KlineLog{
-		ContractCode: strings.Replace(Topic[1], "-", "/", -1),       // 合约代码 BTC-USD
+		ContractCode: Topic[1],                                      // 合约代码 BTC-USD
 		Ch:           data.Ch,                                       // k线类型请求kline的wss请求地址
 		Ts:           data.Ts,                                       // kilne返回日期时间戳
 		ID:           data.Tick.Id,                                  // 返回的id
