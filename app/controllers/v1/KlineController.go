@@ -311,7 +311,6 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		respArr []models.KlineLog // 数组重装
 		Count   = 3000            // 查询总条数
 	)
-	defer abnormal.Stack("历史行情Es查询", c)
 	symbol := c.Query("symbol")
 	period := c.Query("period")
 	beginDate := c.Query("beginDate")
