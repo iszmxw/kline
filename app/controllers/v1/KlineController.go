@@ -11,7 +11,6 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
-	"goapi/pkg/abnormal"
 	conf "goapi/pkg/config"
 	"goapi/pkg/email"
 	"goapi/pkg/esdk"
@@ -238,7 +237,6 @@ END:
 // HistoryHandler
 // 历史行情 mysql 查询
 func (h *KlineController) HistoryHandler(c *gin.Context) {
-	defer abnormal.Stack("历史行情", c)
 	//beginDate := time.Now().Format("2006-01-02 15:04:05")
 	symbol := c.Query("symbol")
 	period := c.Query("period")
@@ -280,13 +278,13 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	if len(data) <= 150 {
 		go func() {
 			Info := cmap.New().Items()
-			Info["title"] = conf.GetString("app.env") + "==K线图历史数据异常通知："
+			Info["title"] = conf.GetString("app.env") + "==K线图历史数据异常通知，当前查询历史数据小于150条："
 			Info["content"] = fmt.Sprintf(
 				"当前用户请求的url为：%v，请求 reqId 为%v",
 				c.Request.URL,
 				logger.RequestId,
 			)
-			err := email.SendEmail(Info, conf.GetString("notify.email"))
+			err = email.SendEmail(Info, conf.GetString("notify.email"))
 			if err != nil {
 				logger.Error(err)
 			}
