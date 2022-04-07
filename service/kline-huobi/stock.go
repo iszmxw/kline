@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"github.com/gostudys/huobi_contract_golang/src/ws/api"
 	"github.com/gostudys/huobi_contract_golang/src/ws/response"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	res "goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
+	conf "goapi/pkg/config"
+	"goapi/pkg/email"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -62,7 +65,7 @@ func main() {
 			start = "no"
 		}
 		// 消费消息队列，数据存入es里面
-		go MsgQueue()
+		//go MsgQueue()
 		time.Sleep(time.Second)
 	}
 }
@@ -95,12 +98,30 @@ func SocketHuoBi(parentTopic string) {
 			// 收集数据缓存到redis
 			// 历史 kline 入库 Format("2006-01-02 15:04:05")
 			AddData := res.KlineLogData(Topic, data)
-			logger.Info(fmt.Sprintf(
-				"当前系统时间：%v,货币的ts时间：%v",
+			tips := fmt.Sprintf(
+				"当前系统时间：%v(%v),火币的 ts 时间：%v(%v)",
 				time.Now().UnixMilli(),
-				AddData.Ts))
+				time.Now().Format("2006-01-02 15:04:05"),
+				AddData.Ts,
+				time.Unix(AddData.Ts/1000, 0).Format("2006-01-02 15:04:05"),
+			)
+			logger.Info(tips)
 			shicha := time.Now().UnixMilli() - AddData.Ts
 			logger.Info(fmt.Sprintf("shicha=%v", shicha))
+
+			// 时间差大于 10 秒发送邮件通知
+			if shicha/1000 >= 10 {
+				go func() {
+					Info := cmap.New().Items()
+					Info["title"] = fmt.Sprintf("火币服务通知：当前时间差为：%v大于 10 秒当前环境：%v", shicha, conf.GetString("app.env"))
+					Info["content"] = tips
+					err := email.SendEmail(Info, conf.GetString("notify.email"))
+					if err != nil {
+						logger.Error(err)
+					}
+				}()
+			}
+
 			DB := mysql.DB.Debug()
 			result := DB.Model(models.KlineLog{}).Create(&AddData)
 			if result.Error != nil {
@@ -123,7 +144,7 @@ func SocketHuoBi(parentTopic string) {
 			//if !putRes {
 			//	logger.Error(errors.New("历史存入 elastic 失败"))
 			//}
-			time.Sleep(time.Second)
+			//time.Sleep(time.Nanosecond)
 		} else {
 			logger.Error(errors.New(fmt.Sprintf(
 				"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",

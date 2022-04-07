@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/pkg/abnormal"
+	conf "goapi/pkg/config"
+	"goapi/pkg/email"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -272,6 +275,22 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		logger.Error(err)
 		output.Rjson(c, nil, "no data", 0)
 		return
+	}
+	// 侦测到数据小于 150 条的时候，发送邮件预警
+	if len(data) <= 150 {
+		go func() {
+			Info := cmap.New().Items()
+			Info["title"] = conf.GetString("app.env") + "==K线图历史数据异常通知："
+			Info["content"] = fmt.Sprintf(
+				"当前用户请求的url为：%v，请求 reqId 为%v",
+				c.Request.URL,
+				logger.RequestId,
+			)
+			err := email.SendEmail(Info, conf.GetString("notify.email"))
+			if err != nil {
+				logger.Error(err)
+			}
+		}()
 	}
 	output.Rjson(c, gin.H{
 		"HistKlineLogs": data,
