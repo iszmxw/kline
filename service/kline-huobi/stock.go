@@ -78,6 +78,9 @@ func SocketHuoBi(parentTopic string) {
 	// websocket api
 	wsmkClient := new(api.WSIndexClient).Init("", callback)
 	wsmkClient.SubIndexKLine(Topic[1], Topic[3], func(data *response.SubIndexKLineResponse) {
+		runStr := time.Now().UnixMilli() // 开始时间
+		// RequestId 定义为 Ts 时间戳
+		logger.RequestId = fmt.Sprintf("%v", data.Ts)
 		// 火币网推送的回来的数据转换为字符串
 		msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 		if MarshalJSONErr != nil {
@@ -151,6 +154,16 @@ func SocketHuoBi(parentTopic string) {
 				parentTopic, data)))
 			return
 		}
+		runEnd := time.Now().UnixMilli() // 开始时间
+		// 计算一次存储数据消耗的时间
+		logger.Info(fmt.Sprintf(
+			"开始时间：%v(%v),结束时间%v(%v),消耗%vms",
+			runStr,
+			time.Unix(runStr/1000, 0).Format("2006-01-02 15:04:05"),
+			runEnd,
+			time.Unix(runEnd/1000, 0).Format("2006-01-02 15:04:05"),
+			runEnd-runStr,
+		))
 
 	}, "")
 	select {
