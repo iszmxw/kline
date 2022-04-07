@@ -1,0 +1,29 @@
+#!/bin/sh
+# 查看 apiService-running
+apiService_user=$(ps -ef | grep "/apiService-running" | grep -v "grep" | awk '{print $1}')
+apiService_starttime=$(ps -ef | grep "/apiService-running" | grep -v "grep" | awk '{print $5}')
+apiService_pid=$(ps -ef | grep "/apiService-running" | grep -v "grep" | awk '{print $2}')
+apiService_bin=$(ps -ef | grep "/apiService-running" | grep -v "grep" | awk '{print $8}')
+if [ "$apiService_pid" ]; then
+  printf "用户：$apiService_user   启动时间：$apiService_starttime 进程ID：$apiService_pid  执行路径：$apiService_bin\n"
+fi
+
+# 查看 huobiService-running
+huobiService_user=$(ps -ef | grep "/huobiService-running" | grep -v "grep" | awk '{print $1}')
+huobiService_starttime=$(ps -ef | grep "/huobiService-running" | grep -v "grep" | awk '{print $5}')
+huobiService_pid=$(ps -ef | grep "/huobiService-running" | grep -v "grep" | awk '{print $2}')
+huobiService_bin=$(ps -ef | grep "/huobiService-running" | grep -v "grep" | awk '{print $8}')
+if [ "$huobiService_pid" ]; then
+  printf "用户：$huobiService_user   启动时间：$huobiService_starttime 进程ID：$huobiService_pid  执行路径：$huobiService_bin\n"
+fi
+
+# 查看 liveoddsService-running
+liveoddsService_user=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $1}')
+liveoddsService_starttime=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $5}')
+liveoddsService_pid=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
+liveoddsService_bin=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $8}')
+if [ "$liveoddsService_pid" ]; then
+  printf "用户：$liveoddsService_user   启动时间：$liveoddsService_starttime 进程ID：$liveoddsService_pid  执行路径：$liveoddsService_bin\n"
+fi
+
+printf "\n"

@@ -1,23 +1,40 @@
 #!/bin/sh
 
-# 重启 apiService
-apiService=$(ps -ef|grep "/apiService-running" | grep -v "grep" | awk hh'{print $2}')
-if [ "$apiService" ]
-then
+# 重启 apiService-running
+apiService=$(ps -ef | grep "/apiService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$apiService" ]; then
   kill -9 "$apiService"
   \cp -rf apiService apiService-running
-  nohup ./apiService-running > /dev/null 2>&1 & echo $!>logs/apiService-running.pid
+  nohup ./apiService-running >/dev/null 2>&1 &
+  echo $! >logs/apiService-running.pid
 else
   \cp -rf apiService apiService-running
-  nohup ./apiService-running > /dev/null 2>&1 & echo $!>logs/apiService-running.pid
+  nohup ./apiService-running >/dev/null 2>&1 &
+  echo $! >logs/apiService-running.pid
 fi
 
-## 重启 huobiService
-#huobiService=$(ps -ef|grep "/huobiService" | grep -v "grep" | awk '{print $2}')
-#if [ "$huobiService" ]
-#then
-#  kill -9 "$huobiService"
-#  nohup ./huobiService > /dev/null 2>&1 & echo $!>logs/huobiService.pid
-#else
-#  nohup ./huobiService > /dev/null 2>&1 & echo $!>logs/huobiService.pid
-#fi
+# 重启 huobiService-running
+huobiService=$(ps -ef | grep "/huobiService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$huobiService" ]; then
+  kill -9 "$huobiService"
+  \cp -rf huobiService huobiService-running
+  nohup ./huobiService-running >/dev/null 2>&1 &
+  echo $! >logs/huobiService-running.pid
+else
+  \cp -rf huobiService huobiService-running
+  nohup ./huobiService-running >/dev/null 2>&1 &
+  echo $! >logs/huobiService-running.pid
+fi
+
+# 重启 liveoddsService-running
+liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$liveoddsService" ]; then
+  kill -9 "$liveoddsService"
+  \cp -rf liveoddsService liveoddsService-running
+  nohup ./liveoddsService-running >/dev/null 2>&1 &
+  echo $! >logs/liveoddsService-running.pid
+else
+  \cp -rf liveoddsService liveoddsService-running
+  nohup ./liveoddsService-running >/dev/null 2>&1 &
+  echo $! >logs/liveoddsService-running.pid
+fi

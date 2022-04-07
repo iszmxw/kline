@@ -4,4 +4,5 @@ tmp
 *.log
 goapi
 apiService*
-huobiService
+huobiService*
+liveoddsService*

@@ -1,15 +1,19 @@
 #!/bin/sh
 
-# 重启 apiService
-apiService=$(ps -ef|grep "/apiService-running" | grep -v "grep" | awk '{print $2}')
-if [ "$apiService" ]
-then
+# 停止 apiService-running
+apiService=$(ps -ef | grep "/apiService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$apiService" ]; then
   kill -9 "$apiService"
 fi
 
-## 重启 huobiService
-#huobiService=$(ps -ef|grep "/huobiService" | grep -v "grep" | awk '{print $2}')
-#if [ "$huobiService" ]
-#then
-#  kill -9 "$huobiService"
-#fi
+# 停止 huobiService-running
+huobiService=$(ps -ef | grep "/huobiService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$huobiService" ]; then
+  kill -9 "$huobiService"
+fi
+
+# 停止 liveoddsService-running
+liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$liveoddsService" ]; then
+  kill -9 "$liveoddsService"
+fi
