@@ -16,6 +16,7 @@ import (
 
 func Stack(description string, c *gin.Context) {
 	if r := recover(); r != nil {
+		// todo 待测试验证
 		var brokenPipe bool                 // <--网络连接是否断开的判断条件
 		if ne, ok := r.(*net.OpError); ok { // <--这里对brokenPipe进行设置
 			if se, ok := ne.Err.(*os.SyscallError); ok {
@@ -24,6 +25,7 @@ func Stack(description string, c *gin.Context) {
 				}
 			}
 		}
+		// todo 待测试验证
 		// 收集错误堆栈信息 异常
 		errInfo := string(debug.Stack())
 		logger.Error(errors.New(fmt.Sprintf(": %v", description)))
@@ -42,7 +44,7 @@ func Stack(description string, c *gin.Context) {
 		if err != nil {
 			logger.Error(err)
 		}
-		// 日志代码忽略
+		// todo 待测试验证
 		if c != nil && brokenPipe { // <--如果连接已经中断，我们只需要简单的记录并中断处理
 			logger.Error(errors.New("网络连接中断"))
 			go func() {
@@ -58,5 +60,6 @@ func Stack(description string, c *gin.Context) {
 			}()
 			c.Abort()
 		}
+		// todo 待测试验证
 	}
 }
