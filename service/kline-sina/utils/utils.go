@@ -145,7 +145,7 @@ func ForeignExchange(str, Symbol string) map[string]interface{} {
 	resArr := strings.Split(result, ",")
 	//logger.Info(resArr)
 	//fmt.Println(resArr)
-	sinaTest(resArr, Symbol)
+	//sinaTest(resArr, Symbol)
 	// 对应数据
 	lineLog := cmap.New().Items()
 	lineLog["contract_code"] = strings.ToUpper(Symbol)                           // 合约代码 BTC-USD
@@ -163,6 +163,71 @@ func ForeignExchange(str, Symbol string) map[string]interface{} {
 	lineLog["ts_date"] = resArr[17] + " " + resArr[0]                            // Kline返回日期
 	lineLog["create_date"] = time.Now()                                          // 创建日期
 	lineLog["kline_source"] = "sina"                                             // K线来源新浪
+	return lineLog
+}
+
+// 金属数据组装
+
+func Metal(str, Symbol string) map[string]interface{} {
+	var statusVal string
+	//fmt.Println(str)
+	result := strings.Replace(str, fmt.Sprintf("var hq_str_hf_%v=\"", strings.ReplaceAll(Symbol, "-", "")), "", -1)
+	result = strings.Replace(result, "\";", "", -1)
+	//fmt.Println(result)
+	result = strings.Replace(result, "\n", "", -1)
+	//fmt.Println(result)
+	resArr := strings.Split(result, ",")
+	resArr = append([]string{"hf_" + Symbol}, resArr...)
+	logger.Info(resArr)
+	var _curPrice float64
+	if helpers.StrToFloat64(resArr[1]) > 0 {
+		_curPrice = helpers.StrToFloat64(resArr[1])
+	} else {
+		_curPrice = helpers.StrToFloat64(resArr[8])
+	}
+
+	MetalData := cmap.New().Items()
+	MetalData["price"] = _curPrice
+	if helpers.StrToFloat64(resArr[8]) > 0 {
+		statusVal = fmt.Sprintf("%v", (_curPrice-helpers.StrToFloat64(resArr[8]))/helpers.StrToFloat64(resArr[8])*100)
+	} else {
+		statusVal = "0"
+	}
+	MetalData["cls"] = GetStatus(helpers.StrToFloat64(statusVal), 0)
+	MetalData["time"] = resArr[13] + " " + resArr[7]
+	MetalData["open-price"] = resArr[9]
+	MetalData["max-price"] = resArr[5]
+	MetalData["min-price"] = resArr[6]
+	MetalData["close-price"] = resArr[6]
+	MetalData["yestoday-price"] = resArr[8]
+	MetalData["amount"] = resArr[10]
+	MetalData["volume"] = "--"
+	MetalData["buy"] = resArr[3]
+	MetalData["sell"] = resArr[4]
+	MetalData["buy-amount"] = helpers.StrToFloat64(resArr[11])
+	MetalData["sell-amount"] = helpers.StrToFloat64(resArr[12])
+	MetalData["amt"] = statusVal + "%"
+	MetalData["amt-value"] = _curPrice - helpers.StrToFloat64(resArr[8])
+	logger.Info(MetalData)
+
+	// 金属
+	// 对应数据
+	lineLog := cmap.New().Items()
+	lineLog["contract_code"] = Symbol                           // 合约代码 BTC-USD
+	lineLog["ch"] = fmt.Sprintf("market.%v.kline.1min", Symbol) // kilne返回日期时间戳
+	lineLog["ts"] = GetTs(resArr[13], resArr[7])                // kilne返回日期时间戳 毫秒
+	lineLog["id"] = GetTs(resArr[13], resArr[7]) / 1000         // kilne返回日期时间戳 秒
+	lineLog["mrid"] = 0.00                                      // ID
+	lineLog["c_open"] = resArr[9]                               // 起始峰值
+	lineLog["c_close"] = _curPrice                              // 结束峰值
+	lineLog["high"] = resArr[5]                                 // 最高峰值
+	lineLog["low"] = resArr[6]                                  // 最低峰值
+	lineLog["amount"] = 0                                       // 成交金额 TODO
+	lineLog["vol"] = 0                                          // 成交手 TODO
+	lineLog["c_count"] = 0                                      // 交易笔数 TODO
+	lineLog["ts_date"] = resArr[13] + " " + resArr[7]           // Kline返回日期
+	lineLog["create_date"] = time.Now()                         // 创建日期
+	lineLog["kline_source"] = "sina"                            // K线来源新浪
 	return lineLog
 }
 
@@ -205,25 +270,18 @@ func sinaTest(resArr []string, Symbol string) {
 	}
 }
 
-//
-//
-///**
-//  @description 比较数值
-//  @param {Number} amt 需要比较的数值
-//  @param {Number} base 比较的基数
-//*/
-//func get_status(amt, base float64)  {
-//	if base >0 {
-//
-//	}
-//	var base = parseFloat(base || 0);
-//	amt = parseFloat(amt);
-//	if (isNaN(amt) || amt == base) {
-//		return 0;
-//	} else if (amt > base) {
-//		return 1;
-//	} else {
-//		return 2;
-//	}
-//
-//}
+// GetStatus 比较数值
+// ['gray', 'red', 'green']
+func GetStatus(amt, base float64) string {
+	if amt == base {
+		return "gray" // 0
+	} else if amt > base {
+		return "red" // 1
+	} else {
+		return "green" // 2
+	}
+}
+
+func GetBuyAmount() {
+	//arr[11] === 0 ? "--" : tool.plus(tool.num_to_str(arr[11], 2)),
+}
