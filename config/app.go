@@ -14,6 +14,8 @@ func init() {
 
 		// 是否进入调试模式
 		"debug": config.Env("APP_DEBUG", false),
+		// 是否进入调试模式
+		"pprof": config.Env("APP_PPROF", false),
 
 		// 应用服务端口
 		"port": config.Env("APP_PORT", "8888"),

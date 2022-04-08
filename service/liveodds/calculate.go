@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/olivere/elastic"
@@ -62,6 +63,7 @@ func main() {
 }
 
 func searchKlineData(itemCode, assetsCode string) {
+	runStr := time.Now().UnixMilli() // 开始时间
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(assetsCode), "1min")
 	var (
 		resp     models.KlineLog   // es数据解析结构体
@@ -119,6 +121,19 @@ func searchKlineData(itemCode, assetsCode string) {
 		// 5.2、末位值小于初始值：初步认定为跌势，再次根据线条区间的涨跌次数进行计算，涨少跌多的话，认定为斜线下滑，否则为无规律线条
 		// 监控K线数据时间段的数据波动，实时调整赔率
 		explainData(itemCode, assetsCode, lineData, beginDate, endDate)
+		runEnd := time.Now().UnixMilli() // 开始时间
+		// 计算一次存储数据消耗的时间
+		logger.Info(fmt.Sprintf(
+			"开始时间：%v(%v),结束时间%v(%v),消耗%vms",
+			runStr,
+			time.Unix(runStr/1000, 0).Format("2006-01-02 15:04:05"),
+			runEnd,
+			time.Unix(runEnd/1000, 0).Format("2006-01-02 15:04:05"),
+			runEnd-runStr,
+		))
+	} else {
+		logger.Error(errors.New(fmt.Sprintf("当前数据量为：%v，少于600条，不进行计算", searchResult.TotalHits())))
+		return
 	}
 }
 

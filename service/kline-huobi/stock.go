@@ -18,6 +18,9 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
+	"net/http"
+	_ "net/http/pprof"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -36,6 +39,17 @@ func init() {
 }
 
 func main() {
+	// pprof 分析
+	if conf.GetBool("app.pprof") {
+		runtime.SetMutexProfileFraction(1) // 开启对锁调用的跟踪
+		runtime.SetBlockProfileRate(1)     // 开启对阻塞操作的跟踪
+		go func() {
+			// 启动一个 http server，注意 pprof 相关的 handler 已经自动注册过了
+			if err := http.ListenAndServe(":6060", nil); err != nil {
+				fmt.Println(err)
+			}
+		}()
+	}
 	bootstrap.SetupRedis("15")
 	defer bootstrap.RedisClose()
 	type topics struct {
@@ -142,11 +156,13 @@ func SocketHuoBi(parentTopic string) {
 			//_, _ = redis.Lpush("kline_log", lPushJson)
 			//// 历史 kline 入队列
 
-			//// 历史存入 elastic
-			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
-			//if !putRes {
-			//	logger.Error(errors.New("历史存入 elastic 失败"))
-			//}
+			// 历史存入 elastic
+			putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
+			if !putRes {
+				logger.Error(errors.New("历史存入 elastic 失败"))
+			} else {
+				logger.Info("elastic-success")
+			}
 			//time.Sleep(time.Nanosecond)
 		} else {
 			logger.Error(errors.New(fmt.Sprintf(
