@@ -12,6 +12,12 @@ if [ "$huobiService" ]; then
   kill -9 "$huobiService"
 fi
 
+# 停止 sinaService-running
+sinaService=$(ps -ef | grep "/sinaService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$sinaService" ]; then
+  kill -9 "$sinaService"
+fi
+
 # 停止 liveoddsService-running
 liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
 if [ "$liveoddsService" ]; then
