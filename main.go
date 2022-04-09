@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	var cstZone = time.FixedZone("CST", 8*3600) // 东八
+	var cstZone = time.FixedZone("CST", 7*3600) // 东七
 	time.Local = cstZone
 	// 初始化配置信息
 	config.Initialize()
