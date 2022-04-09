@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/olivere/elastic"
@@ -13,7 +12,6 @@ import (
 	"goapi/pkg/esdk"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -66,9 +64,8 @@ func searchKlineData(itemCode, assetsCode string) {
 	runStr := time.Now().UnixMilli() // 开始时间
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(assetsCode), "1min")
 	var (
-		resp     models.KlineLog   // es数据解析结构体
-		respArr  []models.KlineLog // 数组重装
-		lineData []float64         // 数组重装
+		//resp     models.KlineLog // es数据解析结构体
+		lineData []float64       // 数组重装
 	)
 	endDate := (time.Now().UnixNano() / 1e6) - (60 * *startTime * 1000) // 结束时间
 	beginDate := endDate - (60 * *period * 1000)                        // 结束时间
@@ -100,22 +97,22 @@ func searchKlineData(itemCode, assetsCode string) {
 		logger.Error(err)
 	}
 	logger.Info(fmt.Sprintf("查询消耗时间 %d ms, 结果总数: %d\n", searchResult.TookInMillis, searchResult.TotalHits()))
-	if searchResult.TotalHits() > 600 { // 有10分钟的数据才进行计算
-		*Count = int(searchResult.TotalHits())
-		// 查询结果不为空，则遍历结果
-		// 通过Each方法，将es结果的json结构转换成struct对象
-		for _, item := range searchResult.Each(reflect.TypeOf(resp)) {
-			// 转换成Article对象
-			if t, ok := item.(models.KlineLog); ok {
-				respArr = append(respArr, t)
-				lineData = append(lineData, t.CClose)
-			}
-		}
+	//if searchResult.TotalHits() > 600 { // 有10分钟的数据才进行计算
+	//	*Count = int(searchResult.TotalHits())
+	//	// 查询结果不为空，则遍历结果
+	//	// 通过Each方法，将es结果的json结构转换成struct对象
+	//	for _, item := range searchResult.Each(reflect.TypeOf(resp)) {
+	//		// 转换成Article对象
+	//		if t, ok := item.(models.KlineLog); ok {
+	//			lineData = append(lineData, t.CClose)
+	//		}
+	//	}
+		lineData = []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0}
 		// 算法步骤拆分
 		// 1、取出初始值，作为线条基数，取出最后值作为线条终点，
 		// 2、计算该段线条所有的点数
 		// 3、初始值与最后的值比较，判断这段时间是涨还是跌
-		// 4、从初始值开始，第 （n） 个值与（n+1）一个值进行对比，同时判断是否涨跌，记录中间的涨跌次数，连续涨跌的权重
+		// 4、从初始值开始，第 （n） 个值与（n+1）一个值进行对比，同时判断是否涨跌，记录中间的涨跌数据，算出涨跌波动值，以及涨跌波动平均值
 		// 5、根据涨跌的次数，初始值，末位值分析
 		// 5.1、末位值大于初始值：初步认定为涨势，再次根据线条区间的涨跌次数进行计算，涨多跌少的话，认定为斜线上涨，否则为无规律线条
 		// 5.2、末位值小于初始值：初步认定为跌势，再次根据线条区间的涨跌次数进行计算，涨少跌多的话，认定为斜线下滑，否则为无规律线条
@@ -131,14 +128,16 @@ func searchKlineData(itemCode, assetsCode string) {
 			time.Unix(runEnd/1000, 0).Format("2006-01-02 15:04:05"),
 			runEnd-runStr,
 		))
-	} else {
-		logger.Error(errors.New(fmt.Sprintf("当前数据量为：%v，少于600条，不进行计算", searchResult.TotalHits())))
-		return
-	}
+	//} else {
+	//	logger.Error(errors.New(fmt.Sprintf("当前数据量为：%v，少于600条，不进行计算", searchResult.TotalHits())))
+	//	return
+	//}
 }
 
 func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate int64) {
 	var (
+		upArray          []float64
+		downArray        []float64
 		riseCount                                                         = 0 // 涨次数
 		fallCount                                                         = 0 // 跌次数
 		flatCount                                                         = 0 // 平次数
@@ -160,9 +159,26 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 	logger.Info(fmt.Sprintf("所有数据点数：%v 个点", count))
 	logger.Info(fmt.Sprintf("初始值：%v", start))
 	logger.Info(fmt.Sprintf("最后值：%v", end))
-
 	// 1、从初始值开始，第 （n） 个值与（n+1）一个值进行对比，同时判断是否涨跌，记录中间的涨跌次数，连续涨跌的权重
 	for n := 0; n < (count - 1); n++ {
+		if n == 0 {
+			if line[n+1] > line[n] {
+				upArray = append(upArray, line[n+1])
+				downArray = append(downArray, line[n])
+			} else if line[n+1] < line[n] {
+				downArray = append(downArray, line[n+1])
+				upArray = append(upArray, line[n])
+			}
+		}else{
+			if line[n+1] > line[n] {
+				upArray = append(upArray, line[n+1])
+				downArray = append(downArray, line[n])
+			} else if line[n+1] < line[n] {
+				downArray = append(downArray, line[n+1])
+				upArray = append(upArray, line[n])
+			}
+		}
+
 		difference := line[n+1] - line[n]
 		if difference > 0 { // 涨次数累加
 			riseCount++
@@ -172,6 +188,8 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 			flatCount++
 		}
 	}
+	logger.Info(upArray)
+	logger.Info(downArray)
 	// 上涨率
 	riseRate = float64(riseCount) / float64(riseCount+fallCount)
 	// 下跌率
