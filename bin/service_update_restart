@@ -26,6 +26,19 @@ else
   echo $! >logs/huobiService-running.pid
 fi
 
+# 重启 sinaService-running
+sinaService=$(ps -ef | grep "/sinaService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$sinaService" ]; then
+  kill -9 "$sinaService"
+  \cp -rf sinaService sinaService-running
+  nohup ./sinaService-running >/dev/null 2>&1 &
+  echo $! >logs/sinaService-running.pid
+else
+  \cp -rf sinaService sinaService-running
+  nohup ./sinaService-running >/dev/null 2>&1 &
+  echo $! >logs/sinaService-running.pid
+fi
+
 # 重启 liveoddsService-running
 liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
 if [ "$liveoddsService" ]; then
