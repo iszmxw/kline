@@ -2,16 +2,22 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/olivere/elastic"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
+	conf "goapi/pkg/config"
+	"goapi/pkg/email"
 	"goapi/pkg/esdk"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/service/liveodds/utils"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -28,7 +34,7 @@ func init() {
 }
 
 var (
-	period                = flag.Int64("period", 20, "时期：默认计算 20 分钟的数据")
+	period                = flag.Int64("period", 5, "时期：默认计算 20 分钟的数据")
 	startTime             = flag.Int64("startTime", 0, "开始 默认从现在开始，否则，从过去 start 分钟开始")
 	Count                 = flag.Int("Count", 3000, "分析数据条数，默认最多分析三千条")
 	defaultReturnRate     = flag.Float64("defaultReturnRate", 0.70, "赔率默认值")
@@ -39,23 +45,24 @@ var (
 func main() {
 	flag.Parse()
 	for {
-		go func() {
-			var TradingAssetsList []response.TradingAssets
-			DB := mysql.DB.Debug()
-			err := DB.Model(models.TradingAssets{}).
-				Where("is_valid", 1).
-				Where("is_show", 1).
-				Find(&TradingAssetsList).Error
-			if err != nil {
-				logger.Error(err)
-				return
-			}
-			for _, item := range TradingAssetsList {
-				logger.Info(item)
+		var TradingAssetsList []response.TradingAssets
+		DB := mysql.DB.Debug()
+		err := DB.Model(models.TradingAssets{}).
+			Where("is_valid", 1).
+			Where("is_show", 1).
+			Find(&TradingAssetsList).Error
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		for i := 0; i < len(TradingAssetsList); i++ {
+			item := TradingAssetsList[i]
+			logger.Info(item)
+			go func(item *response.TradingAssets) {
 				// 搜索K线图数据
-				go searchKlineData(item.ItemCode, item.AssetsCode)
-			}
-		}()
+				searchKlineData(item.ItemCode, item.AssetsCode)
+			}(&item)
+		}
 		time.Sleep(time.Minute * *frequency) // 休息1分钟，每1分钟计算一次赔率
 		logger.Info(fmt.Sprintf("休息%v分钟，每%v分钟计算一次赔率", *frequency, *frequency))
 	}
@@ -63,14 +70,16 @@ func main() {
 }
 
 func searchKlineData(itemCode, assetsCode string) {
+	fmt.Println(itemCode, assetsCode)
 	runStr := time.Now().UnixMilli() // 开始时间
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(assetsCode), "1min")
 	var (
-		//resp     models.KlineLog // es数据解析结构体
+		resp     models.KlineLog // es数据解析结构体
 		lineData []float64       // 数组重装
 	)
-	endDate := (time.Now().UnixNano() / 1e6) - (60 * *startTime * 1000) // 结束时间
-	beginDate := endDate - (60 * *period * 1000)                        // 结束时间
+	endDate := time.Now().UnixMilli() - (60 * *startTime * 1000) // 结束时间
+	beginDate := endDate - (60 * *period * 1000)                 // 结束时间
+	logger.RequestId = fmt.Sprintf("%v", beginDate)
 	logger.Info(fmt.Sprintf("开始时间：%v---%v，结束时间：%v---%v",
 		beginDate,
 		time.Unix(0, beginDate*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
@@ -99,27 +108,23 @@ func searchKlineData(itemCode, assetsCode string) {
 		logger.Error(err)
 	}
 	logger.Info(fmt.Sprintf("查询消耗时间 %d ms, 结果总数: %d\n", searchResult.TookInMillis, searchResult.TotalHits()))
-	//if searchResult.TotalHits() > 600 { // 有10分钟的数据才进行计算
-	//	*Count = int(searchResult.TotalHits())
-	//	// 查询结果不为空，则遍历结果
-	//	// 通过Each方法，将es结果的json结构转换成struct对象
-	//	for _, item := range searchResult.Each(reflect.TypeOf(resp)) {
-	//		// 转换成Article对象
-	//		if t, ok := item.(models.KlineLog); ok {
-	//			lineData = append(lineData, t.CClose)
-	//		}
-	//	}
-		lineData = []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0}
-		// 算法步骤拆分
-		// 1、取出初始值，作为线条基数，取出最后值作为线条终点，
-		// 2、计算该段线条所有的点数
-		// 3、初始值与最后的值比较，判断这段时间是涨还是跌
-		// 4、从初始值开始，第 （n） 个值与（n+1）一个值进行对比，同时判断是否涨跌，记录中间的涨跌数据，算出涨跌波动值，以及涨跌波动平均值
-		// 5、根据涨跌的次数，初始值，末位值分析
-		// 5.1、末位值大于初始值：初步认定为涨势，再次根据线条区间的涨跌次数进行计算，涨多跌少的话，认定为斜线上涨，否则为无规律线条
-		// 5.2、末位值小于初始值：初步认定为跌势，再次根据线条区间的涨跌次数进行计算，涨少跌多的话，认定为斜线下滑，否则为无规律线条
+	if searchResult.TotalHits() > 100 { // 有100条数据才进行计算
+		*Count = int(searchResult.TotalHits())
+		// 查询结果不为空，则遍历结果
+		// 通过Each方法，将es结果的json结构转换成struct对象
+		for _, item := range searchResult.Each(reflect.TypeOf(resp)) {
+			// 转换成Article对象
+			if t, ok := item.(models.KlineLog); ok {
+				lineData = append(lineData, t.CClose)
+			}
+		}
+		var LogData utils.LogData
+		LogData.ItemCode = itemCode
+		LogData.AssetsCode = assetsCode
+		LogData.BeginDate = beginDate
+		LogData.EndDate = endDate
 		// 监控K线数据时间段的数据波动，实时调整赔率
-		explainData(itemCode, assetsCode, lineData, beginDate, endDate)
+		explainData(lineData, LogData)
 		runEnd := time.Now().UnixMilli() // 开始时间
 		// 计算一次存储数据消耗的时间
 		logger.Info(fmt.Sprintf(
@@ -130,100 +135,89 @@ func searchKlineData(itemCode, assetsCode string) {
 			time.Unix(runEnd/1000, 0).Format("2006-01-02 15:04:05"),
 			runEnd-runStr,
 		))
-	//} else {
-	//	logger.Error(errors.New(fmt.Sprintf("当前数据量为：%v，少于600条，不进行计算", searchResult.TotalHits())))
-	//	return
-	//}
+	} else {
+		logger.Error(errors.New(fmt.Sprintf("当前数据量为：%v，少于600条，不进行计算", searchResult.TotalHits())))
+		return
+	}
 }
 
-func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate int64) {
+func explainData(line []float64, LogData utils.LogData) {
+	var desc = map[int]interface{}{0: "平滑", 1: "不好预测波动大", 2: "好预测波动小"} // 描述字段
+	// 所有点数
+	LogData.Count = len(line)
+	// 初始值
+	LogData.InitialValue = line[0]
+	// 最后值
+	LogData.EndValue = line[LogData.Count-1]
+	// 1、从初始值开始，第 （n） 个值与（n+1）一个值进行对比，同时判断是否涨跌，记录中间的涨跌次数，连续涨跌的权重
+	for n := 1; n < LogData.Count; n++ {
+		difference := line[n] - line[n-1]
+		if difference > 0 { // 涨次数累加
+			LogData.UpCount++
+		} else if difference < 0 { // 跌次数累加
+			LogData.DownCount++
+		} else {
+			LogData.FlatCount++
+		}
+	}
+	// 上涨次数占比
+	LogData.UpRate = float64(LogData.UpCount) / float64(LogData.UpCount+LogData.DownCount)
+	// 下跌次数占比
+	LogData.DownRate = float64(LogData.DownCount) / float64(LogData.UpCount+LogData.DownCount)
+	// 平滑次数占比
+	LogData.FlatRate = float64(LogData.FlatCount) / float64(LogData.Count)
+	// 本地上涨次数，或者下跌次数，大于65%，认定为斜线上涨，或者斜线下跌
+	if LogData.UpRate >= 0.65 || LogData.DownRate >= 0.65 {
+		LogData.Result = 2 // 定义为波动小，这样的斜线认为是可预测的波动
+		// todo 进行邮件通知
+		logger.Info(fmt.Sprint("本次为斜线上涨或者斜线下跌，斜线上涨的比例为=", LogData.UpRate, "斜线下跌的比例为=", LogData.DownRate))
+		go func() {
+			Info := cmap.New().Items()
+			Info["title"] = fmt.Sprintf("环境【%v】本次为斜线上涨或者斜线下跌，斜线上涨的比例为=%v，斜线下跌的比例为=%v", conf.GetString("app.env"), LogData.UpRate, LogData.DownRate)
+			Info["content"] = fmt.Sprintf("logger.RequestId : %v，assetsCode：%v,LogData：%v", logger.RequestId, LogData.AssetsCode, LogData)
+			err := email.SendEmail(Info, conf.GetString("notify.email"))
+			if err != nil {
+				logger.Error(err)
+			}
+		}()
+	} else {
+		LogData.Result = 1 // 定义为波动大，这样的斜线认为是不可预测的波动
+	}
+	// 计算平方差，方差越大波动越大
+	// GetVarianceData 计算方差数据，返回平均值和方差值
+	avg, sqrt := utils.GetVarianceData(line)
+	LogData.Avg = avg
+	LogData.Sqrt = sqrt
+	logger.Info(LogData.AssetsCode + "---->" + fmt.Sprint(LogData.Avg, LogData.Sqrt))
+	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->所有数据点数：%v 个点", LogData.Count))
+	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->初始值：%v", LogData.InitialValue))
+	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->最后值：%v", LogData.EndValue))
+	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->该时间段数据上涨次数：%v，上涨率：%v", LogData.UpCount, LogData.UpRate))
+	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->该时间段数据下跌次数：%v，下跌率：%v", LogData.DownCount, LogData.DownRate))
+	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->该时间段数据连平次数：%v，平滑率：%v", LogData.FlatCount, LogData.FlatRate))
+	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->该时间段数据的方差：%v，平均价格：%v，方差越大，波动越大", LogData.Sqrt, LogData.Avg))
+	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->该时间段数据最终判定结果：%v", desc[LogData.Result]))
+	logger.Info("ok")
+	// 历史赔率处理
+	Log(LogData)
+}
+
+// Log 历史赔率处理
+func Log(logData utils.LogData) {
 	var (
-		upArray          []float64
-		downArray        []float64
-		riseCount                                                         = 0 // 涨次数
-		fallCount                                                         = 0 // 跌次数
-		flatCount                                                         = 0 // 平次数
-		riseRate         float64                                          = 0 // 上涨率
-		fallRate         float64                                          = 0 // 下跌率
-		flatRate         float64                                          = 0 // 平滑率
-		returnRate       float64                                              // 赔率
-		result           = 0                                                  // 最终涨跌结果 0 不涨不跌，1-涨 2-跌
-		desc             = map[int]interface{}{0: "平滑", 1: "上涨", 2: "下跌"}     // 描述字段
 		TradingAssets    response.TradingAssets
 		TradingAssetsLog models.TradingAssetsLog
+		returnRate       float64 // 赔率
 	)
-	// 所有点数
-	count := len(line)
-	// 初始值
-	start := line[0]
-	// 最后值
-	end := line[count-1]
-	logger.Info(fmt.Sprintf("所有数据点数：%v 个点", count))
-	logger.Info(fmt.Sprintf("初始值：%v", start))
-	logger.Info(fmt.Sprintf("最后值：%v", end))
-	// 1、从初始值开始，第 （n） 个值与（n+1）一个值进行对比，同时判断是否涨跌，记录中间的涨跌次数，连续涨跌的权重
-	for n := 0; n < (count - 1); n++ {
-		if n == 0 {
-			if line[n+1] > line[n] {
-				upArray = append(upArray, line[n+1])
-				downArray = append(downArray, line[n])
-			} else if line[n+1] < line[n] {
-				downArray = append(downArray, line[n+1])
-				upArray = append(upArray, line[n])
-			}
-		}else{
-			if line[n+1] > line[n] {
-				upArray = append(upArray, line[n+1])
-				downArray = append(downArray, line[n])
-			} else if line[n+1] < line[n] {
-				downArray = append(downArray, line[n+1])
-				upArray = append(upArray, line[n])
-			}
-		}
-
-		difference := line[n+1] - line[n]
-		if difference > 0 { // 涨次数累加
-			riseCount++
-		} else if difference < 0 { // 跌次数累加
-			fallCount++
-		} else {
-			flatCount++
-		}
-	}
-	logger.Info(upArray)
-	logger.Info(downArray)
-	// 上涨率
-	riseRate = float64(riseCount) / float64(riseCount+fallCount)
-	// 下跌率
-	fallRate = float64(fallCount) / float64(riseCount+fallCount)
-	// 平滑率
-	flatRate = float64(flatCount) / float64(count)
-
-	// 2、初始值与最后的值比较，判断这段时间是涨还是跌
-	if end > start { // 初步认定为涨势
-		if (riseCount-fallCount) > 0 && ((riseRate - fallRate) > 0.05) { // 涨多跌少的话，认定为斜线上涨，否则为无规律线条
-			result = 1
-		} else {
-			result = 0
-		}
-	} else if end < start { // 初步认定为跌势
-		if (riseCount-fallCount) < 0 && ((fallRate - riseRate) > 0.05) { // 涨少跌多的话，认定为斜线下滑，否则为无规律线条
-			result = 2
-		} else {
-			result = 0
-		}
-	} else {
-		result = 0 // 平滑
-	}
-	if result > 0 {
+	if logData.Result == 1 { // 波动大，重新设置赔率
 		returnRate = *fluctuationReturnRate // 波动赔率
-	} else {
+	} else { // 波动小，走默认赔率
 		returnRate = *defaultReturnRate // 赔率默认值
 	}
 	DB := mysql.DB.Debug()
 	err := DB.Model(models.TradingAssets{}).
-		Where("item_code", itemCode).
-		Where("assets_code", assetsCode).
+		Where("item_code", logData.ItemCode).
+		Where("assets_code", logData.AssetsCode).
 		Where("is_valid", 1).
 		Where("is_show", 1).
 		Find(&TradingAssets).Error
@@ -231,12 +225,7 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 		logger.Error(err)
 		return
 	}
-	logger.Info(fmt.Sprintf("该时间段数据上涨次数：%v，上涨率：%v", riseCount, riseRate))
-	logger.Info(fmt.Sprintf("该时间段数据下跌次数：%v，下跌率：%v", fallCount, fallRate))
-	logger.Info(fmt.Sprintf("该时间段数据连平次数：%v，平滑率：%v", flatCount, flatRate))
-	logger.Info(fmt.Sprintf("该时间段数据最终判定结果：%v", desc[result]))
 	logger.Info(fmt.Sprintf("系统历史赔率：%v，该时间段的最终赔率：%v", TradingAssets.ReturnRate, returnRate))
-	logger.Info(fmt.Sprintf("该时间段数据最终判定结果：%v", time.Now().UnixNano()/1e6))
 	// 当前资产赔率和此次预测一样，无需修改
 	if TradingAssets.ReturnRate == returnRate {
 		logger.Info("当前资产赔率和此次预测一样，无需修改")
@@ -244,8 +233,8 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 	}
 	DB.Begin()
 	err = DB.Model(models.TradingAssets{}).
-		Where("item_code", itemCode).
-		Where("assets_code", assetsCode).
+		Where("item_code", logData.ItemCode).
+		Where("assets_code", logData.AssetsCode).
 		Where("is_valid", 1).
 		Where("is_show", 1).
 		Updates(map[string]interface{}{"update_date": time.Now(), "updater": "kline-system", "return_rate": returnRate}).Error
@@ -257,18 +246,19 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 	TradingAssetsLog.ItemCode = TradingAssets.ItemCode            // 应用编码
 	TradingAssetsLog.AssetsName = TradingAssets.AssetsName        // 资产名称
 	TradingAssetsLog.AssetsCode = TradingAssets.AssetsCode        // 资产编码
-	TradingAssetsLog.LineTimeStart = beginDate                    // k线开始时间
-	TradingAssetsLog.LineTimeEnd = endDate                        // k线结束时间
-	TradingAssetsLog.DotCount = count                             // 该段时间线的点数
-	TradingAssetsLog.InitialValue = start                         // 初始值
-	TradingAssetsLog.EndValue = end                               // 结束值
-	TradingAssetsLog.RiseCount = riseCount                        // 上涨次数
-	TradingAssetsLog.FallCount = fallCount                        // 下跌次数
-	TradingAssetsLog.FlatCount = flatCount                        // 平滑次数（前后两点相等次数）
-	TradingAssetsLog.RiseRate = riseRate                          // 上涨率
-	TradingAssetsLog.FallRate = fallRate                          // 下跌率
-	TradingAssetsLog.FlatRate = flatRate                          // 平滑率
-	TradingAssetsLog.Result = int8(result)                        // {0: "平滑", 1: "上涨", 2: "下跌"}
+	TradingAssetsLog.LineTimeStart = logData.BeginDate            // k线开始时间
+	TradingAssetsLog.LineTimeEnd = logData.EndDate                // k线结束时间
+	TradingAssetsLog.DotCount = logData.Count                     // 该段时间线的点数
+	TradingAssetsLog.InitialValue = logData.InitialValue          // 初始值
+	TradingAssetsLog.EndValue = logData.EndValue                  // 结束值
+	TradingAssetsLog.WaveRate = logData.WaveRate                  // 波动率
+	TradingAssetsLog.UpCount = logData.UpCount                    // 上涨次数
+	TradingAssetsLog.DownCount = logData.DownCount                // 下跌次数
+	TradingAssetsLog.FlatCount = logData.FlatCount                // 平滑次数（前后两点相等次数）
+	TradingAssetsLog.UpRate = logData.UpRate                      // 上涨率
+	TradingAssetsLog.DownRate = logData.DownRate                  // 下跌率
+	TradingAssetsLog.FlatRate = logData.FlatRate                  // 平滑率
+	TradingAssetsLog.Result = int8(logData.Result)                // {0: "平滑", 1: "上涨", 2: "下跌"}
 	TradingAssetsLog.CreateDate = time.Now()                      // 创建日期
 	TradingAssetsLog.UpdateDate = time.Now()                      // 更新日期
 	TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate // 历史收益率
@@ -280,5 +270,9 @@ func explainData(itemCode, assetsCode string, line []float64, beginDate, endDate
 		return
 	}
 	DB.Commit()
-	logger.Info("ok")
+	// 当前资产赔率和此次预测一样，无需修改
+	if TradingAssets.ReturnRate == returnRate {
+		logger.Info("当前资产赔率和此次预测一样，无需修改")
+		return
+	}
 }
