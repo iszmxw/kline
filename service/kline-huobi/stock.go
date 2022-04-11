@@ -130,7 +130,7 @@ func SocketHuoBi(parentTopic string) {
 			if shicha/1000 >= 10 {
 				go func() {
 					Info := cmap.New().Items()
-					Info["title"] = fmt.Sprintf("火币服务通知：当前时间差为：%v大于 10 秒当前环境：%v", shicha, conf.GetString("app.env"))
+					Info["title"] = fmt.Sprintf("环境【%v】火币服务通知：当前时间差为：%v大于 10秒", conf.GetString("app.env"), shicha)
 					Info["content"] = tips
 					err := email.SendEmail(Info, conf.GetString("notify.email"))
 					if err != nil {
