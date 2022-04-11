@@ -229,7 +229,6 @@ func Log(logData utils.LogData) {
 	// 当前资产赔率和此次预测一样，无需修改
 	if TradingAssets.ReturnRate == returnRate {
 		logger.Info("当前资产赔率和此次预测一样，无需修改")
-		return
 	} else {
 		DB.Begin()
 		err = DB.Model(models.TradingAssets{}).
@@ -273,9 +272,4 @@ func Log(logData utils.LogData) {
 	}
 	DB.Commit()
 	logger.Info("到此结束")
-	//// 当前资产赔率和此次预测一样，无需修改
-	//if TradingAssets.ReturnRate == returnRate {
-	//	logger.Info("当前资产赔率和此次预测一样，无需修改")
-	//	return
-	//}
 }
