@@ -25,7 +25,6 @@ func Stack(description string, c *gin.Context) {
 			}
 		}
 
-		// todo 待测试验证
 		if c != nil && brokenPipe { // <--如果连接已经中断，我们只需要简单的记录并中断处理
 			logger.Error(errors.New("网络连接中断"))
 			go func() {
@@ -48,7 +47,6 @@ func Stack(description string, c *gin.Context) {
 			}()
 			c.Abort()
 		}
-		// todo 待测试验证
 
 		// 收集错误堆栈信息 异常
 		errInfo := string(debug.Stack())

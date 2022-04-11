@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"goapi/app/models"
 	"goapi/bootstrap"
 	"goapi/config"
+	"goapi/pkg/esdk"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/service/kline-sina/utils"
@@ -79,5 +82,13 @@ func collection(queryData Info) {
 	cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLog).Error
 	if cerr1 != nil {
 		logger.Error(cerr1)
+		return
+	}
+	// 历史存入 elastic
+	putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
+	if !putRes {
+		logger.Error(errors.New("历史存入 elastic 失败"))
+	} else {
+		logger.Info("elastic-success")
 	}
 }
