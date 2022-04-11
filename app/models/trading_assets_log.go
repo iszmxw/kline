@@ -14,14 +14,15 @@ type TradingAssetsLog struct {
 	DotCount          int       `json:"dot_count"`                        //该段时间线的点数
 	InitialValue      float64   `json:"initial_value"`                    //初始值
 	EndValue          float64   `json:"end_value"`                        //结束值
-	WaveRate          float64   `json:"wave_rate"`                        //波动率
+	Avg               float64   `json:"avg"`                              //平均值
 	UpCount           int       `json:"up_count"`                         //上涨次数
 	DownCount         int       `json:"down_count"`                       //下跌次数
 	FlatCount         int       `json:"flat_count"`                       //平滑次数（前后两点相等次数）
+	WaveRate          float64   `json:"wave_rate"`                        //波动率
 	UpRate            float64   `json:"up_rate"`                          //上涨率
 	DownRate          float64   `json:"down_rate"`                        //下跌率
 	FlatRate          float64   `json:"flat_rate"`                        //平滑率
-	Result            int8      `json:"result"`                           //{0: "平滑", 1: "上涨", 2: "下跌"}
+	Result            int8      `json:"result"`                           //最终波动结果 1-大 2-小
 	CreateDate        time.Time `json:"create_date"`                      //创建日期
 	UpdateDate        time.Time `json:"update_date"`                      //更新日期
 	ReturnRateHistory float64   `json:"return_rate_history"`              //历史收益率

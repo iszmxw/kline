@@ -34,12 +34,12 @@ func init() {
 }
 
 var (
-	period                = flag.Int64("period", 5, "时期：默认计算 20 分钟的数据")
-	startTime             = flag.Int64("startTime", 0, "开始 默认从现在开始，否则，从过去 start 分钟开始")
-	Count                 = flag.Int("Count", 3000, "分析数据条数，默认最多分析三千条")
-	defaultReturnRate     = flag.Float64("defaultReturnRate", 0.70, "赔率默认值")
-	fluctuationReturnRate = flag.Float64("fluctuationReturnRate", 0.15, "波动赔率")
-	frequency             = flag.Duration("frequency", 1, "让CUP休息几分钟分钟，默认每1分钟计算一次赔率")
+	period        = flag.Int64("period", 5, "时期：默认计算 20 分钟的数据")
+	startTime     = flag.Int64("startTime", 0, "开始 默认从现在开始，否则，从过去 start 分钟开始")
+	Count         = flag.Int("Count", 3000, "分析数据条数，默认最多分析三千条")
+	minReturnRate = flag.Float64("minReturnRate", 0.15, "波动小，赔率小")
+	maxReturnRate = flag.Float64("maxReturnRate", 0.70, "波动大，不好预测，赔率给高")
+	frequency     = flag.Duration("frequency", 1, "让CUP休息几分钟分钟，默认每1分钟计算一次赔率")
 )
 
 func main() {
@@ -77,19 +77,19 @@ func searchKlineData(itemCode, assetsCode string) {
 		resp     models.KlineLog // es数据解析结构体
 		lineData []float64       // 数组重装
 	)
-	endDate := time.Now().UnixMilli() - (60 * *startTime * 1000) // 结束时间
-	beginDate := endDate - (60 * *period * 1000)                 // 结束时间
-	logger.RequestId = fmt.Sprintf("%v", beginDate)
+	LineTimeEnd := time.Now().UnixMilli() - (60 * *startTime * 1000) // 结束时间
+	LineTimeStart := LineTimeEnd - (60 * *period * 1000)             // 结束时间
+	logger.RequestId = fmt.Sprintf("%v", LineTimeStart)
 	logger.Info(fmt.Sprintf("开始时间：%v---%v，结束时间：%v---%v",
-		beginDate,
-		time.Unix(0, beginDate*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
-		endDate,
-		time.Unix(0, endDate*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
+		LineTimeStart,
+		time.Unix(0, LineTimeStart*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
+		LineTimeEnd,
+		time.Unix(0, LineTimeEnd*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
 	))
 	// 组合查询条件
 	boolQuery := elastic.NewBoolQuery()
 	boolQuery.Filter(
-		elastic.NewRangeQuery("ts").Gte(beginDate).Lte(endDate),
+		elastic.NewRangeQuery("ts").Gte(LineTimeStart).Lte(LineTimeEnd),
 		elastic.NewQueryStringQuery(fmt.Sprintf("*%s*", ch)))
 	esClient, err := esdk.Client()
 	if err != nil {
@@ -121,8 +121,8 @@ func searchKlineData(itemCode, assetsCode string) {
 		var LogData utils.LogData
 		LogData.ItemCode = itemCode
 		LogData.AssetsCode = assetsCode
-		LogData.BeginDate = beginDate
-		LogData.EndDate = endDate
+		LogData.LineTimeStart = LineTimeStart
+		LogData.LineTimeEnd = LineTimeEnd
 		// 监控K线数据时间段的数据波动，实时调整赔率
 		explainData(lineData, LogData)
 		runEnd := time.Now().UnixMilli() // 开始时间
@@ -210,9 +210,9 @@ func Log(logData utils.LogData) {
 		returnRate       float64 // 赔率
 	)
 	if logData.Result == 1 { // 波动大，重新设置赔率
-		returnRate = *fluctuationReturnRate // 波动赔率
-	} else { // 波动小，走默认赔率
-		returnRate = *defaultReturnRate // 赔率默认值
+		returnRate = *maxReturnRate // 赔率大
+	} else { // 波动小，赔率小
+		returnRate = *minReturnRate // 赔率小
 	}
 	DB := mysql.DB.Debug()
 	err := DB.Model(models.TradingAssets{}).
@@ -230,35 +230,37 @@ func Log(logData utils.LogData) {
 	if TradingAssets.ReturnRate == returnRate {
 		logger.Info("当前资产赔率和此次预测一样，无需修改")
 		return
-	}
-	DB.Begin()
-	err = DB.Model(models.TradingAssets{}).
-		Where("item_code", logData.ItemCode).
-		Where("assets_code", logData.AssetsCode).
-		Where("is_valid", 1).
-		Where("is_show", 1).
-		Updates(map[string]interface{}{"update_date": time.Now(), "updater": "kline-system", "return_rate": returnRate}).Error
-	if err != nil {
-		DB.Rollback()
-		logger.Error(err)
-		return
+	} else {
+		DB.Begin()
+		err = DB.Model(models.TradingAssets{}).
+			Where("item_code", logData.ItemCode).
+			Where("assets_code", logData.AssetsCode).
+			Where("is_valid", 1).
+			Where("is_show", 1).
+			Updates(map[string]interface{}{"update_date": time.Now(), "updater": "kline-system", "return_rate": returnRate}).Error
+		if err != nil {
+			DB.Rollback()
+			logger.Error(err)
+			return
+		}
 	}
 	TradingAssetsLog.ItemCode = TradingAssets.ItemCode            // 应用编码
 	TradingAssetsLog.AssetsName = TradingAssets.AssetsName        // 资产名称
 	TradingAssetsLog.AssetsCode = TradingAssets.AssetsCode        // 资产编码
-	TradingAssetsLog.LineTimeStart = logData.BeginDate            // k线开始时间
-	TradingAssetsLog.LineTimeEnd = logData.EndDate                // k线结束时间
+	TradingAssetsLog.LineTimeStart = logData.LineTimeStart        // k线开始时间
+	TradingAssetsLog.LineTimeEnd = logData.LineTimeEnd            // k线结束时间
 	TradingAssetsLog.DotCount = logData.Count                     // 该段时间线的点数
 	TradingAssetsLog.InitialValue = logData.InitialValue          // 初始值
 	TradingAssetsLog.EndValue = logData.EndValue                  // 结束值
-	TradingAssetsLog.WaveRate = logData.WaveRate                  // 波动率
+	TradingAssetsLog.Avg = logData.Avg                            // 结束值
 	TradingAssetsLog.UpCount = logData.UpCount                    // 上涨次数
 	TradingAssetsLog.DownCount = logData.DownCount                // 下跌次数
 	TradingAssetsLog.FlatCount = logData.FlatCount                // 平滑次数（前后两点相等次数）
+	TradingAssetsLog.WaveRate = logData.Sqrt                      // 波动率
 	TradingAssetsLog.UpRate = logData.UpRate                      // 上涨率
 	TradingAssetsLog.DownRate = logData.DownRate                  // 下跌率
 	TradingAssetsLog.FlatRate = logData.FlatRate                  // 平滑率
-	TradingAssetsLog.Result = int8(logData.Result)                // {0: "平滑", 1: "上涨", 2: "下跌"}
+	TradingAssetsLog.Result = int8(logData.Result)                // 最终波动结果 1-大 2-小
 	TradingAssetsLog.CreateDate = time.Now()                      // 创建日期
 	TradingAssetsLog.UpdateDate = time.Now()                      // 更新日期
 	TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate // 历史收益率
@@ -270,9 +272,10 @@ func Log(logData utils.LogData) {
 		return
 	}
 	DB.Commit()
-	// 当前资产赔率和此次预测一样，无需修改
-	if TradingAssets.ReturnRate == returnRate {
-		logger.Info("当前资产赔率和此次预测一样，无需修改")
-		return
-	}
+	logger.Info("到此结束")
+	//// 当前资产赔率和此次预测一样，无需修改
+	//if TradingAssets.ReturnRate == returnRate {
+	//	logger.Info("当前资产赔率和此次预测一样，无需修改")
+	//	return
+	//}
 }

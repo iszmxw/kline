@@ -119,15 +119,8 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 			logger.Info("空订阅，跳过")
 			continue
 		}
-		logger.Info(SubStruct)
-		Topic := strings.Split(msg, ".")
-		if len(Topic) <= 1 {
-			logger.Info(Topic)
-			logger.Info("空订阅，跳过")
-			continue
-		}
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
-		checkMsg := "rate:socket_request:" + RequestId + ":" + Topic[1]
+		checkMsg := "rate:socket_request:" + RequestId
 		if redis.CheckExist(checkMsg) {
 			logger.Info("该订阅已存在，请勿重新订阅")
 			continue
@@ -143,7 +136,7 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 			goto END
 		}
 		// 开启协诚处理推送消息
-		go PushRate(mt, ws, Topic[1])
+		go PushRate(mt, ws, msg)
 	}
 END:
 	logger.Info("socket被关闭，本次链接结束")
@@ -200,20 +193,19 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 		if len(assetsCode) <= 0 {
 			continue
 		}
-		var PushRate response.PushRateData
+		var PushRateData []response.PushRateData
 		DB := mysql.DB.Debug()
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", "IQO").
-			Where("assets_code", assetsCode).
 			Where("is_valid", 1).
 			Where("is_show", 1).
-			Find(&PushRate).Error
+			Find(&PushRateData).Error
 		if err != nil {
 			logger.Error(err)
 			return
 		}
-		logger.Info(PushRate)
-		WsPushRateJson, WsPushRateErr := json.Marshal(PushRate)
+		logger.Info(PushRateData)
+		WsPushRateJson, WsPushRateErr := json.Marshal(PushRateData)
 		if WsPushRateErr != nil {
 			logger.Error(WsPushRateErr)
 			break
@@ -226,7 +218,7 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			// 跳出for关闭后面的推送
 			goto END
 		}
-		// 1秒推送一次消息
+		// 5秒推送一次消息
 		time.Sleep(time.Second * 5)
 		// 返回数据给用户
 	}
