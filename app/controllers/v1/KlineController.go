@@ -242,6 +242,11 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		output.Rjson(c, nil, "endDate 截止交易日期必填", 0)
 		return
 	}
+	logger.Info(fmt.Sprintf(
+		"查询范围从%v，到%v",
+		time.Unix(0, helpers.StringToInt64(beginDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
+		time.Unix(0, helpers.StringToInt64(endDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
+	))
 	if len(symbol) <= 0 || len(period) <= 0 {
 		symbol = "BTC-USD"
 		period = "1min"
