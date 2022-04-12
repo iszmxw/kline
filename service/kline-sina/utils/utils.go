@@ -86,8 +86,6 @@ func GetTs(a, b string) int64 {
 	if err != nil {
 		return 0
 	}
-	//logger.Info(a + b)
-	//logger.Info(tt.UnixMilli())
 	return tt.UnixMilli()
 }
 

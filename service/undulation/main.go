@@ -27,6 +27,7 @@ func main() {
 		Model(models.KlineLog{}).
 		Select("log_id,ts,ts_date").
 		Where("kline_source", "sina").
+		Where("create_data <", "2022-04-12 16:08:46").
 		Find(&KlineData).Error
 	if err != nil {
 		logger.Error(err)
