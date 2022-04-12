@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -166,6 +167,11 @@ func explainData(line []float64, LogData utils.LogData) {
 	LogData.DownRate = float64(LogData.DownCount) / float64(LogData.UpCount+LogData.DownCount)
 	// 平滑次数占比
 	LogData.FlatRate = float64(LogData.FlatCount) / float64(LogData.Count)
+	// 计算平方差，方差越大波动越大
+	// GetVarianceData 计算方差数据，返回平均值和方差值
+	avg, sqrt := utils.GetVarianceData(line)
+	LogData.Avg = avg
+	LogData.Sqrt = sqrt
 	// 本地上涨次数，或者下跌次数，大于65%，认定为斜线上涨，或者斜线下跌
 	if LogData.UpRate >= 0.65 || LogData.DownRate >= 0.65 {
 		LogData.Result = 2 // 定义为波动小，这样的斜线认为是可预测的波动
@@ -174,20 +180,37 @@ func explainData(line []float64, LogData utils.LogData) {
 		go func() {
 			Info := cmap.New().Items()
 			Info["title"] = fmt.Sprintf("环境【%v】本次为斜线上涨或者斜线下跌，斜线上涨的比例为=%v，斜线下跌的比例为=%v", conf.GetString("app.env"), LogData.UpRate, LogData.DownRate)
-			Info["content"] = fmt.Sprintf(`logger.RequestId : %v<br>assetsCode：%v<br>LogData：%v`, logger.RequestId, LogData.AssetsCode, LogData)
+			LogDataJson, _ := json.Marshal(LogData)
+			Info["content"] = fmt.Sprintf(`logger.RequestId : %v<br>assetsCode：%v<br>LogData：%v`, logger.RequestId, LogData.AssetsCode, LogDataJson)
 			err := email.SendEmail(Info, conf.GetString("notify.email"))
 			if err != nil {
 				logger.Error(err)
 			}
 		}()
 	} else {
-		LogData.Result = 1 // 定义为波动大，这样的斜线认为是不可预测的波动
+		// 1、根据方差大小定义赔率，方差越大，波动越大，波动越大赔率越大
+		// 2 方差多大为大，方差多小为小
+		// 3 基数为，过去20分钟的波动方差
+		var WaveRate []models.TradingAssetsLog
+		mysql.DB.Debug().
+			Model(models.TradingAssetsLog{}).
+			Select("wave_rate").
+			Where("assets_code", LogData.AssetsCode).
+			Where("create_data >= ?", time.Now().Add(-time.Minute*20).Format("2006-01-02 15:04:05")).
+			Order("id asc").
+			Find(&WaveRate)
+		if len(WaveRate) > 1 {
+			var tmpWaveRate []float64
+			for _, val := range WaveRate {
+				tmpWaveRate = append(tmpWaveRate, val.WaveRate)
+			}
+			_, historySqrt := utils.GetVarianceData(tmpWaveRate)
+			diff := LogData.Sqrt - (WaveRate[len(WaveRate)-1].WaveRate)
+			if diff >= historySqrt {
+				LogData.Result = 1 // 定义为波动大，这样的斜线认为是不可预测的波动
+			}
+		}
 	}
-	// 计算平方差，方差越大波动越大
-	// GetVarianceData 计算方差数据，返回平均值和方差值
-	avg, sqrt := utils.GetVarianceData(line)
-	LogData.Avg = avg
-	LogData.Sqrt = sqrt
 	logger.Info(LogData.AssetsCode + "---->" + fmt.Sprint(LogData.Avg, LogData.Sqrt))
 	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->所有数据点数：%v 个点", LogData.Count))
 	logger.Info(LogData.AssetsCode + fmt.Sprintf("---->初始值：%v", LogData.InitialValue))
@@ -211,8 +234,10 @@ func Log(logData utils.LogData) {
 	)
 	if logData.Result == 1 { // 波动大，重新设置赔率
 		returnRate = *maxReturnRate // 赔率大
-	} else { // 波动小，赔率小
+	} else if logData.Result == 2 { // 波动小，赔率小
 		returnRate = *minReturnRate // 赔率小
+	} else {
+		logger.Info("波动不大不小")
 	}
 	DB := mysql.DB.Debug()
 	err := DB.Model(models.TradingAssets{}).
