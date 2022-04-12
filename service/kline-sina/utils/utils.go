@@ -149,7 +149,7 @@ func ForeignExchange(str, Symbol string) map[string]interface{} {
 	// 对应数据
 	lineLog := cmap.New().Items()
 	lineLog["contract_code"] = strings.ToUpper(Symbol)                           // 合约代码 BTC-USD
-	lineLog["ch"] = fmt.Sprintf("market.%v.kline.1min", strings.ToUpper(Symbol)) // kilne返回日期时间戳
+	lineLog["ch"] = fmt.Sprintf("market.%v.index.1min", strings.ToUpper(Symbol)) // kilne返回日期时间戳
 	lineLog["ts"] = GetTs(resArr[17], resArr[0])                                 // kilne返回日期时间戳 毫秒
 	lineLog["id"] = GetTs(resArr[17], resArr[0]) / 1000                          // kilne返回日期时间戳 秒
 	lineLog["mrid"] = 0.00                                                       // ID
@@ -214,7 +214,7 @@ func Metal(str, Symbol string) map[string]interface{} {
 	// 对应数据
 	lineLog := cmap.New().Items()
 	lineLog["contract_code"] = getCode(Symbol)                           // 合约代码 BTC-USD
-	lineLog["ch"] = fmt.Sprintf("market.%v.kline.1min", getCode(Symbol)) // kilne返回日期时间戳
+	lineLog["ch"] = fmt.Sprintf("market.%v.index.1min", getCode(Symbol)) // kilne返回日期时间戳
 	lineLog["ts"] = GetTs(resArr[13], resArr[7])                         // kilne返回日期时间戳 毫秒
 	lineLog["id"] = GetTs(resArr[13], resArr[7]) / 1000                  // kilne返回日期时间戳 秒
 	lineLog["mrid"] = 0.00                                               // ID
