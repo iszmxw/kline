@@ -81,8 +81,8 @@ func GetTs(a, b string) int64 {
 		return 0
 	}
 	// 时间 to 时间戳
-	// loc, _ := time.LoadLocation("Asia/Shanghai")                     // 设置时区
-	tt, err := time.ParseInLocation("2006-01-02 15:04:05", a+" "+b, new(time.Location)) // 2006-01-02 15:04:05是转换的格式如php的"Y-m-d H:i:s"
+	loc, _ := time.LoadLocation("Asia/Shanghai")                         // 设置时区
+	tt, err := time.ParseInLocation("2006-01-02 15:04:05", a+" "+b, loc) // 2006-01-02 15:04:05是转换的格式如php的"Y-m-d H:i:s"
 	if err != nil {
 		return 0
 	}
@@ -148,21 +148,21 @@ func ForeignExchange(str, Symbol string) map[string]interface{} {
 	//sinaTest(resArr, Symbol)
 	// 对应数据
 	lineLog := cmap.New().Items()
-	lineLog["contract_code"] = strings.ToUpper(Symbol)                           // 合约代码 BTC-USD
-	lineLog["ch"] = fmt.Sprintf("market.%v.index.1min", strings.ToUpper(Symbol)) // kilne返回日期时间戳
-	lineLog["ts"] = GetTs(resArr[17], resArr[0])                                 // kilne返回日期时间戳 毫秒
-	lineLog["id"] = GetTs(resArr[17], resArr[0]) / 1000                          // kilne返回日期时间戳 秒
-	lineLog["mrid"] = 0.00                                                       // ID
-	lineLog["c_open"] = resArr[5]                                                // 起始峰值
-	lineLog["c_close"] = resArr[8]                                               // 结束峰值
-	lineLog["high"] = resArr[6]                                                  // 最高峰值
-	lineLog["low"] = resArr[7]                                                   // 最低峰值
-	lineLog["amount"] = 0                                                        // 成交金额 TODO
-	lineLog["vol"] = 0                                                           // 成交手 TODO
-	lineLog["c_count"] = 0                                                       // 交易笔数 TODO
-	lineLog["ts_date"] = resArr[17] + " " + resArr[0]                            // Kline返回日期
-	lineLog["create_date"] = time.Now()                                          // 创建日期
-	lineLog["kline_source"] = "sina"                                             // K线来源新浪
+	lineLog["contract_code"] = strings.ToUpper(Symbol)                                      // 合约代码 BTC-USD
+	lineLog["ch"] = fmt.Sprintf("market.%v.index.1min", strings.ToUpper(Symbol))            // kilne返回日期时间戳
+	lineLog["ts"] = GetTs(resArr[17], resArr[0])                                            // kilne返回日期时间戳 毫秒
+	lineLog["id"] = GetTs(resArr[17], resArr[0]) / 1000                                     // kilne返回日期时间戳 秒
+	lineLog["mrid"] = 0.00                                                                  // ID
+	lineLog["c_open"] = resArr[5]                                                           // 起始峰值
+	lineLog["c_close"] = resArr[8]                                                          // 结束峰值
+	lineLog["high"] = resArr[6]                                                             // 最高峰值
+	lineLog["low"] = resArr[7]                                                              // 最低峰值
+	lineLog["amount"] = 0                                                                   // 成交金额 TODO
+	lineLog["vol"] = 0                                                                      // 成交手 TODO
+	lineLog["c_count"] = 0                                                                  // 交易笔数 TODO
+	lineLog["ts_date"] = time.Unix(0, GetTs(resArr[17], resArr[0])*int64(time.Millisecond)) // Kline返回日期
+	lineLog["create_date"] = time.Now()                                                     // 创建日期
+	lineLog["kline_source"] = "sina"                                                        // K线来源新浪
 	return lineLog
 }
 
