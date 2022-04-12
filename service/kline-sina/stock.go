@@ -80,11 +80,11 @@ func collection(queryData Info) {
 	data.Tick.Id = lineLog["id"].(int64)
 	data.Tick.Vol = "0"
 	data.Tick.Count = 0
-	data.Tick.Open = lineLog["c_open"].(string)
-	data.Tick.Close = lineLog["c_close"].(string)
-	data.Tick.Low = lineLog["low"].(string)
-	data.Tick.High = lineLog["high"].(string)
-	data.Tick.Amount = lineLog["amount"].(string)
+	data.Tick.Open = fmt.Sprintf("%v", lineLog["c_open"])
+	data.Tick.Close = fmt.Sprintf("%v", lineLog["c_close"])
+	data.Tick.Low = fmt.Sprintf("%v", lineLog["low"])
+	data.Tick.High = fmt.Sprintf("%v", lineLog["high"])
+	data.Tick.Amount = fmt.Sprintf("%v", lineLog["amount"])
 	data.Tick.TradeTurnover = ""
 	msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 	if MarshalJSONErr != nil {
