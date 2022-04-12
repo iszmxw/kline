@@ -100,10 +100,10 @@ func collection(queryData Info) {
 	shicha := time.Now().UnixMilli() - data.Ts
 	logger.Info(fmt.Sprintf("shicha=%v", shicha))
 	// 时间差大于 10 秒发送邮件通知
-	if shicha/1000 >= 10 {
+	if shicha/1000 >= 20 {
 		go func() {
 			Einfo := cmap.New().Items()
-			Einfo["title"] = fmt.Sprintf("环境【%v】%v新浪服务通知：当前时间差为：%v秒大于 10秒", conf.GetString("app.env"), lineLog["ch"], shicha/1000)
+			Einfo["title"] = fmt.Sprintf("环境【%v】%v新浪服务通知：当前时间差为：%v秒大于 20秒", conf.GetString("app.env"), lineLog["ch"], shicha/1000)
 			Einfo["content"] = tips
 			err = email.SendEmail(Einfo, conf.GetString("notify.email"))
 			if err != nil {
