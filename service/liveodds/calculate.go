@@ -205,8 +205,10 @@ func explainData(line []float64, LogData utils.LogData) {
 				tmpWaveRate = append(tmpWaveRate, val.WaveRate)
 			}
 			_, historySqrt := utils.GetVarianceData(tmpWaveRate)
+			logger.Info(fmt.Sprint("过去20分钟的波动，它们的再次平方差", historySqrt))
 			diff := LogData.Sqrt - (WaveRate[len(WaveRate)-1].WaveRate)
 			if diff >= historySqrt {
+				logger.Info(fmt.Sprint("diff >= historySqrt", diff, historySqrt))
 				LogData.Result = 1 // 定义为波动大，这样的斜线认为是不可预测的波动
 			}
 		}
@@ -237,6 +239,7 @@ func Log(logData utils.LogData) {
 	} else if logData.Result == 2 { // 波动小，赔率小
 		returnRate = *minReturnRate // 赔率小
 	} else {
+		returnRate = 0.5
 		logger.Info("波动不大不小")
 	}
 	DB := mysql.DB.Debug()
