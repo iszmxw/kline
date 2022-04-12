@@ -150,7 +150,7 @@ func ForeignExchange(str, Symbol string) models.KlineLog {
 	response.Ch = fmt.Sprintf("market.%v.index.1min", strings.ToUpper(Symbol))     // kilne返回日期时间戳
 	response.Ts = time.Now().UnixMilli()                                           // 自己生成的ts
 	response.UpstreamTs = GetTs(resArr[17], resArr[0])                             // 上游的ts
-	response.ID = GetTs(resArr[13], resArr[7]) / 1000                              // 自己生成的ts/1000
+	response.ID = GetTs(resArr[17], resArr[0]) / 1000                              // 自己生成的ts/1000
 	response.Mrid = 0.00                                                           // ID
 	response.COpen = helpers.StrToFloat64(resArr[5])                               // 起始峰值
 	response.CClose = helpers.StrToFloat64(resArr[8])                              // 结束峰值

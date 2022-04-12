@@ -125,7 +125,8 @@ func collection(queryData Info) {
 		Model(models.KlineLog{}).
 		Select("log_id").
 		Where("contract_code", lineLogRes.ContractCode).
-		Where("upstream_ts", lineLogRes.Ts).
+		Where("upstream_ts", lineLogRes.UpstreamTs).
+		Where("kline_source", "sina").
 		Find(&KlineData).Error
 	if err != nil {
 		logger.Error(err)
