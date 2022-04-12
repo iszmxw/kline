@@ -25,12 +25,13 @@ func SendEmail(toUser string, Info map[string]interface{}) error {
 	err1 := t.Execute(body, struct {
 		Email   string
 		Title   string
-		Content string
+		Content template.HTML
 	}{
 		Email:   toUser,
 		Title:   Info["title"].(string),
-		Content: Info["content"].(string),
+		Content: template.HTML(Info["content"].(string)),
 	})
+
 	if err1 != nil {
 		return err1
 	}

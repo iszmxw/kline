@@ -26,6 +26,16 @@ func main() {
 	Info := cmap.New().Items()
 	Info["title"] = "我是邮件标题"
 	Info["content"] = "我是内容"
+
+	Info["content"] = fmt.Sprintf(`
+							用户 I P【%v】<br>
+							请求地址 【%v】<br>
+							请求方法 【%v】<br>
+							错误信息 【%v】<br>
+							堆栈信息 【%v】<br>
+`, "c.ClientIP()", "url", "method", "r", "errInfo")
+
+
 	err := email.SendEmail(Info, conf.GetString("notify.email"))
 	if err != nil {
 		fmt.Println(err)

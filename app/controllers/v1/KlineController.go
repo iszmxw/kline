@@ -272,7 +272,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 			Info := cmap.New().Items()
 			Info["title"] = fmt.Sprintf("环境【%v】==K线图历史数据异常通知，当前查询历史数据小于150条：", conf.GetString("app.env"))
 			Info["content"] = fmt.Sprintf(
-				"当前用户请求的url为：%v，请求 reqId 为%v",
+				`当前用户请求的url为：%v<br>请求 reqId 为%v`,
 				c.Request.URL,
 				logger.RequestId,
 			)

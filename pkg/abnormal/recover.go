@@ -16,7 +16,7 @@ import (
 
 func Stack(description string, c *gin.Context) {
 	if r := recover(); r != nil {
-		var brokenPipe bool                 // <--网络连接是否断开的判断条件
+		var brokenPipe = false              // <--网络连接是否断开的判断条件
 		if ne, ok := r.(*net.OpError); ok { // <--这里对brokenPipe进行设置
 			if se, oks := ne.Err.(*os.SyscallError); oks {
 				if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
@@ -35,10 +35,10 @@ func Stack(description string, c *gin.Context) {
 				brokenInfo["content"] =
 					fmt.Sprintf(
 						`
-							用户IP [%s]
-							请求地址 [%s]
-							请求方法 [%s]
-							详细错误信息 [%v]
+							用户IP 【%v】<br>
+							请求地址 【%v】<br>
+							请求方法 【%v】<br>
+							详细错误信息 【%v】<br>
 					`, c.ClientIP(), url, method, r)
 				err := email.SendEmail(brokenInfo, config.GetString("notify.email"))
 				if err != nil {
@@ -55,15 +55,15 @@ func Stack(description string, c *gin.Context) {
 		logger.Error(errors.New(fmt.Sprintf(`详细堆栈错误信息: %v`, errInfo)))
 		Info := cmap.New().Items()
 		Info["title"] = description + "当前环境：" + config.GetString("app.env") + fmt.Sprintf("Recover: %v", r)
-		if c != nil {
+		if c != nil && brokenPipe == false {
 			url := c.Request.URL
 			method := c.Request.Method
 			Info["content"] = fmt.Sprintf(`
-							用户 I P【%v】
-							请求地址 【%v】
-							请求方法 【%v】
-							错误信息 【%v】
-							堆栈信息 【%v】
+							用户 I P【%v】<br>
+							请求地址 【%v】<br>
+							请求方法 【%v】<br>
+							错误信息 【%v】<br>
+							堆栈信息 【%v】<br>
 `, c.ClientIP(), url, method, r, errInfo)
 		} else {
 			Info["content"] = errInfo

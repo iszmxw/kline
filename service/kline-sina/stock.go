@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/bootstrap"
 	"goapi/config"
@@ -10,6 +12,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/redis"
 	"goapi/service/kline-sina/utils"
 	"time"
 )
@@ -32,6 +35,8 @@ func init() {
 }
 
 func main() {
+	bootstrap.SetupRedis("15")
+	defer bootstrap.RedisClose()
 	var CodeData []Info
 	CodeData = append(CodeData,
 		Info{"EUR-USD", "欧元/美元", "https://finance.sina.com.cn/money/forex/hq/EURUSD.shtml"},
@@ -67,6 +72,32 @@ func collection(queryData Info) {
 		// 外汇数据
 		lineLog = utils.ForeignExchange(str, Symbol)
 	}
+
+	// 收集数据缓存到redis
+	var data response.SubIndexKLineResponse
+	data.Ch = lineLog["ch"].(string)
+	data.Ts = lineLog["ts"].(int64)
+	data.Tick.Id = lineLog["id"].(int64)
+	data.Tick.Vol = "0"
+	data.Tick.Count = 0
+	data.Tick.Open = lineLog["c_open"].(string)
+	data.Tick.Close = lineLog["c_close"].(string)
+	data.Tick.Low = lineLog["low"].(string)
+	data.Tick.High = lineLog["high"].(string)
+	data.Tick.Amount = lineLog["amount"].(string)
+	data.Tick.TradeTurnover = ""
+	msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
+	if MarshalJSONErr != nil {
+		logger.Error(MarshalJSONErr)
+		return
+	}
+	_, redisErr := redis.Add(data.Ch, msgData, 0)
+	if redisErr != nil {
+		logger.Error(redisErr)
+		return
+	}
+	// 收集数据缓存到redis
+
 	err = mysql.DB.Debug().
 		Model(models.KlineLog{}).
 		Select("log_id").

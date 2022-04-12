@@ -174,7 +174,7 @@ func explainData(line []float64, LogData utils.LogData) {
 		go func() {
 			Info := cmap.New().Items()
 			Info["title"] = fmt.Sprintf("环境【%v】本次为斜线上涨或者斜线下跌，斜线上涨的比例为=%v，斜线下跌的比例为=%v", conf.GetString("app.env"), LogData.UpRate, LogData.DownRate)
-			Info["content"] = fmt.Sprintf("logger.RequestId : %v，assetsCode：%v,LogData：%v", logger.RequestId, LogData.AssetsCode, LogData)
+			Info["content"] = fmt.Sprintf(`logger.RequestId : %v<br>assetsCode：%v<br>LogData：%v`, logger.RequestId, LogData.AssetsCode, LogData)
 			err := email.SendEmail(Info, conf.GetString("notify.email"))
 			if err != nil {
 				logger.Error(err)

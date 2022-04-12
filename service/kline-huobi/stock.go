@@ -116,7 +116,7 @@ func SocketHuoBi(parentTopic string) {
 			// 历史 kline 入库 Format("2006-01-02 15:04:05")
 			AddData := res.KlineLogData(Topic, data)
 			tips := fmt.Sprintf(
-				"当前系统时间：%v(%v),火币的 ts 时间：%v(%v)",
+				"当前系统时间：%v(%v)<br>火币的 ts 时间：%v(%v)",
 				time.Now().UnixMilli(),
 				time.Now().Format("2006-01-02 15:04:05"),
 				AddData.Ts,
