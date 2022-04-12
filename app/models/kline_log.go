@@ -10,6 +10,7 @@ type KlineLog struct {
 	LogId        int64     `json:"log_id" gorm:"column:log_id; PRIMARY_KEY"` //  k线表主键id
 	ContractCode string    `json:"contract_code"`                            //  合约代码 btc-usd
 	Ch           string    `json:"ch"`                                       //  k线类型请求kline的wss请求地址
+	UpstreamTs   int64     `json:"upstream_ts"`                              //  上游K线图返回的ts
 	Ts           int64     `json:"ts"`                                       //  kilne返回日期时间戳
 	ID           int64     `json:"id"`                                       //  返回的id
 	Mrid         float64   `json:"mrid"`                                     //  id

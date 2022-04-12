@@ -60,7 +60,7 @@ func main() {
 
 func collection(queryData Info) {
 	var err error
-	var lineLog map[string]interface{}
+	var lineLogRes models.KlineLog
 	var KlineData models.KlineLog
 	Symbol := queryData.Symbol
 	url := utils.UrlGet(Symbol)
@@ -70,25 +70,24 @@ func collection(queryData Info) {
 	}
 	if Symbol == "XAU" || Symbol == "XAG" {
 		// 黄金白银
-		lineLog = utils.Metal(str, Symbol)
+		lineLogRes = utils.Metal(str, Symbol)
 	} else {
 		// 外汇数据
-		lineLog = utils.ForeignExchange(str, Symbol)
+		lineLogRes = utils.ForeignExchange(str, Symbol)
 	}
 
 	// 收集数据缓存到redis
 	var data response.SubIndexKLineResponse
-	data.Ch = lineLog["ch"].(string)
-	data.Ts = lineLog["ts"].(int64)
-	data.Tick.Id = lineLog["id"].(int64)
-	data.Tick.Vol = "0"
-	data.Tick.Count = 0
-	data.Tick.Open = fmt.Sprintf("%v", lineLog["c_open"])
-	data.Tick.Close = fmt.Sprintf("%v", lineLog["c_close"])
-	data.Tick.Low = fmt.Sprintf("%v", lineLog["low"])
-	data.Tick.High = fmt.Sprintf("%v", lineLog["high"])
-	data.Tick.Amount = fmt.Sprintf("%v", lineLog["amount"])
-	data.Tick.TradeTurnover = ""
+	data.Ch = lineLogRes.Ch
+	data.Ts = lineLogRes.Ts
+	data.Tick.Id = lineLogRes.ID
+	data.Tick.Vol = fmt.Sprintf("%v", lineLogRes.Vol)
+	data.Tick.Count = lineLogRes.CCount
+	data.Tick.Open = fmt.Sprintf("%v", lineLogRes.COpen)
+	data.Tick.Close = fmt.Sprintf("%v", lineLogRes.CClose)
+	data.Tick.Low = fmt.Sprintf("%v", lineLogRes.Low)
+	data.Tick.High = fmt.Sprintf("%v", lineLogRes.High)
+	data.Tick.Amount = fmt.Sprintf("%v", lineLogRes.Amount)
 	tips := fmt.Sprintf(
 		"新浪时差：系统时间：%v(%v)<br>新浪的 ts 时间：%v(%v)",
 		time.Now().UnixMilli(),
@@ -103,7 +102,7 @@ func collection(queryData Info) {
 	if shicha/1000 >= 20 {
 		go func() {
 			Einfo := cmap.New().Items()
-			Einfo["title"] = fmt.Sprintf("环境【%v】%v新浪服务通知：当前时间差为：%v秒大于 20秒", conf.GetString("app.env"), lineLog["ch"], shicha/1000)
+			Einfo["title"] = fmt.Sprintf("环境【%v】%v新浪服务通知：当前时间差为：%v秒大于 20秒", conf.GetString("app.env"), lineLogRes.Ch, shicha/1000)
 			Einfo["content"] = tips
 			err = email.SendEmail(Einfo, conf.GetString("notify.email"))
 			if err != nil {
@@ -122,12 +121,11 @@ func collection(queryData Info) {
 		return
 	}
 	// 收集数据缓存到redis
-
 	err = mysql.DB.Debug().
 		Model(models.KlineLog{}).
 		Select("log_id").
-		Where("contract_code", lineLog["contract_code"]).
-		Where("ts", lineLog["ts"]).
+		Where("contract_code", lineLogRes.ContractCode).
+		Where("upstream_ts", lineLogRes.Ts).
 		Find(&KlineData).Error
 	if err != nil {
 		logger.Error(err)
@@ -135,7 +133,7 @@ func collection(queryData Info) {
 	if KlineData.LogId > 0 {
 		return
 	}
-	cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLog).Error
+	cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
 	if cerr1 != nil {
 		logger.Error(cerr1)
 		return
