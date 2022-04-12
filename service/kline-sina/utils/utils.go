@@ -213,22 +213,36 @@ func Metal(str, Symbol string) map[string]interface{} {
 	// 金属
 	// 对应数据
 	lineLog := cmap.New().Items()
-	lineLog["contract_code"] = Symbol                           // 合约代码 BTC-USD
-	lineLog["ch"] = fmt.Sprintf("market.%v.kline.1min", Symbol) // kilne返回日期时间戳
-	lineLog["ts"] = GetTs(resArr[13], resArr[7])                // kilne返回日期时间戳 毫秒
-	lineLog["id"] = GetTs(resArr[13], resArr[7]) / 1000         // kilne返回日期时间戳 秒
-	lineLog["mrid"] = 0.00                                      // ID
-	lineLog["c_open"] = resArr[9]                               // 起始峰值
-	lineLog["c_close"] = _curPrice                              // 结束峰值
-	lineLog["high"] = resArr[5]                                 // 最高峰值
-	lineLog["low"] = resArr[6]                                  // 最低峰值
-	lineLog["amount"] = 0                                       // 成交金额 TODO
-	lineLog["vol"] = 0                                          // 成交手 TODO
-	lineLog["c_count"] = 0                                      // 交易笔数 TODO
-	lineLog["ts_date"] = resArr[13] + " " + resArr[7]           // Kline返回日期
-	lineLog["create_date"] = time.Now()                         // 创建日期
-	lineLog["kline_source"] = "sina"                            // K线来源新浪
+	lineLog["contract_code"] = getCode(Symbol)                           // 合约代码 BTC-USD
+	lineLog["ch"] = fmt.Sprintf("market.%v.kline.1min", getCode(Symbol)) // kilne返回日期时间戳
+	lineLog["ts"] = GetTs(resArr[13], resArr[7])                         // kilne返回日期时间戳 毫秒
+	lineLog["id"] = GetTs(resArr[13], resArr[7]) / 1000                  // kilne返回日期时间戳 秒
+	lineLog["mrid"] = 0.00                                               // ID
+	lineLog["c_open"] = resArr[9]                                        // 起始峰值
+	lineLog["c_close"] = _curPrice                                       // 结束峰值
+	lineLog["high"] = resArr[5]                                          // 最高峰值
+	lineLog["low"] = resArr[6]                                           // 最低峰值
+	lineLog["amount"] = 0                                                // 成交金额 TODO
+	lineLog["vol"] = 0                                                   // 成交手 TODO
+	lineLog["c_count"] = 0                                               // 交易笔数 TODO
+	lineLog["ts_date"] = resArr[13] + " " + resArr[7]                    // Kline返回日期
+	lineLog["create_date"] = time.Now()                                  // 创建日期
+	lineLog["kline_source"] = "sina"                                     // K线来源新浪
 	return lineLog
+}
+
+func getCode(Symbol string) string {
+	switch Symbol {
+	case "XAU":
+		Symbol = "GOLD"
+		break
+	case "XAG":
+		Symbol = "SILVER"
+		break
+	default:
+		break
+	}
+	return Symbol
 }
 
 // 测试新浪数据
