@@ -196,7 +196,7 @@ func explainData(line []float64, LogData utils.LogData) {
 			Model(models.TradingAssetsLog{}).
 			Select("wave_rate").
 			Where("assets_code", LogData.AssetsCode).
-			Where("create_data >= ?", time.Now().Add(-time.Minute*20).Format("2006-01-02 15:04:05")).
+			Where("create_date >= ?", time.Now().Add(-time.Minute*20).Format("2006-01-02 15:04:05")).
 			Order("id asc").
 			Find(&WaveRate)
 		if len(WaveRate) > 1 {
