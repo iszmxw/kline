@@ -236,11 +236,8 @@ func Log(logData utils.LogData) {
 	)
 	if logData.Result == 1 { // 波动大，重新设置赔率
 		returnRate = *maxReturnRate // 赔率大
-	} else if logData.Result == 2 { // 波动小，赔率小
+	} else { // 波动小，赔率小
 		returnRate = *minReturnRate // 赔率小
-	} else {
-		returnRate = 0.5
-		logger.Info("波动不大不小")
 	}
 	DB := mysql.DB.Debug()
 	err := DB.Model(models.TradingAssets{}).

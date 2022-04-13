@@ -212,22 +212,22 @@ func Metal(str, Symbol string) models.KlineLog {
 
 	// 金属
 	// 对应数据
-	response.ContractCode = getCode(Symbol)                                              // 合约代码 BTC-USD
-	response.Ch = fmt.Sprintf("market.%v.index.1min", getCode(Symbol))                   // kilne返回日期时间戳
-	response.Ts = time.Now().UnixMilli()                                                 // 自己生成的ts
-	response.UpstreamTs = GetTs(resArr[13], resArr[7])                                   // 上游的ts
-	response.ID = GetTs(resArr[13], resArr[7]) / 1000                                    // 上游的ts/1000
-	response.Mrid = 0.00                                                                 // ID
-	response.COpen = helpers.StrToFloat64(resArr[9])                                     // 起始峰值
-	response.CClose = _curPrice                                                          // 结束峰值
-	response.High = helpers.StrToFloat64(resArr[5])                                      // 最高峰值
-	response.Low = helpers.StrToFloat64(resArr[6])                                       // 最低峰值
-	response.Amount = 0                                                                  // 成交金额 TODO
-	response.Vol = 0                                                                     // 成交手 TODO
-	response.CCount = 0                                                                  // 交易笔数 TODO
-	response.TsDate = time.Unix(0, GetTs(resArr[13], resArr[7])*int64(time.Millisecond)) // Kline返回日期
-	response.CreateDate = time.Now()                                                     // 创建日期
-	response.KlineSource = "sina"                                                        // K线来源新浪
+	response.ContractCode = getCode(Symbol)                                        // 合约代码 BTC-USD
+	response.Ch = fmt.Sprintf("market.%v.index.1min", getCode(Symbol))             // kilne返回日期时间戳
+	response.Ts = time.Now().UnixMilli()                                           // 自己生成的ts
+	response.UpstreamTs = GetTs(resArr[13], resArr[7])                             // 上游的ts
+	response.ID = GetTs(resArr[13], resArr[7]) / 1000                              // 上游的ts/1000
+	response.Mrid = 0.00                                                           // ID
+	response.COpen = helpers.StrToFloat64(resArr[9])                               // 起始峰值
+	response.CClose = _curPrice                                                    // 结束峰值
+	response.High = helpers.StrToFloat64(resArr[5])                                // 最高峰值
+	response.Low = helpers.StrToFloat64(resArr[6])                                 // 最低峰值
+	response.Amount = 0                                                            // 成交金额 TODO
+	response.Vol = 0                                                               // 成交手 TODO
+	response.CCount = 0                                                            // 交易笔数 TODO
+	response.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond)) // Kline返回日期
+	response.CreateDate = time.Now()                                               // 创建日期
+	response.KlineSource = "sina"                                                  // K线来源新浪
 	return response
 }
 

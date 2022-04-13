@@ -75,7 +75,24 @@ func collection(queryData Info) {
 		// 外汇数据
 		lineLogRes = utils.ForeignExchange(str, Symbol)
 	}
-
+	err = mysql.DB.Debug().
+		Model(models.KlineLog{}).
+		Select("log_id").
+		Where("contract_code", lineLogRes.ContractCode).
+		Where("upstream_ts", lineLogRes.UpstreamTs).
+		Where("kline_source", "sina").
+		Find(&KlineData).Error
+	if err != nil {
+		logger.Error(err)
+	}
+	if KlineData.LogId > 0 {
+		return
+	}
+	cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
+	if cerr1 != nil {
+		logger.Error(cerr1)
+		return
+	}
 	// 收集数据缓存到redis
 	var data response.SubIndexKLineResponse
 	data.Ch = lineLogRes.Ch
@@ -121,24 +138,6 @@ func collection(queryData Info) {
 		return
 	}
 	// 收集数据缓存到redis
-	err = mysql.DB.Debug().
-		Model(models.KlineLog{}).
-		Select("log_id").
-		Where("contract_code", lineLogRes.ContractCode).
-		Where("upstream_ts", lineLogRes.UpstreamTs).
-		Where("kline_source", "sina").
-		Find(&KlineData).Error
-	if err != nil {
-		logger.Error(err)
-	}
-	if KlineData.LogId > 0 {
-		return
-	}
-	cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
-	if cerr1 != nil {
-		logger.Error(cerr1)
-		return
-	}
 	// 历史存入 elastic
 	putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
 	if !putRes {
