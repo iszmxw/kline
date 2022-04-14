@@ -80,7 +80,8 @@ func SocketRaceOption(info wsdata.Info) {
 		}
 
 		logger.Info(resp)
-		ContractCode := strings.ReplaceAll(strings.ToUpper(resp.Symbol), "/", "-")
+		ContractCode := info.ContractCode
+		resp.Symbol = info.ContractCode
 		var data response.SubIndexKLineResponse
 		data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
 		data.Ts = helpers.StringToInt64(resp.TimeId)

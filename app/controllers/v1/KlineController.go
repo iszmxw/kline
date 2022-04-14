@@ -175,7 +175,8 @@ func PushMessage(messageType int, ws *wss.WsConn, msg string) {
 			break
 		}
 		// 1秒推送一次消息
-		time.Sleep(time.Second * 1)
+		//time.Sleep(time.Second * 1)
+		time.Sleep(time.Millisecond * 50) // 每隔50 毫秒推送一次
 		ws.Mux.Lock()
 		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsIndexJson)
 		ws.Mux.Unlock()
