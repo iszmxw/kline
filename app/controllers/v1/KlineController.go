@@ -60,7 +60,13 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			wss.WsClose(ws)
 			goto END
 		}
-		msg := SubStruct.Sub
+		klineSource, _ := redis.Get("kline_source")
+		var msg string
+		if len(klineSource) > 0 && klineSource == "raceoption" {
+			msg = fmt.Sprintf("raceoption:%v", SubStruct.Sub)
+		} else {
+			msg = SubStruct.Sub
+		}
 		logger.Info(SubStruct)
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
 		checkMsg := "socket_request:" + RequestId + ":" + msg

@@ -141,7 +141,8 @@ func SocketRaceOption(info wsdata.Info) {
 			logger.Error(MarshalJSONErr)
 			return
 		}
-		_, redisErr := redis.Add(data.Ch, msgData, 0)
+		key := fmt.Sprintf("raceoption:%v", data.Ch)
+		_, redisErr := redis.Add(key, msgData, 0)
 		if redisErr != nil {
 			logger.Error(redisErr)
 			return
