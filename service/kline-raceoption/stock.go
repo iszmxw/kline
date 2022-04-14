@@ -66,7 +66,7 @@ func SocketRaceOption(info wsdata.Info) {
 		runStr := time.Now().UnixMilli() // 开始时间
 		// RequestId 定义为 Ts 时间戳
 		logger.RequestId = fmt.Sprintf("%v", resp.TimeId)
-		// 火币网推送的回来的数据转换为字符串
+		// raceoption网推送的回来的数据转换为字符串
 		strData, err := json.Marshal(resp) //转换成JSON返回的是byte[]
 		if err != nil {
 			logger.Error(err)
@@ -115,7 +115,7 @@ func SocketRaceOption(info wsdata.Info) {
 		}
 
 		tips := fmt.Sprintf(
-			"新浪时差：系统时间：%v(%v)<br>新浪的 ts 时间：%v(%v)",
+			"raceoption时差：系统时间：%v(%v)<br>raceoption的 ts 时间：%v(%v)",
 			time.Now().UnixMilli(),
 			time.Now().Format("2006-01-02 15:04:05"),
 			data.Ts,
@@ -193,6 +193,6 @@ func LogData(resp *wsdata.SubPriceKLineResponse) models.KlineLog {
 	klineLog.CCount = 0                                                                // 交易笔数 TODO
 	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))     // Kline返回日期
 	klineLog.CreateDate = time.Now()                                                   // 创建日期
-	klineLog.KlineSource = "raceoption"                                                // K线来源新浪
+	klineLog.KlineSource = "raceoption"                                                // K线来源raceoption
 	return klineLog
 }
