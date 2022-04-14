@@ -11,5 +11,8 @@ GOOS=linux GOARCH=amd64 go build -o build/liveoddsService service/liveodds/calcu
 # 1、打包实时赔率计算服务
 GOOS=linux GOARCH=amd64 go build -o build/sinaService service/kline-sina/stock.go
 
+# 1、打包实时赔率计算服务
+GOOS=linux GOARCH=amd64 go build -o build/raceoptionService service/kline-raceoption/stock.go
+
 # 2、打包api接口
 GOOS=linux GOARCH=amd64 go build -o build/apiService main.go
