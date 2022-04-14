@@ -242,11 +242,13 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		output.Rjson(c, nil, "endDate 截止交易日期必填", 0)
 		return
 	}
-	logger.Info(fmt.Sprintf(
-		"查询范围从%v，到%v",
+	tips := fmt.Sprintf(
+		"当前系统时间为【%v】 查询范围从【%v】，到【%v】",
+		time.Now().Format("2006-01-02 15:04:05"),
 		time.Unix(0, helpers.StringToInt64(beginDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
 		time.Unix(0, helpers.StringToInt64(endDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
-	))
+	)
+	logger.Info(tips)
 	if len(symbol) <= 0 || len(period) <= 0 {
 		symbol = "BTC-USD"
 		period = "1min"
@@ -277,12 +279,16 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 			Info := cmap.New().Items()
 			Info["title"] = fmt.Sprintf("环境【%v】==K线图历史数据异常通知，当前查询历史数据小于150条：", conf.GetString("app.env"))
 			Info["content"] = fmt.Sprintf(
-				`当前用户IP【%v】<br>
-						请求的url为：%v<br>
-						请求 reqId 为%v`,
-				c.ClientIP(),
-				c.Request.URL,
+				`请求 reqId 为%v<br>
+						用户IP【<a href="https://www.ip138.com/iplookup.asp?ip=%v&action=2">%v</a>】，<br>
+						请求头信息：%v<br>
+						查询范围：%v<br>
+						请求的url为：%v<br>`,
 				logger.RequestId,
+				c.ClientIP(), c.ClientIP(),
+				c.Request.Header,
+				tips,
+				c.Request.URL,
 			)
 			err = email.SendEmail(Info, conf.GetString("notify.email"))
 			if err != nil {

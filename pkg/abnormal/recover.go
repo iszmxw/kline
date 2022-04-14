@@ -47,7 +47,7 @@ func Stack(description string, c *gin.Context) {
 			}()
 			c.Abort()
 		}
-
+		
 		// 收集错误堆栈信息 异常
 		errInfo := string(debug.Stack())
 		logger.Error(errors.New(fmt.Sprintf(`描述: %v`, description)))
@@ -55,7 +55,7 @@ func Stack(description string, c *gin.Context) {
 		logger.Error(errors.New(fmt.Sprintf(`详细堆栈错误信息: %v`, errInfo)))
 		Info := cmap.New().Items()
 		Info["title"] = description + "当前环境：" + config.GetString("app.env") + fmt.Sprintf("Recover: %v", r)
-		if c != nil && brokenPipe == false {
+		if c != nil {
 			url := c.Request.URL
 			method := c.Request.Method
 			Info["content"] = fmt.Sprintf(`
@@ -68,9 +68,12 @@ func Stack(description string, c *gin.Context) {
 		} else {
 			Info["content"] = errInfo
 		}
-		err := email.SendEmail(Info, config.GetString("notify.email"))
-		if err != nil {
-			logger.Error(err)
+		// 网络连接中断就不发送了
+		if brokenPipe == false {
+			err := email.SendEmail(Info, config.GetString("notify.email"))
+			if err != nil {
+				logger.Error(err)
+			}
 		}
 	}
 }
