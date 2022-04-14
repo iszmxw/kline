@@ -26,6 +26,15 @@ if [ "$sinaService_pid" ]; then
   printf "用户：$sinaService_user   启动时间：$sinaService_starttime 进程ID：$sinaService_pid  执行路径：$sinaService_bin\n"
 fi
 
+# 查看 raceoptionService-running
+raceoptionService_user=$(ps -ef | grep "/raceoptionService-running" | grep -v "grep" | awk '{print $1}')
+raceoptionService_starttime=$(ps -ef | grep "/raceoptionService-running" | grep -v "grep" | awk '{print $5}')
+raceoptionService_pid=$(ps -ef | grep "/raceoptionService-running" | grep -v "grep" | awk '{print $2}')
+raceoptionService_bin=$(ps -ef | grep "/raceoptionService-running" | grep -v "grep" | awk '{print $8}')
+if [ "$raceoptionService_pid" ]; then
+  printf "用户：$raceoptionService_user   启动时间：$raceoptionService_starttime 进程ID：$raceoptionService_pid  执行路径：$raceoptionService_bin\n"
+fi
+
 # 查看 liveoddsService-running
 liveoddsService_user=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $1}')
 liveoddsService_starttime=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $5}')

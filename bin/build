@@ -2,17 +2,17 @@
 
 # 一键打包服务
 
-# 1、打包火币网socket服务
+# 1、打包api接口
+GOOS=linux GOARCH=amd64 go build -o build/apiService main.go
+
+# 2、打包 火币网 K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o build/huobiService service/kline-huobi/stock.go
 
-# 1、打包实时赔率计算服务
-GOOS=linux GOARCH=amd64 go build -o build/liveoddsService service/liveodds/calculate.go
-
-# 1、打包实时赔率计算服务
+# 3、打包 新浪 K线图采集服务
 GOOS=linux GOARCH=amd64 go build -o build/sinaService service/kline-sina/stock.go
 
-# 1、打包实时赔率计算服务
+# 4、打包 raceoption K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o build/raceoptionService service/kline-raceoption/stock.go
 
-# 2、打包api接口
-GOOS=linux GOARCH=amd64 go build -o build/apiService main.go
+# 5、打包实时赔率计算服务
+GOOS=linux GOARCH=amd64 go build -o build/liveoddsService service/liveodds/calculate.go
