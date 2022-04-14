@@ -45,6 +45,7 @@ func TraceLogger() gin.HandlerFunc {
 		logger.NewContext(ctx, zap.String("AppEnv", config.GetString("app.env")))
 		logger.NewContext(ctx, zap.String("RequestId", RequestId))
 		// 为日志添加请求的地址以及请求参数等信息
+		logger.NewContext(ctx, zap.String("request.ip", ctx.ClientIP()))
 		logger.NewContext(ctx, zap.String("request.method", ctx.Request.Method))
 		logger.NewContext(ctx, zap.String("request.url", ctx.Request.URL.String()))
 		headers, _ := json.Marshal(ctx.Request.Header)
