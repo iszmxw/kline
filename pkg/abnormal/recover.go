@@ -35,11 +35,11 @@ func Stack(description string, c *gin.Context) {
 				brokenInfo["content"] =
 					fmt.Sprintf(
 						`
-							用户IP 【%v】<br>
+							用户IP【<a href="https://www.ip138.com/iplookup.asp?ip=%v&action=2">%v</a>】，<br>
 							请求地址 【%v】<br>
 							请求方法 【%v】<br>
 							详细错误信息 【%v】<br>
-					`, c.ClientIP(), url, method, r)
+					`, c.ClientIP(), c.ClientIP(), url, method, r)
 				err := email.SendEmail(brokenInfo, config.GetString("notify.email"))
 				if err != nil {
 					logger.Error(err)
@@ -47,7 +47,7 @@ func Stack(description string, c *gin.Context) {
 			}()
 			c.Abort()
 		}
-		
+
 		// 收集错误堆栈信息 异常
 		errInfo := string(debug.Stack())
 		logger.Error(errors.New(fmt.Sprintf(`描述: %v`, description)))
@@ -59,12 +59,12 @@ func Stack(description string, c *gin.Context) {
 			url := c.Request.URL
 			method := c.Request.Method
 			Info["content"] = fmt.Sprintf(`
-							用户 I P【%v】<br>
+							用户IP【<a href="https://www.ip138.com/iplookup.asp?ip=%v&action=2">%v</a>】，<br>
 							请求地址 【%v】<br>
 							请求方法 【%v】<br>
 							错误信息 【%v】<br>
 							堆栈信息 【%v】<br>
-`, c.ClientIP(), url, method, r, errInfo)
+`, c.ClientIP(), c.ClientIP(), url, method, r, errInfo)
 		} else {
 			Info["content"] = errInfo
 		}
