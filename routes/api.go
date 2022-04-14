@@ -24,6 +24,10 @@ func RegisterWebRoutes(router *gin.RouterGroup) {
 			kLine.Any("/history", v1Group.KlineController.HistoryHandler)
 			// 历史行情
 			kLine.Any("/history_es", v1Group.KlineController.HistoryEsHandler)
+			// 设置 config 信息
+			kLine.Any("/set_config", v1Group.KlineController.SetConfigHandler)
+			// 查看配置
+			kLine.Any("/get_config", v1Group.KlineController.GetConfigHandler)
 		}
 	}
 }

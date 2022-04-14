@@ -253,6 +253,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		symbol = "BTC-USD"
 		period = "1min"
 	}
+	klineSource, _ := redis.Get("kline_source")
 	var data []response.KlineLog
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
 	DB := mysql.DB.Debug()
@@ -262,6 +263,11 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		Where("ts >= ?", beginDate).
 		Where("ts <= ?", endDate).
 		Order("ts desc")
+	// 查询来源
+	if len(klineSource) > 0 {
+		KlineDB = KlineDB.Where("kline_source", klineSource)
+	}
+
 	var Count int64 // 查询总条数
 	KlineDB.Count(&Count)
 	if Count > 3000 {
@@ -377,4 +383,31 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		"totals":        Count,
 		"contractCode":  symbol,
 	}, "success", 1)
+}
+
+// 设置配置
+
+func (h *KlineController) SetConfigHandler(c *gin.Context) {
+	klineSource := c.Query("kline_source")
+	if len(klineSource) > 0 {
+		_, err := redis.Add("kline_source", klineSource, 0)
+		if err != nil {
+			output.Rjson(c, gin.H{}, "fail", 0)
+		} else {
+			output.Rjson(c, gin.H{}, "success", 1)
+		}
+		return
+	}
+}
+
+// 读取配置
+
+func (h *KlineController) GetConfigHandler(c *gin.Context) {
+	res, err := redis.Get("kline_source")
+	if err != nil {
+		output.Rjson(c, gin.H{}, "fail", 0)
+	} else {
+		output.Rjson(c, gin.H{"kline_source": res}, "success", 1)
+	}
+	return
 }
