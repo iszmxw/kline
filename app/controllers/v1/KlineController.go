@@ -62,10 +62,13 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		}
 		klineSource, _ := redis.Get("kline_source")
 		var msg string
-		if len(klineSource) > 0 && klineSource == "raceoption" {
-			msg = fmt.Sprintf("raceoption:%v", SubStruct.Sub)
-		} else {
-			msg = SubStruct.Sub
+		if len(klineSource) > 0 {
+			if helpers.InArray(SubStruct.Sub, []string{"market.BTC-USD.index.1min", "market.ETH-USD.index.1min"}) {
+				// 走火币来源
+				msg = SubStruct.Sub
+			} else {
+				msg = fmt.Sprintf("raceoption:%v", SubStruct.Sub)
+			}
 		}
 		logger.Info(SubStruct)
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
@@ -176,7 +179,7 @@ func PushMessage(messageType int, ws *wss.WsConn, msg string) {
 		}
 		// 1秒推送一次消息
 		//time.Sleep(time.Second * 1)
-		time.Sleep(time.Millisecond * 50) // 每隔50 毫秒推送一次
+		time.Sleep(time.Millisecond * 200) // 每隔200 毫秒推送一次
 		ws.Mux.Lock()
 		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsIndexJson)
 		ws.Mux.Unlock()
@@ -270,9 +273,14 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		Where("ts >= ?", beginDate).
 		Where("ts <= ?", endDate).
 		Order("ts desc")
-	// 查询来源
+	// 查询来源，除了"BTC-USD", "ETH-USD"，其他都按来源走
 	if len(klineSource) > 0 {
-		KlineDB = KlineDB.Where("kline_source", klineSource)
+		if helpers.InArray(symbol, []string{"BTC-USD", "ETH-USD"}) {
+			// 走火币来源
+			KlineDB = KlineDB.Where("kline_source", "huobi")
+		} else {
+			KlineDB = KlineDB.Where("kline_source", klineSource)
+		}
 	}
 
 	var Count int64 // 查询总条数
