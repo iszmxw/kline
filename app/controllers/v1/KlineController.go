@@ -404,7 +404,7 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 
 func (h *KlineController) SetConfigHandler(c *gin.Context) {
 	klineSource := c.Query("kline_source")
-	if len(klineSource) > 0 {
+	if len(klineSource) >= 0 {
 		_, err := redis.Add("kline_source", klineSource, 0)
 		if err != nil {
 			output.Rjson(c, gin.H{}, "fail", 0)
