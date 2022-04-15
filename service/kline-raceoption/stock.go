@@ -38,6 +38,8 @@ func main() {
 	defer bootstrap.RedisClose()
 	var CodeData []wsdata.Info
 	CodeData = append(CodeData,
+		wsdata.Info{Symbol: "BTC/USD", Desc: "比特币/美元", ContractCode: "BTC-USD"},
+		wsdata.Info{Symbol: "ETH/USD", Desc: "以太坊/美元", ContractCode: "ETH-USD"},
 		wsdata.Info{Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
 		wsdata.Info{Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
 		wsdata.Info{Symbol: "AUD/CAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
