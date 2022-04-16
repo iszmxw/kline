@@ -12,7 +12,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 )
 
 type closeChanCallback chan struct{}
@@ -28,7 +27,6 @@ type WebSocketOp struct {
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
-	authOk            bool                     // 是否权限验证
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              //读消息管道
 	writeChan         chan []byte              //写消息管道
@@ -68,7 +66,6 @@ func (ws *WebSocketOp) connServer() bool {
 	go ws.readLoop()
 	go ws.writeLoop()
 	go ws.DoHand()
-	ws.authOk = true
 	return true
 }
 
@@ -110,46 +107,6 @@ func (ws *WebSocketOp) SendMsg(data []byte) bool {
 	}
 	ws.writeChan <- data
 	return true
-}
-
-func (ws *WebSocketOp) opHand(data map[string]interface{}, message []byte) {
-	switch data["op"] {
-	case "ping":
-		ts := data["ts"]
-		pongData := fmt.Sprintf("{ \"op\":\"pong\", \"ts\": \"%s\" }", ts)
-		ws.SendMsg([]byte(pongData))
-	case "close":
-		logger.Error(errors.New("Some error occurres when authentication in server side."))
-	case "error":
-		logger.Error(errors.New("Illegal op or internal error, but websoket is still connected."))
-	case "auth":
-		code := int64(data["err-code"].(float64))
-		if code == 0 {
-			logger.Info("Authentication success.")
-			ws.authOk = true
-			for e := ws.allSubStrs.Front(); e != nil; e = e.Next() {
-				ws.SendMsg([]byte(e.Value.(string)))
-			}
-		} else {
-			msg := data["err-msg"].(string)
-			logger.Error(errors.New(fmt.Sprintf("Authentication failure: %d/%s", code, msg)))
-			ws.Close()
-		}
-	case "notify":
-		topic := data["topic"].(string)
-		ws.handleSubCallbackFun(topic, message, data)
-	case "sub":
-		topic := data["topic"]
-		logger.Info(fmt.Sprintf("sub: \"%s\"", topic))
-	case "unsub":
-		topic := data["topic"].(string)
-		logger.Info(fmt.Sprintf("unsub: \"%s\"", topic))
-		if _, found := ws.SubTopicMap[topic]; found {
-			delete(ws.SubTopicMap, topic)
-		}
-	default:
-		logger.Info(fmt.Sprintf("WebSocket received unknow data: %s", data))
-	}
 }
 
 func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata map[string]interface{}) {
@@ -229,7 +186,6 @@ func (ws *WebSocketOp) Close() {
 	}
 	if !ws.isClose {
 		ws.isClose = true
-		ws.authOk = false
 		close(ws.closeChan)
 	}
 	ws.closeChanCallback <- struct{}{}
@@ -256,9 +212,6 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 
 // 通用订阅
 func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param reflect.Type) bool {
-	for !ws.authOk {
-		time.Sleep(1)
-	}
 	ch = strings.ToLower(ch)
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
