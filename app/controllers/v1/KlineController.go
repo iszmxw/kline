@@ -248,6 +248,11 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		output.Rjson(c, nil, "beginDate 起始交易日期必填", 0)
 		return
 	}
+	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
+		logger.Error(errors.New("越界查询"))
+		output.Rjson(c, nil, "beginDate error", 0)
+		return
+	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
 		output.Rjson(c, nil, "endDate 截止交易日期必填", 0)
 		return
