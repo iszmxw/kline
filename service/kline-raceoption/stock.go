@@ -91,8 +91,39 @@ func SocketRaceOption(info wsdata.Info) {
 				resp.Symbol, resp)))
 			return
 		}
-
 		logger.Info(resp)
+		currentTime := time.Now()
+		startTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 0, 0, 0, 0, currentTime.Location()).Unix()
+		Surplus := (time.Now().Unix() - startTime) % 8
+		if resp.TimeId == "1" {
+			if Surplus == 0 {
+				go func() {
+					Einfo := cmap.New().Items()
+					Einfo["title"] = fmt.Sprintf("环境【%v】%v raceoption 服务通知：暂停socket推送", conf.GetString("app.env"), resp.Symbol)
+					Einfo["content"] = "服务停止socket"
+					err = email.SendEmail(Einfo, conf.GetString("notify.email"))
+					if err != nil {
+						logger.Error(err)
+					}
+				}()
+			}
+			logger.Error(errors.New(fmt.Sprintf(
+				"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
+				resp.Symbol, resp)))
+			return
+		} else {
+			if Surplus == 0 {
+				go func() {
+					Einfo := cmap.New().Items()
+					Einfo["title"] = fmt.Sprintf("环境【%v】%v raceoption 服务通知：当前socket数据恢复推送", conf.GetString("app.env"), resp.Symbol)
+					Einfo["content"] = "服务恢复正常"
+					err = email.SendEmail(Einfo, conf.GetString("notify.email"))
+					if err != nil {
+						logger.Error(err)
+					}
+				}()
+			}
+		}
 		ContractCode := info.ContractCode
 		resp.Symbol = info.ContractCode
 		var data response.SubIndexKLineResponse
