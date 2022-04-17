@@ -61,7 +61,7 @@ func (ws *WebSocketOp) connServer() bool {
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
 		logger.Error(err)
-		ws.Close()
+		ws.closeChanCallback <- struct{}{}
 		return false
 	}
 	logger.Info("WebSocket connected")
@@ -188,7 +188,11 @@ func (ws *WebSocketOp) Close() {
 	}
 	if !ws.isClose {
 		ws.isClose = true
-		close(ws.closeChan)
+		if closeChanCheck(ws.closeChan) {
+			logger.Info("ws.closeChan-已关闭无需重复关闭")
+		} else {
+			close(ws.closeChan)
+		}
 	}
 	ws.closeChanCallback <- struct{}{}
 }
@@ -229,4 +233,13 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	ws.SubTopicMap[ch] = mi
 	ws.allSubStrs.PushBack(string(subReq))
 	return ws.SendMsg(subReq)
+}
+
+func closeChanCheck(ch <-chan byte) bool {
+	select {
+	case _, received := <-ch:
+		return !received
+	default:
+	}
+	return false
 }
