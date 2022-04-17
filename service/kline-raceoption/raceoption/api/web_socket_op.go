@@ -60,6 +60,8 @@ func (ws *WebSocketOp) connServer() bool {
 	ws.conn, _, err = websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
+		logger.Error(err)
+		ws.Close()
 		return false
 	}
 	logger.Info("WebSocket connected")
@@ -180,7 +182,7 @@ func (ws *WebSocketOp) Close() {
 	defer ws.mutex.Unlock()
 	err := ws.conn.Close()
 	if err != nil {
-		fmt.Println("关闭长连接失败" + err.Error())
+		logger.Info("关闭长连接失败:" + err.Error())
 		// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
 		//return
 	}
