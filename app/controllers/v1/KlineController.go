@@ -208,7 +208,7 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", "IQO").
 			Where("is_valid", 1).
-			Where("is_show", 1).
+			//Where("is_show", 1).
 			Find(&PushRateData).Error
 		if err != nil {
 			logger.Error(err)
