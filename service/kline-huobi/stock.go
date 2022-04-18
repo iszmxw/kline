@@ -89,8 +89,13 @@ func main() {
 func SocketHuoBi(parentTopic string) {
 	Topic := strings.Split(parentTopic, ".")
 	callback := make(chan struct{}, 1)
+	var host string
+	// 本地环境打包走测试地址
+	if conf.GetString("app.env") == "shanghai" {
+		host = "api.btcgateway.pro"
+	}
 	// websocket api
-	wsmkClient := new(api.WSIndexClient).Init("", callback)
+	wsmkClient := new(api.WSIndexClient).Init(host, callback)
 	wsmkClient.SubIndexKLine(Topic[1], Topic[3], func(data *response.SubIndexKLineResponse) {
 		runStr := time.Now().UnixMilli() // 开始时间
 		// RequestId 定义为 Ts 时间戳
