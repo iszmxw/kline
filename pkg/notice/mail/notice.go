@@ -14,8 +14,8 @@ import (
 )
 
 // 检测通知次数，超过次数不进行通知
-func check(address string) bool {
-	key := fmt.Sprintf("notice:mail:%v", address)
+func check(address, t string) bool {
+	key := fmt.Sprintf("notice:mail:%v:%v", t, address)
 	logger.Info(key)
 	value, _ := redis.Get(key)
 	// 初始化
@@ -156,7 +156,7 @@ func Notice(t string, data interface{}) {
 		return
 	}
 	for _, address := range conf.GetStringSlice("notify.email") {
-		if check(address) {
+		if check(address, t) {
 			go func(address string) {
 				err := email.SendEmail(Info, address)
 				if err != nil {

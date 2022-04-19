@@ -116,18 +116,13 @@ func SocketRaceOption(info wsdata.Info) {
 				return
 			}
 			logger.Info(resp)
-			currentTime := time.Now()
-			startTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 0, 0, 0, 0, currentTime.Location()).Unix()
-			Surplus := (time.Now().Unix() - startTime) % 8
 			if resp.TimeId == "1" {
 				err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
 				if err != nil {
 					logger.Error(err)
 				}
 				// 通知
-				if Surplus == 0 {
-					mail_notice.Notice("msgNoSocket", resp.Symbol)
-				}
+				mail_notice.Notice("msgNoSocket", resp.Symbol)
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
 					resp.Symbol, resp)))
