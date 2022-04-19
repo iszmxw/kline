@@ -7,16 +7,14 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
-	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
-	conf "goapi/pkg/config"
-	"goapi/pkg/email"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
 	"goapi/pkg/redis_socket"
@@ -301,26 +299,10 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	}
 	// 侦测到数据小于 150 条的时候，发送邮件预警
 	if len(data) <= 150 {
-		go func() {
-			Info := cmap.New().Items()
-			Info["title"] = fmt.Sprintf("环境【%v】==K线图历史数据异常通知，当前查询历史数据小于150条：", conf.GetString("app.env"))
-			Info["content"] = fmt.Sprintf(
-				`请求 reqId 为%v<br>
-						用户IP【<a href="https://www.ip138.com/iplookup.asp?ip=%v&action=2">%v</a>】，<br>
-						请求头信息：%v<br>
-						查询范围：%v<br>
-						请求的url为：%v<br>`,
-				logger.RequestId,
-				c.ClientIP(), c.ClientIP(),
-				c.Request.Header,
-				tips,
-				c.Request.URL,
-			)
-			err = email.SendEmail(Info, conf.GetString("notify.email"))
-			if err != nil {
-				logger.Error(err)
-			}
-		}()
+		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
+			"c":    c,
+			"tips": tips,
+		})
 	}
 	output.Rjson(c, gin.H{
 		"HistKlineLogs": data,

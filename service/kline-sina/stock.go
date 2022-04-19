@@ -5,16 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gostudys/huobi_contract_golang/src/ws/response"
-	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
-	"goapi/pkg/email"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-sina/utils"
 	"net/http"
@@ -131,15 +130,13 @@ func collection(queryData Info) {
 	logger.Info(fmt.Sprintf("shicha=%v", shicha))
 	// 时间差大于 10 秒发送邮件通知
 	if shicha/1000 >= 20 {
-		go func() {
-			Einfo := cmap.New().Items()
-			Einfo["title"] = fmt.Sprintf("环境【%v】%v新浪服务通知：当前时间差为：%v秒大于 20秒", conf.GetString("app.env"), lineLogRes.Ch, shicha/1000)
-			Einfo["content"] = tips
-			err = email.SendEmail(Einfo, conf.GetString("notify.email"))
-			if err != nil {
-				logger.Error(err)
-			}
-		}()
+		mail_notice.Notice("msgTimeDiff",
+			map[string]interface{}{
+				"ch":      lineLogRes.Ch,
+				"tips":    tips,
+				"service": "sina",
+				"shicha":  shicha,
+			})
 	}
 	msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 	if MarshalJSONErr != nil {

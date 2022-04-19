@@ -6,17 +6,16 @@ import (
 	"fmt"
 	"github.com/gostudys/huobi_contract_golang/src/ws/api"
 	"github.com/gostudys/huobi_contract_golang/src/ws/response"
-	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	res "goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
-	"goapi/pkg/email"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"net/http"
 	_ "net/http/pprof"
@@ -130,18 +129,14 @@ func SocketHuoBi(parentTopic string) {
 			logger.Info(tips)
 			shicha := time.Now().UnixMilli() - AddData.Ts
 			logger.Info(fmt.Sprintf("shicha=%v", shicha))
-
 			// 时间差大于 10 秒发送邮件通知
 			if shicha/1000 >= 10 {
-				go func() {
-					Info := cmap.New().Items()
-					Info["title"] = fmt.Sprintf("环境【%v】%v火币服务通知：当前时间差为：%v秒大于 10秒", conf.GetString("app.env"), parentTopic, shicha/1000)
-					Info["content"] = tips
-					err := email.SendEmail(Info, conf.GetString("notify.email"))
-					if err != nil {
-						logger.Error(err)
-					}
-				}()
+				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
+					"ch":      parentTopic,
+					"tips":    tips,
+					"service": "huobi",
+					"shicha":  shicha,
+				})
 			}
 
 			DB := mysql.DB.Debug()

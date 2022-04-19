@@ -9,11 +9,11 @@ import (
 )
 
 // SendEmail 使用第三方库发送邮件
-func SendEmail(toUser string, Info map[string]interface{}) error {
+func SendEmail(Info map[string]interface{}, toUser ...string) error {
 	e := sendEmail.NewEmail()
 
 	e.From = config.GetString("email.qq.user")
-	e.To = []string{toUser}
+	e.To = toUser
 	e.Subject = Info["title"].(string)
 
 	t, err := template.ParseFiles("resource/template/email/template.html")
@@ -23,7 +23,7 @@ func SendEmail(toUser string, Info map[string]interface{}) error {
 	body := new(bytes.Buffer)
 	//作为变量传递给html模板
 	err1 := t.Execute(body, struct {
-		Email   string
+		Email   []string
 		Title   string
 		Content template.HTML
 	}{

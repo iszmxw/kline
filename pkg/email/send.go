@@ -6,19 +6,21 @@ import (
 	"goapi/pkg/email/qq"
 )
 
-func SendEmail(Info map[string]interface{}, toId string) error {
+func SendEmail(Info map[string]interface{}, toId ...string) error {
 	var err error
 	emailType := config.GetString("email.type")
 	if emailType == "QQ" {
-		err = qq.SendEmail(toId, Info)
+		err = qq.SendEmail(Info, toId...)
 		if err != nil {
 			return err
 		}
 	}
 	if emailType == "GOOGLE" {
-		err = google.New().Send(Info, toId)
-		if err != nil {
-			return err
+		for _, item := range toId {
+			err = google.New().Send(Info, item)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

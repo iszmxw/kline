@@ -65,6 +65,11 @@ func GetString(path string, defaultValue ...interface{}) string {
 	return cast.ToString(Get(path, defaultValue...))
 }
 
+// GetStringSlice 获取 String 类型的配置信息
+func GetStringSlice(path string, defaultValue ...interface{}) []string {
+	return cast.ToStringSlice(Get(path, defaultValue...))
+}
+
 // GetInt 获取 Int 类型的配置信息
 func GetInt(path string, defaultValue ...interface{}) int {
 	return cast.ToInt(Get(path, defaultValue...))

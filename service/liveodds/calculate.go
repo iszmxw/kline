@@ -2,21 +2,18 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"github.com/olivere/elastic"
-	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
-	conf "goapi/pkg/config"
-	"goapi/pkg/email"
 	"goapi/pkg/esdk"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/service/liveodds/utils"
 	"reflect"
 	"strings"
@@ -177,16 +174,7 @@ func explainData(line []float64, LogData utils.LogData) {
 		LogData.Result = 2 // 定义为波动小，这样的斜线认为是可预测的波动
 		// todo 进行邮件通知
 		logger.Info(fmt.Sprint("本次为斜线上涨或者斜线下跌，斜线上涨的比例为=", LogData.UpRate, "斜线下跌的比例为=", LogData.DownRate))
-		go func() {
-			Info := cmap.New().Items()
-			Info["title"] = fmt.Sprintf("环境【%v】本次为斜线上涨或者斜线下跌，斜线上涨的比例为=%v，斜线下跌的比例为=%v", conf.GetString("app.env"), LogData.UpRate, LogData.DownRate)
-			LogDataJson, _ := json.Marshal(LogData)
-			Info["content"] = fmt.Sprintf(`logger.RequestId : %v<br>assetsCode：%v<br>LogData：%v`, logger.RequestId, LogData.AssetsCode, LogDataJson)
-			err := email.SendEmail(Info, conf.GetString("notify.email"))
-			if err != nil {
-				logger.Error(err)
-			}
-		}()
+		mail_notice.Notice("msgLiveOdds", LogData)
 	} else {
 		// 1、根据方差大小定义赔率，方差越大，波动越大，波动越大赔率越大
 		// 2 方差多大为大，方差多小为小
