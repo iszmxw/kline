@@ -50,9 +50,9 @@ func main() {
 	defer bootstrap.RedisClose()
 	var CodeData []wsdata.Info
 	CodeData = append(CodeData,
-		wsdata.Info{Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		wsdata.Info{Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
-		wsdata.Info{Symbol: "AUD/CAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		//wsdata.Info{Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		//wsdata.Info{Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		//wsdata.Info{Symbol: "AUD/CAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
 		wsdata.Info{Symbol: "USD/JPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
 		wsdata.Info{Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
 		wsdata.Info{Symbol: "XAG/USD", Desc: "伦敦银", ContractCode: "SILVER"},
