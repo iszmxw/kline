@@ -9,7 +9,6 @@ import (
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
-	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
@@ -195,13 +194,13 @@ func SocketRaceOption(info wsdata.Info) {
 			}
 			// 收集数据缓存到redis
 
-			// 历史存入 elastic
-			putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
-			if !putRes {
-				logger.Error(errors.New("历史存入 elastic 失败"))
-			} else {
-				logger.Info("elastic-success")
-			}
+			//// 历史存入 elastic todo::暂时不开启
+			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
+			//if !putRes {
+			//	logger.Error(errors.New("历史存入 elastic 失败"))
+			//} else {
+			//	logger.Info("elastic-success")
+			//}
 
 			runEnd := time.Now().UnixMilli() // 开始时间
 			// 计算一次存储数据消耗的时间

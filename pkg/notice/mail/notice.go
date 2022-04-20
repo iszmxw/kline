@@ -54,7 +54,14 @@ func msgNoSocket(service, symbol string) map[string]interface{} {
 // 时差通知
 func msgTimeDiff(service, ch, tips string, shicha int64) map[string]interface{} {
 	info := cmap.New().Items()
-	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务通知：当前时间差为：%v秒大于 20秒", conf.GetString("app.env"), ch, service, shicha/1000)
+	var diff int64
+	if shicha/1000 > 10 {
+		diff = 10
+	}
+	if shicha/1000 > 20 {
+		diff = 20
+	}
+	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务通知：当前时间差为：%v秒大于 %v秒", conf.GetString("app.env"), ch, service, shicha/1000, diff)
 	info["content"] = tips
 	return info
 }

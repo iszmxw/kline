@@ -156,13 +156,13 @@ func SocketHuoBi(parentTopic string) {
 			//_, _ = redis.Lpush("kline_log", lPushJson)
 			//// 历史 kline 入队列
 
-			// 历史存入 elastic
-			putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
-			if !putRes {
-				logger.Error(errors.New("历史存入 elastic 失败"))
-			} else {
-				logger.Info("elastic-success")
-			}
+			//// 历史存入 elastic todo::暂时不开启
+			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
+			//if !putRes {
+			//	logger.Error(errors.New("历史存入 elastic 失败"))
+			//} else {
+			//	logger.Info("elastic-success")
+			//}
 			//time.Sleep(time.Nanosecond)
 		} else {
 			logger.Error(errors.New(fmt.Sprintf(
