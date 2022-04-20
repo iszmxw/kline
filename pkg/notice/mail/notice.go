@@ -119,7 +119,7 @@ func msgNetworkAnomaly(c *gin.Context, r interface{}) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
 	url := c.Request.URL
 	method := c.Request.Method
-	brokenInfo["title"] = fmt.Sprintf("环境【%v】网络连接中断", conf.GetString("app.env"))
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】用户网络连接中断，或者用户取消请求", conf.GetString("app.env"))
 	brokenInfo["content"] =
 		fmt.Sprintf(
 			`
