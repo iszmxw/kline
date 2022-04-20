@@ -11,7 +11,6 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/service/liveodds/utils"
-	"net/http"
 )
 
 // 检测通知次数，超过次数不进行通知
@@ -133,10 +132,10 @@ func msgNetworkAnomaly(c *gin.Context, r interface{}) map[string]interface{} {
 }
 
 // Socket网络异常
-func msgSocketNetworkAnomaly(data *http.Response) map[string]interface{} {
+func msgSocketNetworkAnomaly(data map[string]interface{}) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
 	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】socket采集连接异常，请查看详细信息", conf.GetString("app.env"), "raceoption")
-	brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip:42.101.43.106:16790 status[%v] statusCode[%v]`, data.Status, data.StatusCode)
+	brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip:42.101.43.106:16790`)
 	return brokenInfo
 }
 
@@ -169,7 +168,7 @@ func Notice(t string, data interface{}) {
 		Info = msgNetworkAnomaly(arr["c"].(*gin.Context), arr["r"])
 		break
 	case "msgSocketNetworkAnomaly":
-		arr := data.(*http.Response)
+		arr := data.(map[string]interface{})
 		Info = msgSocketNetworkAnomaly(arr)
 		break
 	default:

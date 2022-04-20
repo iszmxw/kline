@@ -26,18 +26,18 @@ else
   echo $! >logs/huobiService-running.pid
 fi
 
-# 重启 sinaService-running
-sinaService=$(ps -ef | grep "/sinaService-running" | grep -v "grep" | awk '{print $2}')
-if [ "$sinaService" ]; then
-  kill -9 "$sinaService"
-  \cp -rf sinaService sinaService-running
-  nohup ./sinaService-running >/dev/null 2>&1 &
-  echo $! >logs/sinaService-running.pid
-else
-  \cp -rf sinaService sinaService-running
-  nohup ./sinaService-running >/dev/null 2>&1 &
-  echo $! >logs/sinaService-running.pid
-fi
+## 重启 sinaService-running
+#sinaService=$(ps -ef | grep "/sinaService-running" | grep -v "grep" | awk '{print $2}')
+#if [ "$sinaService" ]; then
+#  kill -9 "$sinaService"
+#  \cp -rf sinaService sinaService-running
+#  nohup ./sinaService-running >/dev/null 2>&1 &
+#  echo $! >logs/sinaService-running.pid
+#else
+#  \cp -rf sinaService sinaService-running
+#  nohup ./sinaService-running >/dev/null 2>&1 &
+#  echo $! >logs/sinaService-running.pid
+#fi
 
 # 重启 raceoptionService-running
 raceoptionService=$(ps -ef | grep "/raceoptionService-running" | grep -v "grep" | awk '{print $2}')
@@ -51,16 +51,16 @@ else
   nohup ./raceoptionService-running >/dev/null 2>&1 &
   echo $! >logs/raceoptionService-running.pid
 fi
-
-# 重启 liveoddsService-running
-liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
-if [ "$liveoddsService" ]; then
-  kill -9 "$liveoddsService"
-  \cp -rf liveoddsService liveoddsService-running
-  nohup ./liveoddsService-running >/dev/null 2>&1 &
-  echo $! >logs/liveoddsService-running.pid
-else
-  \cp -rf liveoddsService liveoddsService-running
-  nohup ./liveoddsService-running >/dev/null 2>&1 &
-  echo $! >logs/liveoddsService-running.pid
-fi
+#
+## 重启 liveoddsService-running
+#liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
+#if [ "$liveoddsService" ]; then
+#  kill -9 "$liveoddsService"
+#  \cp -rf liveoddsService liveoddsService-running
+#  nohup ./liveoddsService-running >/dev/null 2>&1 &
+#  echo $! >logs/liveoddsService-running.pid
+#else
+#  \cp -rf liveoddsService liveoddsService-running
+#  nohup ./liveoddsService-running >/dev/null 2>&1 &
+#  echo $! >logs/liveoddsService-running.pid
+#fi

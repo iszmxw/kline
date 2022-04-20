@@ -61,7 +61,6 @@ func (ws *WebSocketOp) open(path, host string, closeChanCallback closeChanCallba
 func (ws *WebSocketOp) connServer() bool {
 	wssUrl := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
 	var err error
-	var resp *http.Response
 	dialer := websocket.Dialer{
 		Proxy: http.ProxyURL(&url.URL{
 			Scheme: "http",
@@ -69,10 +68,10 @@ func (ws *WebSocketOp) connServer() bool {
 			User:   url.UserPassword("8319", "9742"),
 		}),
 	}
-	ws.conn, resp, err = dialer.Dial(wssUrl, nil)
+	ws.conn, _, err = dialer.Dial(wssUrl, nil)
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		mail_notice.Notice("msgSocketNetworkAnomaly", resp)
+		mail_notice.Notice("msgSocketNetworkAnomaly", "")
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
 		ws.closeChanCallback <- struct{}{}
