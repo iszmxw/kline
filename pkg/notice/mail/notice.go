@@ -135,7 +135,7 @@ func Notice(t string, data interface{}) {
 		break
 	case "msgTimeDiff":
 		arr := data.(map[string]interface{})
-		Info = msgTimeDiff(arr["ch"].(string), arr["tips"].(string), arr["service"].(string), arr["shicha"].(int64))
+		Info = msgTimeDiff(arr["service"].(string), arr["ch"].(string), arr["tips"].(string), arr["shicha"].(int64))
 		break
 	case "msgLiveOdds":
 		Info = msgLiveOdds(data.(utils.LogData))
