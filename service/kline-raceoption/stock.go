@@ -9,7 +9,6 @@ import (
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
-	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
@@ -51,9 +50,9 @@ func main() {
 	defer bootstrap.RedisClose()
 	var CodeData []wsdata.Info
 	CodeData = append(CodeData,
-		wsdata.Info{Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		wsdata.Info{Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
-		wsdata.Info{Symbol: "AUD/CAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		//wsdata.Info{Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		//wsdata.Info{Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		//wsdata.Info{Symbol: "AUD/CAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
 		wsdata.Info{Symbol: "USD/JPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
 		wsdata.Info{Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
 		wsdata.Info{Symbol: "XAG/USD", Desc: "伦敦银", ContractCode: "SILVER"},
@@ -195,13 +194,13 @@ func SocketRaceOption(info wsdata.Info) {
 			}
 			// 收集数据缓存到redis
 
-			// 历史存入 elastic
-			putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
-			if !putRes {
-				logger.Error(errors.New("历史存入 elastic 失败"))
-			} else {
-				logger.Info("elastic-success")
-			}
+			//// 历史存入 elastic todo::暂时不开启
+			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
+			//if !putRes {
+			//	logger.Error(errors.New("历史存入 elastic 失败"))
+			//} else {
+			//	logger.Info("elastic-success")
+			//}
 
 			runEnd := time.Now().UnixMilli() // 开始时间
 			// 计算一次存储数据消耗的时间

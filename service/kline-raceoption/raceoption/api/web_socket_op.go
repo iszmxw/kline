@@ -7,11 +7,15 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/zip"
+	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 )
 
 type closeChanCallback chan struct{}
@@ -55,12 +59,21 @@ func (ws *WebSocketOp) open(path, host string, closeChanCallback closeChanCallba
 }
 
 func (ws *WebSocketOp) connServer() bool {
-	url := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
+	wssUrl := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
 	var err error
-	ws.conn, _, err = websocket.DefaultDialer.Dial(url, nil)
+	dialer := websocket.Dialer{
+		Proxy: http.ProxyURL(&url.URL{
+			Scheme: "http",
+			Host:   "42.101.43.106:16790",
+			User:   url.UserPassword("8319", "9742"),
+		}),
+	}
+	ws.conn, _, err = dialer.Dial(wssUrl, nil)
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
+		mail_notice.Notice("msgSocketNetworkAnomaly", "")
 		logger.Error(err)
+		time.Sleep(time.Second * 5)
 		ws.closeChanCallback <- struct{}{}
 		return false
 	}

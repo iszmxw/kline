@@ -54,7 +54,14 @@ func msgNoSocket(service, symbol string) map[string]interface{} {
 // 时差通知
 func msgTimeDiff(service, ch, tips string, shicha int64) map[string]interface{} {
 	info := cmap.New().Items()
-	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务通知：当前时间差为：%v秒大于 20秒", conf.GetString("app.env"), ch, service, shicha/1000)
+	var diff int64
+	if shicha/1000 > 10 {
+		diff = 10
+	}
+	if shicha/1000 > 20 {
+		diff = 20
+	}
+	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务通知：当前时间差为：%v秒大于 %v秒", conf.GetString("app.env"), ch, service, shicha/1000, diff)
 	info["content"] = tips
 	return info
 }
@@ -112,7 +119,7 @@ func msgNetworkAnomaly(c *gin.Context, r interface{}) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
 	url := c.Request.URL
 	method := c.Request.Method
-	brokenInfo["title"] = fmt.Sprintf("环境【%v】网络连接中断", conf.GetString("app.env"))
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】用户网络连接中断，或者用户取消请求", conf.GetString("app.env"))
 	brokenInfo["content"] =
 		fmt.Sprintf(
 			`
@@ -121,6 +128,14 @@ func msgNetworkAnomaly(c *gin.Context, r interface{}) map[string]interface{} {
 							请求方法 【%v】<br>
 							详细错误信息 【%v】<br>
 					`, c.ClientIP(), c.ClientIP(), url, method, r)
+	return brokenInfo
+}
+
+// Socket网络异常
+func msgSocketNetworkAnomaly(data string) map[string]interface{} {
+	brokenInfo := cmap.New().Items()
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】socket采集连接异常，请查看详细信息", conf.GetString("app.env"), "raceoption")
+	brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip:42.101.43.106:16790`)
 	return brokenInfo
 }
 
@@ -135,7 +150,7 @@ func Notice(t string, data interface{}) {
 		break
 	case "msgTimeDiff":
 		arr := data.(map[string]interface{})
-		Info = msgTimeDiff(arr["ch"].(string), arr["tips"].(string), arr["service"].(string), arr["shicha"].(int64))
+		Info = msgTimeDiff(arr["service"].(string), arr["ch"].(string), arr["tips"].(string), arr["shicha"].(int64))
 		break
 	case "msgLiveOdds":
 		Info = msgLiveOdds(data.(utils.LogData))
@@ -151,6 +166,10 @@ func Notice(t string, data interface{}) {
 	case "msgNetworkAnomaly":
 		arr := data.(map[string]interface{})
 		Info = msgNetworkAnomaly(arr["c"].(*gin.Context), arr["r"])
+		break
+	case "msgSocketNetworkAnomaly":
+		arr := data.(string)
+		Info = msgSocketNetworkAnomaly(arr)
 		break
 	default:
 		return
