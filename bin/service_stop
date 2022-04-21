@@ -29,3 +29,9 @@ liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | aw
 if [ "$liveoddsService" ]; then
   kill -9 "$liveoddsService"
 fi
+
+# 停止 olymptradeService-running
+olymptradeService=$(ps -ef | grep "/olymptradeService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$olymptradeService" ]; then
+  kill -9 "$olymptradeService"
+fi

@@ -64,3 +64,16 @@ fi
 #  nohup ./liveoddsService-running >/dev/null 2>&1 &
 #  echo $! >logs/liveoddsService-running.pid
 #fi
+
+# 重启 olymptradeService-running
+olymptradeService=$(ps -ef | grep "/olymptradeService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$olymptradeService" ]; then
+  kill -9 "$olymptradeService"
+  \cp -rf olymptradeService olymptradeService-running
+  nohup ./olymptradeService-running >/dev/null 2>error.log &
+  echo $! >logs/olymptradeService-running.pid
+else
+  \cp -rf olymptradeService olymptradeService-running
+  nohup ./olymptradeService-running >/dev/null 2>&1 &
+  echo $! >logs/olymptradeService-running.pid
+fi
