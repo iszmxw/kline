@@ -15,8 +15,8 @@ import (
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
-	"goapi/service/kline-pocketoption/pocketoption/api"
-	"goapi/service/kline-pocketoption/pocketoption/wsdata"
+	"goapi/service/kline-olymptrade/olymptrade/api"
+	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
@@ -30,7 +30,7 @@ func init() {
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
-	logger.Init("kline-pocketoption")
+	logger.Init("kline-olymptrade")
 	// 初始化 SQL
 	bootstrap.SetupDB()
 }
@@ -103,7 +103,7 @@ func SocketPocketOption(info wsdata.Info) {
 			runStr := time.Now().UnixMilli() // 开始时间
 			// RequestId 定义为 Ts 时间戳
 			logger.RequestId = fmt.Sprintf("%v", resp.TimeId)
-			// pocketoption网推送的回来的数据转换为字符串
+			// olymptrade网推送的回来的数据转换为字符串
 			strData, err := json.Marshal(resp) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)
@@ -148,7 +148,7 @@ func SocketPocketOption(info wsdata.Info) {
 				Select("log_id").
 				Where("contract_code", ContractCode).
 				Where("upstream_ts", data.Ts).
-				Where("kline_source", "pocketoption").
+				Where("kline_source", "olymptrade").
 				Find(&KlineData).Error
 			if err != nil {
 				logger.Error(err)
@@ -164,7 +164,7 @@ func SocketPocketOption(info wsdata.Info) {
 			}
 
 			tips := fmt.Sprintf(
-				"pocketoption时差：系统时间：%v(%v)<br>pocketoption的 ts 时间：%v(%v)",
+				"olymptrade时差：系统时间：%v(%v)<br>olymptrade的 ts 时间：%v(%v)",
 				time.Now().UnixMilli(),
 				time.Now().Format("2006-01-02 15:04:05"),
 				data.Ts,
@@ -178,7 +178,7 @@ func SocketPocketOption(info wsdata.Info) {
 				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
 					"ch":      data.Ch,
 					"tips":    tips,
-					"service": "pocketoption",
+					"service": "olymptrade",
 					"shicha":  shicha,
 				})
 			}
@@ -187,7 +187,7 @@ func SocketPocketOption(info wsdata.Info) {
 				logger.Error(MarshalJSONErr)
 				return
 			}
-			key := fmt.Sprintf("pocketoption:%v", data.Ch)
+			key := fmt.Sprintf("olymptrade:%v", data.Ch)
 			_, redisErr := redis.Add(key, msgData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
@@ -241,6 +241,6 @@ func LogData(resp *wsdata.SubPriceKLineResponse) models.KlineLog {
 	klineLog.CCount = 0                                                                // 交易笔数 TODO
 	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))     // Kline返回日期
 	klineLog.CreateDate = time.Now()                                                   // 创建日期
-	klineLog.KlineSource = "pocketoption"                                              // K线来源pocketoption
+	klineLog.KlineSource = "olymptrade"                                                // K线来源olymptrade
 	return klineLog
 }

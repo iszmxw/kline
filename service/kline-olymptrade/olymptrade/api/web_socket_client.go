@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"goapi/service/kline-pocketoption/pocketoption/config"
-	"goapi/service/kline-pocketoption/pocketoption/wsdata"
+	"goapi/service/kline-olymptrade/olymptrade/config"
+	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"reflect"
 )
 
