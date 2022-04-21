@@ -132,7 +132,7 @@ func msgNetworkAnomaly(c *gin.Context, r interface{}) map[string]interface{} {
 }
 
 // Socket网络异常
-func msgSocketNetworkAnomaly(data map[string]interface{}) map[string]interface{} {
+func msgSocketNetworkAnomaly(data string) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
 	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】socket采集连接异常，请查看详细信息", conf.GetString("app.env"), "raceoption")
 	brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip:42.101.43.106:16790`)
@@ -168,7 +168,7 @@ func Notice(t string, data interface{}) {
 		Info = msgNetworkAnomaly(arr["c"].(*gin.Context), arr["r"])
 		break
 	case "msgSocketNetworkAnomaly":
-		arr := data.(map[string]interface{})
+		arr := data.(string)
 		Info = msgSocketNetworkAnomaly(arr)
 		break
 	default:

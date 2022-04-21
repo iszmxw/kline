@@ -280,6 +280,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	if len(klineSource) > 0 {
 		if helpers.InArray(symbol, []string{"BTC-USD", "ETH-USD"}) {
 			// 走火币来源
+			klineSource = "huobi"
 			KlineDB = KlineDB.Where("kline_source", "huobi")
 		} else {
 			KlineDB = KlineDB.Where("kline_source", klineSource)
@@ -308,7 +309,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		"HistKlineLogs": data,
 		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
 		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
-		"klineSource":   "huobi",
+		"klineSource":   klineSource,
 		"totals":        Count,
 		"contractCode":  symbol,
 	}, "success", 1)
