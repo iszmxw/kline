@@ -3,24 +3,31 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/gostudys/huobi_contract_golang/src/ws/response"
+	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/redis"
+	"strings"
+
+	//"encoding/json"
+	//"errors"
+	"fmt"
+	//"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
-	"goapi/pkg/esdk"
-	"goapi/pkg/helpers"
+	//"goapi/pkg/esdk"
+	//"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
-	"goapi/pkg/redis"
+	//mail_notice "goapi/pkg/notice/mail"
+	//"goapi/pkg/redis"
 	"goapi/service/kline-olymptrade/olymptrade/api"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
-	"strings"
+	//"strings"
 	"time"
 )
 
@@ -51,12 +58,12 @@ func main() {
 	defer bootstrap.RedisClose()
 	var CodeData []wsdata.Info
 	CodeData = append(CodeData,
-		wsdata.Info{Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		wsdata.Info{Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
-		wsdata.Info{Symbol: "AUD/CAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
-		wsdata.Info{Symbol: "USD/JPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
-		wsdata.Info{Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
-		wsdata.Info{Symbol: "XAG/USD", Desc: "伦敦银", ContractCode: "SILVER"},
+		//wsdata.Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		//wsdata.Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		//wsdata.Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		wsdata.Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		//wsdata.Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
+		//wsdata.Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
 	)
 	start := "ok"
 	for {
@@ -64,7 +71,7 @@ func main() {
 			logger.Info(CodeData)
 			for _, obj := range CodeData {
 				logger.Info("缓存 " + obj.Symbol)
-				go SocketPocketOption(obj)
+				go SocketOlymptrade(obj)
 			}
 			start = "no"
 		}
@@ -72,7 +79,7 @@ func main() {
 	}
 }
 
-func SocketPocketOption(info wsdata.Info) {
+func SocketOlymptrade(info wsdata.Info) {
 	callback := make(chan struct{}, 1)
 	var TradingAssets models.TradingAssets
 	var StartSub = true
@@ -100,9 +107,18 @@ func SocketPocketOption(info wsdata.Info) {
 	if StartSub {
 		wsmkClient := new(api.WSPriceClient).Init("", callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
+			wsData := *resp
+			dType := wsData[0].E    // 读取E的类型
+			rData := wsData[0].D[0] // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
+			if dType == 1 {
+				//fmt.Println(123)
+			}
+			if dType == 2 {
+				logger.Info(rData)
+			}
 			runStr := time.Now().UnixMilli() // 开始时间
 			// RequestId 定义为 Ts 时间戳
-			logger.RequestId = fmt.Sprintf("%v", resp.TimeId)
+			logger.RequestId = fmt.Sprintf("%v", rData.T)
 			// olymptrade网推送的回来的数据转换为字符串
 			strData, err := json.Marshal(resp) //转换成JSON返回的是byte[]
 			if err != nil {
@@ -112,34 +128,34 @@ func SocketPocketOption(info wsdata.Info) {
 			if len(strData) <= 0 {
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",
-					resp.Symbol, resp)))
+					rData.P, resp)))
 				return
 			}
 			logger.Info(resp)
-			if resp.TimeId == "1" {
+			if rData.T <= 0 {
 				err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
 				if err != nil {
 					logger.Error(err)
 				}
 				// 通知
-				mail_notice.Notice("msgNoSocket", resp.Symbol)
+				mail_notice.Notice("msgNoSocket", rData.P)
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
-					resp.Symbol, resp)))
+					rData.P, resp)))
 				return
 			}
 			ContractCode := info.ContractCode
-			resp.Symbol = info.ContractCode
+			rData.P = info.ContractCode
 			var data response.SubIndexKLineResponse
 			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
-			data.Ts = helpers.StringToInt64(resp.TimeId)
-			data.Tick.Id = helpers.StringToInt64(resp.TimeId)
-			data.Tick.Vol = fmt.Sprintf("%v", resp.AskVolume)
+			data.Ts = int64(rData.T * 1000)
+			data.Tick.Id = int64(rData.T * 1000)
+			data.Tick.Vol = "0"
 			data.Tick.Count = 0
-			data.Tick.Open = "0"
-			data.Tick.Close = fmt.Sprintf("%v", resp.Strike)
-			data.Tick.Low = fmt.Sprintf("%v", resp.Ask)
-			data.Tick.High = fmt.Sprintf("%v", resp.Bid)
+			data.Tick.Open = fmt.Sprintf("%v", rData.Open)
+			data.Tick.Close = fmt.Sprintf("%v", rData.Close)
+			data.Tick.Low = fmt.Sprintf("%v", rData.Low)
+			data.Tick.High = fmt.Sprintf("%v", rData.High)
 			data.Tick.Amount = "0"
 
 			var KlineData models.KlineLog
@@ -156,13 +172,12 @@ func SocketPocketOption(info wsdata.Info) {
 			if KlineData.LogId > 0 {
 				return
 			}
-			lineLogRes := LogData(resp)
+			lineLogRes := LogData(wsData)
 			cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
 			if cerr1 != nil {
 				logger.Error(cerr1)
 				return
 			}
-
 			tips := fmt.Sprintf(
 				"olymptrade时差：系统时间：%v(%v)<br>olymptrade的 ts 时间：%v(%v)",
 				time.Now().UnixMilli(),
@@ -195,13 +210,13 @@ func SocketPocketOption(info wsdata.Info) {
 			}
 			// 收集数据缓存到redis
 
-			// 历史存入 elastic
-			putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
-			if !putRes {
-				logger.Error(errors.New("历史存入 elastic 失败"))
-			} else {
-				logger.Info("elastic-success")
-			}
+			//// 历史存入 elastic
+			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
+			//if !putRes {
+			//	logger.Error(errors.New("历史存入 elastic 失败"))
+			//} else {
+			//	logger.Info("elastic-success")
+			//}
 
 			runEnd := time.Now().UnixMilli() // 开始时间
 			// 计算一次存储数据消耗的时间
@@ -220,27 +235,28 @@ func SocketPocketOption(info wsdata.Info) {
 	case <-callback:
 		fmt.Println(info.Symbol + "：已关闭")
 		fmt.Println(info.Symbol + "：正在重新启动 Goroutine")
-		go SocketPocketOption(info)
+		go SocketOlymptrade(info)
 	}
 }
 
-func LogData(resp *wsdata.SubPriceKLineResponse) models.KlineLog {
+func LogData(wsData wsdata.SubPriceKLineResponse) models.KlineLog {
 	var klineLog models.KlineLog
-	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(resp.Symbol), "/", "-") // 合约代码 BTC-USD
-	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)           // kilne返回日期时间戳
-	klineLog.Ts = time.Now().UnixMilli()                                               // 自己生成的ts
-	klineLog.UpstreamTs = helpers.StringToInt64(resp.TimeId)                           // 上游的ts
-	klineLog.ID = helpers.StringToInt64(resp.TimeId)                                   // 自己生成的ts/1000
-	klineLog.Mrid = 0.00                                                               // ID
-	klineLog.COpen = 0                                                                 // 起始峰值
-	klineLog.CClose = resp.Strike                                                      // 结束峰值
-	klineLog.High = resp.Bid                                                           // 最高峰值
-	klineLog.Low = resp.Ask                                                            // 最低峰值
-	klineLog.Amount = 0                                                                // 成交金额 TODO
-	klineLog.Vol = helpers.StrToFloat64(resp.AskVolume)                                // 成交手 TODO
-	klineLog.CCount = 0                                                                // 交易笔数 TODO
-	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))     // Kline返回日期
-	klineLog.CreateDate = time.Now()                                                   // 创建日期
-	klineLog.KlineSource = "olymptrade"                                                // K线来源olymptrade
+	rData := wsData[0].D[0]                                                        // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
+	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(rData.P), "/", "-") // 合约代码 BTC-USD
+	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)       // kilne返回日期时间戳
+	klineLog.Ts = time.Now().UnixMilli()                                           // 自己生成的ts
+	klineLog.UpstreamTs = int64(rData.T * 1000)                                    // 上游的ts
+	klineLog.ID = int64(rData.T * 1000)                                            // 自己生成的ts/1000
+	klineLog.Mrid = 0.00                                                           // ID
+	klineLog.COpen = 0                                                             // 起始峰值
+	klineLog.CClose = rData.Close                                                  // 结束峰值
+	klineLog.High = rData.High                                                     // 最高峰值
+	klineLog.Low = rData.Low                                                       // 最低峰值
+	klineLog.Amount = 0                                                            // 成交金额 TODO
+	klineLog.Vol = 0                                                               // 成交手 TODO
+	klineLog.CCount = 0                                                            // 交易笔数 TODO
+	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond)) // Kline返回日期
+	klineLog.CreateDate = time.Now()                                               // 创建日期
+	klineLog.KlineSource = "olymptrade"                                            // K线来源olymptrade
 	return klineLog
 }

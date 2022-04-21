@@ -3,9 +3,7 @@ package config
 const GET_METHOD = "GET"
 const POST_METHOD = "POST"
 
-const LINEAR_SWAP_DEFAULT_HOST = "api-asia.po.market:8030"
-
-const SPOT_DEFAULT_HOST = "api.huobi.pro"
+const LINEAR_SWAP_DEFAULT_HOST = "olymptrade.com"
 
 const DEFAULT_ID = "api"
 const DEFAULT_CID = "cid"

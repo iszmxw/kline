@@ -1,7 +1,8 @@
 package api
 
 import (
-	"encoding/json"
+	"fmt"
+	"goapi/pkg/helpers"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"reflect"
@@ -15,7 +16,7 @@ func (wsIx *WSPriceClient) Init(host string, callback closeChanCallback) *WSPric
 	if host == "" {
 		host = config.LINEAR_SWAP_DEFAULT_HOST
 	}
-	wsIx.open("/socket.io/?EIO=4&transport=websocket", host, callback)
+	wsIx.open("/otp", host, callback)
 	return wsIx
 }
 
@@ -25,9 +26,10 @@ func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPric
 	if id == "" {
 		id = config.DEFAULT_ID
 	}
-	subData := wsdata.WSSubData{Operation: "SUBSCRIBE.TICK", Id: info.Symbol, Param: ""} // {"operation":"SUBSCRIBE.TICK","id":"EUR/USD","param":""}
-	data, _ := json.Marshal(subData)
+	//subData := wsdata.WSSubData{Operation: "SUBSCRIBE.TICK", Id: info.Symbol, Param: ""} // {"operation":"SUBSCRIBE.TICK","id":"EUR/USD","param":""}
+	//data, _ := json.Marshal(subData)
 
-	data = []byte{40}
+	data := []byte(fmt.Sprintf(`[{"t":2,"e":8,"uuid":"L28G%v","d":[{"pair":"%v"}]}]`, helpers.GetUUID16(), info.Symbol))
+	//data = []byte(fmt.Sprintf(`[{"t":2,"e":90,"uuid":"L28GFJHP4W9E96HL45"}]`, helpers.GetUUID16(), info.Symbol))
 	wsIx.sub(data, info.Symbol, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }

@@ -7,11 +7,15 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/utils/zip"
+	"goapi/service/kline-olymptrade/olymptrade/wsdata"
+	"net/http"
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 )
 
 type closeChanCallback chan struct{}
@@ -55,12 +59,24 @@ func (ws *WebSocketOp) open(path, host string, closeChanCallback closeChanCallba
 }
 
 func (ws *WebSocketOp) connServer() bool {
-	url := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
+	wssUrl := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
 	var err error
-	ws.conn, _, err = websocket.DefaultDialer.Dial(url, nil)
+	dialer := websocket.Dialer{
+		//Proxy: http.ProxyURL(&url.URL{
+		//	Scheme: "http",
+		//	Host:   "42.101.43.106:16790",
+		//	User:   url.UserPassword("8319", "9742"),
+		//}),
+	}
+	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
+		"Origin": {"https://olymptrade.com"},
+		"Cookie": {"session=1629167146143495028583624161042912173895462127666685937664207996;"},
+	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
+		mail_notice.Notice("msgSocketNetworkAnomaly", "")
 		logger.Error(err)
+		time.Sleep(time.Second * 5)
 		ws.closeChanCallback <- struct{}{}
 		return false
 	}
@@ -89,16 +105,19 @@ ERR:
 }
 
 func (ws *WebSocketOp) msgHand(message []byte) {
-	var data map[string]interface{}
+	var data wsdata.SubPriceKLineResponse
 	err := json.Unmarshal(message, &data)
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("msg to map[string]json.RawMessage error: %s", err)))
 		return
 	}
-	if symbol, found := data["symbol"]; found { // market sub reply data
-		ws.handleSubCallbackFun(symbol.(string), message, data)
+	dType := data[0].E // 读取E的类型
+	if dType == 1 {    // [{"d":[{"p":"AUDCAD","t":1650514321.284,"q":0.92792}],"e":1}]
+		ws.handleSubCallbackFun(data[0].D[0].P, message, data)
+	} else if dType == 2 { // [{"d":[{"p":"AUDCAD","t":1650514320,"open":0.92792,"low":0.92792,"high":0.92792,"close":0.92792}],"e":2}]
+		ws.handleSubCallbackFun(data[0].D[0].P, message, data)
 	} else {
-		logger.Info(fmt.Sprintf("WebSocket received unknow data: %s", data))
+		logger.Info(fmt.Sprintf("WebSocket received unknow data: %v", data))
 	}
 }
 
@@ -111,7 +130,7 @@ func (ws *WebSocketOp) SendMsg(data []byte) bool {
 	return true
 }
 
-func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata map[string]interface{}) {
+func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata interface{}) {
 	var mi *CallbackFunc = nil
 	ch = strings.ToLower(ch)
 	if _, found := ws.SubTopicMap[ch]; found {
