@@ -27,13 +27,14 @@ type CallbackFunc struct {
 
 type WebSocketOp struct {
 	host              string                   // 连接地址
+	session           string                   // session
 	path              string                   // 路由
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
 	mutex             sync.Mutex               // 锁
-	readChan          chan []byte              //读消息管道
-	writeChan         chan []byte              //写消息管道
+	readChan          chan []byte              // 读消息管道
+	writeChan         chan []byte              // 写消息管道
 	SubTopicMap       map[string]*CallbackFunc // 订阅历史
 	ReqTopicMap       map[string]*CallbackFunc // 请求历史
 	authConnect       int                      // 自动重连次数
@@ -41,11 +42,12 @@ type WebSocketOp struct {
 	allSubStrs        list.List
 }
 
-func (ws *WebSocketOp) open(path, host string, closeChanCallback closeChanCallback) bool {
+func (ws *WebSocketOp) open(path, host, session string, closeChanCallback closeChanCallback) bool {
 	if host == "" {
 		ws.host = config.LINEAR_SWAP_DEFAULT_HOST
 	}
 	ws.host = host
+	ws.session = session
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
 	ws.readChan = make(chan []byte, 30)
@@ -70,7 +72,7 @@ func (ws *WebSocketOp) connServer() bool {
 	}
 	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
 		"Origin": {"https://olymptrade.com"},
-		"Cookie": {"session=1629167146143495028583624161042912173895462127666685937664207996;"},
+		"Cookie": {ws.session},
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))

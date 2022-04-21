@@ -27,7 +27,7 @@ func check(address, t string) bool {
 	} else {
 		num := helpers.StringToInt64(value)
 		// 管理员直接可以
-		if address == AdminMail {
+		if address == AdminMail || address == "yezhiming@yuctime.com" {
 			return true
 		}
 		// 最大通知次数

@@ -58,12 +58,12 @@ func main() {
 	defer bootstrap.RedisClose()
 	var CodeData []wsdata.Info
 	CodeData = append(CodeData,
-		//wsdata.Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		//wsdata.Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
-		//wsdata.Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		wsdata.Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		wsdata.Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		wsdata.Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
 		wsdata.Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
-		//wsdata.Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
-		//wsdata.Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		wsdata.Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
+		wsdata.Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
 	)
 	start := "ok"
 	for {
@@ -105,13 +105,15 @@ func SocketOlymptrade(info wsdata.Info) {
 	}
 	// 开始订阅
 	if StartSub {
-		wsmkClient := new(api.WSPriceClient).Init("", callback)
+		// 必须传入登录session
+		session := "session=1629167146143495028583624161042912173895462127666685937664207996;"
+		wsmkClient := new(api.WSPriceClient).Init("", session, callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			wsData := *resp
 			dType := wsData[0].E    // 读取E的类型
 			rData := wsData[0].D[0] // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
 			if dType == 1 {
-				//fmt.Println(123)
+				return
 			}
 			if dType == 2 {
 				logger.Info(rData)
@@ -128,7 +130,7 @@ func SocketOlymptrade(info wsdata.Info) {
 			if len(strData) <= 0 {
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",
-					rData.P, resp)))
+					info.ContractCode, resp)))
 				return
 			}
 			logger.Info(resp)
@@ -138,14 +140,13 @@ func SocketOlymptrade(info wsdata.Info) {
 					logger.Error(err)
 				}
 				// 通知
-				mail_notice.Notice("msgNoSocket", rData.P)
+				mail_notice.Notice("msgNoSocket", info.ContractCode)
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
-					rData.P, resp)))
+					info.ContractCode, resp)))
 				return
 			}
 			ContractCode := info.ContractCode
-			rData.P = info.ContractCode
 			var data response.SubIndexKLineResponse
 			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
 			data.Ts = int64(rData.T * 1000)
@@ -172,7 +173,7 @@ func SocketOlymptrade(info wsdata.Info) {
 			if KlineData.LogId > 0 {
 				return
 			}
-			lineLogRes := LogData(wsData)
+			lineLogRes := LogData(wsData, ContractCode)
 			cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
 			if cerr1 != nil {
 				logger.Error(cerr1)
@@ -239,24 +240,24 @@ func SocketOlymptrade(info wsdata.Info) {
 	}
 }
 
-func LogData(wsData wsdata.SubPriceKLineResponse) models.KlineLog {
+func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string) models.KlineLog {
 	var klineLog models.KlineLog
-	rData := wsData[0].D[0]                                                        // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
-	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(rData.P), "/", "-") // 合约代码 BTC-USD
-	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)       // kilne返回日期时间戳
-	klineLog.Ts = time.Now().UnixMilli()                                           // 自己生成的ts
-	klineLog.UpstreamTs = int64(rData.T * 1000)                                    // 上游的ts
-	klineLog.ID = int64(rData.T * 1000)                                            // 自己生成的ts/1000
-	klineLog.Mrid = 0.00                                                           // ID
-	klineLog.COpen = 0                                                             // 起始峰值
-	klineLog.CClose = rData.Close                                                  // 结束峰值
-	klineLog.High = rData.High                                                     // 最高峰值
-	klineLog.Low = rData.Low                                                       // 最低峰值
-	klineLog.Amount = 0                                                            // 成交金额 TODO
-	klineLog.Vol = 0                                                               // 成交手 TODO
-	klineLog.CCount = 0                                                            // 交易笔数 TODO
-	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond)) // Kline返回日期
-	klineLog.CreateDate = time.Now()                                               // 创建日期
-	klineLog.KlineSource = "olymptrade"                                            // K线来源olymptrade
+	rData := wsData[0].D[0]                                                             // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
+	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(ContractCode), "/", "-") // 合约代码 BTC-USD
+	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)            // kilne返回日期时间戳
+	klineLog.Ts = time.Now().UnixMilli()                                                // 自己生成的ts
+	klineLog.UpstreamTs = int64(rData.T * 1000)                                         // 上游的ts
+	klineLog.ID = int64(rData.T * 1000)                                                 // 自己生成的ts/1000
+	klineLog.Mrid = 0.00                                                                // ID
+	klineLog.COpen = 0                                                                  // 起始峰值
+	klineLog.CClose = rData.Close                                                       // 结束峰值
+	klineLog.High = rData.High                                                          // 最高峰值
+	klineLog.Low = rData.Low                                                            // 最低峰值
+	klineLog.Amount = 0                                                                 // 成交金额 TODO
+	klineLog.Vol = 0                                                                    // 成交手 TODO
+	klineLog.CCount = 0                                                                 // 交易笔数 TODO
+	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))      // Kline返回日期
+	klineLog.CreateDate = time.Now()                                                    // 创建日期
+	klineLog.KlineSource = "olymptrade"                                                 // K线来源olymptrade
 	return klineLog
 }
