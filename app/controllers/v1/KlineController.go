@@ -414,3 +414,16 @@ func (h *KlineController) GetConfigHandler(c *gin.Context) {
 	}
 	return
 }
+
+// 邮箱通知配置
+
+func (h *KlineController) GetRedisKeyHandler(c *gin.Context) {
+	keys := c.Query("keys")
+	res, err := redis.GetKeys(keys)
+	if err != nil {
+		output.Rjson(c, gin.H{}, "fail", 0)
+	} else {
+		output.Rjson(c, gin.H{keys: res}, "success", 1)
+	}
+	return
+}

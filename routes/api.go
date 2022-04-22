@@ -28,6 +28,7 @@ func RegisterWebRoutes(router *gin.RouterGroup) {
 			kLine.Any("/set_config", v1Group.KlineController.SetConfigHandler)
 			// 查看配置
 			kLine.Any("/get_config", v1Group.KlineController.GetConfigHandler)
+			kLine.Any("/get_redis_key", v1Group.KlineController.GetRedisKeyHandler)
 		}
 	}
 }

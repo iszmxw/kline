@@ -100,6 +100,11 @@ func Get(key string) (string, error) {
 	return value, err
 }
 
+func GetKeys(key string) ([]string, error) {
+	value, err := Redis.Keys(key).Result()
+	return value, err
+}
+
 // Redis Keys 命令 - 查找所有符合给定模式( pattern)的 key
 // https://www.redis.net.cn/order/3535.html
 
