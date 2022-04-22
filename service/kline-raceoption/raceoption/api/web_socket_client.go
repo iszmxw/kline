@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/wsdata"
+	"net/url"
 	"reflect"
 )
 
@@ -11,11 +12,11 @@ type WSPriceClient struct {
 	WebSocketOp
 }
 
-func (wsIx *WSPriceClient) Init(host string, callback closeChanCallback) *WSPriceClient {
+func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
 	if host == "" {
 		host = config.LINEAR_SWAP_DEFAULT_HOST
 	}
-	wsIx.open("/api/ws/price", host, callback)
+	wsIx.open("/api/ws/price", host, proxy, callback)
 	return wsIx
 }
 

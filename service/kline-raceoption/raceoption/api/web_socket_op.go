@@ -27,6 +27,7 @@ type CallbackFunc struct {
 
 type WebSocketOp struct {
 	host              string                   // 连接地址
+	proxy             *url.URL                 // 代理地址设置
 	path              string                   // 路由
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
@@ -41,11 +42,12 @@ type WebSocketOp struct {
 	allSubStrs        list.List
 }
 
-func (ws *WebSocketOp) open(path, host string, closeChanCallback closeChanCallback) bool {
+func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
 	if host == "" {
 		ws.host = config.LINEAR_SWAP_DEFAULT_HOST
 	}
 	ws.host = host
+	ws.proxy = proxy
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
 	ws.readChan = make(chan []byte, 30)
@@ -62,11 +64,7 @@ func (ws *WebSocketOp) connServer() bool {
 	wssUrl := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
 	var err error
 	dialer := websocket.Dialer{
-		Proxy: http.ProxyURL(&url.URL{
-			Scheme: "http",
-			Host:   "42.101.43.106:16790",
-			User:   url.UserPassword("8319", "9742"),
-		}),
+		Proxy: http.ProxyURL(ws.proxy),
 	}
 	ws.conn, _, err = dialer.Dial(wssUrl, nil)
 	if err != nil {
