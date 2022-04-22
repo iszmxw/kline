@@ -69,7 +69,7 @@ func (ws *WebSocketOp) connServer() bool {
 	ws.conn, _, err = dialer.Dial(wssUrl, nil)
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		mail_notice.Notice("msgSocketNetworkAnomaly", "")
+		mail_notice.Notice("msgSocketNetworkAnomaly", "raceoption")
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
 		ws.closeChanCallback <- struct{}{}

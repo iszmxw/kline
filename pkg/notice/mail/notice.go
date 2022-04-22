@@ -13,34 +13,81 @@ import (
 	"goapi/service/liveodds/utils"
 )
 
+func getNoticeKey(address, t string) string {
+	return fmt.Sprintf("notice:mail:%v:%v", t, address)
+}
+
 // 检测通知次数，超过次数不进行通知
 func check(address, t string) bool {
-	key := fmt.Sprintf("notice:mail:%v:%v", t, address)
-	logger.Info(key)
+	var pass = true
+	key := getNoticeKey(address, t)
+	logger.Info(key) // key=======>notice:mail:msgSocketNetworkAnomaly:mail@54zm.com
 	value, _ := redis.Get(key)
 	// 初始化
 	if len(value) <= 0 {
 		_, err := redis.Add(key, InitNum, ExTime)
 		if err != nil {
-			return false
+			pass = false
 		}
 	} else {
 		num := helpers.StringToInt64(value)
 		// 管理员直接可以
 		if address == AdminMail || address == "yezhiming@yuctime.com" {
-			return true
+			pass = true
 		}
 		// 最大通知次数
 		if num > MaxNum {
+			pass = false
+		}
+		if redis.Incr(key) > MaxNum {
+			pass = false
+		} else {
+			pass = true
+		}
+	}
+	// 网络异常：一分钟内超过15次进行通知
+	if t == "msgSocketNetworkAnomaly" { // 检测累计通知次数
+		if checkGrandTotal(address, t, 0, 1*60, 15) { // 一分钟内超过15次进行通知
+			pass = true
+		} else {
+			pass = false
+		}
+	}
+	// 时差：30秒内超过10次进行通知
+	if t == "msgTimeDiff" { // 检测累计通知次数
+		if checkGrandTotal(address, t, 0, 30, 10) { // 30秒内超过10次进行通知
+			pass = true
+		} else {
+			pass = false
+		}
+	}
+	return pass
+}
+
+// 检查累计次数
+func checkGrandTotal(address, t string, InitNum, GrandTotalExTime, GrandTotal int) bool {
+	key := getNoticeKey("grandTotal:"+address, t) // key=======>notice:mail:msgSocketNetworkAnomaly:grandTotal:mail@54zm.com
+	value, _ := redis.Get(key)
+	// 初始化
+	if len(value) <= 0 {
+		// 四分钟累计
+		_, err := redis.Add(key, InitNum, GrandTotalExTime)
+		if err != nil {
 			return false
 		}
-		if redis.Incr(key) > 0 {
+	} else {
+		num := helpers.StringToInt(value)
+		// 最大通知次数
+		if num < GrandTotal {
+			return false
+		}
+		if redis.Incr(key) > int64(GrandTotal) {
 			return true
 		} else {
 			return false
 		}
 	}
-	return true
+	return false
 }
 
 // 暂无 socket 通知
@@ -132,10 +179,10 @@ func msgNetworkAnomaly(c *gin.Context, r interface{}) map[string]interface{} {
 }
 
 // Socket网络异常
-func msgSocketNetworkAnomaly(data string) map[string]interface{} {
+func msgSocketNetworkAnomaly(name string) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
-	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】socket采集连接异常，请查看详细信息", conf.GetString("app.env"), "raceoption")
-	brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip:42.101.43.106:16790`)
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】socket采集连接异常，请查看详细信息", conf.GetString("app.env"), name)
+	brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip链接失败`)
 	return brokenInfo
 }
 
@@ -168,8 +215,8 @@ func Notice(t string, data interface{}) {
 		Info = msgNetworkAnomaly(arr["c"].(*gin.Context), arr["r"])
 		break
 	case "msgSocketNetworkAnomaly":
-		arr := data.(string)
-		Info = msgSocketNetworkAnomaly(arr)
+		name := data.(string)
+		Info = msgSocketNetworkAnomaly(name)
 		break
 	default:
 		return
