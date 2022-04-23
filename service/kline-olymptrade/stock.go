@@ -109,6 +109,16 @@ func SocketOlymptrade(info wsdata.Info) {
 		session := "session=1629167146143495028583624161042912173895462127666685937664207996;"
 		wsmkClient := new(api.WSPriceClient).Init("", session, callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
+			defer func() {
+				if r := recover(); r != nil {
+					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
+						"name": "olymptrade",
+						"r":    r,
+					})
+					// 关闭
+					callback <- struct{}{}
+				}
+			}()
 			wsData := *resp
 			dType := wsData[0].E    // 读取E的类型
 			rData := wsData[0].D[0] // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
@@ -140,7 +150,10 @@ func SocketOlymptrade(info wsdata.Info) {
 					logger.Error(err)
 				}
 				// 通知
-				mail_notice.Notice("msgNoSocket", info.ContractCode)
+				mail_notice.Notice("msgNoSocket", map[string]interface{}{
+					"service": "olymptrade",
+					"symbol":  info.ContractCode,
+				})
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
 					info.ContractCode, resp)))

@@ -96,6 +96,16 @@ func SocketHuoBi(parentTopic string) {
 	// websocket api
 	wsmkClient := new(api.WSIndexClient).Init(host, callback)
 	wsmkClient.SubIndexKLine(Topic[1], Topic[3], func(data *response.SubIndexKLineResponse) {
+		defer func() {
+			if r := recover(); r != nil {
+				mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
+					"name": "huobi",
+					"r":    r,
+				})
+				// 关闭
+				callback <- struct{}{}
+			}
+		}()
 		runStr := time.Now().UnixMilli() // 开始时间
 		// RequestId 定义为 Ts 时间戳
 		logger.RequestId = fmt.Sprintf("%v", data.Ts)

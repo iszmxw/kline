@@ -76,7 +76,9 @@ func (ws *WebSocketOp) connServer() bool {
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		mail_notice.Notice("msgSocketNetworkAnomaly", "olymptrade")
+		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
+			"name": "olymptrade",
+		})
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
 		ws.closeChanCallback <- struct{}{}

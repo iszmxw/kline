@@ -186,6 +186,14 @@ func msgSocketNetworkAnomaly(name string) map[string]interface{} {
 	return brokenInfo
 }
 
+// 服务堆栈异常
+func msgServiceAnomaly(name string, r interface{}) map[string]interface{} {
+	brokenInfo := cmap.New().Items()
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】服务异常，请查看详细信息", conf.GetString("app.env"), name)
+	brokenInfo["content"] = fmt.Sprintf(`【%v】服务异常<br>详细堆栈错误信息 :<br>【%v】<br>`, name, r)
+	return brokenInfo
+}
+
 // 发送通知
 
 func Notice(t string, data interface{}) {
@@ -215,8 +223,12 @@ func Notice(t string, data interface{}) {
 		Info = msgNetworkAnomaly(arr["c"].(*gin.Context), arr["r"])
 		break
 	case "msgSocketNetworkAnomaly":
-		name := data.(string)
-		Info = msgSocketNetworkAnomaly(name)
+		arr := data.(map[string]interface{})
+		Info = msgSocketNetworkAnomaly(arr["name"].(string))
+		break
+	case "msgServiceAnomaly":
+		arr := data.(map[string]interface{})
+		Info = msgServiceAnomaly(arr["name"].(string), arr["r"])
 		break
 	default:
 		return

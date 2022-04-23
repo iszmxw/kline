@@ -109,6 +109,16 @@ func SocketRaceOption(info wsdata.Info) {
 		}
 		wsmkClient := new(api.WSPriceClient).Init("", proxy, callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
+			defer func() {
+				if r := recover(); r != nil {
+					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
+						"name": "raceoption",
+						"r":    r,
+					})
+					// 关闭
+					callback <- struct{}{}
+				}
+			}()
 			runStr := time.Now().UnixMilli() // 开始时间
 			// RequestId 定义为 Ts 时间戳
 			logger.RequestId = fmt.Sprintf("%v", resp.TimeId)
@@ -131,7 +141,10 @@ func SocketRaceOption(info wsdata.Info) {
 					logger.Error(err)
 				}
 				// 通知
-				mail_notice.Notice("msgNoSocket", resp.Symbol)
+				mail_notice.Notice("msgNoSocket", map[string]interface{}{
+					"service": "raceoption",
+					"symbol":  info.ContractCode,
+				})
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
 					resp.Symbol, resp)))
