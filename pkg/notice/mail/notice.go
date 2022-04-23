@@ -11,6 +11,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/service/liveodds/utils"
+	"runtime/debug"
 )
 
 func getNoticeKey(address, t string) string {
@@ -190,7 +191,12 @@ func msgSocketNetworkAnomaly(name string) map[string]interface{} {
 func msgServiceAnomaly(name string, r interface{}) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
 	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】服务异常，请查看详细信息", conf.GetString("app.env"), name)
-	brokenInfo["content"] = fmt.Sprintf(`【%v】服务异常<br>详细堆栈错误信息 :<br>【%v】<br>`, name, r)
+	brokenInfo["content"] = fmt.Sprintf(`
+【%v】服务异常【%v】
+<br>详细堆栈错误信息 :
+<br>%v
+<br>`,
+		name, r, string(debug.Stack()))
 	return brokenInfo
 }
 
