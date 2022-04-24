@@ -65,8 +65,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				// 走火币来源
 				msg = SubStruct.Sub
 			} else {
+				// raceoption:market.ETH-USD.index.1min
 				msg = fmt.Sprintf("raceoption:%v", SubStruct.Sub)
 			}
+		} else {
+			// market.ETH-USD.index.1min
+			msg = SubStruct.Sub
 		}
 		logger.Info(SubStruct)
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
