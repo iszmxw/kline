@@ -95,7 +95,20 @@ func checkGrandTotal(address, t string, InitNum, GrandTotalExTime, GrandTotal in
 func msgNoSocket(service, symbol string) map[string]interface{} {
 	info := cmap.New().Items()
 	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务通知：暂停socket推送", conf.GetString("app.env"), symbol, service)
-	info["content"] = "服务停止socket"
+	info["content"] = fmt.Sprintf(`
+服务通知：<br>
+环境【%v】<br> 
+服务【%v】<br>
+币种【%v】 
+暂停socket推送`, conf.GetString("app.env"), service, symbol)
+	return info
+}
+
+// 恢复休市 socket 通知
+func msgStartSocket(service, symbol string) map[string]interface{} {
+	info := cmap.New().Items()
+	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务：恢复市场通知", conf.GetString("app.env"), symbol, service)
+	info["content"] = "休市已结束，市场正在恢复，请您查收"
 	return info
 }
 
@@ -205,9 +218,13 @@ func msgServiceAnomaly(name string, r interface{}) map[string]interface{} {
 func Notice(t string, data interface{}) {
 	var Info map[string]interface{}
 	switch t {
-	case "msgNoSocket":
+	case "msgNoSocket": // 休市通知
 		arr := data.(map[string]interface{})
 		Info = msgNoSocket(arr["service"].(string), arr["symbol"].(string))
+		break
+	case "msgStartSocket": // 恢复市场启动通知
+		arr := data.(map[string]interface{})
+		Info = msgStartSocket(arr["service"].(string), arr["symbol"].(string))
 		break
 	case "msgTimeDiff":
 		arr := data.(map[string]interface{})

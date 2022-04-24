@@ -16,5 +16,8 @@
 // login
 {"cmd":4099,"pb":{"user_name":"test","passwd":"111111"}}
 
-// sub
+// sub 4102是订阅  4103是取消
+
+{"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}
+
 {"cmd":4102,"pb":{"stk":[{"id":153104,"marketid":10}]}}

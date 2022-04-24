@@ -24,4 +24,4 @@ point_number int(6)  保留小数点位数
 
 assets_status int(6)  资产状态 1正常 2休市 3下架
 
-sleep_time varchar(128)  休市时间 {"start":"6-04:00","ts_long":"172800"} start开始时间，从周几开始几点开始，休息多少秒
+sleep_time varchar(128)  休市时间 {"start":"6-05:00","ts_long":"172800"} start开始时间，从周几开始几点开始，休息多少秒

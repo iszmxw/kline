@@ -10,6 +10,7 @@ import (
 	"goapi/config"
 	conf "goapi/pkg/config"
 	"goapi/pkg/helpers"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -79,7 +80,7 @@ func SocketRaceOption(info wsdata.Info) {
 	errs := mysql.DB.Debug().Model(models.TradingAssets{}).
 		Where("assets_code", info.ContractCode).
 		//Where("assets_status", "1"). // 资产状态 1正常 2休市 3下架
-		Select("id,assets_code,assets_status").
+		Select("id,assets_code,assets_status,sleep_time").
 		Find(&TradingAssets).Error
 	if errs != nil {
 		logger.Error(errs)
@@ -88,13 +89,20 @@ func SocketRaceOption(info wsdata.Info) {
 		// 关闭
 		callback <- struct{}{}
 	}
-	// 资产不存在或者休市状态
-	if TradingAssets.Id <= 0 || TradingAssets.AssetsStatus != 1 {
-		logger.Info(TradingAssets)
+	// 资产休市状态
+	logger.Info(TradingAssets)
+	if kline.CheckSleep("raceoption", TradingAssets) {
 		time.Sleep(time.Second) // 休息1秒
 		StartSub = false
 		// 关闭
 		callback <- struct{}{}
+	} else {
+		// 休市完毕开始订阅
+		StartSub = true
+		err := mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "1").Error
+		if err != nil {
+			logger.Error(err)
+		}
 	}
 	// 开始订阅
 	if StartSub {

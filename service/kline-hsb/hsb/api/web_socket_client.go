@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"goapi/pkg/helpers"
 	"goapi/service/kline-hsb/hsb/config"
 	"goapi/service/kline-hsb/hsb/wsdata"
 	"reflect"
@@ -26,6 +25,8 @@ func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPric
 	if id == "" {
 		id = config.DEFAULT_ID
 	}
-	data := []byte(fmt.Sprintf(`[{"t":2,"e":8,"uuid":"L28G%v","d":[{"pair":"%v"}]}]`, helpers.GetUUID16(), info.Symbol))
+	// {"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}
+	data := []byte(fmt.Sprintf(`{"cmd":4102,"pb":{"stk":[{"id":%v,"marketid":8}]}}`, info.Symbol))
+	data = []byte(`{"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}`)
 	wsIx.sub(data, info.Symbol, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }
