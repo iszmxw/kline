@@ -55,6 +55,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
+	github.com/vimsucks/wxwork-bot-go v0.0.0-20210525031914-b584a24ed8c5 // indirect
 	github.com/xiaomingping/ztimer v1.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect

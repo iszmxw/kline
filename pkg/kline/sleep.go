@@ -33,7 +33,7 @@ func CheckSleep(service string, TradingAssets models.TradingAssets) bool {
 		if err != nil {
 			logger.Info(err)
 			// 未配置好休息时间段，直接休息
-			IsSleep = true
+			return true
 		}
 		nowUnix := time.Now().Unix()
 		start := helpers.GetThisWeekStartTime(SleepTime.Start).Unix()
@@ -52,6 +52,9 @@ func CheckSleep(service string, TradingAssets models.TradingAssets) bool {
 			})
 			// 发送邮件通知
 		}
+	}else{
+		logger.Info(123456)
+		logger.Info(IsSleep)
 	}
 	return IsSleep
 }

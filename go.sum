@@ -154,6 +154,8 @@ github.com/ugorji/go/codec v1.1.7 h1:2SvQaVZ1ouYrrKKwoSk2pzd4A9evlKJb9oTL+OaLUSs
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
 github.com/unrolled/secure v1.10.0 h1:TBNP42z2AB+2pW9PR6vdbqhlQuv1iTeSVzK1qHjOBzA=
 github.com/unrolled/secure v1.10.0/go.mod h1:BmF5hyM6tXczk3MpQkFf1hpKSRqCyhqcbiQtiAF7+40=
+github.com/vimsucks/wxwork-bot-go v0.0.0-20210525031914-b584a24ed8c5 h1:zzidOOiapOBdj+0nQPUzk/1ipgYgQ1fXxRIzyT7vFW0=
+github.com/vimsucks/wxwork-bot-go v0.0.0-20210525031914-b584a24ed8c5/go.mod h1:brn5UkCRa+oqXYsvyO0Mz5JsfU2vlOWUndlvYILUacw=
 github.com/xiaomingping/ztimer v1.0.0 h1:aT2setKJjEfNmJ3o6PTJzuiRo2PBBUYAqJdZlGpfxGg=
 github.com/xiaomingping/ztimer v1.0.0/go.mod h1:gq+zaenrBkqQuZFwQmsBq1A4Fb2QQlOfW7oMBxNQAcM=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
