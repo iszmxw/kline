@@ -160,10 +160,12 @@ func SocketOlymptrade(info wsdata.Info) {
 				return
 			}
 			ContractCode := info.ContractCode
+			SystemTs := time.Now().UnixMilli()  // 系統生成的Ts
+			UpstreamTs := int64(rData.T * 1000) // 上游的ts
 			var data response.SubIndexKLineResponse
 			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
-			data.Ts = int64(rData.T * 1000)
-			data.Tick.Id = int64(rData.T * 1000)
+			data.Ts = SystemTs
+			data.Tick.Id = SystemTs
 			data.Tick.Vol = "0"
 			data.Tick.Count = 0
 			data.Tick.Open = fmt.Sprintf("%v", rData.Open)
@@ -177,7 +179,7 @@ func SocketOlymptrade(info wsdata.Info) {
 				Model(models.KlineLog{}).
 				Select("log_id").
 				Where("contract_code", ContractCode).
-				Where("upstream_ts", data.Ts).
+				Where("upstream_ts", UpstreamTs).
 				Where("kline_source", "olymptrade").
 				Find(&KlineData).Error
 			if err != nil {
@@ -186,7 +188,7 @@ func SocketOlymptrade(info wsdata.Info) {
 			if KlineData.LogId > 0 {
 				return
 			}
-			lineLogRes := LogData(wsData, ContractCode)
+			lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
 			cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
 			if cerr1 != nil {
 				logger.Error(cerr1)
@@ -253,14 +255,14 @@ func SocketOlymptrade(info wsdata.Info) {
 	}
 }
 
-func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string) models.KlineLog {
+func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs, UpstreamTs int64) models.KlineLog {
 	var klineLog models.KlineLog
 	rData := wsData[0].D[0]                                                             // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
 	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(ContractCode), "/", "-") // 合约代码 BTC-USD
 	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)            // kilne返回日期时间戳
-	klineLog.Ts = time.Now().UnixMilli()                                                // 自己生成的ts
-	klineLog.UpstreamTs = int64(rData.T * 1000)                                         // 上游的ts
-	klineLog.ID = int64(rData.T * 1000)                                                 // 自己生成的ts/1000
+	klineLog.Ts = SystemTs                                                              // 自己生成的ts
+	klineLog.UpstreamTs = UpstreamTs                                                    // 上游的ts
+	klineLog.ID = SystemTs                                                              // 自己生成的ts/1000
 	klineLog.Mrid = 0.00                                                                // ID
 	klineLog.COpen = 0                                                                  // 起始峰值
 	klineLog.CClose = rData.Close                                                       // 结束峰值
