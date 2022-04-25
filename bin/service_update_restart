@@ -51,29 +51,42 @@ else
   nohup ./raceoptionService-running >/dev/null 2>error_raceoption.log &
   echo $! >logs/raceoptionService-running.pid
 fi
-#
-## 重启 liveoddsService-running
-#liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
-#if [ "$liveoddsService" ]; then
-#  kill -9 "$liveoddsService"
-#  \cp -rf liveoddsService liveoddsService-running
-#  nohup ./liveoddsService-running >/dev/null 2>&1 &
-#  echo $! >logs/liveoddsService-running.pid
-#else
-#  \cp -rf liveoddsService liveoddsService-running
-#  nohup ./liveoddsService-running >/dev/null 2>&1 &
-#  echo $! >logs/liveoddsService-running.pid
-#fi
-#
-## 重启 olymptradeService-running
-#olymptradeService=$(ps -ef | grep "/olymptradeService-running" | grep -v "grep" | awk '{print $2}')
-#if [ "$olymptradeService" ]; then
-#  kill -9 "$olymptradeService"
-#  \cp -rf olymptradeService olymptradeService-running
-#  nohup ./olymptradeService-running >/dev/null 2>error_olymptrade.log &
-#  echo $! >logs/olymptradeService-running.pid
-#else
-#  \cp -rf olymptradeService olymptradeService-running
-#  nohup ./olymptradeService-running >/dev/null 2>&1 &
-#  echo $! >logs/olymptradeService-running.pid
-#fi
+
+# 重启 liveoddsService-running
+liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$liveoddsService" ]; then
+  kill -9 "$liveoddsService"
+  \cp -rf liveoddsService liveoddsService-running
+  nohup ./liveoddsService-running >/dev/null 2>&1 &
+  echo $! >logs/liveoddsService-running.pid
+else
+  \cp -rf liveoddsService liveoddsService-running
+  nohup ./liveoddsService-running >/dev/null 2>&1 &
+  echo $! >logs/liveoddsService-running.pid
+fi
+
+# 重启 olymptradeService-running
+olymptradeService=$(ps -ef | grep "/olymptradeService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$olymptradeService" ]; then
+  kill -9 "$olymptradeService"
+  \cp -rf olymptradeService olymptradeService-running
+  nohup ./olymptradeService-running >/dev/null 2>error_olymptrade.log &
+  echo $! >logs/olymptradeService-running.pid
+else
+  \cp -rf olymptradeService olymptradeService-running
+  nohup ./olymptradeService-running >/dev/null 2>&1 &
+  echo $! >logs/olymptradeService-running.pid
+fi
+
+# 重启 hsbService-running
+hsbService=$(ps -ef | grep "/hsbService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$hsbService" ]; then
+  kill -9 "$hsbService"
+  \cp -rf hsbService hsbService-running
+  nohup ./hsbService-running >/dev/null 2>error_hsb.log &
+  echo $! >logs/hsbService-running.pid
+else
+  \cp -rf hsbService hsbService-running
+  nohup ./hsbService-running >/dev/null 2>&1 &
+  echo $! >logs/hsbService-running.pid
+fi

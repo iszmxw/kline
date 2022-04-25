@@ -19,3 +19,6 @@ GOOS=linux GOARCH=amd64 go build -o build/liveoddsService service/liveodds/calcu
 
 # 6、打包 kline-olymptrade K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o build/olymptradeService service/kline-olymptrade/stock.go
+
+# 7、打包 kline-hsb K线图socket采集服务
+GOOS=linux GOARCH=amd64 go build -o build/hsbService service/kline-hsb/stock.go

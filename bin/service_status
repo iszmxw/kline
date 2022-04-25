@@ -53,4 +53,13 @@ if [ "$olymptradeService_pid" ]; then
   printf "用户：$olymptradeService_user   启动时间：$olymptradeService_starttime 进程ID：$olymptradeService_pid  执行路径：$olymptradeService_bin\n"
 fi
 
+# 查看 hsbService-running
+hsbService_user=$(ps -ef | grep "/hsbService-running" | grep -v "grep" | awk '{print $1}')
+hsbService_starttime=$(ps -ef | grep "/hsbService-running" | grep -v "grep" | awk '{print $5}')
+hsbService_pid=$(ps -ef | grep "/hsbService-running" | grep -v "grep" | awk '{print $2}')
+hsbService_bin=$(ps -ef | grep "/hsbService-running" | grep -v "grep" | awk '{print $8}')
+if [ "$hsbService_pid" ]; then
+  printf "用户：$hsbService_user   启动时间：$hsbService_starttime 进程ID：$hsbService_pid  执行路径：$hsbService_bin\n"
+fi
+
 printf "\n"

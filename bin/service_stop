@@ -35,3 +35,9 @@ olymptradeService=$(ps -ef | grep "/olymptradeService-running" | grep -v "grep" 
 if [ "$olymptradeService" ]; then
   kill -9 "$olymptradeService"
 fi
+
+# 停止 hsbService-running
+hsbService=$(ps -ef | grep "/hsbService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$hsbService" ]; then
+  kill -9 "$hsbService"
+fi

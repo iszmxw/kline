@@ -1,12 +1,12 @@
 curl --include \
-     --no-buffer \
-     --header "Connection: Upgrade" \
-     --header "Upgrade: websocket" \
-     --header "Host: trading.raceoption.com" \
-     --header "Origin: https://trading.raceoption.com" \
-     --header "Sec-WebSocket-Key: NVwjmQUcWCenfWu98asDmg==" \
-     --header "Sec-WebSocket-Version: 13" \
-     https://trading.raceoption.com/api/ws/price
+  --no-buffer \
+  --header "Connection: Upgrade" \
+  --header "Upgrade: websocket" \
+  --header "Host: trading.raceoption.com" \
+  --header "Origin: https://trading.raceoption.com" \
+  --header "Sec-WebSocket-Key: NVwjmQUcWCenfWu98asDmg==" \
+  --header "Sec-WebSocket-Version: 13" \
+  https://trading.raceoption.com/api/ws/price
 #
 #
 #curl --include \
@@ -18,7 +18,6 @@ curl --include \
 #     --header "Sec-WebSocket-Key: NVwjmQUcWCenfWu98asDmg==" \
 #     --header "Sec-WebSocket-Version: 13" \
 #     https://huobiapi.iqoptionproo.com/v1/api/kline/ws_index
-
 
 #curl --include \
 #     --no-buffer \
