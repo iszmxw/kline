@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"goapi/pkg/helpers"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/service/kline-hsb/hsb/config"
 	"goapi/service/kline-hsb/hsb/utils/zip"
-	"goapi/service/kline-hsb/hsb/wsdata"
 	"net/http"
 	"reflect"
 	"strings"
@@ -27,6 +28,7 @@ type CallbackFunc struct {
 
 type WebSocketOp struct {
 	host              string                   // 连接地址
+	auth              bool                     // 是否登录
 	session           string                   // session
 	path              string                   // 路由
 	conn              *websocket.Conn          // 基础连接
@@ -109,20 +111,49 @@ ERR:
 }
 
 func (ws *WebSocketOp) msgHand(message []byte) {
-	var data wsdata.SubPriceKLineResponse
+	var data map[string]interface{}
 	err := json.Unmarshal(message, &data)
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("msg to map[string]json.RawMessage error: %s", err)))
 		return
 	}
-	dType := data[0].E // 读取E的类型
-	if dType == 1 {    // [{"d":[{"p":"AUDCAD","t":1650514321.284,"q":0.92792}],"e":1}]
-		ws.handleSubCallbackFun(data[0].D[0].P, message, data)
-	} else if dType == 2 { // [{"d":[{"p":"AUDCAD","t":1650514320,"open":0.92792,"low":0.92792,"high":0.92792,"close":0.92792}],"e":2}]
-		ws.handleSubCallbackFun(data[0].D[0].P, message, data)
-	} else {
-		logger.Info(fmt.Sprintf("WebSocket received unknow data: %v", data))
+	// {"cmd":4099,"pb":{"result":true}}
+	cmd, found := data["cmd"]
+	if !found {
+		return
 	}
+	cmd = int(cmd.(float64))
+	// 登录响应
+	if cmd == 4099 {
+		if pb, found := data["pb"]; found {
+			if result, found := pb.(map[string]interface{})["result"]; found {
+				logger.Info(fmt.Sprint(fmt.Sprintf("%T", result), result))
+				if result.(bool) {
+					// 登录成功
+					ws.auth = true
+					logger.Info("登录成功")
+				} else {
+					// 登录失败
+					ws.auth = false
+					logger.Info("登录失败")
+				}
+			}
+		}
+	}
+	// {"cmd":4098,"pb":{"tick":{"id":153104,"open":24138,"price":23716,"seq":48338752,"time":1650869474,"tick_deep":[{"price_bid":23700,"volume_bid":50000000,"price_ask":23733,"volume_ask":100000000},{"price_bid":23699,"volume_bid":50000000,"price_ask":23734,"volume_ask":450000000},{"price_bid":23698,"volume_bid":100000000,"price_ask":23737,"volume_ask":50000000},{"price_bid":23698,"volume_bid":150000000,"price_ask":23737,"volume_ask":50000000},{"price_bid":23695,"volume_bid":300000000,"price_ask":23738,"volume_ask":150000000}],"price_close":24147,"digits":3}}}
+	// 订阅返回的数据
+	if cmd == 4098 {
+		if pb, found := data["pb"]; found {
+			if tick, found := pb.(map[string]interface{})["tick"]; found {
+				// 订阅成功
+				logger.Info(fmt.Sprint(fmt.Sprintf("%T", tick), tick))
+				Symbol := kline.GetSymbolById(helpers.StringToInt(fmt.Sprintf("%v", tick.(map[string]interface{})["id"])))
+				logger.Info("订阅成功" + Symbol)
+				ws.handleSubCallbackFun(Symbol, message, data)
+			}
+		}
+	}
+
 }
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
@@ -136,11 +167,12 @@ func (ws *WebSocketOp) SendMsg(data []byte) bool {
 
 func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata interface{}) {
 	var mi *CallbackFunc = nil
-	ch = strings.ToLower(ch)
+	ch = strings.ToUpper(ch)
 	if _, found := ws.SubTopicMap[ch]; found {
 		mi = ws.SubTopicMap[ch]
 	}
 	if mi == nil {
+		logger.Info(ch)
 		logger.Error(errors.New(fmt.Sprintf("no callback function to handle: %s", jdata)))
 		return
 	}
@@ -180,19 +212,31 @@ ERR:
 //写协程
 func (ws *WebSocketOp) writeLoop() {
 	for {
-		select {
-		case msg, ok := <-ws.writeChan:
-			if !ok {
+		if ws.auth {
+			select {
+			case msg, ok := <-ws.writeChan:
+				if !ok {
+					goto ERR
+				}
+				// 订阅
+				if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+					logger.Info(err.Error())
+					goto ERR
+				}
+			case <-ws.closeChan:
 				goto ERR
 			}
-			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+		} else {
+			// 登录
+			login := []byte(`{"cmd":4099,"pb":{"user_name":"test","passwd":"111111"}}`)
+			if err := ws.conn.WriteMessage(websocket.TextMessage, login); err != nil {
+				ws.auth = false
 				logger.Info(err.Error())
 				goto ERR
+			} else {
+				ws.auth = true
 			}
-		case <-ws.closeChan:
-			goto ERR
 		}
-
 	}
 ERR:
 	logger.Info("write 已关闭 ")
@@ -241,7 +285,7 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 
 // 通用订阅
 func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param reflect.Type) bool {
-	ch = strings.ToLower(ch)
+	ch = strings.ToUpper(ch)
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
 	var mi *CallbackFunc = nil

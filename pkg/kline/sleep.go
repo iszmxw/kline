@@ -59,3 +59,30 @@ func CheckSleep(service string, TradingAssets models.TradingAssets) bool {
 	}
 	return IsSleep
 }
+
+// 通过 id 获取 Symbol
+
+func GetSymbolById(id int) string {
+	var Symbol string
+	switch id {
+	case 153080:
+		Symbol = "EURUSD"
+		break
+	case 153086:
+		Symbol = "GBPUSD"
+		break
+	case 153083:
+		Symbol = "USDJPY"
+		break
+	case 153105:
+		Symbol = "XAUUSD"
+		break
+	case 153104:
+		Symbol = "XAGUSD"
+		break
+	default:
+		break
+	}
+	return Symbol
+
+}

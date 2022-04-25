@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gostudys/huobi_contract_golang/src/ws/response"
-	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"strings"
 
 	//"encoding/json"
 	//"errors"
 	"fmt"
+	mail_notice "goapi/pkg/notice/mail"
+
 	//"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/bootstrap"
@@ -58,12 +59,18 @@ func main() {
 	defer bootstrap.RedisClose()
 	var CodeData []wsdata.Info
 	CodeData = append(CodeData,
-		wsdata.Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		wsdata.Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
-		wsdata.Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
-		wsdata.Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
-		wsdata.Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
-		wsdata.Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		// 153104--XAGUSD // {"cmd":4102,"pb":{"stk":[{"id":153104,"marketid":10}]}}
+		// 153105--XAUUSD // {"cmd":4102,"pb":{"stk":[{"id":153105,"marketid":10}]}}
+		// 153080--EURUSD // {"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}
+		// 153083--USDJPY // {"cmd":4102,"pb":{"stk":[{"id":153083,"marketid":8}]}}
+		// 153086--GBPUSD // {"cmd":4102,"pb":{"stk":[{"id":153086,"marketid":8}]}}
+
+		wsdata.Info{ID: 153080, Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		wsdata.Info{ID: 153086, Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		wsdata.Info{ID: 153083, Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		wsdata.Info{ID: 153105, Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
+		wsdata.Info{ID: 153104, Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		//wsdata.Info{ID: 153080, Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"}, // 该平台暂无
 	)
 	start := "ok"
 	for {
@@ -120,17 +127,10 @@ func SocketHsb(info wsdata.Info) {
 				}
 			}()
 			wsData := *resp
-			dType := wsData[0].E    // 读取E的类型
-			rData := wsData[0].D[0] // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
-			if dType == 1 {
-				return
-			}
-			if dType == 2 {
-				logger.Info(rData)
-			}
+			rData := wsData.Pb.Tick          // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
 			runStr := time.Now().UnixMilli() // 开始时间
 			// RequestId 定义为 Ts 时间戳
-			logger.RequestId = fmt.Sprintf("%v", rData.T)
+			logger.RequestId = fmt.Sprintf("%v", rData.Time)
 			// hsb网推送的回来的数据转换为字符串
 			strData, err := json.Marshal(resp) //转换成JSON返回的是byte[]
 			if err != nil {
@@ -143,8 +143,7 @@ func SocketHsb(info wsdata.Info) {
 					info.ContractCode, resp)))
 				return
 			}
-			logger.Info(resp)
-			if rData.T <= 0 {
+			if rData.Time <= 0 {
 				err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
 				if err != nil {
 					logger.Error(err)
@@ -160,24 +159,25 @@ func SocketHsb(info wsdata.Info) {
 				return
 			}
 			ContractCode := info.ContractCode
+			SystemTs := time.Now().UnixMilli()     // 系統生成的Ts
+			UpstreamTs := int64(rData.Time * 1000) // 上游的ts
 			var data response.SubIndexKLineResponse
 			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
-			data.Ts = int64(rData.T * 1000)
-			data.Tick.Id = int64(rData.T * 1000)
+			data.Ts = SystemTs // 系統生成的Ts
+			data.Tick.Id = SystemTs
 			data.Tick.Vol = "0"
 			data.Tick.Count = 0
-			data.Tick.Open = fmt.Sprintf("%v", rData.Open)
-			data.Tick.Close = fmt.Sprintf("%v", rData.Close)
-			data.Tick.Low = fmt.Sprintf("%v", rData.Low)
-			data.Tick.High = fmt.Sprintf("%v", rData.High)
+			data.Tick.Open = fmt.Sprintf("%.3f", rData.Open/1000)
+			data.Tick.Close = fmt.Sprintf("%.3f", rData.Price/1000)
+			data.Tick.Low = ""
+			data.Tick.High = ""
 			data.Tick.Amount = "0"
-
 			var KlineData models.KlineLog
 			err = mysql.DB.Debug().
 				Model(models.KlineLog{}).
 				Select("log_id").
 				Where("contract_code", ContractCode).
-				Where("upstream_ts", data.Ts).
+				Where("upstream_ts", UpstreamTs).
 				Where("kline_source", "hsb").
 				Find(&KlineData).Error
 			if err != nil {
@@ -186,7 +186,7 @@ func SocketHsb(info wsdata.Info) {
 			if KlineData.LogId > 0 {
 				return
 			}
-			lineLogRes := LogData(wsData, ContractCode)
+			lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
 			cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
 			if cerr1 != nil {
 				logger.Error(cerr1)
@@ -200,7 +200,7 @@ func SocketHsb(info wsdata.Info) {
 				time.Unix(data.Ts/1000, 0).Format("2006-01-02 15:04:05"),
 			)
 			logger.Info(tips)
-			shicha := time.Now().UnixMilli() - data.Ts
+			shicha := SystemTs - UpstreamTs
 			logger.Info(fmt.Sprintf("shicha=%v", shicha))
 			// 时间差大于 10 秒发送邮件通知
 			if shicha/1000 >= 20 {
@@ -244,6 +244,7 @@ func SocketHsb(info wsdata.Info) {
 			))
 
 		}, "")
+
 	}
 	select {
 	case <-callback:
@@ -253,23 +254,23 @@ func SocketHsb(info wsdata.Info) {
 	}
 }
 
-func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string) models.KlineLog {
+func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs, UpstreamTs int64) models.KlineLog {
 	var klineLog models.KlineLog
-	rData := wsData[0].D[0]                                                             // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
+	rData := wsData.Pb.Tick                                                             // {"id":153104,"open":24138,"price":23794,"seq":48345335,"time":1650874872,"tick_deep":[],"price_close":24147,"digits":3}
 	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(ContractCode), "/", "-") // 合约代码 BTC-USD
 	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)            // kilne返回日期时间戳
-	klineLog.Ts = time.Now().UnixMilli()                                                // 自己生成的ts
-	klineLog.UpstreamTs = int64(rData.T * 1000)                                         // 上游的ts
-	klineLog.ID = int64(rData.T * 1000)                                                 // 自己生成的ts/1000
+	klineLog.Ts = SystemTs                                                              // 自己生成的ts
+	klineLog.UpstreamTs = UpstreamTs                                                    // 上游的ts
+	klineLog.ID = SystemTs                                                              // 自己生成的ts/1000
 	klineLog.Mrid = 0.00                                                                // ID
-	klineLog.COpen = 0                                                                  // 起始峰值
-	klineLog.CClose = rData.Close                                                       // 结束峰值
-	klineLog.High = rData.High                                                          // 最高峰值
-	klineLog.Low = rData.Low                                                            // 最低峰值
+	klineLog.COpen = rData.Open / 1000                                                  // 起始峰值
+	klineLog.CClose = rData.Price / 1000                                                // 结束峰值
+	klineLog.High = 0                                                                   // 最高峰值
+	klineLog.Low = 0                                                                    // 最低峰值
 	klineLog.Amount = 0                                                                 // 成交金额 TODO
 	klineLog.Vol = 0                                                                    // 成交手 TODO
 	klineLog.CCount = 0                                                                 // 交易笔数 TODO
-	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))      // Kline返回日期
+	klineLog.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond))                    // Kline返回日期
 	klineLog.CreateDate = time.Now()                                                    // 创建日期
 	klineLog.KlineSource = "hsb"                                                        // K线来源hsb
 	return klineLog

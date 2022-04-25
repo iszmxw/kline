@@ -26,7 +26,6 @@ func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPric
 		id = config.DEFAULT_ID
 	}
 	// {"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}
-	data := []byte(fmt.Sprintf(`{"cmd":4102,"pb":{"stk":[{"id":%v,"marketid":8}]}}`, info.Symbol))
-	data = []byte(`{"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}`)
+	data := []byte(fmt.Sprintf(`{"cmd":4102,"pb":{"stk":[{"id":%v,"marketid":8}]}}`, info.ID))
 	wsIx.sub(data, info.Symbol, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }

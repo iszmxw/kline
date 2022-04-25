@@ -112,8 +112,8 @@ func SocketRaceOption(info wsdata.Info) {
 			proxy = &url.URL{
 				Scheme: "http",
 				//Host:   "47.104.184.7:888",
-				Host:   "42.101.43.106:16790",
-				User:   url.UserPassword("8319", "9742"),
+				Host: "42.101.43.106:16790",
+				User: url.UserPassword("8319", "9742"),
 			}
 		}
 		wsmkClient := new(api.WSPriceClient).Init("", proxy, callback)
@@ -163,10 +163,12 @@ func SocketRaceOption(info wsdata.Info) {
 			}
 			ContractCode := info.ContractCode
 			resp.Symbol = info.ContractCode
+			SystemTs := time.Now().UnixMilli()               // 系統生成的Ts
+			UpstreamTs := helpers.StringToInt64(resp.TimeId) // 上游的ts
 			var data response.SubIndexKLineResponse
 			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
-			data.Ts = helpers.StringToInt64(resp.TimeId)
-			data.Tick.Id = helpers.StringToInt64(resp.TimeId)
+			data.Ts = SystemTs // 系統生成的Ts
+			data.Tick.Id = SystemTs
 			data.Tick.Vol = fmt.Sprintf("%v", resp.AskVolume)
 			data.Tick.Count = 0
 			data.Tick.Open = "0"
@@ -180,7 +182,7 @@ func SocketRaceOption(info wsdata.Info) {
 				Model(models.KlineLog{}).
 				Select("log_id").
 				Where("contract_code", ContractCode).
-				Where("upstream_ts", data.Ts).
+				Where("upstream_ts", UpstreamTs).
 				Where("kline_source", "raceoption").
 				Find(&KlineData).Error
 			if err != nil {
@@ -189,7 +191,7 @@ func SocketRaceOption(info wsdata.Info) {
 			if KlineData.LogId > 0 {
 				return
 			}
-			lineLogRes := LogData(resp)
+			lineLogRes := LogData(resp, SystemTs, UpstreamTs)
 			cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
 			if cerr1 != nil {
 				logger.Error(cerr1)
@@ -257,13 +259,13 @@ func SocketRaceOption(info wsdata.Info) {
 	}
 }
 
-func LogData(resp *wsdata.SubPriceKLineResponse) models.KlineLog {
+func LogData(resp *wsdata.SubPriceKLineResponse, SystemTs, UpstreamTs int64) models.KlineLog {
 	var klineLog models.KlineLog
 	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(resp.Symbol), "/", "-") // 合约代码 BTC-USD
 	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)           // kilne返回日期时间戳
-	klineLog.Ts = time.Now().UnixMilli()                                               // 自己生成的ts
-	klineLog.UpstreamTs = helpers.StringToInt64(resp.TimeId)                           // 上游的ts
-	klineLog.ID = helpers.StringToInt64(resp.TimeId)                                   // 自己生成的ts/1000
+	klineLog.Ts = SystemTs                                                             // 自己生成的ts
+	klineLog.UpstreamTs = UpstreamTs                                                   // 上游的ts
+	klineLog.ID = SystemTs                                                             // 自己生成的ts/1000
 	klineLog.Mrid = 0.00                                                               // ID
 	klineLog.COpen = 0                                                                 // 起始峰值
 	klineLog.CClose = resp.Strike                                                      // 结束峰值
