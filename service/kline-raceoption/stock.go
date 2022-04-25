@@ -111,6 +111,7 @@ func SocketRaceOption(info wsdata.Info) {
 		if conf.GetString("app.env") != "HongKong" { // 测试环境不需要走代理
 			proxy = &url.URL{
 				Scheme: "http",
+				//Host:   "47.104.184.7:888",
 				Host:   "42.101.43.106:16790",
 				User:   url.UserPassword("8319", "9742"),
 			}
@@ -156,6 +157,8 @@ func SocketRaceOption(info wsdata.Info) {
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
 					resp.Symbol, resp)))
+				// 关闭
+				callback <- struct{}{}
 				return
 			}
 			ContractCode := info.ContractCode

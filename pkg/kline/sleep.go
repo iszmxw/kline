@@ -52,9 +52,10 @@ func CheckSleep(service string, TradingAssets models.TradingAssets) bool {
 			})
 			// 发送邮件通知
 		}
-	}else{
-		logger.Info(123456)
-		logger.Info(IsSleep)
+	}
+	// 资产不存在或者下架了，也判定为休息
+	if TradingAssets.Id == 0 || TradingAssets.AssetsStatus == 3 {
+		IsSleep = true
 	}
 	return IsSleep
 }

@@ -46,21 +46,32 @@ func check(address, t string) bool {
 			pass = true
 		}
 	}
-	// 网络异常：一分钟内超过15次进行通知
-	if t == "msgSocketNetworkAnomaly" { // 检测累计通知次数
+
+	switch t {
+	case "msgSocketNetworkAnomaly": // 检测累计通知次数：网络异常：一分钟内超过15次进行通知
 		if checkGrandTotal(address, t, 0, 1*60, 15) { // 一分钟内超过15次进行通知
 			pass = true
 		} else {
 			pass = false
 		}
-	}
-	// 时差：30秒内超过10次进行通知
-	if t == "msgTimeDiff" { // 检测累计通知次数
+		break
+	case "msgTimeDiff": // 检测累计通知次数：时差：30秒内超过10次进行通知
 		if checkGrandTotal(address, t, 0, 30, 10) { // 30秒内超过10次进行通知
 			pass = true
 		} else {
 			pass = false
 		}
+		break
+	case "msgNoSocket": // 检查时间段内是否通知过
+	case "msgStartSocket": // 检查时间段内是否通知过
+		if checkTime(address, t, 60*60) { // 1小时内内是否通知过
+			pass = false
+		} else {
+			pass = true
+		}
+		break
+	default:
+		break
 	}
 	return pass
 }
@@ -89,6 +100,24 @@ func checkGrandTotal(address, t string, InitNum, GrandTotalExTime, GrandTotal in
 		}
 	}
 	return false
+}
+
+// 检查一定时间内是否通知过
+func checkTime(address, t string, ExTime int) bool {
+	var Time = false
+	key := getNoticeKey("checkTime:"+address, t) // key=======>notice:mail:msgSocketNetworkAnomaly:grandTotal:mail@54zm.com
+	value, _ := redis.Get(key)
+	// 初始化
+	if len(value) > 0 {
+		Time = true
+	} else {
+		// 四分钟累计
+		_, err := redis.Add(key, InitNum, ExTime)
+		if err != nil {
+			Time = false
+		}
+	}
+	return Time
 }
 
 // 暂无 socket 通知
