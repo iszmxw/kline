@@ -81,7 +81,7 @@ func (ws *WebSocketOp) connServer() bool {
 		})
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
-		ws.closeChanCallback <- struct{}{}
+		ws.Close()
 		return false
 	}
 	logger.Info("WebSocket connected")
