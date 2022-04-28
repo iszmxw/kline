@@ -206,7 +206,7 @@ func SocketRaceOption(info wsdata.Info) {
 				time.Unix(data.Ts/1000, 0).Format("2006-01-02 15:04:05"),
 			)
 			logger.Info(tips)
-			shicha := time.Now().UnixMilli() - data.Ts
+			shicha := SystemTs - UpstreamTs
 			logger.Info(fmt.Sprintf("shicha=%v", shicha))
 			// 时间差大于 10 秒发送邮件通知
 			if shicha/1000 >= 20 {

@@ -158,8 +158,8 @@ func SocketHsb(info wsdata.Info) {
 			data.Tick.Id = SystemTs
 			data.Tick.Vol = "0"
 			data.Tick.Count = 0
-			data.Tick.Open = fmt.Sprintf("%.3f", rData.Open/math.Pow(10, rData.Digits))
-			data.Tick.Close = fmt.Sprintf("%.3f", rData.Price/math.Pow(10, rData.Digits))
+			data.Tick.Open = fmt.Sprintf("%v", rData.Open/math.Pow(10, rData.Digits))
+			data.Tick.Close = fmt.Sprintf("%v", rData.Price/math.Pow(10, rData.Digits))
 			data.Tick.Low = ""
 			data.Tick.High = ""
 			data.Tick.Amount = "0"

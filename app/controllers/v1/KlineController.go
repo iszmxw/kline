@@ -65,14 +65,16 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				// 走火币来源
 				msg = SubStruct.Sub
 			} else {
+				// hsb:market.ETH-USD.index.1min
+				// olymptrade:market.ETH-USD.index.1min
 				// raceoption:market.ETH-USD.index.1min
-				msg = fmt.Sprintf("raceoption:%v", SubStruct.Sub)
+				msg = fmt.Sprintf("%v:%v", klineSource, SubStruct.Sub)
 			}
 		} else {
 			// market.ETH-USD.index.1min
 			msg = SubStruct.Sub
 		}
-		logger.Info(SubStruct)
+		logger.Info(msg)
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
 		checkMsg := "socket_request:" + RequestId + ":" + msg
 		if redis.CheckExist(checkMsg) {
@@ -206,7 +208,7 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			continue
 		}
 		var PushRateData []response.PushRateData
-		DB := mysql.DB.Debug()
+		DB := mysql.DB
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", "IQO").
 			Where("is_valid", 1).
@@ -216,7 +218,6 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			logger.Error(err)
 			return
 		}
-		logger.Info(PushRateData)
 		WsPushRateJson, WsPushRateErr := json.Marshal(PushRateData)
 		if WsPushRateErr != nil {
 			logger.Error(WsPushRateErr)
