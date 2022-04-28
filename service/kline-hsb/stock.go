@@ -3,32 +3,23 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"github.com/gostudys/huobi_contract_golang/src/ws/response"
-	"goapi/pkg/redis"
-	"strings"
-
-	//"encoding/json"
-	//"errors"
 	"fmt"
-	mail_notice "goapi/pkg/notice/mail"
-
-	//"github.com/gostudys/huobi_contract_golang/src/ws/response"
+	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
-	//"goapi/pkg/esdk"
-	//"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	//mail_notice "goapi/pkg/notice/mail"
-	//"goapi/pkg/redis"
+	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/redis"
 	"goapi/service/kline-hsb/hsb/api"
 	"goapi/service/kline-hsb/hsb/wsdata"
+	"math"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
-	//"strings"
+	"strings"
 	"time"
 )
 
@@ -167,8 +158,8 @@ func SocketHsb(info wsdata.Info) {
 			data.Tick.Id = SystemTs
 			data.Tick.Vol = "0"
 			data.Tick.Count = 0
-			data.Tick.Open = fmt.Sprintf("%.3f", rData.Open/1000)
-			data.Tick.Close = fmt.Sprintf("%.3f", rData.Price/1000)
+			data.Tick.Open = fmt.Sprintf("%.3f", rData.Open/math.Pow(10, rData.Digits))
+			data.Tick.Close = fmt.Sprintf("%.3f", rData.Price/math.Pow(10, rData.Digits))
 			data.Tick.Low = ""
 			data.Tick.High = ""
 			data.Tick.Amount = "0"
@@ -263,8 +254,8 @@ func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs,
 	klineLog.UpstreamTs = UpstreamTs                                                    // 上游的ts
 	klineLog.ID = SystemTs                                                              // 自己生成的ts/1000
 	klineLog.Mrid = 0.00                                                                // ID
-	klineLog.COpen = rData.Open / 1000                                                  // 起始峰值
-	klineLog.CClose = rData.Price / 1000                                                // 结束峰值
+	klineLog.COpen = rData.Open / math.Pow(10, rData.Digits)                            // 起始峰值
+	klineLog.CClose = rData.Price / math.Pow(10, rData.Digits)                          // 结束峰值
 	klineLog.High = 0                                                                   // 最高峰值
 	klineLog.Low = 0                                                                    // 最低峰值
 	klineLog.Amount = 0                                                                 // 成交金额 TODO
