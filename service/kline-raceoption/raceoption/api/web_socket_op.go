@@ -32,6 +32,7 @@ type WebSocketOp struct {
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
+	once              sync.Once                // 锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              //读消息管道
 	writeChan         chan []byte              //写消息管道
@@ -39,7 +40,7 @@ type WebSocketOp struct {
 	ReqTopicMap       map[string]*CallbackFunc // 请求历史
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
-	allSubStrs        list.List
+	allSubStars       list.List
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -54,7 +55,7 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	ws.writeChan = make(chan []byte, 10)
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.ReqTopicMap = make(map[string]*CallbackFunc)
-	ws.allSubStrs = list.List{}
+	ws.allSubStars = list.List{}
 	ws.closeChanCallback = closeChanCallback
 	ret := ws.connServer()
 	return ret
@@ -157,14 +158,16 @@ func (ws *WebSocketOp) readLoop() {
 		}
 		select {
 		case ws.readChan <- message:
+			logger.Info("读消息管道写入成功")
 		case <-ws.closeChan:
+			logger.Info("读协程关闭chan")
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info("read 已关闭 ")
-	ws.Close()
 	close(ws.readChan)
+	logger.Info("读协程已关闭")
+	ws.Close()
 }
 
 //写协程
@@ -180,35 +183,32 @@ func (ws *WebSocketOp) writeLoop() {
 				goto ERR
 			}
 		case <-ws.closeChan:
+			logger.Info("写协程关闭chan")
 			goto ERR
 		}
-
 	}
 ERR:
-	logger.Info("write 已关闭 ")
-	ws.Close()
 	close(ws.writeChan)
+	logger.Info("写协程已关闭")
+	ws.Close()
 }
 
 func (ws *WebSocketOp) Close() {
-	ws.mutex.Lock()
-	defer ws.mutex.Unlock()
-	if ws.conn != nil {
-		err := ws.conn.Close()
-		if err != nil {
-			// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
-			logger.Info("关闭长连接失败:" + err.Error())
+	ws.once.Do(func() {
+		if ws.conn != nil {
+			err := ws.conn.Close()
+			if err != nil {
+				// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
+				logger.Info("关闭长连接失败:" + err.Error())
+			}
 		}
-	}
-	if !ws.isClose {
-		ws.isClose = true
-		if closeChanCheck(ws.closeChan) {
-			logger.Info("ws.closeChan-已关闭无需重复关闭")
-		} else {
+		if !ws.isClose {
+			ws.isClose = true
 			close(ws.closeChan)
+			logger.Info("关闭chan")
 		}
-	}
-	ws.closeChanCallback <- struct{}{}
+		ws.closeChanCallback <- struct{}{}
+	})
 }
 
 func (ws *WebSocketOp) runFunction(mi *CallbackFunc, data []byte) {
@@ -245,15 +245,6 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	logger.Info(fmt.Sprintf("websocket has send data: %s", subReq))
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
-	ws.allSubStrs.PushBack(string(subReq))
+	ws.allSubStars.PushBack(string(subReq))
 	return ws.SendMsg(subReq)
-}
-
-func closeChanCheck(ch <-chan byte) bool {
-	select {
-	case _, received := <-ch:
-		return !received
-	default:
-	}
-	return false
 }
