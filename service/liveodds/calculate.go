@@ -179,9 +179,9 @@ func explainData(line []float64, LogData utils.LogData) {
 		// 1、根据方差大小定义赔率，方差越大，波动越大，波动越大赔率越大
 		// 2 方差多大为大，方差多小为小
 		// 3 基数为，过去20分钟的波动方差
-		var WaveRate []models.TradingAssetsLog
+		var WaveRate []models.TradingAssetsCalculate
 		mysql.DB.Debug().
-			Model(models.TradingAssetsLog{}).
+			Model(models.TradingAssetsCalculate{}).
 			Select("wave_rate").
 			Where("assets_code", LogData.AssetsCode).
 			Where("create_date >= ?", time.Now().Add(-time.Minute*20).Format("2006-01-02 15:04:05")).
@@ -218,9 +218,9 @@ func explainData(line []float64, LogData utils.LogData) {
 // Log 历史赔率处理
 func Log(logData utils.LogData) {
 	var (
-		TradingAssets    response.TradingAssets
-		TradingAssetsLog models.TradingAssetsLog
-		returnRate       float64 // 赔率
+		TradingAssets          response.TradingAssets
+		TradingAssetsCalculate models.TradingAssetsCalculate
+		returnRate             float64 // 赔率
 	)
 	if logData.Result == 1 { // 波动大，重新设置赔率
 		returnRate = *maxReturnRate // 赔率大
@@ -256,28 +256,28 @@ func Log(logData utils.LogData) {
 			return
 		}
 	}
-	TradingAssetsLog.ItemCode = TradingAssets.ItemCode            // 应用编码
-	TradingAssetsLog.AssetsName = TradingAssets.AssetsName        // 资产名称
-	TradingAssetsLog.AssetsCode = TradingAssets.AssetsCode        // 资产编码
-	TradingAssetsLog.LineTimeStart = logData.LineTimeStart        // k线开始时间
-	TradingAssetsLog.LineTimeEnd = logData.LineTimeEnd            // k线结束时间
-	TradingAssetsLog.DotCount = logData.Count                     // 该段时间线的点数
-	TradingAssetsLog.InitialValue = logData.InitialValue          // 初始值
-	TradingAssetsLog.EndValue = logData.EndValue                  // 结束值
-	TradingAssetsLog.Avg = logData.Avg                            // 结束值
-	TradingAssetsLog.UpCount = logData.UpCount                    // 上涨次数
-	TradingAssetsLog.DownCount = logData.DownCount                // 下跌次数
-	TradingAssetsLog.FlatCount = logData.FlatCount                // 平滑次数（前后两点相等次数）
-	TradingAssetsLog.WaveRate = logData.Sqrt                      // 波动率
-	TradingAssetsLog.UpRate = logData.UpRate                      // 上涨率
-	TradingAssetsLog.DownRate = logData.DownRate                  // 下跌率
-	TradingAssetsLog.FlatRate = logData.FlatRate                  // 平滑率
-	TradingAssetsLog.Result = int8(logData.Result)                // 最终波动结果 1-大 2-小
-	TradingAssetsLog.CreateDate = time.Now()                      // 创建日期
-	TradingAssetsLog.UpdateDate = time.Now()                      // 更新日期
-	TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate // 历史收益率
-	TradingAssetsLog.ReturnRateNow = returnRate                   // 新的收益率
-	err = DB.Model(models.TradingAssetsLog{}).Create(&TradingAssetsLog).Error
+	TradingAssetsCalculate.ItemCode = TradingAssets.ItemCode            // 应用编码
+	TradingAssetsCalculate.AssetsName = TradingAssets.AssetsName        // 资产名称
+	TradingAssetsCalculate.AssetsCode = TradingAssets.AssetsCode        // 资产编码
+	TradingAssetsCalculate.LineTimeStart = logData.LineTimeStart        // k线开始时间
+	TradingAssetsCalculate.LineTimeEnd = logData.LineTimeEnd            // k线结束时间
+	TradingAssetsCalculate.DotCount = logData.Count                     // 该段时间线的点数
+	TradingAssetsCalculate.InitialValue = logData.InitialValue          // 初始值
+	TradingAssetsCalculate.EndValue = logData.EndValue                  // 结束值
+	TradingAssetsCalculate.Avg = logData.Avg                            // 结束值
+	TradingAssetsCalculate.UpCount = logData.UpCount                    // 上涨次数
+	TradingAssetsCalculate.DownCount = logData.DownCount                // 下跌次数
+	TradingAssetsCalculate.FlatCount = logData.FlatCount                // 平滑次数（前后两点相等次数）
+	TradingAssetsCalculate.WaveRate = logData.Sqrt                      // 波动率
+	TradingAssetsCalculate.UpRate = logData.UpRate                      // 上涨率
+	TradingAssetsCalculate.DownRate = logData.DownRate                  // 下跌率
+	TradingAssetsCalculate.FlatRate = logData.FlatRate                  // 平滑率
+	TradingAssetsCalculate.Result = int8(logData.Result)                // 最终波动结果 1-大 2-小
+	TradingAssetsCalculate.CreateDate = time.Now()                      // 创建日期
+	TradingAssetsCalculate.UpdateDate = time.Now()                      // 更新日期
+	TradingAssetsCalculate.ReturnRateHistory = TradingAssets.ReturnRate // 历史收益率
+	TradingAssetsCalculate.ReturnRateNow = returnRate                   // 新的收益率
+	err = DB.Model(models.TradingAssetsCalculate{}).Create(&TradingAssetsCalculate).Error
 	if err != nil {
 		DB.Rollback()
 		logger.Error(err)
