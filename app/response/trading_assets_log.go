@@ -6,7 +6,7 @@ import (
 
 // 资产表历史记录
 
-type TradingAssetsLog struct {
+type TradingAssetsCalculate struct {
 	Id                int64              `json:"id"`                  //资产表主键ID
 	ItemCode          string             `json:"item_code"`           //应用编码
 	AssetsName        string             `json:"assets_name"`         //资产名称
