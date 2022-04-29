@@ -7,6 +7,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
 	"goapi/service/kline-raceoption/raceoption/utils/code"
@@ -80,7 +81,12 @@ func GetRate() {
 				item := data[i].(map[string]interface{})
 				if helpers.InArray(item["symbol"].(string), code.SubSymbol()) {
 					info := code.Convert(item["symbol"].(string))
-					go UpdateRate(info, item["dynPayout"].(float64))
+					dynPayout := item["dynPayout"].(float64)
+					if dynPayout > 0.75 {
+						logger.Info(fmt.Sprintf("%v：大于0.75", item["symbol"]))
+						dynPayout = 0.75
+					}
+					go UpdateRate(info, dynPayout)
 				}
 			}
 		}
@@ -101,11 +107,17 @@ func UpdateRate(info wsdata.Info, returnRate float64) {
 		logger.Error(err)
 		return
 	}
-	logger.Info(fmt.Sprintf("%v=>系统历史赔率：%v，该时间段的最终赔率：%v", TradingAssets.AssetsCode, TradingAssets.ReturnRate, returnRate))
+	tips := fmt.Sprintf("%v=>系统历史赔率：%v，该时间段的最终赔率：%v", TradingAssets.AssetsCode, TradingAssets.ReturnRate, returnRate)
+	logger.Info(tips)
 	// 当前资产赔率和此次预测一样，无需修改
 	if TradingAssets.ReturnRate == returnRate {
 		logger.Info(fmt.Sprintf("%v：当前资产赔率和历史赔率一样，无需修改", TradingAssets.AssetsCode))
 	} else {
+		// 赔率变动通知
+		mail_notice.Notice("msgRateChange", map[string]interface{}{
+			"service": "raceoption",
+			"tips":    tips,
+		})
 		DB.Begin()
 		err = DB.Model(models.TradingAssets{}).
 			Where("assets_code", info.ContractCode).

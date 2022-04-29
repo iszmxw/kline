@@ -165,6 +165,14 @@ func msgLiveOdds(LogData utils.LogData) map[string]interface{} {
 	return info
 }
 
+// 赔率变动
+func msgRateChange(service, tips string) map[string]interface{} {
+	info := cmap.New().Items()
+	info["title"] = fmt.Sprintf("环境【%v】，服务【%v】赔率变动", conf.GetString("app.env"), service)
+	info["content"] = tips
+	return info
+}
+
 // 数据异常
 func msgDataAbnormal(c *gin.Context, tips string) map[string]interface{} {
 	info := cmap.New().Items()
@@ -261,6 +269,10 @@ func Notice(t string, data interface{}) {
 		break
 	case "msgLiveOdds":
 		Info = msgLiveOdds(data.(utils.LogData))
+		break
+	case "msgRateChange": // 赔率变动通知
+		arr := data.(map[string]interface{})
+		Info = msgRateChange(arr["service"].(string), arr["tips"].(string))
 		break
 	case "msgDataAbnormal":
 		arr := data.(map[string]interface{})
