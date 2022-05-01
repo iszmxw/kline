@@ -1,5 +1,9 @@
 package wsdata
 
+type Topics struct {
+	Topic string `json:"topic"` // K线图代码
+}
+
 type Info struct {
 	Symbol       string `json:"symbol"`
 	Desc         string `json:"desc"`

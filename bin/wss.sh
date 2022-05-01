@@ -2,11 +2,11 @@ curl --include \
   --no-buffer \
   --header "Connection: Upgrade" \
   --header "Upgrade: websocket" \
-  --header "Host: trading.raceoption.com" \
-  --header "Origin: https://trading.raceoption.com" \
+  --header "Host: stream.binance.com:9443" \
+  --header "Origin: https://stream.binance.com:9443" \
   --header "Sec-WebSocket-Key: NVwjmQUcWCenfWu98asDmg==" \
   --header "Sec-WebSocket-Version: 13" \
-  https://trading.raceoption.com/api/ws/price
+  https://stream.binance.com:9443/ws/ethusd@kline_1m
 #
 #
 #curl --include \
