@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/service/kline-binance/binance/config"
 	"goapi/service/kline-binance/binance/utils/zip"
 	"net/http"
@@ -71,9 +72,9 @@ func (ws *WebSocketOp) connServer() bool {
 	ws.conn, response, err = dialer.Dial(wssUrl, nil)
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		//mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-		//	"name": "binance",
-		//})
+		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
+			"name": "binance",
+		})
 		logger.Info(response)
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
@@ -83,7 +84,7 @@ func (ws *WebSocketOp) connServer() bool {
 	logger.Info("WebSocket connected")
 	go ws.readLoop()
 	go ws.writeLoop()
-	//go ws.DoHand()
+	go ws.DoHand()
 	return true
 }
 
@@ -111,8 +112,14 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		logger.Error(errors.New(fmt.Sprintf("msg to map[string]json.RawMessage error: %s", err)))
 		return
 	}
-	if symbol, found := data["symbol"]; found { // market sub reply data
+	if symbol, found := data["i"]; found { // market sub reply data
 		ws.handleSubCallbackFun(symbol.(string), message, data)
+	} else if e, found := data["e"]; found { // market sub reply data
+		if e.(string) == "indexPrice_kline" {
+			ws.handleSubCallbackFun(data["ps"].(string), message, data)
+		}
+	} else if id, found := data["id"]; found { // market sub reply data
+		logger.Info(id)
 	} else {
 		logger.Info(fmt.Sprintf("WebSocket received unknow data: %s", data))
 	}
@@ -145,7 +152,6 @@ func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata map[st
 // 读协程
 func (ws *WebSocketOp) readLoop() {
 	for {
-		logger.Info(time.Now())
 		msgType, buf, err := ws.conn.ReadMessage()
 		if err != nil {
 			logger.Info(err.Error())
@@ -161,20 +167,12 @@ func (ws *WebSocketOp) readLoop() {
 		} else if msgType == websocket.TextMessage {
 			message = buf
 		}
-		if len(string(message)) >0 {
-			logger.Info(string(message))
-		}else{
-			logger.Info("666+666666")
-		}
 		select {
 		case ws.readChan <- message: // 里面最多只能保持存放30个
 			logger.Info("读消息管道写入成功")
 		case <-ws.closeChan:
 			logger.Info("读协程关闭chan")
 			goto ERR
-		default:
-			logger.Info("default")
-			continue
 		}
 	}
 ERR:

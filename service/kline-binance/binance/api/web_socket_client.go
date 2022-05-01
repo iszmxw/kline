@@ -11,11 +11,11 @@ type WSPriceClient struct {
 	WebSocketOp
 }
 
-func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
+func (wsIx *WSPriceClient) Init(host, streamName string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
 	if host == "" {
 		host = config.LINEAR_SWAP_DEFAULT_HOST
 	}
-	wsIx.open("", host, proxy, callback)
+	wsIx.open("/ws/"+streamName, host, proxy, callback)
 	return wsIx
 }
 

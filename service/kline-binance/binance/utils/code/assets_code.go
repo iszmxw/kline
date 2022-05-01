@@ -16,7 +16,7 @@ func GetData() []wsdata.Info {
 	var CodeData []wsdata.Info
 	CodeData = append(CodeData,
 		wsdata.Info{Symbol: "BTCUSD", Desc: "比特币/美元", ContractCode: "BTC-USD"},
-		//wsdata.Info{Symbol: "ETHUSD", Desc: "以太坊/美元", ContractCode: "ETH-USD"},
+		wsdata.Info{Symbol: "ETHUSD", Desc: "以太坊/美元", ContractCode: "ETH-USD"},
 	)
 	return CodeData
 }
