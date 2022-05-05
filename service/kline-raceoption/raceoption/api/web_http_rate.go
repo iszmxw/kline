@@ -18,7 +18,7 @@ import (
 
 // 获取登录token
 func getToken(refresh bool) (error, string) {
-	redisKey := "raceoption:token"
+	redisKey := "kline:token:raceoption"
 	// 刷新token
 	token, err := redis.Get(redisKey)
 	if err != nil {
@@ -26,7 +26,7 @@ func getToken(refresh bool) (error, string) {
 	}
 	// token失效，或者强制刷新token,就重新登录获取token
 	if len(token) <= 0 || true == refresh {
-		resp, err := request.Post("https://trading.raceoption.com/api/login", http.Header{
+		resp, _, err := request.Post("https://trading.raceoption.com/api/login", http.Header{
 			"authority":    {"trading.raceoption.com"},
 			"content-type": {"application/json; charset=utf-8"},
 			"origin":       {"https://trading.raceoption.com"},
@@ -65,7 +65,7 @@ func GetRate() {
 			continue
 		}
 		// 开始获取赔率
-		resp, err := request.Get("https://trading.raceoption.com/api/options/search?limit=300", http.Header{
+		resp, _, err := request.Get("https://trading.raceoption.com/api/options/search?limit=300", http.Header{
 			"Cookie":     {fmt.Sprintf("rop-auth-token=%v", token)}, // 两个小时失效，所以每隔两个小时获取一次
 			"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
 			"referer":    {"https://trading.raceoption.com/"},

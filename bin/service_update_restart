@@ -5,11 +5,11 @@ apiService=$(ps -ef | grep "/apiService-running" | grep -v "grep" | awk '{print 
 if [ "$apiService" ]; then
   kill -9 "$apiService"
   \cp -rf apiService apiService-running
-  nohup ./apiService-running >/dev/null 2>error_api.log &
+  nohup ./apiService-running >/dev/null 2>error/api.log &
   echo $! >logs/apiService-running.pid
 else
   \cp -rf apiService apiService-running
-  nohup ./apiService-running >/dev/null 2>error_api.log &
+  nohup ./apiService-running >/dev/null 2>error/api.log &
   echo $! >logs/apiService-running.pid
 fi
 
@@ -18,11 +18,11 @@ huobiService=$(ps -ef | grep "/huobiService-running" | grep -v "grep" | awk '{pr
 if [ "$huobiService" ]; then
   kill -9 "$huobiService"
   \cp -rf huobiService huobiService-running
-  nohup ./huobiService-running >/dev/null 2>error_huobi.log &
+  nohup ./huobiService-running >/dev/null 2>error/huobi.log &
   echo $! >logs/huobiService-running.pid
 else
   \cp -rf huobiService huobiService-running
-  nohup ./huobiService-running >/dev/null 2>error_huobi.log &
+  nohup ./huobiService-running >/dev/null 2>error/huobi.log &
   echo $! >logs/huobiService-running.pid
 fi
 
@@ -44,11 +44,11 @@ raceoptionService=$(ps -ef | grep "/raceoptionService-running" | grep -v "grep" 
 if [ "$raceoptionService" ]; then
   kill -9 "$raceoptionService"
   \cp -rf raceoptionService raceoptionService-running
-  nohup ./raceoptionService-running >/dev/null 2>error_raceoption.log &
+  nohup ./raceoptionService-running >/dev/null 2>error/raceoption.log &
   echo $! >logs/raceoptionService-running.pid
 else
   \cp -rf raceoptionService raceoptionService-running
-  nohup ./raceoptionService-running >/dev/null 2>error_raceoption.log &
+  nohup ./raceoptionService-running >/dev/null 2>error/raceoption.log &
   echo $! >logs/raceoptionService-running.pid
 fi
 
@@ -57,11 +57,11 @@ liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | aw
 if [ "$liveoddsService" ]; then
   kill -9 "$liveoddsService"
   \cp -rf liveoddsService liveoddsService-running
-  nohup ./liveoddsService-running >/dev/null 2>&1 &
+  nohup ./liveoddsService-running >/dev/null 2>error/liveodds.log &
   echo $! >logs/liveoddsService-running.pid
 else
   \cp -rf liveoddsService liveoddsService-running
-  nohup ./liveoddsService-running >/dev/null 2>&1 &
+  nohup ./liveoddsService-running >/dev/null 2>error/liveodds.log &
   echo $! >logs/liveoddsService-running.pid
 fi
 
@@ -70,11 +70,11 @@ olymptradeService=$(ps -ef | grep "/olymptradeService-running" | grep -v "grep" 
 if [ "$olymptradeService" ]; then
   kill -9 "$olymptradeService"
   \cp -rf olymptradeService olymptradeService-running
-  nohup ./olymptradeService-running >/dev/null 2>error_olymptrade.log &
+  nohup ./olymptradeService-running >/dev/null 2>error/olymptrade.log &
   echo $! >logs/olymptradeService-running.pid
 else
   \cp -rf olymptradeService olymptradeService-running
-  nohup ./olymptradeService-running >/dev/null 2>&1 &
+  nohup ./olymptradeService-running >/dev/null 2>error/olymptrade.log &
   echo $! >logs/olymptradeService-running.pid
 fi
 
@@ -83,11 +83,11 @@ hsbService=$(ps -ef | grep "/hsbService-running" | grep -v "grep" | awk '{print 
 if [ "$hsbService" ]; then
   kill -9 "$hsbService"
   \cp -rf hsbService hsbService-running
-  nohup ./hsbService-running >/dev/null 2>error_hsb.log &
+  nohup ./hsbService-running >/dev/null 2>error/hsb.log &
   echo $! >logs/hsbService-running.pid
 else
   \cp -rf hsbService hsbService-running
-  nohup ./hsbService-running >/dev/null 2>&1 &
+  nohup ./hsbService-running >/dev/null 2>error/hsb.log &
   echo $! >logs/hsbService-running.pid
 fi
 
@@ -96,10 +96,10 @@ binanceService=$(ps -ef | grep "/binanceService-running" | grep -v "grep" | awk 
 if [ "$binanceService" ]; then
   kill -9 "$binanceService"
   \cp -rf binanceService binanceService-running
-  nohup ./binanceService-running >/dev/null 2>error_hsb.log &
+  nohup ./binanceService-running >/dev/null 2>error/binance.log &
   echo $! >logs/binanceService-running.pid
 else
   \cp -rf binanceService binanceService-running
-  nohup ./binanceService-running >/dev/null 2>&1 &
+  nohup ./binanceService-running >/dev/null 2>error/binance.log &
   echo $! >logs/binanceService-running.pid
 fi

@@ -106,7 +106,12 @@ func SocketOlymptrade(info wsdata.Info) {
 	// 开始订阅
 	if StartSub {
 		// 必须传入登录session
-		session := "session=1629167146143495028583624161042912173895462127666685937664207996;"
+		_, session := new(api.SocketSession).GetToken(false)
+		for len(session) == 0 {
+			// 不断获取 session ，直到取到为止
+			_, session = new(api.SocketSession).GetToken(false)
+			time.Sleep(time.Second * 3) // 休息3秒
+		}
 		wsmkClient := new(api.WSPriceClient).Init("", session, callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
