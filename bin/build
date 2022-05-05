@@ -22,3 +22,6 @@ GOOS=linux GOARCH=amd64 go build -o build/olymptradeService service/kline-olympt
 
 # 7、打包 kline-hsb K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o build/hsbService service/kline-hsb/stock.go
+
+# 8、打包 kline-binance K线图socket采集服务
+GOOS=linux GOARCH=amd64 go build -o build/binanceService service/kline-binance/stock.go

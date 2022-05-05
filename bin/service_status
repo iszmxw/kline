@@ -62,4 +62,13 @@ if [ "$hsbService_pid" ]; then
   printf "用户：$hsbService_user   启动时间：$hsbService_starttime 进程ID：$hsbService_pid  执行路径：$hsbService_bin\n"
 fi
 
+# 查看 binanceService-running
+binanceService_user=$(ps -ef | grep "/binanceService-running" | grep -v "grep" | awk '{print $1}')
+binanceService_starttime=$(ps -ef | grep "/binanceService-running" | grep -v "grep" | awk '{print $5}')
+binanceService_pid=$(ps -ef | grep "/binanceService-running" | grep -v "grep" | awk '{print $2}')
+binanceService_bin=$(ps -ef | grep "/binanceService-running" | grep -v "grep" | awk '{print $8}')
+if [ "$binanceService_pid" ]; then
+  printf "用户：$binanceService_user   启动时间：$binanceService_starttime 进程ID：$binanceService_pid  执行路径：$binanceService_bin\n"
+fi
+
 printf "\n"

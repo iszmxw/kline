@@ -90,3 +90,16 @@ else
   nohup ./hsbService-running >/dev/null 2>&1 &
   echo $! >logs/hsbService-running.pid
 fi
+
+# 重启 binanceService-running
+binanceService=$(ps -ef | grep "/binanceService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$binanceService" ]; then
+  kill -9 "$binanceService"
+  \cp -rf binanceService binanceService-running
+  nohup ./binanceService-running >/dev/null 2>error_hsb.log &
+  echo $! >logs/binanceService-running.pid
+else
+  \cp -rf binanceService binanceService-running
+  nohup ./binanceService-running >/dev/null 2>&1 &
+  echo $! >logs/binanceService-running.pid
+fi

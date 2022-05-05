@@ -41,3 +41,9 @@ hsbService=$(ps -ef | grep "/hsbService-running" | grep -v "grep" | awk '{print 
 if [ "$hsbService" ]; then
   kill -9 "$hsbService"
 fi
+
+# 停止 binanceService-running
+binanceService=$(ps -ef | grep "/binanceService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$binanceService" ]; then
+  kill -9 "$binanceService"
+fi
