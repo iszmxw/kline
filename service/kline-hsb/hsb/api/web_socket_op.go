@@ -34,6 +34,7 @@ type WebSocketOp struct {
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
+	once              sync.Once                // 锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              // 读消息管道
 	writeChan         chan []byte              // 写消息管道
@@ -65,13 +66,7 @@ func (ws *WebSocketOp) open(path, host, session string, closeChanCallback closeC
 func (ws *WebSocketOp) connServer() bool {
 	wssUrl := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
 	var err error
-	dialer := websocket.Dialer{
-		//Proxy: http.ProxyURL(&url.URL{
-		//	Scheme: "http",
-		//	Host:   "42.101.43.106:16790",
-		//	User:   url.UserPassword("8319", "9742"),
-		//}),
-	}
+	dialer := websocket.Dialer{}
 	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
 		"Origin": {"https://hsb.com"},
 		"Cookie": {ws.session},
@@ -199,7 +194,9 @@ func (ws *WebSocketOp) readLoop() {
 		}
 		select {
 		case ws.readChan <- message:
+			logger.Info("读消息管道写入成功")
 		case <-ws.closeChan:
+			logger.Info("读协程关闭chan")
 			goto ERR
 		}
 	}
@@ -224,6 +221,7 @@ func (ws *WebSocketOp) writeLoop() {
 					goto ERR
 				}
 			case <-ws.closeChan:
+				logger.Info("写协程关闭chan")
 				goto ERR
 			}
 		} else {
@@ -239,30 +237,27 @@ func (ws *WebSocketOp) writeLoop() {
 		}
 	}
 ERR:
-	logger.Info("write 已关闭 ")
-	ws.Close()
 	close(ws.writeChan)
+	logger.Info("写协程已关闭")
+	ws.Close()
 }
 
 func (ws *WebSocketOp) Close() {
-	ws.mutex.Lock()
-	defer ws.mutex.Unlock()
-	if ws.conn != nil {
-		err := ws.conn.Close()
-		if err != nil {
-			// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
-			logger.Info("关闭长连接失败:" + err.Error())
+	ws.once.Do(func() {
+		if ws.conn != nil {
+			err := ws.conn.Close()
+			if err != nil {
+				// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
+				logger.Info("关闭长连接失败:" + err.Error())
+			}
 		}
-	}
-	if !ws.isClose {
-		ws.isClose = true
-		if closeChanCheck(ws.closeChan) {
-			logger.Info("ws.closeChan-已关闭无需重复关闭")
-		} else {
+		if !ws.isClose {
+			ws.isClose = true
 			close(ws.closeChan)
+			logger.Info("关闭chan")
 		}
-	}
-	ws.closeChanCallback <- struct{}{}
+		ws.closeChanCallback <- struct{}{}
+	})
 }
 
 func (ws *WebSocketOp) runFunction(mi *CallbackFunc, data []byte) {
