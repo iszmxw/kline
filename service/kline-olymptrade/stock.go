@@ -15,6 +15,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/service/kline-olymptrade/olymptrade/api"
 	kconfig "goapi/service/kline-olymptrade/olymptrade/config"
+	"goapi/service/kline-olymptrade/olymptrade/utils/code"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"net/http"
 	_ "net/http/pprof"
@@ -49,14 +50,7 @@ func main() {
 	bootstrap.SetupRedis("15")
 	defer bootstrap.RedisClose()
 	var CodeData []wsdata.Info
-	CodeData = append(CodeData,
-		wsdata.Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		wsdata.Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
-		wsdata.Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
-		wsdata.Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
-		wsdata.Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
-		wsdata.Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
-	)
+	CodeData = code.GetData()
 	start := "ok"
 	for {
 		if start == "ok" {
