@@ -14,7 +14,7 @@ type WSPriceClient struct {
 
 func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
 	if host == "" {
-		host = config.LINEAR_SWAP_DEFAULT_HOST
+		host = config.LinearSwapDefaultHost
 	}
 	wsIx.open("/api/ws/price", host, proxy, callback)
 	return wsIx
@@ -24,7 +24,7 @@ type OnSubPriceKLineResponse func(*wsdata.SubPriceKLineResponse)
 
 func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPriceKLineResponse, id string) {
 	if id == "" {
-		id = config.DEFAULT_ID
+		id = config.DefaultId
 	}
 	subData := wsdata.WSSubData{Operation: "SUBSCRIBE.TICK", Id: info.Symbol, Param: ""} // {"operation":"SUBSCRIBE.TICK","id":"EUR/USD","param":""}
 	data, _ := json.Marshal(subData)

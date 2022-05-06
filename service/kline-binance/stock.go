@@ -16,6 +16,7 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-binance/binance/api"
+	kconfig "goapi/service/kline-binance/binance/config"
 	"goapi/service/kline-binance/binance/utils/code"
 	"goapi/service/kline-binance/binance/wsdata"
 	"net/http"
@@ -32,7 +33,7 @@ func init() {
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
-	logger.Init("kline-binance")
+	logger.Init(kconfig.ServiceLog)
 	// 初始化 SQL
 	bootstrap.SetupDB()
 }
@@ -82,7 +83,7 @@ func SocketBian(info wsdata.Info) {
 		callback <- struct{}{}
 	}
 	// 资产休市状态
-	if kline.CheckSleep("binance", TradingAssets) {
+	if kline.CheckSleep(kconfig.KlineSource, TradingAssets) {
 		time.Sleep(time.Second) // 休息1秒
 		StartSub = false
 		// 关闭
@@ -115,7 +116,7 @@ func SocketBian(info wsdata.Info) {
 			defer func() {
 				if r := recover(); r != nil {
 					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
-						"name": "binance",
+						"name": kconfig.KlineSource,
 						"r":    r,
 					})
 					// 关闭
@@ -160,7 +161,7 @@ func SocketBian(info wsdata.Info) {
 				Select("log_id").
 				Where("contract_code", ContractCode).
 				Where("upstream_ts", UpstreamTs).
-				Where("kline_source", "binance").
+				Where("kline_source", kconfig.KlineSource).
 				Find(&KlineData).Error
 			if err != nil {
 				logger.Error(err)
@@ -190,7 +191,7 @@ func SocketBian(info wsdata.Info) {
 				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
 					"ch":      data.Ch,
 					"tips":    tips,
-					"service": "binance",
+					"service": kconfig.KlineSource,
 					"shicha":  shicha,
 				})
 			}
@@ -253,6 +254,6 @@ func LogData(resp *wsdata.SubPriceKLineResponse, SystemTs, UpstreamTs int64) mod
 	klineLog.CCount = 0                                                            // 交易笔数 TODO
 	klineLog.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond))               // Kline返回日期
 	klineLog.CreateDate = time.Now()                                               // 创建日期
-	klineLog.KlineSource = "binance"                                               // K线来源bian
+	klineLog.KlineSource = kconfig.KlineSource                                     // K线来源binance
 	return klineLog
 }

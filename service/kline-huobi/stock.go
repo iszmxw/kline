@@ -17,6 +17,7 @@ import (
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
+	kconfig "goapi/service/kline-huobi/huobi/config"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
@@ -32,7 +33,7 @@ func init() {
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
-	logger.Init("kline-huobi")
+	logger.Init(kconfig.ServiceLog)
 	// 初始化 SQL
 	bootstrap.SetupDB()
 }
@@ -99,7 +100,7 @@ func SocketHuoBi(parentTopic string) {
 		defer func() {
 			if r := recover(); r != nil {
 				mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
-					"name": "huobi",
+					"name": kconfig.KlineSource,
 					"r":    r,
 				})
 				// 关闭
@@ -144,7 +145,7 @@ func SocketHuoBi(parentTopic string) {
 				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
 					"ch":      parentTopic,
 					"tips":    tips,
-					"service": "huobi",
+					"service": kconfig.KlineSource,
 					"shicha":  shicha,
 				})
 			}

@@ -3,31 +3,23 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"github.com/gostudys/huobi_contract_golang/src/ws/response"
-	mail_notice "goapi/pkg/notice/mail"
-	"goapi/pkg/redis"
-	"strings"
-
-	//"encoding/json"
-	//"errors"
 	"fmt"
-	//"github.com/gostudys/huobi_contract_golang/src/ws/response"
+	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
-	//"goapi/pkg/esdk"
-	//"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	//mail_notice "goapi/pkg/notice/mail"
-	//"goapi/pkg/redis"
+	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/redis"
 	"goapi/service/kline-olymptrade/olymptrade/api"
+	kconfig "goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
-	//"strings"
+	"strings"
 	"time"
 )
 
@@ -37,7 +29,7 @@ func init() {
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
-	logger.Init("kline-olymptrade")
+	logger.Init(kconfig.ServiceLog)
 	// 初始化 SQL
 	bootstrap.SetupDB()
 }
@@ -117,7 +109,7 @@ func SocketOlymptrade(info wsdata.Info) {
 			defer func() {
 				if r := recover(); r != nil {
 					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
-						"name": "olymptrade",
+						"name": kconfig.KlineSource,
 						"r":    r,
 					})
 					// 关闭
@@ -156,7 +148,7 @@ func SocketOlymptrade(info wsdata.Info) {
 				}
 				// 通知
 				mail_notice.Notice("msgNoSocket", map[string]interface{}{
-					"service": "olymptrade",
+					"service": kconfig.KlineSource,
 					"symbol":  info.ContractCode,
 				})
 				logger.Error(errors.New(fmt.Sprintf(
@@ -185,7 +177,7 @@ func SocketOlymptrade(info wsdata.Info) {
 				Select("log_id").
 				Where("contract_code", ContractCode).
 				Where("upstream_ts", UpstreamTs).
-				Where("kline_source", "olymptrade").
+				Where("kline_source", kconfig.KlineSource).
 				Find(&KlineData).Error
 			if err != nil {
 				logger.Error(err)
@@ -214,7 +206,7 @@ func SocketOlymptrade(info wsdata.Info) {
 				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
 					"ch":      data.Ch,
 					"tips":    tips,
-					"service": "olymptrade",
+					"service": kconfig.KlineSource,
 					"shicha":  shicha,
 				})
 			}
@@ -278,6 +270,6 @@ func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs,
 	klineLog.CCount = 0                                                                 // 交易笔数 TODO
 	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))      // Kline返回日期
 	klineLog.CreateDate = time.Now()                                                    // 创建日期
-	klineLog.KlineSource = "olymptrade"                                                 // K线来源olymptrade
+	klineLog.KlineSource = kconfig.KlineSource                                          // K线来源olymptrade
 	return klineLog
 }

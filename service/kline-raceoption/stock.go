@@ -16,6 +16,7 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-raceoption/raceoption/api"
+	kconfig "goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/code"
 	"goapi/service/kline-raceoption/raceoption/wsdata"
 	"net/http"
@@ -32,7 +33,7 @@ func init() {
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
-	logger.Init("kline-raceoption")
+	logger.Init(kconfig.ServiceLog)
 	// 初始化 SQL
 	bootstrap.SetupDB()
 }
@@ -89,7 +90,7 @@ func SocketRaceOption(info wsdata.Info) {
 	}
 	// 资产休市状态
 	logger.Info(TradingAssets)
-	if kline.CheckSleep("raceoption", TradingAssets) {
+	if kline.CheckSleep(kconfig.KlineSource, TradingAssets) {
 		time.Sleep(time.Second) // 休息1秒
 		StartSub = false
 		// 关闭
@@ -119,7 +120,7 @@ func SocketRaceOption(info wsdata.Info) {
 			defer func() {
 				if r := recover(); r != nil {
 					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
-						"name": "raceoption",
+						"name": kconfig.KlineSource,
 						"r":    r,
 					})
 					// 关闭
@@ -149,7 +150,7 @@ func SocketRaceOption(info wsdata.Info) {
 				}
 				// 通知
 				mail_notice.Notice("msgNoSocket", map[string]interface{}{
-					"service": "raceoption",
+					"service": kconfig.KlineSource,
 					"symbol":  info.ContractCode,
 				})
 				logger.Error(errors.New(fmt.Sprintf(
@@ -181,7 +182,7 @@ func SocketRaceOption(info wsdata.Info) {
 				Select("log_id").
 				Where("contract_code", ContractCode).
 				Where("upstream_ts", UpstreamTs).
-				Where("kline_source", "raceoption").
+				Where("kline_source", kconfig.KlineSource).
 				Find(&KlineData).Error
 			if err != nil {
 				logger.Error(err)
@@ -211,7 +212,7 @@ func SocketRaceOption(info wsdata.Info) {
 				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
 					"ch":      data.Ch,
 					"tips":    tips,
-					"service": "raceoption",
+					"service": kconfig.KlineSource,
 					"shicha":  shicha,
 				})
 			}
@@ -274,6 +275,6 @@ func LogData(resp *wsdata.SubPriceKLineResponse, SystemTs, UpstreamTs int64) mod
 	klineLog.CCount = 0                                                                // 交易笔数 TODO
 	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))     // Kline返回日期
 	klineLog.CreateDate = time.Now()                                                   // 创建日期
-	klineLog.KlineSource = "raceoption"                                                // K线来源raceoption
+	klineLog.KlineSource = kconfig.KlineSource                                         // K线来源raceoption
 	return klineLog
 }

@@ -45,7 +45,7 @@ type WebSocketOp struct {
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
 	if host == "" {
-		ws.host = config.LINEAR_SWAP_DEFAULT_HOST
+		ws.host = config.LinearSwapDefaultHost
 	}
 	ws.host = host
 	ws.proxy = proxy
@@ -71,7 +71,7 @@ func (ws *WebSocketOp) connServer() bool {
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
 		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name": "raceoption",
+			"name": config.KlineSource,
 		})
 		logger.Error(err)
 		time.Sleep(time.Second * 5)

@@ -1,9 +1,14 @@
 package config
 
-const GET_METHOD = "GET"
-const POST_METHOD = "POST"
+const LinearSwapDefaultHost = "ws-echo-srv.gwtrader.net:10377"
 
-const LINEAR_SWAP_DEFAULT_HOST = "ws-echo-srv.gwtrader.net:10377"
+const DefaultId = "api"
 
-const DEFAULT_ID = "api"
-const DEFAULT_CID = "cid"
+// ServiceLog 服务名称
+const ServiceLog = "kline-hsb"
+
+// KlineSource 来源
+const KlineSource = "hsb"
+
+// RedisKey hsb登录的token
+const RedisKey = "kline:token:hsb"

@@ -10,6 +10,7 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
+	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/code"
 	"goapi/service/kline-raceoption/raceoption/wsdata"
 	"net/http"
@@ -18,9 +19,8 @@ import (
 
 // 获取登录token
 func getToken(refresh bool) (error, string) {
-	redisKey := "kline:token:raceoption"
 	// 刷新token
-	token, err := redis.Get(redisKey)
+	token, err := redis.Get(config.RedisKey)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -40,7 +40,7 @@ func getToken(refresh bool) (error, string) {
 		if true == resp["success"] {
 			data := resp["data"].(map[string]interface{})
 			token = data["token"].(string)
-			_, err = redis.Add(redisKey, token, 60*60*2) // 设置两个小时过期
+			_, err = redis.Add(config.RedisKey, token, 60*60*2) // 设置两个小时过期
 			if err != nil {
 				return err, ""
 			}
@@ -115,7 +115,7 @@ func UpdateRate(info wsdata.Info, returnRate float64) {
 	} else {
 		// 赔率变动通知
 		mail_notice.Notice("msgRateChange", map[string]interface{}{
-			"service": "raceoption",
+			"service": config.KlineSource,
 			"tips":    tips,
 		})
 		DB.Begin()
@@ -136,7 +136,7 @@ func UpdateRate(info wsdata.Info, returnRate float64) {
 		TradingAssetsLog.CreateDate = time.Now()
 		TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate
 		TradingAssetsLog.ReturnRateNow = returnRate
-		TradingAssetsLog.KlineSource = "raceoption"
+		TradingAssetsLog.KlineSource = config.KlineSource
 		err = DB.Model(TradingAssetsLog).Create(&TradingAssetsLog).Error
 		if err != nil {
 			DB.Rollback()

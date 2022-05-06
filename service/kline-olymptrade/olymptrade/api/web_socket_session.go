@@ -7,6 +7,7 @@ import (
 	api2captcha "goapi/pkg/recaptcha"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
+	"goapi/service/kline-olymptrade/olymptrade/config"
 	"net/http"
 	"strings"
 	"sync"
@@ -40,10 +41,9 @@ type SocketSession struct {
 
 func (ss *SocketSession) GetToken(refresh bool) (error, string) {
 	// 读取 session，如果未配置session进行邮件提醒
-	redisKey := "kline:token:olymptrade"
 	redisLoginKey := "kline:token:olymptrade:login"
 	// 刷新token
-	token, _ := redis.Get(redisKey)
+	token, _ := redis.Get(config.RedisKey)
 	// token失效，或者强制刷新token,就重新登录获取token
 	if len(token) <= 0 || true == refresh {
 		if ss.IsLogin {
@@ -62,7 +62,7 @@ func (ss *SocketSession) GetToken(refresh bool) (error, string) {
 				logger.Error(err)
 			}
 			token = login()
-			_, err = redis.Add(redisKey, token, 60*60*24*10) // 设置十天过期
+			_, err = redis.Add(config.RedisKey, token, 60*60*24*10) // 设置十天过期
 			if err != nil {
 				logger.Error(err)
 			}

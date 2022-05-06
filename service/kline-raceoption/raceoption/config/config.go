@@ -1,11 +1,14 @@
 package config
 
-const GET_METHOD = "GET"
-const POST_METHOD = "POST"
+const LinearSwapDefaultHost = "trading.raceoption.com"
 
-const LINEAR_SWAP_DEFAULT_HOST = "trading.raceoption.com"
+const DefaultId = "api"
 
-const SPOT_DEFAULT_HOST = "api.huobi.pro"
+// ServiceLog 服务名称
+const ServiceLog = "kline-raceoption"
 
-const DEFAULT_ID = "api"
-const DEFAULT_CID = "cid"
+// KlineSource 来源
+const KlineSource = "raceoption"
+
+// RedisKey raceoption登录的token
+const RedisKey = "kline:token:raceoption"

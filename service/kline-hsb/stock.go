@@ -14,6 +14,7 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-hsb/hsb/api"
+	kconfig "goapi/service/kline-hsb/hsb/config"
 	"goapi/service/kline-hsb/hsb/wsdata"
 	"math"
 	"net/http"
@@ -29,7 +30,7 @@ func init() {
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
-	logger.Init("kline-hsb")
+	logger.Init(kconfig.ServiceLog)
 	// 初始化 SQL
 	bootstrap.SetupDB()
 }
@@ -110,7 +111,7 @@ func SocketHsb(info wsdata.Info) {
 			defer func() {
 				if r := recover(); r != nil {
 					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
-						"name": "hsb",
+						"name": kconfig.KlineSource,
 						"r":    r,
 					})
 					// 关闭
@@ -141,7 +142,7 @@ func SocketHsb(info wsdata.Info) {
 				}
 				// 通知
 				mail_notice.Notice("msgNoSocket", map[string]interface{}{
-					"service": "hsb",
+					"service": kconfig.KlineSource,
 					"symbol":  info.ContractCode,
 				})
 				logger.Error(errors.New(fmt.Sprintf(
@@ -169,7 +170,7 @@ func SocketHsb(info wsdata.Info) {
 				Select("log_id").
 				Where("contract_code", ContractCode).
 				Where("upstream_ts", UpstreamTs).
-				Where("kline_source", "hsb").
+				Where("kline_source", kconfig.KlineSource).
 				Find(&KlineData).Error
 			if err != nil {
 				logger.Error(err)
@@ -198,7 +199,7 @@ func SocketHsb(info wsdata.Info) {
 				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
 					"ch":      data.Ch,
 					"tips":    tips,
-					"service": "hsb",
+					"service": kconfig.KlineSource,
 					"shicha":  shicha,
 				})
 			}
@@ -263,6 +264,6 @@ func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs,
 	klineLog.CCount = 0                                                                 // 交易笔数 TODO
 	klineLog.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond))                    // Kline返回日期
 	klineLog.CreateDate = time.Now()                                                    // 创建日期
-	klineLog.KlineSource = "hsb"                                                        // K线来源hsb
+	klineLog.KlineSource = kconfig.KlineSource                                          // K线来源hsb
 	return klineLog
 }

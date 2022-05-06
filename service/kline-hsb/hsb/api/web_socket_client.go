@@ -13,7 +13,7 @@ type WSPriceClient struct {
 
 func (wsIx *WSPriceClient) Init(host, session string, callback closeChanCallback) *WSPriceClient {
 	if host == "" {
-		host = config.LINEAR_SWAP_DEFAULT_HOST
+		host = config.LinearSwapDefaultHost
 	}
 	wsIx.open("/ws_quote", host, session, callback)
 	return wsIx
@@ -23,9 +23,8 @@ type OnSubPriceKLineResponse func(*wsdata.SubPriceKLineResponse)
 
 func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPriceKLineResponse, id string) {
 	if id == "" {
-		id = config.DEFAULT_ID
+		id = config.DefaultId
 	}
-	// {"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}
 	data := []byte(fmt.Sprintf(`{"cmd":4102,"pb":{"stk":[{"id":%v,"marketid":8}]}}`, info.ID))
 	wsIx.sub(data, info.Symbol, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }

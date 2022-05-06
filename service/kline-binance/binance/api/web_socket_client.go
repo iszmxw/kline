@@ -13,7 +13,7 @@ type WSPriceClient struct {
 
 func (wsIx *WSPriceClient) Init(host, streamName string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
 	if host == "" {
-		host = config.LINEAR_SWAP_DEFAULT_HOST
+		host = config.LinearSwapDefaultHost
 	}
 	wsIx.open("/ws/"+streamName, host, proxy, callback)
 	return wsIx
@@ -23,7 +23,7 @@ type OnSubPriceKLineResponse func(*wsdata.SubPriceKLineResponse)
 
 func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPriceKLineResponse, id string) {
 	if id == "" {
-		id = config.DEFAULT_ID
+		id = config.DefaultId
 	}
 	wsIx.sub([]byte(info.Symbol), info.Symbol, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }

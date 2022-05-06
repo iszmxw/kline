@@ -1,9 +1,14 @@
 package config
 
-const GET_METHOD = "GET"
-const POST_METHOD = "POST"
+const LinearSwapDefaultHost = "olymptrade.com"
 
-const LINEAR_SWAP_DEFAULT_HOST = "olymptrade.com"
+const DefaultId = "api"
 
-const DEFAULT_ID = "api"
-const DEFAULT_CID = "cid"
+// ServiceLog 服务名称
+const ServiceLog = "kline-olymptrade"
+
+// KlineSource 来源
+const KlineSource = "olymptrade"
+
+// RedisKey olymptrade登录的token
+const RedisKey = "kline:token:olymptrade"
