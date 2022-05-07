@@ -7,13 +7,13 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/code"
 	"goapi/service/kline-raceoption/raceoption/wsdata"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -26,15 +26,23 @@ func getToken(refresh bool) (error, string) {
 	}
 	// token失效，或者强制刷新token,就重新登录获取token
 	if len(token) <= 0 || true == refresh {
-		resp, _, err := request.Post("https://trading.raceoption.com/api/login", http.Header{
+		resp, header, err := request.Post("https://trading.raceoption.com/api/login", http.Header{
 			"authority":    {"trading.raceoption.com"},
 			"content-type": {"application/json; charset=utf-8"},
 			"origin":       {"https://trading.raceoption.com"},
 			"referer":      {"https://trading.raceoption.com/"},
 			"User-Agent":   {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
-		}, `{"login": "mail@54zm.com","password": "wap.54zm.com"}`)
+		},
+			`{"login": "mail@54zm.com","password": "wap.54zm.com"}`,
+			&url.URL{
+				Scheme: "http",
+				//Host:   "47.104.184.7:888",
+				Host: "42.101.43.106:16790",
+				User: url.UserPassword("8319", "9742"),
+			})
 		if err != nil {
 			logger.Error(err)
+			logger.Info(header)
 			token = ""
 		}
 		if true == resp["success"] {
@@ -46,6 +54,7 @@ func getToken(refresh bool) (error, string) {
 			}
 		}
 	}
+	time.Sleep(time.Second * 5) // 防止5秒盾牌
 	// 返回 token
 	return nil, token
 }
@@ -113,11 +122,11 @@ func UpdateRate(info wsdata.Info, returnRate float64) {
 	if TradingAssets.ReturnRate == returnRate {
 		logger.Info(fmt.Sprintf("%v：当前资产赔率和历史赔率一样，无需修改", TradingAssets.AssetsCode))
 	} else {
-		// 赔率变动通知
-		mail_notice.Notice("msgRateChange", map[string]interface{}{
-			"service": config.KlineSource,
-			"tips":    tips,
-		})
+		//// 赔率变动通知
+		//mail_notice.Notice("msgRateChange", map[string]interface{}{
+		//	"service": config.KlineSource,
+		//	"tips":    tips,
+		//})
 		DB.Begin()
 		err = DB.Model(models.TradingAssets{}).
 			Where("assets_code", info.ContractCode).
