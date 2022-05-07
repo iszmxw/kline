@@ -2,10 +2,7 @@ package bootstrap
 
 import (
 	"github.com/gin-gonic/gin"
-	gs "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"goapi/app/middlewares/v1"
-	_ "goapi/docs"
 	conf "goapi/pkg/config"
 	"goapi/routes"
 )
@@ -20,11 +17,8 @@ func SetupRoute() *gin.Engine {
 	}
 	router.Use(v1.TraceLogger()) // 日志追踪
 	router.Use(v1.Cors())        // 跨域
-	// swagger docs 文档
-	router.GET("/docs/*any", gs.WrapHandler(swaggerFiles.Handler))
 	// v1 版本
 	apiV1 := router.Group("/v1")
-	Test := router.Group("/test")
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
 		context.String(200, "Hello World!："+requestId.(string)+"\n\n\n")
@@ -35,6 +29,5 @@ func SetupRoute() *gin.Engine {
 		//}
 	})
 	routes.RegisterWebRoutes(apiV1)
-	routes.RegisterTestRoutes(Test)
 	return router
 }

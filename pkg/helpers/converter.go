@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"goapi/pkg/logger"
 	"strconv"
+	"strings"
 )
 
 // Int64ToString 将 int64 转换为 string
@@ -26,6 +27,16 @@ func Uint64ToString(num uint64) string {
 // StringToInt 将字符串转换为 int
 func StringToInt(str string) int {
 	i, err := strconv.Atoi(str)
+	if err != nil {
+		logger.Error(err)
+		return 0
+	}
+	return i
+}
+
+// StringToInt64 将字符串转换为 int64
+func StringToInt64(str string) int64 {
+	i, err := strconv.ParseInt(str, 10, 64)
 	if err != nil {
 		logger.Error(err)
 		return 0
@@ -65,4 +76,21 @@ func StrToFloat64(str string) float64 {
 		f64 = 0
 	}
 	return f64
+}
+
+// 转换
+
+func CloseDataConvert(close string) []float64 {
+	var floatList []float64
+	close = strings.Replace(close, "c_close", "", -1)
+	close = strings.Replace(close, "\n", ",", -1)
+	close = strings.Trim(close, ",")
+	strList := strings.Split(close, ",")
+	for _, item := range strList {
+		if item == "" {
+			continue
+		}
+		floatList = append(floatList, StrToFloat64(item))
+	}
+	return floatList
 }

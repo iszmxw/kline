@@ -69,6 +69,10 @@ func Add(key string, value interface{}, exTime int) (bool, error) {
 	return true, nil
 }
 
+func Incr(key string) int64 {
+	return Redis.Incr(key).Val()
+}
+
 func Lpush(key string, values ...interface{}) (bool, error) {
 	_, err := Redis.LPush(key, values...).Result()
 	if err != nil {
@@ -93,6 +97,11 @@ func Delete(key string) bool {
 
 func Get(key string) (string, error) {
 	value, err := Redis.Get(key).Result()
+	return value, err
+}
+
+func GetKeys(key string) ([]string, error) {
+	value, err := Redis.Keys(key).Result()
 	return value, err
 }
 

@@ -16,7 +16,7 @@
 >
 > [uber-go/zap](https://github.com/uber-go/zap)   【zap日志库】
 >
-> [gostudys/huobi_futures_go](https://github.com/gostudys/huobi_futures_go)   【火币网封装库】
+> [gostudys/huobi_contract_golang](https://github.com/gostudys/huobi_contract_golang)   【火币网封装库】
 >
 > 日志TrackId链路追踪，包含mysql语句
 
@@ -42,9 +42,9 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 
 ```text
   - bin
-    - build                 // 打包服务脚本
-    - service_restart       // 重启服务脚本
-    - service_stop          // 暂停服务脚本
+    - build                 // 打包所有服务脚本
+    - service_restart       // 重启api服务脚本
+    - service_stop          // 暂停api服务脚本
     - update                // git 提交脚本
 ```
 
@@ -53,7 +53,8 @@ GOOS=linux GOARCH=amd64 go build -o apiService main.go
 - 拷贝开启自启配置文件
 
 ```shell
-cp IQOptionPro/service/huobi/huobi.service /etc/systemd/system/huobi.service
+cd "进入项目根目录"
+cp service/huobi/huobi.service /etc/systemd/system/huobi.service
 ```
 
 - 根据实际情况修改配置文件参数
@@ -190,10 +191,10 @@ systemctl enable huobi
 
 | 字段名   | 类型   | 说明   |
 | -------- | ------ | ------ |
-| body | string | market.BTC-USD.index.5min |
+| body | string | market.BTC-USD.index.1min |
 
 ```text
-market.btc-usd.index.1min
+market.BTC-USD.index.1min
 ```
 
 - 返回参数
@@ -205,7 +206,7 @@ market.btc-usd.index.1min
 | tick       | object array     |     tick返回，详情：推送tick参数      |
 | - tick.id       | int64 |     指数K线id,也就是K线时间戳，K线起始时间          |
 | - tick.vol       | string |     成交量张数为0      |
-| - tick.count       | string |     成交笔数为0      |
+| - tick.count       | float64 |     成交笔数为0      |
 | - tick.open       | string |     开盘指数价      |
 | - tick.close       | string |     收盘指数价      |
 | - tick.low       | string |     最低指数价      |
@@ -231,3 +232,9 @@ market.btc-usd.index.1min
 
 ---
 
+
+### 清除es数据
+
+```bash
+curl -XDELETE http://10.10.10.10:9200/kline_log
+```

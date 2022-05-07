@@ -1,0 +1,38 @@
+package main
+
+import (
+	"fmt"
+	"goapi/config"
+	"goapi/pkg/logger"
+	api2captcha "goapi/pkg/recaptcha"
+)
+
+func init() {
+	// 初始化配置信息
+	config.Initialize()
+	// 定义日志目录
+	logger.Init("test")
+}
+
+func main() {
+	client := api2captcha.NewClient("db18edb60341ce0c0d93d8905ed3cdaf")
+	captcha := api2captcha.ReCaptcha{
+		SiteKey:   "6Lc5ACgTAAAAABL3s8j9VkkUn4Engv4QtdCLd9qI",
+		Url:       "https://olymptrade.com/home",
+		Invisible: true,
+		Action:    "verify",
+	}
+	req := captcha.ToRequest()
+	code, err := client.Solve(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	logger.Info(code)
+}
+
+/**
+
+
+
+03AGdBq25WQbM84ExHs2ncEJddgTKCZqrKmrF0g8ByysQzM3JOzPFXeZHoNbSXYaWbQlV6_OEiWxTJ58nPi1ov50evS9GNBgLNHv222XqFkbeA_RKzSJcEjfVBzoQiHpHPDu4ALIdz1QFjlGiBYgwzrsBr4HU5yRIt8J5FVSC33kvWYJu8dMCAKZEWqm6j5JP3fFN1oUtr6mQ2Hbgswc8amhWec0wVmO7ZuGEdWlVvgKDaaLxQFcP4dwMOmxk3sDuEGGTEsI5SsxJFkVklAc57BWTkyYMULQwCFy8Sr4SM3XObvD4ZFeAZ2PQ1ShDCFzDlhs0Ox3vNA2C0QxuQB4hQrjhaWHHk6i0w9AVMml8i6oRUqShJLjnvkbyGS5d-J6Vyf36RyH1PGt4YCkzCgM9UZMFLzMmFakFY0AddOG_7gkq5BQ4RK1B1xfh-DWfaZBMBvRy16QeH05YTiqTBpwIUbpAG-y3MrV-_hZXTsuNfNBp1mdxKUGLcmSSBMsbtDc0l976yoZ79dUXzzOb1hD_8-W1uMZxzGmDK_C5VNzvyFJxSBnd--V2KylAN1viF78Hozkd83XTYlUHKZ9n4NFWBKP3goiqZZhrQQ281YF2SJijk8-iijuO5GtZenxwn3k8_dOHYDoGt0jzyC8AB1Klk9FMQ61yyM2j2EY4TLLCTGyC0vJquuSrxoMVqvognlO-C5VI3MUdwx2G6FazEdQurPfTmhE-oPsY5vRU30VJ2e2LDBRJ-JBlF5uxKHu1zBGMT9FFqfP-LAENvTw-DjBQ9vadTmu2kO3T13adH8HZPjGzYAo62W_EqGr-ibgP7CEjV1ZIFHKd_y_18_Kc_JjooSZNM-IY5meazG7NCEXMWrKcANSkeswLiA-3dCaTvFApWW1V-T1lmW9tEyQmXXvaB_0ee_kv_gX0QVeZlDmreyU-MqQP1WcY5tQ-t32Pws7OuYPuFDNzHJ1zdjv1HRNti2wU3YmInDMnP2chID4R4EAr3EwqFAVDxqilIMSOLxN-SvRCoDcm2q6dAJPKMiFzqkYjO9ci0oeUjqWrLjgPCb4wMqKwrShGreXYMeWzrpQBLmmqWEn1WK939YhZxVVHHUb6EQuj0ZOF_L4XJtplc1cae4F_uqt7rCML2aSA4zMRUOOFHHnWS60Buob2evxydI1m4j0n8-b78aWQUYLwfL1GCYYNQBY2hmFelqiJPPHRdW7EBMQHFHvb4qqrQEwH9qd7UT9-3w5bZuR-kx4ZHQ815Jy3mqAyJGFnTeIUIQQAAWEIf-c6XwuYZ3rtfyfSIIHKFgzeK4Cripy2kn9fVNUVF9aitJh1QFFAIb6XGG7JuyIw9hFyRYLR31YkeD7IrJdDWdSRgSUqZMMI0sJk_IBI7ESQNoCcuydp0pGwbY5dz5VcSYGKnkDApEvYBSGHkNT_blZvjp5DIDDtEbueSuJUGyWKcCy31yY9_izu99EbLofVxC0N-dqeNhI1BD1IGluQfQ647E3VQEID46nZmggK8QMSWH-cIOuG1qyWubEfxYFeW8ggwCBRXpv9J5Z0kb6NXtNXH6-RbHsKSN3dQYIgpg7eZPPStVwU-4CPQJBFtb5fallLCbue3V9sRGpU6_kidVuRfq1qgXw
+ */

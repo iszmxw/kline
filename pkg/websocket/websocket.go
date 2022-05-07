@@ -19,8 +19,9 @@ var upGrader = websocket.Upgrader{
 
 // WsConn 声明并发安全的ws
 type WsConn struct {
-	*websocket.Conn
-	Mux sync.RWMutex
+	*websocket.Conn              // 基础连接
+	Mux             sync.RWMutex // 锁
+	IsClose         bool         // 是否关闭
 }
 
 func GetSocket(c *gin.Context) (*WsConn, error) {
@@ -34,8 +35,27 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 		return &WsConn{
 			ws,
 			sync.RWMutex{},
+			false,
 		}, nil
 	} else {
 		return nil, errors.New("不是socket請求")
+	}
+}
+
+// 关闭socket资源
+
+func WsClose(ws *WsConn) {
+	if ws.IsClose {
+		logger.Info("当前socket已关闭")
+	} else {
+		ws.Mux.Lock()
+		closeErr := ws.Conn.Close()
+		if closeErr != nil {
+			logger.Error(closeErr)
+		} else {
+			ws.IsClose = true
+		}
+		ws.Mux.Unlock()
+		logger.Info("关闭成功")
 	}
 }

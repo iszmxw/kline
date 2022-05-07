@@ -52,3 +52,33 @@ func (t *TimeNormal) Scan(v interface{}) error {
 	}
 	return fmt.Errorf("can not convert %v to timestamp", v)
 }
+
+// 获取本周几的开始时间
+
+func GetThisWeekStartTime(start string) time.Time {
+	// 分割时间
+	arr := strings.Split(start, "-")
+	if len(arr) < 2 {
+		return time.Time{}
+	}
+	// 星期几
+	day := StringToInt(arr[0])
+	// 时分
+	timeArr := strings.Split(arr[1], ":")
+	if len(timeArr) < 2 {
+		return time.Time{}
+	}
+	hour := StringToInt(timeArr[0])
+	min := StringToInt(timeArr[1])
+	if day > 7 || day < 1 {
+		return time.Time{}
+	}
+	now := time.Now()
+	nowWeek := now.Weekday()
+	if nowWeek == 0 {
+		nowWeek = 7
+	}
+	offset := day - int(nowWeek)
+	weekStartDate := time.Date(now.Year(), now.Month(), now.Day(), hour, min, 0, 0, time.Local).AddDate(0, 0, offset)
+	return weekStartDate
+}

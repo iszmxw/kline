@@ -3,5 +3,7 @@ tmp
 .env
 *.log
 goapi
-apiService
-huobiService
+pprof
+apiService*
+huobiService*
+liveoddsService*

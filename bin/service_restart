@@ -1,13 +1,23 @@
 #!/bin/sh
 
 # 重启 apiService
-apiService=$(ps -ef|grep "/apiService" | grep -v "grep" | awk '{print $2}')
+apiService=$(ps -ef|grep "/apiService-running" | grep -v "grep" | awk hh'{print $2}')
 if [ "$apiService" ]
 then
   kill -9 "$apiService"
-  nohup ./apiService > logs/apiService.log 2>&1 & echo $!>logs/apiService.pid
+  nohup ./apiService-running > /dev/null 2>&1 & echo $!>logs/apiService-running.pid
 else
-  nohup ./apiService > logs/apiService.log 2>&1 & echo $!>logs/apiService.pid
+  nohup ./apiService-running > /dev/null 2>&1 & echo $!>logs/apiService-running.pid
+fi
+
+# 重启 liveoddsService
+liveoddsService=$(ps -ef|grep "/liveoddsService" | grep -v "grep" | awk '{print $2}')
+if [ "$liveoddsService" ]
+then
+  kill -9 "$liveoddsService"
+  nohup ./liveoddsService > /dev/null 2>&1 & echo $!>logs/liveoddsService.pid
+else
+  nohup ./liveoddsService > /dev/null 2>&1 & echo $!>logs/liveoddsService.pid
 fi
 
 ## 重启 huobiService
@@ -15,7 +25,7 @@ fi
 #if [ "$huobiService" ]
 #then
 #  kill -9 "$huobiService"
-#  nohup ./huobiService > logs/huobiService.log 2>&1 & echo $!>logs/huobiService.pid
+#  nohup ./huobiService > /dev/null 2>&1 & echo $!>logs/huobiService.pid
 #else
-#  nohup ./huobiService > logs/huobiService.log 2>&1 & echo $!>logs/huobiService.pid
+#  nohup ./huobiService > /dev/null 2>&1 & echo $!>logs/huobiService.pid
 #fi

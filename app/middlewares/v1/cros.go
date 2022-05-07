@@ -22,7 +22,7 @@ func Cors() gin.HandlerFunc {
 		if method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
 		}
-		defer abnormal.Stack("进入中间件")
+		defer abnormal.Stack("进入中间件",c)
 		c.Next()
 	}
 }

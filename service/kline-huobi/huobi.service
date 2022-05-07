@@ -1,0 +1,17 @@
+[Unit]
+Description=HuoBiSocket service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+#WorkingDirectory=/home/huobi-kline-go
+#ExecStart=/home/huobi-kline-go/huobiService
+WorkingDirectory=/home/yezhiming/huobi-kline-go
+ExecStart=/home/yezhiming/huobi-kline-go/huobiService
+#StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target

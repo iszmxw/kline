@@ -25,7 +25,7 @@ func New() Mail {
 }
 
 // Send 标题 文本 目标邮箱
-func (m Mail) Send(title string, text string, toId string) error {
+func (m Mail) Send(Info map[string]interface{}, toId string) error {
 	auth := smtp.PlainAuth("", m.user, m.passwd, m.host)
 
 	tLsConfig := &tls.Config{
@@ -60,7 +60,7 @@ func (m Mail) Send(title string, text string, toId string) error {
 		return err
 	}
 
-	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s", m.user, toId, title, text)
+	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s", m.user, toId, Info["title"], Info["content"])
 
 	_, err = w.Write([]byte(msg))
 	if err != nil {

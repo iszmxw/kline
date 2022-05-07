@@ -1,7 +1,7 @@
 package response
 
 import (
-	"github.com/gostudys/huobi_futures_go/sdk/linearswap/ws/response/index"
+	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/pkg/helpers"
 	"time"
@@ -31,34 +31,34 @@ type WsIndex struct {
 	Ch   string `json:"ch"`
 	Ts   int64  `json:"ts"`
 	Tick struct {
-		Id     int    `json:"id"`
-		Vol    string `json:"vol"`
-		Count  string `json:"count"`
-		Open   string `json:"open"`
-		Close  string `json:"close"`
-		Low    string `json:"low"`
-		High   string `json:"high"`
-		Amount string `json:"amount"`
+		Id     int     `json:"id"`
+		Vol    string  `json:"vol"`
+		Count  float64 `json:"count"`
+		Open   string  `json:"open"`
+		Close  string  `json:"close"`
+		Low    string  `json:"low"`
+		High   string  `json:"high"`
+		Amount string  `json:"amount"`
 	} `json:"tick"`
 }
 
 // KlineLogData 组装数据
-func KlineLogData(Topic []string, data *index.SubIndexKLineResponse) *models.KlineLog {
-	var AddData models.KlineLog
-	AddData.ContractCode = Topic[1]                         // 合约代码 BTC-USD
-	AddData.Ch = data.Ch                                    // k线类型请求kline的wss请求地址
-	AddData.Ts = data.Ts                                    // kilne返回日期时间戳
-	AddData.ID = data.Tick.Id                               // 返回的id
-	AddData.Mrid = 0                                        // 返回的id
-	AddData.COpen = helpers.StrToFloat64(data.Tick.Open)    // 起始峰值
-	AddData.CClose = helpers.StrToFloat64(data.Tick.Close)  // 结束峰值
-	AddData.High = helpers.StrToFloat64(data.Tick.High)     // 最高峰值
-	AddData.Low = helpers.StrToFloat64(data.Tick.Low)       // 最低峰值
-	AddData.Amount = helpers.StrToFloat64(data.Tick.Amount) // 成交金额
-	AddData.Vol = helpers.StrToFloat64(data.Tick.Vol)       // 成交手
-	AddData.CCount = helpers.StrToFloat64(data.Tick.Count)  // 交易笔数
-	AddData.TsDate = time.Unix(data.Ts/1000, 0)             // kline返回日期
-	AddData.CreateDate = time.Now()                         // 创建日期
-	AddData.KlineSource = "huobi"                           // k线来源 huobi
-	return &AddData
+func KlineLogData(Topic []string, data *response.SubIndexKLineResponse) *models.KlineLog {
+	return &models.KlineLog{
+		ContractCode: Topic[1],                                      // 合约代码 BTC-USD
+		Ch:           data.Ch,                                       // k线类型请求kline的wss请求地址
+		Ts:           data.Ts,                                       // kilne返回日期时间戳
+		ID:           data.Tick.Id,                                  // 返回的id
+		Mrid:         0,                                             // 返回的id
+		COpen:        helpers.StrToFloat64(data.Tick.Open),          // 起始峰值
+		CClose:       helpers.StrToFloat64(data.Tick.Close),         // 结束峰值
+		High:         helpers.StrToFloat64(data.Tick.High),          // 最高峰值
+		Low:          helpers.StrToFloat64(data.Tick.Low),           // 最低峰值
+		Amount:       helpers.StrToFloat64(data.Tick.Amount),        // 成交金额
+		Vol:          helpers.StrToFloat64(data.Tick.Vol),           // 成交手
+		CCount:       data.Tick.Count,                               // 交易笔数
+		TsDate:       time.Unix(0, data.Ts*int64(time.Millisecond)), // kline返回日期
+		CreateDate:   time.Now(),                                    // 创建日期
+		KlineSource:  "huobi",                                       // k线来源 huobi
+	}
 }
