@@ -249,9 +249,8 @@ func SocketQxbroker(info wsdata.Info) {
 	}
 	select {
 	case <-callback:
-		fmt.Println(info.Symbol + "：已关闭")
-		//fmt.Println(info.Symbol + "：正在重新启动 Goroutine")
-		//go SocketQxbroker(info)
+		fmt.Println(info.Symbol + "：已关闭 正在重新启动 Goroutine")
+		go SocketQxbroker(info)
 	}
 }
 

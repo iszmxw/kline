@@ -8,14 +8,35 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/redis"
 	"goapi/service/kline-qxbroker/qxbroker/config"
-	"goapi/service/kline-qxbroker/qxbroker/wsdata"
+	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 )
+
+// 登录结构
+
+type Login struct {
+	List    []string `json:"list"`
+	Captcha struct {
+		Type string `json:"type"`
+		Data struct {
+			Token string `json:"token"`
+		} `json:"data"`
+	} `json:"captcha"`
+	Data struct {
+		Email      string `json:"email"`
+		Password   string `json:"password"`
+		FpId       string `json:"fp_id"`
+		HardwareId string `json:"hardware_id"`
+	} `json:"data"`
+}
 
 type closeChanCallback chan struct{}
 
@@ -40,6 +61,8 @@ type WebSocketOp struct {
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStars       list.List
+	Login             Login // 登录结构
+	IsLogin           bool  // 是否已经登录
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -81,13 +104,11 @@ func (ws *WebSocketOp) connServer() bool {
 			"name": config.KlineSource,
 		})
 		logger.Error(err)
-		//time.Sleep(time.Second * 5)
-		//ws.Close()
+		ws.Close()
 		return false
 	} else {
 		logger.Info("WebSocket connected")
 		go ws.readLoop()
-		//go ws.writeLoop()
 		go ws.DoHand()
 	}
 	return true
@@ -117,21 +138,33 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		message = []byte(str)
 	}
 	switch true {
+	case strings.EqualFold(string(message), "41"): // 41 断开链接
+		logger.Info("断开链接")
+		ws.closeChanCallback <- struct{}{} // 上游直接断开了，通知外部已断开
+		break
 	case strings.Contains(string(message), "authorization/reject"): // [] 空数据
 		logger.Info("授权/拒绝")
+		_, _ = ws.GetToken(true) // 登录失败，强制刷新 token
+		ws.Close()
 		break
 	case strings.Contains(string(message), "[]"): // [] 空数据
+	case strings.EqualFold(string(message), "3"): // 3 pong
 	case strings.Contains(string(message), "history"): // 历史数据
 	case strings.Contains(string(message), "liveBalance"): // {"liveBalance":0,"demoBalance":10000} // 账户余额信息
 	case strings.Contains(string(message), "451-"): // 451-["depth/change",{"_placeholder":true,"num":0}]
-		// 直接跳出
+		// 直接跳过
 		break
 	case strings.EqualFold(string(message), "40"): // 检测是否登录成功  42["s_authorization"]
 		{
 			logger.Info("准备登录")
-			msg := []byte(`42["authorization",{"session":"XxHyCGazOP9NqsScBehwROIbmYzPob7AHxPz65Ez","isDemo":0}]`)
-			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+			// 登录需要获取 Token
+			_, token := ws.GetToken(false)
+			msg := fmt.Sprintf(`42["authorization",{"session":"%v","isDemo":0}]`, token)
+			logger.Info(msg)
+			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
 				logger.Info(err.Error())
+				_, _ = ws.GetToken(true) // 登录失败，强制刷新 token
+				ws.Close()
 			}
 		}
 		break
@@ -140,52 +173,40 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 			logger.Info("登录成功" + string(message))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["indicator/list"]`)); err != nil {
 				logger.Info(err.Error())
+				ws.Close()
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["drawing/load"]`)); err != nil {
 				logger.Info(err.Error())
+				ws.Close()
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["pending/list"]`)); err != nil {
 				logger.Info(err.Error())
+				ws.Close()
+			}
+			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s","period":60}]`, "EURUSD_otc"))
+			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				logger.Info(err.Error())
+				ws.Close()
+			}
+			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["chart_notification/get"]`)); err != nil {
+				logger.Info(err.Error())
+				ws.Close()
+			}
+			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["depth/follow","EURUSD_otc"]"]`)); err != nil {
+				logger.Info(err.Error())
+				ws.Close()
 			}
 		}
 		break
 	case strings.Contains(string(message), "chart_id"):
 		{
-			var chart []wsdata.Chart
-			err := json.Unmarshal(message, &chart)
-			if err != nil {
-				logger.Error(err)
-				return
-			}
-			// 解析设置
-			if len(chart[0].Settings) > 0 {
-				var settings wsdata.Settings
-				err = json.Unmarshal([]byte(chart[0].Settings), &settings)
-				if err != nil {
-					logger.Error(err)
-					return
-				}
-				// 当前资产
-				logger.Info(settings.CurrentAsset.Symbol)
-				// 42["instruments/update",{"asset":"EURUSD_otc","period":60}]
-				msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s","period":60}]`, settings.CurrentAsset.Symbol))
-				if err = ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-					logger.Info(err.Error())
-				}
-				if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["chart_notification/get"]`)); err != nil {
-					logger.Info(err.Error())
-				}
-				if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["depth/follow","EURUSD_otc"]"]`)); err != nil {
-					logger.Info(err.Error())
-				}
-			}
+			logger.Info(string(message))
 		}
 		break
 	default:
 		{
 			if len(string(message)) > 0 {
 				var data [][]interface{}
-				fmt.Println(string(message))
 				logger.Info(string(message))
 				err := json.Unmarshal(message, &data)
 				if err != nil {
@@ -199,12 +220,11 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 					Close := data[0][2]                                       // Close
 					Ping := data[0][3]                                        // Ping
 					if 0 == Ping {                                            // 是否ping
-						msg := []byte(fmt.Sprintf(`42["tick"]`))
-						if err = ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+						if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
 							logger.Info(err.Error())
+							ws.Close()
 						}
 					}
-					fmt.Println(fmt.Sprintf("%T", Ping), Ping)
 					ws.handleSubCallbackFun(ch,
 						[]byte(fmt.Sprintf(
 							`{"symbol":"%v","timeId":%f,"close":%v,"ping":%v}`,
@@ -215,20 +235,13 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 						)), data,
 					)
 				}
+				// ping
+				go ws.writePing()
+
 			}
 		}
 		break
 	}
-	//err := json.Unmarshal(message, &data)
-	//if err != nil {
-	//	logger.Error(errors.New(fmt.Sprintf("msg to map[string]json.RawMessage error: %s", err)))
-	//	return
-	//}
-	//if symbol, found := data["symbol"]; found { // market sub reply data
-	//	ws.handleSubCallbackFun(symbol.(string), message, data)
-	//} else {
-	//	logger.Info(fmt.Sprintf("WebSocket received unknow data: %s", data))
-	//}
 }
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
@@ -265,7 +278,7 @@ func (ws *WebSocketOp) readLoop() {
 		message = buf
 		select {
 		case ws.readChan <- message:
-			logger.Info("读消息管道写入成功")
+			break
 		case <-ws.closeChan:
 			logger.Info("读协程关闭chan")
 			goto ERR
@@ -277,28 +290,27 @@ ERR:
 	ws.Close()
 }
 
-//写协程
-func (ws *WebSocketOp) writeLoop() {
-	for {
-		ws.writeChan <- []byte(`42["tick"]`)
-		select {
-		case msg, ok := <-ws.writeChan:
-			if !ok {
-				goto ERR
+// 写 Ping 协程
+func (ws *WebSocketOp) writePing() {
+	ws.once.Do(func() {
+		// 使用time.Ticker
+		var ticker = time.NewTicker(25 * time.Second)
+		go func(ws *WebSocketOp) {
+			for {
+				for t := range ticker.C {
+					// ping
+					if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
+						ticker.Stop()
+						logger.Info(err.Error())
+						close(ws.writeChan)
+						logger.Info(t)
+						logger.Info("Ping协程已关闭")
+						ws.Close()
+					}
+				}
 			}
-			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-				logger.Info(err.Error())
-				goto ERR
-			}
-		case <-ws.closeChan:
-			logger.Info("写协程关闭chan")
-			goto ERR
-		}
-	}
-ERR:
-	close(ws.writeChan)
-	logger.Info("写协程已关闭")
-	ws.Close()
+		}(ws)
+	})
 }
 
 func (ws *WebSocketOp) Close() {
@@ -350,10 +362,80 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 		ws.SubTopicMap[ch] = mi
 		return true
 	}
-	// "0{\"sid\":\"tKXHgbSkHoCf157cEuUz\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":5000}"
-	//logger.Info(fmt.Sprintf("websocket has send data: %s", subReq))
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
 	ws.allSubStars.PushBack(string(subReq))
 	return ws.SendMsg(subReq)
+}
+
+// 获取登录token
+
+func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
+	// 读取 session，如果未配置session进行邮件提醒
+	redisLoginKey := "kline:token:qxbroker:login"
+	// 刷新token
+	token, _ := redis.Get(config.RedisKey)
+	// token失效，或者强制刷新token,就重新登录获取token
+	if (len(token) == 0 || true == refresh) && !ws.IsLogin {
+		isLogin, _ := redis.Get(redisLoginKey)
+		// 一分钟之内登录过
+		if len(isLogin) > 0 {
+			return errors.New("一分钟之内已经进行登录操作，请稍后再试"), ""
+		}
+		// 登录
+		ws.once.Do(func() {
+			ws.IsLogin = true
+			_, err := redis.Add(redisLoginKey, "true", 60) // 60秒之内只能登录一次
+			if err != nil {
+				logger.Error(err)
+			}
+			// 异步登录获取 token
+			go ws.login()
+		})
+	}
+	// 返回 token
+	return nil, token
+}
+
+// demo登录
+
+func (ws *WebSocketOp) login() {
+	var token string
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	req, err := http.NewRequest("GET", "https://qxbroker.com/zh/sign-up/fast/", nil)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	c := http.Client{
+		Transport: &http.Transport{
+			// 设置代理
+			Proxy: http.ProxyURL(ws.proxy),
+		},
+		Jar: jar,
+	}
+	response, err := c.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	if response.StatusCode == 200 {
+		body, err := ioutil.ReadAll(response.Body)
+		if err == nil {
+			html := string(body)
+			if len(html) > 0 {
+				js := html[strings.Index(html, `"token"`):]
+				js = js[:strings.Index(js, `",`)]
+				token = strings.ReplaceAll(js, `"token":"`, "")
+				_, err = redis.Add(config.RedisKey, token, 60*60*24*10) // 设置十天过期
+				if err != nil {
+					logger.Error(err)
+				}
+			}
+		}
+	}
 }
