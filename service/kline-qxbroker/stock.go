@@ -20,7 +20,6 @@ import (
 	"goapi/service/kline-qxbroker/qxbroker/wsdata"
 	"net/http"
 	_ "net/http/pprof"
-	"net/url"
 	"runtime"
 	"strings"
 	"time"
@@ -104,15 +103,7 @@ func SocketQxbroker(info wsdata.Info) {
 	}
 	// 开始订阅
 	if StartSub {
-		var proxy *url.URL
-		// 本地环境打包走测试地址
-		if conf.GetString("app.env") != "HongKong" { // 测试环境不需要走代理
-			proxy = &url.URL{
-				Scheme: "http",
-				Host:   "127.0.0.1:10809",
-			}
-		}
-		wsmkClient := new(api.WSPriceClient).Init("", proxy, callback)
+		wsmkClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
