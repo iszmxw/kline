@@ -69,7 +69,7 @@ func GetRate() {
 			"Cookie":     {fmt.Sprintf("rop-auth-token=%v", token)}, // 两个小时失效，所以每隔两个小时获取一次
 			"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
 			"referer":    {"https://trading.qxbroker.com/"},
-		})
+		}, nil)
 		if err != nil {
 			logger.Error(err)
 			_, _ = getToken(true) // 强制刷新token

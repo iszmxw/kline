@@ -32,7 +32,7 @@ type KData struct {
 func Kline(kline, name string) (float64, error) {
 	var Price interface{}
 	url := "https://api.huobi.pro/market/history/kline?period=1min&size=1&symbol=" + kline
-	resp, _, err := request.Get(url, nil)
+	resp, _, err := request.Get(url, nil, nil)
 	if err != nil {
 		fmt.Println("GET请求错误", err.Error())
 		return 0, err

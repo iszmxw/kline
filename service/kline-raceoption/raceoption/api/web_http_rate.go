@@ -13,7 +13,6 @@ import (
 	"goapi/service/kline-raceoption/raceoption/utils/code"
 	"goapi/service/kline-raceoption/raceoption/wsdata"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -32,14 +31,7 @@ func getToken(refresh bool) (error, string) {
 			"origin":       {"https://trading.raceoption.com"},
 			"referer":      {"https://trading.raceoption.com/"},
 			"User-Agent":   {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
-		},
-			`{"login": "mail@54zm.com","password": "wap.54zm.com"}`,
-			&url.URL{
-				Scheme: "http",
-				//Host:   "47.104.184.7:888",
-				Host: "42.101.43.106:16790",
-				User: url.UserPassword("8319", "9742"),
-			})
+		}, `{"login": "mail@54zm.com","password": "wap.54zm.com"}`, config.Proxy())
 		if err != nil {
 			logger.Error(err)
 			logger.Info(header)
@@ -78,7 +70,7 @@ func GetRate() {
 			"Cookie":     {fmt.Sprintf("rop-auth-token=%v", token)}, // 两个小时失效，所以每隔两个小时获取一次
 			"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
 			"referer":    {"https://trading.raceoption.com/"},
-		})
+		}, config.Proxy())
 		if err != nil {
 			logger.Error(err)
 			_, _ = getToken(true) // 强制刷新token

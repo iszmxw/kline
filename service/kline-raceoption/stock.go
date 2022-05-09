@@ -21,7 +21,6 @@ import (
 	"goapi/service/kline-raceoption/raceoption/wsdata"
 	"net/http"
 	_ "net/http/pprof"
-	"net/url"
 	"runtime"
 	"strings"
 	"time"
@@ -105,17 +104,7 @@ func SocketRaceOption(info wsdata.Info) {
 	}
 	// 开始订阅
 	if StartSub {
-		var proxy *url.URL
-		// 本地环境打包走测试地址
-		if conf.GetString("app.env") != "HongKong" { // 测试环境不需要走代理
-			proxy = &url.URL{
-				Scheme: "http",
-				//Host:   "47.104.184.7:888",
-				Host: "42.101.43.106:16790",
-				User: url.UserPassword("8319", "9742"),
-			}
-		}
-		wsmkClient := new(api.WSPriceClient).Init("", proxy, callback)
+		wsmkClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
