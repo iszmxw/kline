@@ -183,7 +183,12 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Info(err.Error())
 				ws.Close()
 			}
-			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s","period":60}]`, "EURUSD_otc"))
+			Symbol := ws.allSubStars.Front().Value.(string)
+			logger.Info(Symbol)
+			if len(Symbol) == 0 {
+				logger.Info("暂无")
+			}
+			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s_otc","period":60}]`, Symbol))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				logger.Info(err.Error())
 				ws.Close()
@@ -192,7 +197,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Info(err.Error())
 				ws.Close()
 			}
-			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["depth/follow","EURUSD_otc"]"]`)); err != nil {
+			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["depth/follow","%s_otc"]"]`, Symbol))); err != nil {
 				logger.Info(err.Error())
 				ws.Close()
 			}
@@ -351,7 +356,7 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 }
 
 // 通用订阅
-func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param reflect.Type) bool {
+func (ws *WebSocketOp) sub(subReq string, ch string, fun interface{}, param reflect.Type) bool {
 	ch = strings.ToLower(ch)
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
@@ -364,8 +369,8 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	}
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
-	ws.allSubStars.PushBack(string(subReq))
-	return ws.SendMsg(subReq)
+	ws.allSubStars.PushBack(subReq)
+	return ws.SendMsg(nil)
 }
 
 // 获取登录token

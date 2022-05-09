@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"goapi/service/kline-qxbroker/qxbroker/config"
 	"goapi/service/kline-qxbroker/qxbroker/wsdata"
 	"net/url"
@@ -26,7 +25,8 @@ func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPric
 	if id == "" {
 		id = config.DefaultId
 	}
-	subData := wsdata.WSSubData{Operation: "SUBSCRIBE.TICK", Id: info.Symbol, Param: ""} // {"operation":"SUBSCRIBE.TICK","id":"EUR/USD","param":""}
-	data, _ := json.Marshal(subData)
-	wsIx.sub(data, info.Symbol, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
+	subData := info.Symbol // EURUSD
+	ch := info.Symbol      // EURUSD
+	fun := callbackFun     // 方法
+	wsIx.sub(subData, ch, fun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }
