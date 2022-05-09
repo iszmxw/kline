@@ -17,6 +17,7 @@ type Redis struct {
 	mutex      sync.Mutex    // 锁
 	Client     *redis.Client // 客户端
 	expireTime int           // 过期时间
+	DefaultDB  int           // 默认数据库，用于切换操作后，在还原回来
 }
 
 // ConnectDB 初始化模型
@@ -27,23 +28,23 @@ func (rdb *Redis) ConnectDB(selectDB string) {
 		err       error
 		RedisIp   = config.GetString("redis.host")
 		RedisPort = config.GetString("redis.port")
-		DefaultDB = config.GetInt("redis.db")
 		Pw        = config.GetString("redis.password")
 	)
+	rdb.DefaultDB = config.GetInt("redis.db") // 默认 redis 库
 	if len(selectDB) > 0 {
 		// 选择库
-		DefaultDB = helpers.StringToInt(selectDB)
+		rdb.DefaultDB = helpers.StringToInt(selectDB)
 	}
 	if len(Pw) > 0 {
 		rdb.Client = redis.NewClient(&redis.Options{
 			Addr:     RedisIp + ":" + RedisPort,
-			DB:       DefaultDB, // use default DB
-			Password: Pw,        // no password set
+			DB:       rdb.DefaultDB, // use default DB
+			Password: Pw,            // no password set
 		})
 	} else {
 		rdb.Client = redis.NewClient(&redis.Options{
 			Addr: RedisIp + ":" + RedisPort,
-			DB:   DefaultDB, // use default DB
+			DB:   rdb.DefaultDB, // use default DB
 		})
 	}
 	_, err = rdb.Client.Ping().Result()
@@ -112,13 +113,21 @@ func (rdb *Redis) Get(key string) (string, error) {
 	return value, err
 }
 
-func (rdb *Redis) SelectDB(db int) {
+func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
+	defer rdb.mutex.Unlock()
+	rdb.mutex.Lock()
 	rdb.Client.Do("select", db)
+	value, err := rdb.Client.Get(key).Result()
+	rdb.Client.Do("select", rdb.DefaultDB)
+	return value, err
 }
 
-func (rdb *Redis) GetKeys(key string) ([]string, error) {
-	value, err := rdb.Client.Keys(key).Result()
-	return value, err
+func (rdb *Redis) GetKeys(key string) (keys []string, cursor uint64, err error) {
+	newRdb := *rdb.Client
+	newRdb.Do("select", 15)
+	keys, cursor, err = newRdb.Scan(0, key, 10000).Result()
+	newRdb.Do("select", rdb.DefaultDB)
+	return
 }
 
 // Redis Keys 命令 - 查找所有符合给定模式( pattern)的 key

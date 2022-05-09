@@ -157,10 +157,9 @@ END:
 // 推送socket消息
 
 func PushMessage(messageType int, ws *wss.WsConn, msg string) {
-	redis.Client.SelectDB(15) // 切换到15库进行读取
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		push, getErr := redis.Client.Get(msg)
+		push, getErr := redis.Client.SelectDbGet(15, msg)
 		if getErr != nil {
 			logger.Error(getErr)
 			goto END
@@ -423,12 +422,15 @@ func (h *KlineController) GetConfigHandler(c *gin.Context) {
 // 邮箱通知配置
 
 func (h *KlineController) GetRedisKeyHandler(c *gin.Context) {
-	//keys := c.Query("keys")
-	//res, cursor := redis.Client.GetKeys("")
-	//if cursor == 0 {
-	//	output.Rjson(c, gin.H{}, "fail", 0)
-	//} else {
-	//	output.Rjson(c, gin.H{keys: res}, "success", 1)
-	//}
-	//return
+	keys := c.Query("keys")
+	res, cursor, err := redis.Client.GetKeys(keys)
+	if err != nil {
+		output.Rjson(c, gin.H{}, "fail", 0)
+	} else {
+		if len(keys) == 0 {
+			keys = "db_15"
+		}
+		output.Rjson(c, gin.H{keys: res, "cursor": cursor}, "success", 1)
+	}
+	return
 }
