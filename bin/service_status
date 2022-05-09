@@ -71,4 +71,13 @@ if [ "$binanceService_pid" ]; then
   printf "用户：$binanceService_user   启动时间：$binanceService_starttime 进程ID：$binanceService_pid  执行路径：$binanceService_bin\n"
 fi
 
+# 查看 qxbrokerService-running
+qxbrokerService_user=$(ps -ef | grep "/qxbrokerService-running" | grep -v "grep" | awk '{print $1}')
+qxbrokerService_starttime=$(ps -ef | grep "/qxbrokerService-running" | grep -v "grep" | awk '{print $5}')
+qxbrokerService_pid=$(ps -ef | grep "/qxbrokerService-running" | grep -v "grep" | awk '{print $2}')
+qxbrokerService_bin=$(ps -ef | grep "/qxbrokerService-running" | grep -v "grep" | awk '{print $8}')
+if [ "$qxbrokerService_pid" ]; then
+  printf "用户：$qxbrokerService_user   启动时间：$qxbrokerService_starttime 进程ID：$qxbrokerService_pid  执行路径：$qxbrokerService_bin\n"
+fi
+
 printf "\n"

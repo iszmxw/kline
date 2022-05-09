@@ -103,3 +103,16 @@ else
   nohup ./binanceService-running >/dev/null 2>error/binance.log &
   echo $! >logs/binanceService-running.pid
 fi
+
+# 重启 qxbrokerService-running
+qxbrokerService=$(ps -ef | grep "/qxbrokerService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$qxbrokerService" ]; then
+  kill -9 "$qxbrokerService"
+  \cp -rf qxbrokerService qxbrokerService-running
+  nohup ./qxbrokerService-running >/dev/null 2>error/qxbroker.log &
+  echo $! >logs/qxbrokerService-running.pid
+else
+  \cp -rf qxbrokerService qxbrokerService-running
+  nohup ./qxbrokerService-running >/dev/null 2>error/qxbroker.log &
+  echo $! >logs/qxbrokerService-running.pid
+fi

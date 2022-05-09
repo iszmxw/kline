@@ -47,3 +47,9 @@ binanceService=$(ps -ef | grep "/binanceService-running" | grep -v "grep" | awk 
 if [ "$binanceService" ]; then
   kill -9 "$binanceService"
 fi
+
+# 停止 qxbrokerService-running
+qxbrokerService=$(ps -ef | grep "/qxbrokerService-running" | grep -v "grep" | awk '{print $2}')
+if [ "$qxbrokerService" ]; then
+  kill -9 "$qxbrokerService"
+fi
