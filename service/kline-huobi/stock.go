@@ -122,7 +122,7 @@ func SocketHuoBi(parentTopic string) {
 		if len(msgData) > 0 {
 			//logger.Info(fmt.Sprintf("SUCCESS 当前订阅的 topic 为：%v", parentTopic))
 			// 收集数据缓存到redis
-			_, redisErr := redis.Add(parentTopic, msgData, 0)
+			_, redisErr := redis.Client.Add(parentTopic, msgData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
 				return
@@ -164,7 +164,7 @@ func SocketHuoBi(parentTopic string) {
 			//	logger.Error(lPushErr)
 			//	return
 			//}
-			//_, _ = redis.Lpush("kline_log", lPushJson)
+			//_, _ = redis.Client.Lpush("kline_log", lPushJson)
 			//// 历史 kline 入队列
 
 			//// 历史存入 elastic todo::暂时不开启
@@ -206,7 +206,7 @@ func SocketHuoBi(parentTopic string) {
 func MsgQueue() {
 	for i := 1; i <= 4; i++ {
 		go func() {
-			jsonStr := redis.RPop("kline_log")
+			jsonStr := redis.Client.RPop("kline_log")
 			if len(jsonStr) > 0 {
 				var KlineLog *models.KlineLog
 				KlineLogErr := json.Unmarshal([]byte(jsonStr), &KlineLog)

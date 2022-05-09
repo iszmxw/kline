@@ -20,7 +20,7 @@ import (
 // 获取登录token
 func getToken(refresh bool) (error, string) {
 	// 刷新token
-	token, err := redis.Get(config.RedisKey)
+	token, err := redis.Client.Get(config.RedisKey)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -40,7 +40,7 @@ func getToken(refresh bool) (error, string) {
 		if true == resp["success"] {
 			data := resp["data"].(map[string]interface{})
 			token = data["token"].(string)
-			_, err = redis.Add(config.RedisKey, token, 60*60*2) // 设置两个小时过期
+			_, err = redis.Client.Add(config.RedisKey, token, 60*60*2) // 设置两个小时过期
 			if err != nil {
 				return err, ""
 			}

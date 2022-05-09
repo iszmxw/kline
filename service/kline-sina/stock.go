@@ -143,7 +143,7 @@ func collection(queryData Info) {
 		logger.Error(MarshalJSONErr)
 		return
 	}
-	_, redisErr := redis.Add(data.Ch, msgData, 0)
+	_, redisErr := redis.Client.Add(data.Ch, msgData, 0)
 	if redisErr != nil {
 		logger.Error(redisErr)
 		return

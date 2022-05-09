@@ -19,7 +19,7 @@ func Client() gin.HandlerFunc {
 		SetLang(c, "en")
 		path := c.FullPath()
 		switch path {
-			// websocket
+		// websocket
 		case "/v1/api/kline/ws_index":
 		case "/v1/api/kline/history":
 			// 继续往下面执行
@@ -47,7 +47,7 @@ func CheckLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	strInfo, err = redis.Get(tokenString)
+	strInfo, err = redis.Client.Get(tokenString)
 	if err != nil {
 		echo.Error(c, "LoginError", "")
 		c.Abort()

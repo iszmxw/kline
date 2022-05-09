@@ -2,33 +2,32 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	controllers "goapi/app/controllers/v1"
+	controllers "goapi/app/controllers/client/v1"
 )
 
-var v1Group = new(controllers.Group)
+var ApiGroup = new(controllers.Group)
 
-// RegisterWebRoutes 注册路由
-func RegisterWebRoutes(router *gin.RouterGroup) {
+// RegisterApiRoutes 注册路由
+func RegisterApiRoutes(router *gin.RouterGroup) {
 	// 路由分组 客户端 模块
 	ApiRoute := router.Group("/api")
 	{
-		//ApiRoute.Use(middlewares.Client())
 		// k线图服务
 		kLine := ApiRoute.Group("/kline")
 		{
 			// ws_index
-			kLine.Any("/ws_index", v1Group.KlineController.WsIndexHandler)
+			kLine.Any("/ws_index", ApiGroup.KlineController.WsIndexHandler)
 			// ws_return_rate
-			kLine.Any("/ws_return_rate", v1Group.KlineController.WsReturnRateHandler)
+			kLine.Any("/ws_return_rate", ApiGroup.KlineController.WsReturnRateHandler)
 			// 历史行情
-			kLine.Any("/history", v1Group.KlineController.HistoryHandler)
+			kLine.Any("/history", ApiGroup.KlineController.HistoryHandler)
 			// 历史行情
-			kLine.Any("/history_es", v1Group.KlineController.HistoryEsHandler)
+			kLine.Any("/history_es", ApiGroup.KlineController.HistoryEsHandler)
 			// 设置 config 信息
-			kLine.Any("/set_config", v1Group.KlineController.SetConfigHandler)
+			kLine.Any("/set_config", ApiGroup.KlineController.SetConfigHandler)
 			// 查看配置
-			kLine.Any("/get_config", v1Group.KlineController.GetConfigHandler)
-			kLine.Any("/get_redis_key", v1Group.KlineController.GetRedisKeyHandler)
+			kLine.Any("/get_config", ApiGroup.KlineController.GetConfigHandler)
+			kLine.Any("/get_redis_key", ApiGroup.KlineController.GetRedisKeyHandler)
 		}
 	}
 }

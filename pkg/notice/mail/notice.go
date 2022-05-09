@@ -23,10 +23,10 @@ func check(address, t string) bool {
 	var pass = true
 	key := getNoticeKey(address, t)
 	logger.Info(key) // key=======>notice:mail:msgSocketNetworkAnomaly:mail@54zm.com
-	value, _ := redis.Get(key)
+	value, _ := redis.Client.Get(key)
 	// 初始化
 	if len(value) <= 0 {
-		_, err := redis.Add(key, InitNum, ExTime)
+		_, err := redis.Client.Add(key, InitNum, ExTime)
 		if err != nil {
 			pass = false
 		}
@@ -40,7 +40,7 @@ func check(address, t string) bool {
 		if num > MaxNum {
 			pass = false
 		}
-		if redis.Incr(key) > MaxNum {
+		if redis.Client.Incr(key) > MaxNum {
 			pass = false
 		} else {
 			pass = true
@@ -79,11 +79,11 @@ func check(address, t string) bool {
 // 检查累计次数
 func checkGrandTotal(address, t string, InitNum, GrandTotalExTime, GrandTotal int) bool {
 	key := getNoticeKey("grandTotal:"+address, t) // key=======>notice:mail:msgSocketNetworkAnomaly:grandTotal:mail@54zm.com
-	value, _ := redis.Get(key)
+	value, _ := redis.Client.Get(key)
 	// 初始化
 	if len(value) <= 0 {
 		// 四分钟累计
-		_, err := redis.Add(key, InitNum, GrandTotalExTime)
+		_, err := redis.Client.Add(key, InitNum, GrandTotalExTime)
 		if err != nil {
 			return false
 		}
@@ -93,7 +93,7 @@ func checkGrandTotal(address, t string, InitNum, GrandTotalExTime, GrandTotal in
 		if num < GrandTotal {
 			return false
 		}
-		if redis.Incr(key) > int64(GrandTotal) {
+		if redis.Client.Incr(key) > int64(GrandTotal) {
 			return true
 		} else {
 			return false
@@ -106,13 +106,13 @@ func checkGrandTotal(address, t string, InitNum, GrandTotalExTime, GrandTotal in
 func checkTime(address, t string, ExTime int) bool {
 	var Time = false
 	key := getNoticeKey("checkTime:"+address, t) // key=======>notice:mail:msgSocketNetworkAnomaly:grandTotal:mail@54zm.com
-	value, _ := redis.Get(key)
+	value, _ := redis.Client.Get(key)
 	// 初始化
 	if len(value) > 0 {
 		Time = true
 	} else {
 		// 四分钟累计
-		_, err := redis.Add(key, InitNum, ExTime)
+		_, err := redis.Client.Add(key, InitNum, ExTime)
 		if err != nil {
 			Time = false
 		}

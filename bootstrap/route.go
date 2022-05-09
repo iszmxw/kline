@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"github.com/gin-gonic/gin"
 	"goapi/app/middlewares/v1"
-	conf "goapi/pkg/config"
 	"goapi/routes"
 )
 
@@ -11,14 +10,8 @@ import (
 func SetupRoute() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-	// 支持wss
-	if conf.GetString("app.https") == "1" {
-		router.Use(v1.TlsHandler())
-	}
 	router.Use(v1.TraceLogger()) // 日志追踪
 	router.Use(v1.Cors())        // 跨域
-	// v1 版本
-	apiV1 := router.Group("/v1")
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
 		context.String(200, "Hello World!："+requestId.(string)+"\n\n\n")
@@ -28,6 +21,11 @@ func SetupRoute() *gin.Engine {
 		//	context.String(200, fmt.Sprintf("Method：\t%v  URL：\t%v  \t\t\tHandler: \t%v \n", v.Method, v.Path, v.Handler))
 		//}
 	})
-	routes.RegisterWebRoutes(apiV1)
+	// 历史过度 v1 版本 路由
+	routes.RegisterApiRoutes(router.Group("/v1"))
+	// 二元 client 接口
+	routes.RegisterClientRoutes(router.Group("/"))
+	// 二元 web 接口
+	routes.RegisterWebRoutes(router.Group("/"))
 	return router
 }

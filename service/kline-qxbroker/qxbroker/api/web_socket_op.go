@@ -379,10 +379,10 @@ func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
 	// 读取 session，如果未配置session进行邮件提醒
 	redisLoginKey := "kline:token:qxbroker:login"
 	// 刷新token
-	token, _ := redis.Get(config.RedisKey)
+	token, _ := redis.Client.Get(config.RedisKey)
 	// token失效，或者强制刷新token,就重新登录获取token
 	if (len(token) == 0 || true == refresh) && !ws.IsLogin {
-		isLogin, _ := redis.Get(redisLoginKey)
+		isLogin, _ := redis.Client.Get(redisLoginKey)
 		// 一分钟之内登录过
 		if len(isLogin) > 0 {
 			return errors.New("一分钟之内已经进行登录操作，请稍后再试"), ""
@@ -390,7 +390,7 @@ func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
 		// 登录
 		ws.once.Do(func() {
 			ws.IsLogin = true
-			_, err := redis.Add(redisLoginKey, "true", 60) // 60秒之内只能登录一次
+			_, err := redis.Client.Add(redisLoginKey, "true", 60) // 60秒之内只能登录一次
 			if err != nil {
 				logger.Error(err)
 			}
@@ -436,7 +436,7 @@ func (ws *WebSocketOp) login() {
 				js := html[strings.Index(html, `"token"`):]
 				js = js[:strings.Index(js, `",`)]
 				token = strings.ReplaceAll(js, `"token":"`, "")
-				_, err = redis.Add(config.RedisKey, token, 60*60*24*10) // 设置十天过期
+				_, err = redis.Client.Add(config.RedisKey, token, 60*60*24*10) // 设置十天过期
 				if err != nil {
 					logger.Error(err)
 				}

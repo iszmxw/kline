@@ -210,7 +210,7 @@ func SocketOlymptrade(info wsdata.Info) {
 				return
 			}
 			key := fmt.Sprintf("olymptrade:%v", data.Ch)
-			_, redisErr := redis.Add(key, msgData, 0)
+			_, redisErr := redis.Client.Add(key, msgData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
 				return

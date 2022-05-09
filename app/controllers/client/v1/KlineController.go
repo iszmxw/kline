@@ -17,7 +17,6 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
-	"goapi/pkg/redis_socket"
 	"goapi/pkg/websocket"
 	"reflect"
 	"strings"
@@ -58,7 +57,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			wss.WsClose(ws)
 			goto END
 		}
-		klineSource, _ := redis.Get("kline_source")
+		klineSource, _ := redis.Client.Get("kline_source")
 		var msg string
 		if len(klineSource) > 0 {
 			if helpers.InArray(SubStruct.Sub, []string{"market.BTC-USD.index.1min", "market.ETH-USD.index.1min"}) {
@@ -77,11 +76,11 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		logger.Info(msg)
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
 		checkMsg := "socket_request:" + RequestId + ":" + msg
-		if redis.CheckExist(checkMsg) {
+		if redis.Client.CheckExist(checkMsg) {
 			logger.Info("该订阅已存在，请勿重新订阅")
 			continue
 		}
-		_, redisAddErr := redis.Add(checkMsg, msg, 30*60) // 半个小时内不允许重复请求
+		_, redisAddErr := redis.Client.Add(checkMsg, msg, 30*60) // 半个小时内不允许重复请求
 		if redisAddErr != nil {
 			logger.Error(redisAddErr)
 			break
@@ -134,11 +133,11 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		}
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
 		checkMsg := "rate:socket_request:" + RequestId
-		if redis.CheckExist(checkMsg) {
+		if redis.Client.CheckExist(checkMsg) {
 			logger.Info("该订阅已存在，请勿重新订阅")
 			continue
 		}
-		_, redisAddErr := redis.Add(checkMsg, msg, 30*60) // 半个小时内不允许重复请求
+		_, redisAddErr := redis.Client.Add(checkMsg, msg, 30*60) // 半个小时内不允许重复请求
 		if redisAddErr != nil {
 			logger.Error(redisAddErr)
 			break
@@ -158,9 +157,10 @@ END:
 // 推送socket消息
 
 func PushMessage(messageType int, ws *wss.WsConn, msg string) {
+	redis.Client.SelectDB(15) // 切换到15库进行读取
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		push, getErr := redis_socket.Get(msg)
+		push, getErr := redis.Client.Get(msg)
 		if getErr != nil {
 			logger.Error(getErr)
 			goto END
@@ -271,7 +271,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		symbol = "BTC-USD"
 		period = "1min"
 	}
-	klineSource, _ := redis.Get("kline_source")
+	klineSource, _ := redis.Client.Get("kline_source")
 	var data []response.KlineLog
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
 	DB := mysql.DB.Debug()
@@ -398,7 +398,7 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 func (h *KlineController) SetConfigHandler(c *gin.Context) {
 	klineSource := c.Query("kline_source")
 	if len(klineSource) >= 0 {
-		_, err := redis.Add("kline_source", klineSource, 0)
+		_, err := redis.Client.Add("kline_source", klineSource, 0)
 		if err != nil {
 			output.Rjson(c, gin.H{}, "fail", 0)
 		} else {
@@ -411,7 +411,7 @@ func (h *KlineController) SetConfigHandler(c *gin.Context) {
 // 读取配置
 
 func (h *KlineController) GetConfigHandler(c *gin.Context) {
-	res, err := redis.Get("kline_source")
+	res, err := redis.Client.Get("kline_source")
 	if err != nil {
 		output.Rjson(c, gin.H{}, "fail", 0)
 	} else {
@@ -423,12 +423,12 @@ func (h *KlineController) GetConfigHandler(c *gin.Context) {
 // 邮箱通知配置
 
 func (h *KlineController) GetRedisKeyHandler(c *gin.Context) {
-	keys := c.Query("keys")
-	res, err := redis.GetKeys(keys)
-	if err != nil {
-		output.Rjson(c, gin.H{}, "fail", 0)
-	} else {
-		output.Rjson(c, gin.H{keys: res}, "success", 1)
-	}
-	return
+	//keys := c.Query("keys")
+	//res, cursor := redis.Client.GetKeys("")
+	//if cursor == 0 {
+	//	output.Rjson(c, gin.H{}, "fail", 0)
+	//} else {
+	//	output.Rjson(c, gin.H{keys: res}, "success", 1)
+	//}
+	//return
 }
