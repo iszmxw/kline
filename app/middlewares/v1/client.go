@@ -43,13 +43,13 @@ func CheckLogin(c *gin.Context) {
 	tokenString := request.GetParam(c, "token")
 	if len(tokenString) <= 0 || tokenString == "<nil>" {
 		logger.Error(errors.New("未检测到token"))
-		echo.Error(c, "LoginError", "")
+		echo.Error(c, "LOGIN_INVALID", "")
 		c.Abort()
 		return
 	}
 	strInfo, err = redis.Client.Get(tokenString)
 	if err != nil {
-		echo.Error(c, "LoginError", "")
+		echo.Error(c, "LOGIN_INVALID", "")
 		c.Abort()
 		return
 	}

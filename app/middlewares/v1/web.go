@@ -16,12 +16,10 @@ import (
 func Web() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 设置语言，默认英文
-		SetWebLang(c, "en")
+		SetWebLang(c, "zh")
 		path := c.FullPath()
 		switch path {
-		// websocket
-		case "/v1/api/kline/ws_index":
-		case "/v1/api/kline/history":
+		case "/web/v1/kanban/getRedisKey.json":
 			// 继续往下面执行
 			c.Next()
 			break
@@ -43,16 +41,18 @@ func CheckWebLogin(c *gin.Context) {
 	tokenString := request.GetParam(c, "token")
 	if len(tokenString) <= 0 || tokenString == "<nil>" {
 		logger.Error(errors.New("未检测到token"))
-		echo.Error(c, "LoginError", "")
+		echo.Error(c, "LOGIN_INVALID", "")
 		c.Abort()
 		return
 	}
-	strInfo, err = redis.Client.Get(tokenString)
+	strInfo, err = redis.Client.WebGet("web-" + tokenString)
 	if err != nil {
-		echo.Error(c, "LoginError", "")
+		logger.Error(err)
+		echo.Error(c, "LOGIN_INVALID", "")
 		c.Abort()
 		return
 	}
+	logger.Info(strInfo)
 	// json字符串数组,转换成切片
 	var user map[string]interface{}
 	multiErr := json.Unmarshal([]byte(strInfo), &user)

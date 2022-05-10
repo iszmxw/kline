@@ -26,8 +26,11 @@ func Stack(description string, c *gin.Context) {
 		if c != nil && brokenPipe { // <--如果连接已经中断，我们只需要简单的记录并中断处理
 			logger.Error(errors.New("网络连接中断"))
 			mail_notice.Notice("msgNetworkAnomaly", map[string]interface{}{
-				"c": c,
-				"r": r,
+				"title":       "网络连接中断",
+				"c":           c,
+				"r":           r,
+				"description": description,
+				"errInfo":     nil,
 			})
 			c.Abort()
 		}
@@ -39,6 +42,7 @@ func Stack(description string, c *gin.Context) {
 		// 网络连接中断就不发送了
 		if brokenPipe == false {
 			mail_notice.Notice("msgNetworkAnomaly", map[string]interface{}{
+				"title":       "接口内部异常",
 				"c":           c,
 				"r":           r,
 				"description": description,

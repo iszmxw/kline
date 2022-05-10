@@ -213,19 +213,24 @@ func msgStack(c *gin.Context, r interface{}, description, errInfo string) map[st
 }
 
 // 网络异常
-func msgNetworkAnomaly(c *gin.Context, r interface{}) map[string]interface{} {
+func msgNetworkAnomaly(title interface{}, c *gin.Context, r, description, errInfo interface{}) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
 	url := c.Request.URL
 	method := c.Request.Method
-	brokenInfo["title"] = fmt.Sprintf("环境【%v】用户网络连接中断，或者用户取消请求", conf.GetString("app.env"))
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】 %v", conf.GetString("app.env"), title)
 	brokenInfo["content"] =
 		fmt.Sprintf(
 			`
+							【%v】<br>
 							用户IP【<a href="https://www.ip138.com/iplookup.asp?ip=%v&action=2">%v</a>】，<br>
+							RequestId 【%v】<br>
 							请求地址 【%v】<br>
 							请求方法 【%v】<br>
-							详细错误信息 【%v】<br>
-					`, c.ClientIP(), c.ClientIP(), url, method, r)
+							错误信息 【%v】<br>
+					`, description, c.ClientIP(), c.ClientIP(), logger.RequestId, url, method, r)
+	if errInfo != nil {
+		brokenInfo["content"] = fmt.Sprintf(`%v具体堆栈信息： <br>%v`, brokenInfo["content"], errInfo)
+	}
 	return brokenInfo
 }
 
@@ -284,7 +289,7 @@ func Notice(t string, data interface{}) {
 		break
 	case "msgNetworkAnomaly":
 		arr := data.(map[string]interface{})
-		Info = msgNetworkAnomaly(arr["c"].(*gin.Context), arr["r"])
+		Info = msgNetworkAnomaly(arr["title"], arr["c"].(*gin.Context), arr["r"], arr["description"], arr["errInfo"])
 		break
 	case "msgSocketNetworkAnomaly":
 		arr := data.(map[string]interface{})

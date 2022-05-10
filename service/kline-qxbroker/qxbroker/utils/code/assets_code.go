@@ -21,6 +21,9 @@ func GetData() []wsdata.Info {
 		wsdata.Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
 		wsdata.Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
 		wsdata.Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		wsdata.Info{Symbol: "NFLX", Desc: "网飞", ContractCode: "Netflix"},
+		wsdata.Info{Symbol: "MSFT", Desc: "微软", ContractCode: "Microsoft"},
+		wsdata.Info{Symbol: "INTC", Desc: "英特尔", ContractCode: "Intel"},
 	)
 	return CodeData
 }

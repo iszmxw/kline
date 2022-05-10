@@ -117,6 +117,16 @@ func (rdb *Redis) Get(key string) (string, error) {
 	return value, err
 }
 
+func (rdb *Redis) WebGet(key string) (string, error) {
+	defer rdb.mutex.Unlock()
+	rdb.mutex.Lock()
+	value, err := rdb.Client.Get(key).Result()
+	if err != nil && "redis: nil" == err.Error() {
+		err = nil
+	}
+	return value, err
+}
+
 func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
 	defer rdb.mutex.Unlock()
 	rdb.mutex.Lock()

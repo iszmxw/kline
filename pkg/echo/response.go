@@ -2,31 +2,26 @@ package echo
 
 import (
 	"github.com/gin-gonic/gin"
+	cmap "github.com/orcaman/concurrent-map"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 )
 
 // Rjson 成功返回封装 参数 data interface{} 类型为可接受任意类型
-func Rjson(c *gin.Context, result interface{}, msg string, code string, success bool) {
+func Rjson(c *gin.Context, result interface{}, msg string, code int) {
 	reqId, _ := c.Get("Tracking-Id")
-	var rdata map[string]interface{}
+	rdata := cmap.New().Items()
+	rdata["reqId"] = reqId
+	rdata["code"] = code
+	if result != nil {
+		rdata["data"] = result
+	}
 	if len(msg) > 0 {
-		rdata = gin.H{
-			"reqId":   reqId,
-			"code":    code,
-			"success": success,
-			"result":  result,
-			"msg":     msg,
-		}
+		rdata["msg"] = msg
 	} else {
-		rdata = gin.H{
-			"reqId":   reqId,
-			"code":    code,
-			"success": success,
-			"result":  result,
-			"msg":     "success.",
-		}
+		rdata["msg"] = "success."
 	}
 	c.JSON(200, rdata)
 	return
@@ -35,18 +30,19 @@ func Rjson(c *gin.Context, result interface{}, msg string, code string, success 
 // Error  错误返回封装
 func Error(c *gin.Context, code string, msg string) {
 	var logInfo []zapcore.Field
+	var baseMsg string
 	if len(logger.RequestId) > 0 {
 		logInfo = append(logInfo, zap.Any("RequestId", logger.RequestId))
 	}
-	logInfo = append(logInfo, zap.Any(code, msg))
+	code, baseMsg = GetCode(code) // 最终code
+	msg = baseMsg + msg           // 最终msg
 	logInfo = append(logInfo, zap.Any(code, msg))
 	logger.Logger.WithOptions(zap.AddCallerSkip(1)).Info("返回错误", logInfo...)
-	Rjson(c, []interface{}{}, msg, code, false)
+	Rjson(c, nil, msg, helpers.StringToInt(code))
 }
 
 // Success  错误返回封装
-func Success(c *gin.Context, result interface{}, msg string, code string) {
-	code = "200"
+func Success(c *gin.Context, result interface{}, msg string) {
 	logger.Logger.WithOptions(zap.AddCallerSkip(1)).Info("成功返回", zap.Any("返回数据", result))
-	Rjson(c, result, msg, code, true)
+	Rjson(c, result, msg, 1)
 }
