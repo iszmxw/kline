@@ -55,8 +55,12 @@ func (rdb *Redis) ConnectDB(selectDB string) {
 	Client = rdb
 }
 
+func Set(key string) string {
+	return fmt.Sprintf("%v:%v", config.GetString("app.name"), key)
+}
+
 func (rdb *Redis) CheckExist(key string) bool {
-	a, err := rdb.Client.Exists(key).Result()
+	a, err := rdb.Client.Exists(Set(key)).Result()
 	if err != nil {
 		fmt.Println("判断key存在失败")
 		return false
@@ -72,7 +76,7 @@ func (rdb *Redis) Add(key string, value interface{}, exTime int) (bool, error) {
 	if exTime >= 0 {
 		rdb.expireTime = exTime
 	}
-	err := rdb.Client.Set(key, value, time.Duration(rdb.expireTime)*time.Second).Err()
+	err := rdb.Client.Set(Set(key), value, time.Duration(rdb.expireTime)*time.Second).Err()
 	if err != nil {
 		fmt.Println("设置key失败")
 		return false, err
@@ -85,7 +89,7 @@ func (rdb *Redis) Incr(key string) int64 {
 }
 
 func (rdb *Redis) Lpush(key string, values ...interface{}) (bool, error) {
-	_, err := rdb.Client.LPush(key, values...).Result()
+	_, err := rdb.Client.LPush(Set(key), values...).Result()
 	if err != nil {
 		fmt.Println("Lpush 失败")
 		return false, err
@@ -94,11 +98,11 @@ func (rdb *Redis) Lpush(key string, values ...interface{}) (bool, error) {
 }
 
 func (rdb *Redis) RPop(key string) string {
-	return rdb.Client.RPop(key).Val()
+	return rdb.Client.RPop(Set(key)).Val()
 }
 
 func (rdb *Redis) Delete(key string) bool {
-	err := rdb.Client.Del(key).Err()
+	err := rdb.Client.Del(Set(key)).Err()
 	if err != nil {
 		fmt.Println("删除key失败" + err.Error())
 		return false
@@ -109,7 +113,7 @@ func (rdb *Redis) Delete(key string) bool {
 func (rdb *Redis) Get(key string) (string, error) {
 	defer rdb.mutex.Unlock()
 	rdb.mutex.Lock()
-	value, err := rdb.Client.Get(key).Result()
+	value, err := rdb.Client.Get(Set(key)).Result()
 	return value, err
 }
 
@@ -117,7 +121,7 @@ func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
 	defer rdb.mutex.Unlock()
 	rdb.mutex.Lock()
 	rdb.Client.Do("select", db)
-	value, err := rdb.Client.Get(key).Result()
+	value, err := rdb.Client.Get(Set(key)).Result()
 	rdb.Client.Do("select", rdb.DefaultDB)
 	return value, err
 }
@@ -125,7 +129,7 @@ func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
 func (rdb *Redis) GetKeys(key string) (keys []string, cursor uint64, err error) {
 	newRdb := *rdb.Client
 	newRdb.Do("select", 15)
-	keys, cursor, err = newRdb.Scan(0, key, 10000).Result()
+	keys, cursor, err = newRdb.Scan(0, Set(key), 10000).Result()
 	newRdb.Do("select", rdb.DefaultDB)
 	return
 }
@@ -134,7 +138,7 @@ func (rdb *Redis) GetKeys(key string) (keys []string, cursor uint64, err error) 
 // https://www.redis.net.cn/order/3535.html
 
 func (rdb *Redis) Keys(key string) ([]string, error) {
-	value, err := rdb.Client.Keys(key).Result()
+	value, err := rdb.Client.Keys(Set(key)).Result()
 	return value, err
 }
 

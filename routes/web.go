@@ -2,30 +2,31 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	controllers "goapi/app/controllers/client/v1"
+	WebCtl "goapi/app/controllers/web/v1"
+	WebMw "goapi/app/middlewares/v1"
 )
 
-var v1Group = new(controllers.Group)
+var WebV1Group = new(WebCtl.Group)
 
 // RegisterWebRoutes 注册路由
 func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
-	// 路由分组 客户端 模块
-	//ApiRoute.Use(middlewares.Client())
-	// k线图服务
-	kLine := ApiRoute.Group("/kline")
+	// 路由分组 Web 接口
+	ApiRoute.Use(WebMw.Web())
+	WebV1 := ApiRoute.Group("/web/v1")
+	// 看板模块
+	Kanban := WebV1.Group("/kanban")
 	{
-		// ws_index
-		kLine.Any("/ws_index", v1Group.KlineController.WsIndexHandler)
-		// ws_return_rate
-		kLine.Any("/ws_return_rate", v1Group.KlineController.WsReturnRateHandler)
-		// 历史行情
-		kLine.Any("/history", v1Group.KlineController.HistoryHandler)
-		// 历史行情
-		kLine.Any("/history_es", v1Group.KlineController.HistoryEsHandler)
-		// 设置 config 信息
-		kLine.Any("/set_config", v1Group.KlineController.SetConfigHandler)
-		// 查看配置
-		kLine.Any("/get_config", v1Group.KlineController.GetConfigHandler)
-		kLine.Any("/get_redis_key", v1Group.KlineController.GetRedisKeyHandler)
+		// 【E31】 wsIndex.json
+		Kanban.Any("/wsIndex.json", WebV1Group.KlineController.WsIndexHandler)
+		// 【E32】 历史行情-mysql读取
+		Kanban.Any("/getHisKlineList.json", WebV1Group.KlineController.HistoryHandler)
+		// 【E33】 历史行情-es读取
+		Kanban.Any("/getEsHisKlineList", WebV1Group.KlineController.HistoryEsHandler)
+		// 【E34】 设置 config 信息
+		WebV1.Any("/setConfig.json", WebV1Group.KlineController.SetConfigHandler)
+		// 【E35】 查看配置
+		WebV1.Any("/getConfig.json", WebV1Group.KlineController.GetConfigHandler)
+		// 【E36】
+		WebV1.Any("/getRedisKey.json", WebV1Group.KlineController.GetRedisKeyHandler)
 	}
 }

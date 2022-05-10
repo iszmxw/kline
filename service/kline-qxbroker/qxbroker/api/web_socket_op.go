@@ -121,7 +121,8 @@ func (ws *WebSocketOp) DoHand() {
 			if !ok {
 				continue
 			}
-			ws.msgHand(msg)
+			go ws.msgHand(msg)
+			break
 		case <-ws.closeChan:
 			goto ERR
 		}

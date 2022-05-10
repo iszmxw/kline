@@ -20,7 +20,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				// 【C07】 历史行情-mysql读取
 				trade.Any("/getHisKlineList.json", ClientV1Group.KlineController.HistoryHandler)
 				// 【C08】 历史行情-es读取
-				trade.Any("/getEsHisKlineList", ClientV1Group.KlineController.HistoryEsHandler)
+				trade.Any("/getEsHisKlineList.json", ClientV1Group.KlineController.HistoryEsHandler)
 				// 【C09】 wsIndex.json
 				trade.Any("/wsIndex.json", ClientV1Group.KlineController.WsIndexHandler)
 				// 【C10】 wsReturnRate.json
