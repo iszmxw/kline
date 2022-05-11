@@ -28,17 +28,16 @@ func Rjson(c *gin.Context, result interface{}, msg string, code int) {
 }
 
 // Error  错误返回封装
-func Error(c *gin.Context, code string, msg string) {
+func Error(c *gin.Context, code string, lastMsg string) {
 	var logInfo []zapcore.Field
-	var baseMsg string
 	if len(logger.RequestId) > 0 {
 		logInfo = append(logInfo, zap.Any("RequestId", logger.RequestId))
 	}
-	code, baseMsg = GetCode(code) // 最终code
-	msg = baseMsg + msg           // 最终msg
-	logInfo = append(logInfo, zap.Any(code, msg))
+	code, firstMsg := GetCode(code) // 最终code
+	fullMsg := firstMsg + lastMsg   // 最终msg
+	logInfo = append(logInfo, zap.Any(code, fullMsg))
 	logger.Logger.WithOptions(zap.AddCallerSkip(1)).Info("返回错误", logInfo...)
-	Rjson(c, nil, msg, helpers.StringToInt(code))
+	Rjson(c, nil, fullMsg, helpers.StringToInt(code))
 }
 
 // Success  错误返回封装

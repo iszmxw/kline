@@ -85,7 +85,7 @@ func (rdb *Redis) Add(key string, value interface{}, exTime int) (bool, error) {
 }
 
 func (rdb *Redis) Incr(key string) int64 {
-	return rdb.Client.Incr(key).Val()
+	return rdb.Client.Incr(Set(key)).Val()
 }
 
 func (rdb *Redis) Lpush(key string, values ...interface{}) (bool, error) {
@@ -121,9 +121,6 @@ func (rdb *Redis) WebGet(key string) (string, error) {
 	defer rdb.mutex.Unlock()
 	rdb.mutex.Lock()
 	value, err := rdb.Client.Get(key).Result()
-	if err != nil && "redis: nil" == err.Error() {
-		err = nil
-	}
 	return value, err
 }
 
@@ -140,6 +137,14 @@ func (rdb *Redis) GetKeys(key string) (keys []string, cursor uint64, err error) 
 	newRdb := *rdb.Client
 	newRdb.Do("select", 15)
 	keys, cursor, err = newRdb.Scan(0, Set(key), 10000).Result()
+	newRdb.Do("select", rdb.DefaultDB)
+	return
+}
+
+func (rdb *Redis) GetValue(key string) (value string, err error) {
+	newRdb := *rdb.Client
+	newRdb.Do("select", 15)
+	value, err = rdb.Client.Get(key).Result()
 	newRdb.Do("select", rdb.DefaultDB)
 	return
 }

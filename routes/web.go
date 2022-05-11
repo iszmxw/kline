@@ -22,11 +22,16 @@ func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
 		Kanban.Any("/getHisKlineList.json", WebV1Group.KlineController.HistoryHandler)
 		// 【E33】 历史行情-es读取
 		Kanban.Any("/getEsHisKlineList", WebV1Group.KlineController.HistoryEsHandler)
-		// 【E34】 设置 config 信息
-		Kanban.Any("/setConfig.json", WebV1Group.KlineController.SetConfigHandler)
-		// 【E35】 查看配置
-		Kanban.Any("/getConfig.json", WebV1Group.KlineController.GetConfigHandler)
-		// 【E36】
-		Kanban.Any("/getRedisKey.json", WebV1Group.KlineController.GetRedisKeyHandler)
+	}
+
+	// 设置模块
+	Config := WebV1.Group("/config")
+	{
+		// 【E34】 设置 KlineSource 信息
+		Config.Any("/setKlineSource.json", WebV1Group.KlineController.SetKlineSourceHandler)
+		// 【E35】 查看所有 KlineSource 配置
+		Config.Any("/getAllKlineSource.json", WebV1Group.KlineController.GetAllKlineSourceHandler)
+		// 【E36】 所有 redis 的Key
+		Config.Any("/getRedisKey.json", WebV1Group.KlineController.GetRedisKeyHandler)
 	}
 }

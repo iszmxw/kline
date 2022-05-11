@@ -3,13 +3,12 @@ package v1
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"goapi/app/response"
 	"goapi/pkg/echo"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
-	"strconv"
 )
 
 // Web 定义中间件
@@ -48,13 +47,13 @@ func CheckWebLogin(c *gin.Context) {
 	strInfo, err = redis.Client.WebGet("web-" + tokenString)
 	if err != nil {
 		logger.Error(err)
-		echo.Error(c, "LOGIN_INVALID", "")
+		echo.Error(c, "LOGIN_INVALID", err.Error())
 		c.Abort()
 		return
 	}
 	logger.Info(strInfo)
 	// json字符串数组,转换成切片
-	var user map[string]interface{}
+	var user response.WebLoginUser
 	multiErr := json.Unmarshal([]byte(strInfo), &user)
 	if multiErr != nil {
 		logger.Error(errors.New("转换出错"))
@@ -62,18 +61,11 @@ func CheckWebLogin(c *gin.Context) {
 		return
 	}
 	logger.Info(user)
-	// id 转换为整型
-	userId, strErr := strconv.Atoi(fmt.Sprintf("%.0f", user["id"].(float64)))
-	if strErr != nil {
-		logger.Error(err)
-	}
-	user["id"] = userId
 	// 保存用户到 上下文
 	c.Set("user", user)
-	c.Set("language", user["language"])
-	c.Set("user_id", userId)
+	c.Set("systemUserId", user.SystemUserId)
 	// 再次确认设置语言
-	SetWebLang(c, "en")
+	SetWebLang(c, "zh")
 	// 继续往下面执行
 	c.Next()
 }

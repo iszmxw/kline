@@ -57,22 +57,30 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			wss.WsClose(ws)
 			goto END
 		}
-		klineSource, _ := redis.Client.Get("kline_source")
-		var msg string
-		if len(klineSource) > 0 {
-			if helpers.InArray(SubStruct.Sub, []string{"market.BTC-USD.index.1min", "market.ETH-USD.index.1min"}) {
-				// 走火币来源
-				msg = SubStruct.Sub
-			} else {
-				// hsb:market.ETH-USD.index.1min
-				// olymptrade:market.ETH-USD.index.1min
-				// raceoption:market.ETH-USD.index.1min
-				msg = fmt.Sprintf("%v:%v", klineSource, SubStruct.Sub)
-			}
-		} else {
-			// market.ETH-USD.index.1min
-			msg = SubStruct.Sub
+		// 订阅的 market.ETH-USD.index.1min，没有值
+		if len(SubStruct.Sub) == 0 {
+			logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
+			wss.WsClose(ws)
+			goto END
 		}
+		// 订阅的 ETH-USD，没有值
+		AssetsCode := strings.Split(SubStruct.Sub, ".")[1]
+		if len(AssetsCode) == 0 {
+			logger.Error(errors.New("订阅的 ETH-USD，没有值"))
+			wss.WsClose(ws)
+			goto END
+		}
+		klineSource := response.KlineSource(AssetsCode)
+		// 没有读取到 klineSource
+		if len(klineSource) == 0 {
+			logger.Error(errors.New("没有读取到 klineSource"))
+			wss.WsClose(ws)
+			goto END
+		}
+		// hsb:market.ETH-USD.index.1min
+		// olymptrade:market.ETH-USD.index.1min
+		// raceoption:market.ETH-USD.index.1min
+		msg := fmt.Sprintf("%v:%v", klineSource, SubStruct.Sub)
 		logger.Info(msg)
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
 		checkMsg := "socket_request:" + RequestId + ":" + msg
