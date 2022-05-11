@@ -74,7 +74,7 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	ws.proxy = proxy
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
-	ws.readChan = make(chan []byte, 30)
+	ws.readChan = make(chan []byte, 100)
 	ws.writeChan = make(chan []byte, 10)
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.ReqTopicMap = make(map[string]*CallbackFunc)

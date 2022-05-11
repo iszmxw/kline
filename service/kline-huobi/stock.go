@@ -122,7 +122,8 @@ func SocketHuoBi(parentTopic string) {
 		if len(msgData) > 0 {
 			//logger.Info(fmt.Sprintf("SUCCESS 当前订阅的 topic 为：%v", parentTopic))
 			// 收集数据缓存到redis
-			_, redisErr := redis.Client.Add(parentTopic, msgData, 0)
+			key := fmt.Sprintf("huobi:%v", data.Ch)
+			_, redisErr := redis.Client.Add(key, msgData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
 				return
