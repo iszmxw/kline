@@ -23,11 +23,6 @@ func RegisterApiRoutes(router *gin.RouterGroup) {
 			kLine.Any("/history", ApiGroup.KlineController.HistoryHandler)
 			// 历史行情
 			kLine.Any("/history_es", ApiGroup.KlineController.HistoryEsHandler)
-			// 设置 config 信息
-			kLine.Any("/set_config", ApiGroup.KlineController.SetConfigHandler)
-			// 查看配置
-			kLine.Any("/get_config", ApiGroup.KlineController.GetConfigHandler)
-			kLine.Any("/get_redis_key", ApiGroup.KlineController.GetRedisKeyHandler)
 		}
 	}
 }

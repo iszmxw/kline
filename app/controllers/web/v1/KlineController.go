@@ -416,7 +416,7 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		echo.Error(c, "PARAMS_ERROR", "：AssetsCode 不在范围内")
 		return
 	}
-	if !helpers.InArray(params.KlineSource, []string{"binance", "hsb", "huobi", "olymptrade", "qxbroker", "raceoption", "sina"}) {
+	if !helpers.InArray(params.KlineSource, []string{"binance", "huobi", "hsb", "olymptrade", "qxbroker", "raceoption", "sina"}) {
 		echo.Error(c, "PARAMS_ERROR", "：KlineSource 不在范围内")
 		return
 	}

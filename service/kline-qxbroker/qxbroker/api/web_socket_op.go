@@ -63,6 +63,7 @@ type WebSocketOp struct {
 	allSubStars       list.List
 	Login             Login // 登录结构
 	IsLogin           bool  // 是否已经登录
+	IsPing            bool  // 是否已开始ping
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -89,7 +90,6 @@ func (ws *WebSocketOp) connServer() bool {
 	dialer := websocket.Dialer{
 		Proxy: http.ProxyURL(ws.proxy),
 	}
-	logger.Info(wssUrl)
 	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
 		"Origin":                   {"https://qxbroker.com"},
 		"Pragma":                   {"no-cache"},
@@ -275,15 +275,14 @@ func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata [][]in
 // 读协程
 func (ws *WebSocketOp) readLoop() {
 	for {
-		_, buf, err := ws.conn.ReadMessage()
+		_, message, err := ws.conn.ReadMessage()
 		if err != nil {
 			logger.Info(err.Error())
 			goto ERR
 		}
-		var message []byte
-		message = buf
 		select {
 		case ws.readChan <- message:
+			logger.Info("读取成功")
 			break
 		case <-ws.closeChan:
 			logger.Info("读协程关闭chan")
@@ -298,25 +297,28 @@ ERR:
 
 // 写 Ping 协程
 func (ws *WebSocketOp) writePing() {
-	ws.once.Do(func() {
-		// 使用time.Ticker
-		var ticker = time.NewTicker(25 * time.Second)
-		go func(ws *WebSocketOp) {
-			for {
-				for t := range ticker.C {
-					// ping
-					if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
-						ticker.Stop()
-						logger.Info(err.Error())
-						close(ws.writeChan)
-						logger.Info(t)
-						logger.Info("Ping协程已关闭")
-						ws.Close()
+	ws.IsPing = true
+	if !ws.IsPing { // 只能发起一次 ping
+		ws.once.Do(func() {
+			// 使用time.Ticker
+			var ticker = time.NewTicker(25 * time.Second)
+			go func(ws *WebSocketOp) {
+				for {
+					for t := range ticker.C {
+						// ping
+						if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
+							ticker.Stop()
+							logger.Info(err.Error())
+							close(ws.writeChan)
+							logger.Info(t)
+							logger.Info("Ping协程已关闭")
+							ws.Close()
+						}
 					}
 				}
-			}
-		}(ws)
-	})
+			}(ws)
+		})
+	}
 }
 
 func (ws *WebSocketOp) Close() {
@@ -329,7 +331,9 @@ func (ws *WebSocketOp) Close() {
 			}
 		}
 		if !ws.isClose {
-			ws.isClose = true
+			ws.IsLogin = false // 重置登录
+			ws.IsPing = false  // 重置 ping
+			ws.isClose = true  // 重置close
 			close(ws.closeChan)
 			logger.Info("关闭chan")
 		}

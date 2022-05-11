@@ -21,7 +21,7 @@ func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
 		// 【E32】 历史行情-mysql读取
 		Kanban.Any("/getHisKlineList.json", WebV1Group.KlineController.HistoryHandler)
 		// 【E33】 历史行情-es读取
-		Kanban.Any("/getEsHisKlineList", WebV1Group.KlineController.HistoryEsHandler)
+		Kanban.Any("/getEsHisKlineList.json", WebV1Group.KlineController.HistoryEsHandler)
 	}
 
 	// 设置模块

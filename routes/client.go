@@ -25,11 +25,6 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				trade.Any("/wsIndex.json", ClientV1Group.KlineController.WsIndexHandler)
 				// 【C10】 wsReturnRate.json
 				trade.Any("/wsReturnRate.json", ClientV1Group.KlineController.WsReturnRateHandler)
-				// 【C11】 设置 config 信息
-				trade.Any("/setConfig.json", ClientV1Group.KlineController.SetConfigHandler)
-				// 【C12】 查看配置
-				trade.Any("/getConfig.json", ClientV1Group.KlineController.GetConfigHandler)
-				trade.Any("/getRedisKey.json", ClientV1Group.KlineController.GetRedisKeyHandler)
 			}
 		}
 
