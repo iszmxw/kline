@@ -10,6 +10,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
+	"goapi/pkg/config"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -182,6 +183,10 @@ func PushMessage(messageType int, ws *wss.WsConn, msg string) {
 			logger.Error(errors.New("Umarshal failed:" + WsIndexErr.Error()))
 			logger.Error(WsIndexErr)
 			break
+		}
+		// 记录日志
+		if config.GetString("app.env") != "company_pro" {
+			logger.Info(WsIndex)
 		}
 		WsIndexJson, WsIndexJsonErr := json.Marshal(WsIndex)
 		if WsIndexJsonErr != nil {

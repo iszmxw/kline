@@ -74,7 +74,7 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	ws.proxy = proxy
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
-	ws.readChan = make(chan []byte, 100)
+	ws.readChan = make(chan []byte)
 	ws.writeChan = make(chan []byte, 10)
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.ReqTopicMap = make(map[string]*CallbackFunc)
@@ -153,6 +153,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 	case strings.Contains(string(message), "history"): // 历史数据
 	case strings.Contains(string(message), "liveBalance"): // {"liveBalance":0,"demoBalance":10000} // 账户余额信息
 	case strings.Contains(string(message), "451-"): // 451-["depth/change",{"_placeholder":true,"num":0}]
+	case strings.Contains(string(message), "chart_id"):
 		// 直接跳过
 		break
 	case strings.EqualFold(string(message), "40"): // 检测是否登录成功  42["s_authorization"]
@@ -161,8 +162,8 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 			// 登录需要获取 Token
 			_, token := ws.GetToken(false)
 			msg := fmt.Sprintf(`42["authorization",{"session":"%v","isDemo":0}]`, token)
-			logger.Info(msg)
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
+				logger.Info(msg)
 				logger.Info(err.Error())
 				_, _ = ws.GetToken(true) // 登录失败，强制刷新 token
 				ws.Close()
@@ -171,42 +172,38 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		break
 	case strings.Contains(string(message), "s_authorization"): // 检测是否登录成功  42["s_authorization"]
 		{
-			logger.Info("登录成功" + string(message))
+			logger.Info("登录成功")
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["indicator/list"]`)); err != nil {
-				logger.Info(err.Error())
+				logger.Error(err)
 				ws.Close()
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["drawing/load"]`)); err != nil {
-				logger.Info(err.Error())
+				logger.Error(err)
 				ws.Close()
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["pending/list"]`)); err != nil {
-				logger.Info(err.Error())
+				logger.Error(err)
 				ws.Close()
 			}
 			Symbol := ws.allSubStars.Front().Value.(string)
 			logger.Info(Symbol)
 			if len(Symbol) == 0 {
 				logger.Info("暂无")
+				ws.Close()
 			}
 			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s_otc","period":60}]`, Symbol))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-				logger.Info(err.Error())
+				logger.Error(err)
 				ws.Close()
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["chart_notification/get"]`)); err != nil {
-				logger.Info(err.Error())
+				logger.Error(err)
 				ws.Close()
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["depth/follow","%s_otc"]"]`, Symbol))); err != nil {
-				logger.Info(err.Error())
+				logger.Error(err)
 				ws.Close()
 			}
-		}
-		break
-	case strings.Contains(string(message), "chart_id"):
-		{
-			logger.Info(string(message))
 		}
 		break
 	default:
@@ -227,7 +224,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 					Ping := data[0][3]                                        // Ping
 					if 0 == Ping {                                            // 是否ping
 						if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
-							logger.Info(err.Error())
+							logger.Error(err)
 							ws.Close()
 						}
 					}
@@ -282,7 +279,6 @@ func (ws *WebSocketOp) readLoop() {
 		}
 		select {
 		case ws.readChan <- message:
-			logger.Info("读取成功")
 			break
 		case <-ws.closeChan:
 			logger.Info("读协程关闭chan")
