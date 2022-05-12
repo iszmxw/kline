@@ -231,8 +231,9 @@ func SocketBian(info wsdata.Info) {
 	}
 	select {
 	case <-callback:
-		fmt.Println(info.Symbol + "：已关闭")
-		fmt.Println(info.Symbol + "：正在重新启动 Goroutine")
+		// 记录重连次数 连接
+		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, info.Symbol))
+		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
 		go SocketBian(info)
 	}
 }

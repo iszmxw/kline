@@ -119,7 +119,8 @@ func (ws *WebSocketOp) DoHand() {
 		select {
 		case msg, ok := <-ws.readChan:
 			if !ok {
-				continue
+				logger.Info("不ok了")
+				return
 			}
 			go ws.msgHand(msg)
 			break

@@ -196,8 +196,9 @@ func SocketHuoBi(parentTopic string) {
 	}, "")
 	select {
 	case <-callback:
-		fmt.Println(parentTopic + "：已关闭")
-		fmt.Println(parentTopic + "：正在重新启动 Goroutine")
+		// 记录重连次数 连接
+		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, Topic[1]))
+		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", Topic[1], num))
 		go SocketHuoBi(parentTopic)
 	}
 }
