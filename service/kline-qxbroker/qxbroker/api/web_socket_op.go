@@ -294,8 +294,8 @@ ERR:
 
 // 写 Ping 协程
 func (ws *WebSocketOp) writePing() {
-	ws.IsPing = true
 	if !ws.IsPing { // 只能发起一次 ping
+		ws.IsPing = true
 		ws.once.Do(func() {
 			// 使用time.Ticker
 			var ticker = time.NewTicker(25 * time.Second)
