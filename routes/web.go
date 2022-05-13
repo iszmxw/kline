@@ -36,4 +36,5 @@ func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
 		// 【E36】 所有 redis 的Key
 		Config.Any("/getRedisKey.json", WebV1Group.KlineController.GetRedisKeyHandler)
 	}
+
 }
