@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
+	"goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
@@ -155,7 +155,9 @@ func SocketRaceOption(info wsdata.Info) {
 			UpstreamTs := helpers.StringToInt64(resp.TimeId) // 上游的ts
 			var data response.SubIndexKLineResponse
 			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
-			data.Ts = SystemTs // 系統生成的Ts
+			data.Ts = SystemTs                                                                             // 系統生成的Ts
+			data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
+			data.Source = kconfig.KlineSource
 			data.Tick.Id = SystemTs
 			data.Tick.Vol = fmt.Sprintf("%v", resp.AskVolume)
 			data.Tick.Count = 0
@@ -210,7 +212,7 @@ func SocketRaceOption(info wsdata.Info) {
 				logger.Error(MarshalJSONErr)
 				return
 			}
-			key := fmt.Sprintf("raceoption:%v", data.Ch)
+			key := fmt.Sprintf("%v:%v", kconfig.KlineSource, data.Ch)
 			_, redisErr := redis.Client.Add(key, msgData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)

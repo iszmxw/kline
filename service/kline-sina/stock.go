@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
+	"goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
@@ -110,6 +110,8 @@ func collection(queryData Info) {
 	var data response.SubIndexKLineResponse
 	data.Ch = lineLogRes.Ch
 	data.Ts = lineLogRes.Ts
+	data.TsDate = time.Unix(0, lineLogRes.Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
+	data.Source = "sina"
 	data.Tick.Id = lineLogRes.ID
 	data.Tick.Vol = fmt.Sprintf("%v", lineLogRes.Vol)
 	data.Tick.Count = lineLogRes.CCount
@@ -143,7 +145,8 @@ func collection(queryData Info) {
 		logger.Error(MarshalJSONErr)
 		return
 	}
-	_, redisErr := redis.Client.Add(data.Ch, msgData, 0)
+	key := fmt.Sprintf("%v:%v", "sina", data.Ch)
+	_, redisErr := redis.Client.Add(key, msgData, 0)
 	if redisErr != nil {
 		logger.Error(redisErr)
 		return
