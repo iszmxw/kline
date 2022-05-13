@@ -3,6 +3,7 @@ package response
 import (
 	"fmt"
 	cmap "github.com/orcaman/concurrent-map"
+	"goapi/pkg/config"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 )
@@ -11,7 +12,7 @@ import (
 
 func KlineSource(AssetsCode string) string {
 	key := fmt.Sprintf("kline_source:%v", AssetsCode)
-	Source, err := redis.Client.Get(key)
+	Source, err := redis.Client.SelectDbGet(config.GetInt("redis.db"), key)
 	if err != nil && err.Error() != "redis: nil" {
 		logger.Error(err)
 		Source = ""

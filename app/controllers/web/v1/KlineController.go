@@ -73,25 +73,13 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			wss.WsClose(ws)
 			goto END
 		}
-		klineSource := response.KlineSource(AssetsCode)
-		// 没有读取到 klineSource
-		if len(klineSource) == 0 {
-			logger.Error(errors.New("没有读取到 klineSource"))
-			wss.WsClose(ws)
-			goto END
-		}
-		// hsb:market.ETH-USD.index.1min
-		// olymptrade:market.ETH-USD.index.1min
-		// raceoption:market.ETH-USD.index.1min
-		msg := fmt.Sprintf("%v:%v", klineSource, SubStruct.Sub)
-		logger.Info(msg)
 		// 2 小时内一个长连接禁止重复订阅相同的 topic
-		checkMsg := "socket_request:" + RequestId + ":" + msg
+		checkMsg := "socket_request:" + RequestId + ":" + AssetsCode
 		if redis.Client.CheckExist(checkMsg) {
 			logger.Info("该订阅已存在，请勿重新订阅")
 			continue
 		}
-		_, redisAddErr := redis.Client.Add(checkMsg, msg, 30*60) // 半个小时内不允许重复请求
+		_, redisAddErr := redis.Client.Add(checkMsg, AssetsCode, 30*60) // 半个小时内不允许重复请求
 		if redisAddErr != nil {
 			logger.Error(redisAddErr)
 			break
@@ -102,7 +90,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			goto END
 		}
 		// 开启协诚处理推送消息
-		go PushMessage(mt, ws, msg)
+		go PushMessage(mt, ws, AssetsCode)
 	}
 END:
 	logger.Info("socket被关闭，本次链接结束")
@@ -167,12 +155,25 @@ END:
 
 // 推送socket消息
 
-func PushMessage(messageType int, ws *wss.WsConn, msg string) {
+func PushMessage(messageType int, ws *wss.WsConn, AssetsCode string) {
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		push, getErr := redis.Client.SelectDbGet(15, msg)
+		klineSource := response.KlineSource(AssetsCode)
+		// 没有读取到 klineSource
+		if len(klineSource) == 0 {
+			logger.Error(errors.New("没有读取到 klineSource"))
+			wss.WsClose(ws)
+			goto END
+		}
+		// hsb:market.ETH-USD.index.1min
+		// olymptrade:market.ETH-USD.index.1min
+		// raceoption:market.ETH-USD.index.1min
+		key := fmt.Sprintf("%v:market.%v.index.1min", klineSource, AssetsCode)
+		push, getErr := redis.Client.SelectDbGet(15, key)
 		if getErr != nil {
 			logger.Error(getErr)
+			logger.Info(key)
+			wss.WsClose(ws)
 			goto END
 		}
 		// 空消息跳过
@@ -414,7 +415,19 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		return
 	}
 	if !helpers.InArray(params.KlineSource, response.GetSource()) {
-		echo.Error(c, "PARAMS_ERROR", "：KlineSource 不在范围内")
+		echo.Error(c, "PARAMS_ERROR", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(response.GetSource(), "，")))
+		return
+	}
+	// 获取允许读取的数据源
+	AllowKlineSource := response.AllowKlineSource()
+	data, ok := AllowKlineSource[params.AssetsCode]
+	if ok {
+		if !helpers.InArray(params.KlineSource, data.([]string)) {
+			echo.Error(c, "PARAMS_ERROR", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(data.([]string), "，")))
+			return
+		}
+	} else {
+		echo.Error(c, "PARAMS_ERROR", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(data.([]string), "，")))
 		return
 	}
 	key := fmt.Sprintf("kline_source:%v", params.AssetsCode)
