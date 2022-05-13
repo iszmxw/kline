@@ -232,7 +232,9 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 		}
 		for index, item := range PushRateData {
 			if response.KlineSource(item.AssetsCode) == "qxbroker" {
-				PushRateData[index].AssetsName = item.AssetsName + "(OTC)"
+				if !strings.Contains(strings.ToUpper(item.AssetsName), "OTC") { // 不包含otc才加上
+					PushRateData[index].AssetsName = item.AssetsName + "(OTC)"
+				}
 			}
 		}
 		WsPushRateJson, WsPushRateErr := json.Marshal(PushRateData)

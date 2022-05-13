@@ -3,7 +3,6 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	WebCtl "goapi/app/controllers/web/v1"
-	WebMw "goapi/app/middlewares/v1"
 )
 
 var WebV1Group = new(WebCtl.Group)
@@ -11,7 +10,7 @@ var WebV1Group = new(WebCtl.Group)
 // RegisterWebRoutes 注册路由
 func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
 	// 路由分组 Web 接口
-	ApiRoute.Use(WebMw.Web())
+	//ApiRoute.Use(WebMw.Web())
 	WebV1 := ApiRoute.Group("/web/v1")
 	// 看板模块
 	Kanban := WebV1.Group("/kanban")

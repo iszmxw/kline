@@ -58,14 +58,14 @@ func check(key string) {
 	case (diff > 60*3) && (diff < 60*5):
 		// 警告，延迟过高
 		_, _ = redis.Client.Add(KeyStatus, 3, 0)
-		mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
-			"name": KeyStatus,
-			"msg":  "当前服务的Socket延迟过高，请留意对应的数据源",
-		})
 		break
 	case diff > 60*5:
 		// 警告，延迟过高
 		_, _ = redis.Client.Add(KeyStatus, 4, 0)
+		mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
+			"name": KeyStatus,
+			"msg":  "当前服务的Socket延迟过高，请留意对应的数据源",
+		})
 		break
 	}
 }
