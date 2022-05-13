@@ -55,6 +55,14 @@ func check(address, t string) bool {
 			pass = false
 		}
 		break
+	case "msgHeartbeatAnomaly": // 心跳检测通知
+		// 只通知管理员
+		if address == AdminMail || address == "yezhiming@yuctime.com" {
+			pass = true
+		} else {
+			pass = false
+		}
+		break
 	case "msgTimeDiff": // 检测累计通知次数：时差：30秒内超过10次进行通知
 		if checkGrandTotal(address, t, 0, 30, 10) { // 30秒内超过10次进行通知
 			pass = true
