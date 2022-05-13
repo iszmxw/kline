@@ -230,6 +230,11 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			logger.Error(err)
 			return
 		}
+		for index, item := range PushRateData {
+			if response.KlineSource(item.AssetsCode) == "qxbroker" {
+				PushRateData[index].AssetsName = item.AssetsName + "(OTC)"
+			}
+		}
 		WsPushRateJson, WsPushRateErr := json.Marshal(PushRateData)
 		if WsPushRateErr != nil {
 			logger.Error(WsPushRateErr)
