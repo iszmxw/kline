@@ -429,6 +429,26 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 	echo.Success(c, nil, "")
 }
 
+// 获取当前币种可以设置的数据源
+
+func (h *KlineController) SymbolAllowKlineSource(c *gin.Context) {
+	user, _ := c.Get("user")
+	var params requests.Symbol
+	_ = c.Bind(&params)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	// 对应币种允许的数据源
+	echo.Success(c,
+		gin.H{
+			"user":         user,
+			"allow_source": response.AllowKlineSource(params.AssetsCode),
+		}, "",
+	)
+	return
+}
+
 // 读取所有 KlineSource 配置
 
 func (h *KlineController) GetAllKlineSourceHandler(c *gin.Context) {
