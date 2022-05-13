@@ -283,7 +283,13 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		symbol = "BTC-USD"
 		period = "1min"
 	}
-	klineSource, _ := redis.Client.Get("kline_source")
+	klineSource := response.KlineSource(symbol)
+	// 没有读取到 klineSource
+	if len(klineSource) == 0 {
+		logger.Error(errors.New("没有读取到 klineSource"))
+		output.Rjson(c, nil, "没有读取到 klineSource", 0)
+		return
+	}
 	var data []response.KlineLog
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
 	DB := mysql.DB.Debug()
@@ -293,17 +299,8 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		Where("ts >= ?", beginDate).
 		Where("ts <= ?", endDate).
 		Order("ts desc")
-	// 查询来源，除了"BTC-USD", "ETH-USD"，其他都按来源走
-	if len(klineSource) > 0 {
-		if helpers.InArray(symbol, []string{"BTC-USD", "ETH-USD"}) {
-			// 走火币来源
-			klineSource = "huobi"
-			KlineDB = KlineDB.Where("kline_source", "huobi")
-		} else {
-			KlineDB = KlineDB.Where("kline_source", klineSource)
-		}
-	}
-
+	// 查询来源
+	KlineDB = KlineDB.Where("kline_source", klineSource)
 	var Count int64 // 查询总条数
 	KlineDB.Count(&Count)
 	if Count > 3000 {
@@ -357,6 +354,13 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		symbol = "BTC-USD"
 		period = "1min"
 	}
+	klineSource := response.KlineSource(symbol)
+	// 没有读取到 klineSource
+	if len(klineSource) == 0 {
+		logger.Error(errors.New("没有读取到 klineSource"))
+		output.Rjson(c, nil, "没有读取到 klineSource", 0)
+		return
+	}
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
 	// 组合查询条件
 	boolQuery := elastic.NewBoolQuery()
@@ -399,7 +403,7 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		"HistKlineLogs": respArr,
 		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
 		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
-		"klineSource":   "huobi",
+		"klineSource":   klineSource,
 		"totals":        Count,
 		"contractCode":  symbol,
 	}, "success", 1)
