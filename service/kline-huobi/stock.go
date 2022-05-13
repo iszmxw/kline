@@ -151,11 +151,14 @@ func SocketHuoBi(parentTopic string) {
 				})
 			}
 
-			DB := mysql.DB.Debug()
-			result := DB.Model(models.KlineLog{}).Create(&AddData)
-			if result.Error != nil {
-				logger.Error(result.Error)
-				return
+			// 当前数据源匹配就入库
+			if res.KlineSource(Topic[1]) == kconfig.KlineSource {
+				DB := mysql.DB.Debug()
+				result := DB.Model(models.KlineLog{}).Create(&AddData)
+				if result.Error != nil {
+					logger.Error(result.Error)
+					return
+				}
 			}
 			// 历史 kline 入库
 

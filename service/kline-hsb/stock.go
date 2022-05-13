@@ -154,26 +154,6 @@ func SocketHsb(info wsdata.Info) {
 			data.Tick.Low = ""
 			data.Tick.High = ""
 			data.Tick.Amount = "0"
-			var KlineData models.KlineLog
-			err = mysql.DB.Debug().
-				Model(models.KlineLog{}).
-				Select("log_id").
-				Where("contract_code", ContractCode).
-				Where("upstream_ts", UpstreamTs).
-				Where("kline_source", kconfig.KlineSource).
-				Find(&KlineData).Error
-			if err != nil {
-				logger.Error(err)
-			}
-			if KlineData.LogId > 0 {
-				return
-			}
-			lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
-			cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
-			if cerr1 != nil {
-				logger.Error(cerr1)
-				return
-			}
 			tips := fmt.Sprintf(
 				"hsb时差：系统时间：%v(%v)<br>hsb的 ts 时间：%v(%v)",
 				time.Now().UnixMilli(),
@@ -198,13 +178,37 @@ func SocketHsb(info wsdata.Info) {
 				logger.Error(MarshalJSONErr)
 				return
 			}
+			// 收集数据缓存到redis
 			key := fmt.Sprintf("%v:%v", kconfig.KlineSource, data.Ch)
 			_, redisErr := redis.Client.Add(key, msgData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
 				return
 			}
-			// 收集数据缓存到redis
+
+			var KlineData models.KlineLog
+			err = mysql.DB.Debug().
+				Model(models.KlineLog{}).
+				Select("log_id").
+				Where("contract_code", ContractCode).
+				Where("upstream_ts", UpstreamTs).
+				Where("kline_source", kconfig.KlineSource).
+				Find(&KlineData).Error
+			if err != nil {
+				logger.Error(err)
+			}
+			if KlineData.LogId > 0 {
+				return
+			}
+			// 当前数据源匹配就入库
+			if response.KlineSource(ContractCode) == kconfig.KlineSource {
+				lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
+				cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
+				if cerr1 != nil {
+					logger.Error(cerr1)
+					return
+				}
+			}
 
 			//// 历史存入 elastic
 			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)

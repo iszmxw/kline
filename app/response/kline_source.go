@@ -27,22 +27,22 @@ func KlineSource(AssetsCode string) string {
 		Source = "huobi"
 		break
 	case "EUR-USD":
-		Source = "raceoption"
+		Source = "qxbroker"
 		break
 	case "GBP-USD":
-		Source = "raceoption"
+		Source = "qxbroker"
 		break
 	case "AUD-CAD":
-		Source = "raceoption"
+		Source = "qxbroker"
 		break
 	case "USD-JPY":
-		Source = "raceoption"
+		Source = "qxbroker"
 		break
 	case "GOLD":
-		Source = "raceoption"
+		Source = "qxbroker"
 		break
 	case "SILVER":
-		Source = "raceoption"
+		Source = "qxbroker"
 		break
 	case "Netflix":
 		Source = "qxbroker"
