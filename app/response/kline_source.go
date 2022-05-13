@@ -2,6 +2,7 @@ package response
 
 import (
 	"fmt"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 )
@@ -61,45 +62,24 @@ func KlineSource(AssetsCode string) string {
 
 // 币种允许走的数据源
 
-func AllowKlineSource(AssetsCode string) []string {
-	var Source []string
-	switch AssetsCode {
-	case "ETH-USD":
-		Source = []string{"huobi", "binance"}
-		break
-	case "BTC-USD":
-		Source = []string{"huobi", "binance"}
-		break
-	case "EUR-USD":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	case "GBP-USD":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	case "AUD-CAD":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	case "USD-JPY":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	case "GOLD":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	case "SILVER":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	case "Netflix":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	case "Microsoft":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	case "Intel":
-		Source = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-		break
-	default:
-		Source = []string{""}
-		break
-	}
-	return Source
+func AllowKlineSource() map[string]interface{} {
+	data := cmap.New().Items()
+	data["ETH-USD"] = []string{"huobi", "binance"}
+	data["BTC-USD"] = []string{"huobi", "binance"}
+	data["EUR-USD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
+	data["GBP-USD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
+	data["AUD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker", "sina"}
+	data["USD-JPY"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
+	data["GOLD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
+	data["SILVER"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
+	data["Netflix"] = []string{"qxbroker"}
+	data["Microsoft"] = []string{"qxbroker"}
+	data["Intel"] = []string{"qxbroker"}
+	return data
+}
+
+// 所有的数据源
+
+func GetSource() []string {
+	return []string{"binance", "huobi", "hsb", "olymptrade", "qxbroker", "raceoption"}
 }

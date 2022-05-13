@@ -9,6 +9,7 @@ import (
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
+	"goapi/pkg/health"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
@@ -65,7 +66,10 @@ func main() {
 		}
 		if rate {
 			rate = false
+			// 费率采集处理
 			go api.GetRate()
+			// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
+			go health.Heartbeat(30)
 		}
 		time.Sleep(time.Second)
 	}

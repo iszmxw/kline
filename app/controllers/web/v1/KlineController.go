@@ -281,7 +281,13 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		symbol = "BTC-USD"
 		period = "1min"
 	}
-	klineSource, _ := redis.Client.Get("kline_source")
+	klineSource := response.KlineSource(symbol)
+	// 没有读取到 klineSource
+	if len(klineSource) == 0 {
+		logger.Error(errors.New("没有读取到 klineSource"))
+		output.Rjson(c, nil, "没有读取到 klineSource", 0)
+		return
+	}
 	var data []response.KlineLog
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
 	DB := mysql.DB.Debug()
@@ -291,17 +297,8 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		Where("ts >= ?", beginDate).
 		Where("ts <= ?", endDate).
 		Order("ts desc")
-	// 查询来源，除了"BTC-USD", "ETH-USD"，其他都按来源走
-	if len(klineSource) > 0 {
-		if helpers.InArray(symbol, []string{"BTC-USD", "ETH-USD"}) {
-			// 走火币来源
-			klineSource = "huobi"
-			KlineDB = KlineDB.Where("kline_source", "huobi")
-		} else {
-			KlineDB = KlineDB.Where("kline_source", klineSource)
-		}
-	}
-
+	// 查询来源
+	KlineDB = KlineDB.Where("kline_source", klineSource)
 	var Count int64 // 查询总条数
 	KlineDB.Count(&Count)
 	if Count > 3000 {
@@ -416,7 +413,7 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		echo.Error(c, "PARAMS_ERROR", "：AssetsCode 不在范围内")
 		return
 	}
-	if !helpers.InArray(params.KlineSource, []string{"binance", "huobi", "hsb", "olymptrade", "qxbroker", "raceoption", "sina"}) {
+	if !helpers.InArray(params.KlineSource, response.GetSource()) {
 		echo.Error(c, "PARAMS_ERROR", "：KlineSource 不在范围内")
 		return
 	}
@@ -434,16 +431,24 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 func (h *KlineController) SymbolAllowKlineSource(c *gin.Context) {
 	user, _ := c.Get("user")
 	var params requests.Symbol
+	var allowSource interface{}
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	// 获取允许读取的数据源
+	AllowKlineSource := response.AllowKlineSource()
+	if data, ok := AllowKlineSource[params.AssetsCode]; ok {
+		allowSource = data
+	} else {
+		allowSource = nil
+	}
 	// 对应币种允许的数据源
 	echo.Success(c,
 		gin.H{
 			"user":         user,
-			"allow_source": response.AllowKlineSource(params.AssetsCode),
+			"allow_source": allowSource,
 		}, "",
 	)
 	return

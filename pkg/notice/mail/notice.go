@@ -255,6 +255,14 @@ func msgServiceAnomaly(name string, r interface{}) map[string]interface{} {
 	return brokenInfo
 }
 
+// 心跳检测，服务健康通知
+func msgHeartbeatAnomaly(name, msg string) map[string]interface{} {
+	brokenInfo := cmap.New().Items()
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】服务异常，请查看详细信息", conf.GetString("app.env"), name)
+	brokenInfo["content"] = fmt.Sprintf(`【%v】服务异常【%v】`, name, msg)
+	return brokenInfo
+}
+
 // 发送通知
 
 func Notice(t string, data interface{}) {
@@ -298,6 +306,10 @@ func Notice(t string, data interface{}) {
 	case "msgServiceAnomaly":
 		arr := data.(map[string]interface{})
 		Info = msgServiceAnomaly(arr["name"].(string), arr["r"])
+		break
+	case "msgHeartbeatAnomaly":
+		arr := data.(map[string]interface{})
+		Info = msgHeartbeatAnomaly(arr["name"].(string), arr["msg"].(string))
 		break
 	default:
 		return
