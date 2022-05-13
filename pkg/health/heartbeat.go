@@ -45,7 +45,7 @@ func check(key string) {
 	}
 	// 差
 	diff := (time.Now().UnixMilli() - SubIndexKLineResponse.Ts) / 1000
-	KeyStatus := fmt.Sprintf("%v:status", key)
+	KeyStatus := fmt.Sprintf("status:%v", key)
 	switch true {
 	case diff < 60*1:
 		// 正常，绿色

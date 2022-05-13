@@ -29,24 +29,9 @@ func check(address, t string) bool {
 		_, err := redis.Client.Add(key, InitNum, ExTime)
 		if err != nil {
 			pass = false
-		}
-	} else {
-		num := helpers.StringToInt64(value)
-		// 管理员直接可以
-		if address == AdminMail || address == "yezhiming@yuctime.com" {
-			pass = true
-		}
-		// 最大通知次数
-		if num > MaxNum {
-			pass = false
-		}
-		if redis.Client.Incr(key) > MaxNum {
-			pass = false
-		} else {
-			pass = true
+			value = "0"
 		}
 	}
-
 	switch t {
 	case "msgSocketNetworkAnomaly": // 检测累计通知次数：网络异常：一分钟内超过15次进行通知
 		if checkGrandTotal(address, t, 0, 1*60, 15) { // 一分钟内超过15次进行通知
@@ -57,11 +42,7 @@ func check(address, t string) bool {
 		break
 	case "msgHeartbeatAnomaly": // 心跳检测通知
 		// 只通知管理员
-		if address == AdminMail || address == "yezhiming@yuctime.com" {
-			pass = true
-		} else {
-			pass = false
-		}
+		pass = false
 		break
 	case "msgTimeDiff": // 检测累计通知次数：时差：30秒内超过10次进行通知
 		if checkGrandTotal(address, t, 0, 30, 10) { // 30秒内超过10次进行通知
@@ -80,6 +61,20 @@ func check(address, t string) bool {
 		break
 	default:
 		break
+	}
+	num := helpers.StringToInt64(value)
+	// 最大通知次数
+	if num > MaxNum {
+		pass = false
+	}
+	if redis.Client.Incr(key) > MaxNum {
+		pass = false
+	} else {
+		pass = true
+	}
+	// 管理员直接可以
+	if address == AdminMail || address == "yezhiming@yuctime.com" {
+		pass = true
 	}
 	return pass
 }

@@ -61,9 +61,10 @@ type WebSocketOp struct {
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStars       list.List
-	Login             Login // 登录结构
-	IsLogin           bool  // 是否已经登录
-	IsPing            bool  // 是否已开始ping
+	Symbol            string // 订阅的币种
+	Login             Login  // 登录结构
+	IsLogin           bool   // 是否已经登录
+	IsPing            bool   // 是否已开始ping
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -119,7 +120,7 @@ func (ws *WebSocketOp) DoHand() {
 		select {
 		case msg, ok := <-ws.readChan:
 			if !ok {
-				logger.Info("不ok了")
+				logger.Info(ws.Symbol + "不ok了")
 				return
 			}
 			go ws.msgHand(msg)
@@ -186,13 +187,12 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Error(err)
 				ws.Close()
 			}
-			Symbol := ws.allSubStars.Front().Value.(string)
-			logger.Info(Symbol)
-			if len(Symbol) == 0 {
+			logger.Info(ws.Symbol)
+			if len(ws.Symbol) == 0 {
 				logger.Info("暂无")
 				ws.Close()
 			}
-			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s_otc","period":60}]`, Symbol))
+			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s_otc","period":60}]`, ws.Symbol))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				logger.Error(err)
 				ws.Close()
@@ -201,7 +201,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Error(err)
 				ws.Close()
 			}
-			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["depth/follow","%s_otc"]"]`, Symbol))); err != nil {
+			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["depth/follow","%s_otc"]"]`, ws.Symbol))); err != nil {
 				logger.Error(err)
 				ws.Close()
 			}
@@ -372,6 +372,7 @@ func (ws *WebSocketOp) sub(subReq string, ch string, fun interface{}, param refl
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
 	ws.allSubStars.PushBack(subReq)
+	ws.Symbol = subReq
 	return ws.SendMsg(nil)
 }
 
