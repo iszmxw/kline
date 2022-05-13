@@ -52,18 +52,18 @@ else
   echo $! >logs/raceoptionService-running.pid
 fi
 
-# 重启 liveoddsService-running
-liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
-if [ "$liveoddsService" ]; then
-  kill -9 "$liveoddsService"
-  \cp -rf liveoddsService liveoddsService-running
-  nohup ./liveoddsService-running >/dev/null 2>error/liveodds.log &
-  echo $! >logs/liveoddsService-running.pid
-else
-  \cp -rf liveoddsService liveoddsService-running
-  nohup ./liveoddsService-running >/dev/null 2>error/liveodds.log &
-  echo $! >logs/liveoddsService-running.pid
-fi
+## 重启 liveoddsService-running
+#liveoddsService=$(ps -ef | grep "/liveoddsService-running" | grep -v "grep" | awk '{print $2}')
+#if [ "$liveoddsService" ]; then
+#  kill -9 "$liveoddsService"
+#  \cp -rf liveoddsService liveoddsService-running
+#  nohup ./liveoddsService-running >/dev/null 2>error/liveodds.log &
+#  echo $! >logs/liveoddsService-running.pid
+#else
+#  \cp -rf liveoddsService liveoddsService-running
+#  nohup ./liveoddsService-running >/dev/null 2>error/liveodds.log &
+#  echo $! >logs/liveoddsService-running.pid
+#fi
 
 # 重启 olymptradeService-running
 olymptradeService=$(ps -ef | grep "/olymptradeService-running" | grep -v "grep" | awk '{print $2}')

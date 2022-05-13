@@ -199,22 +199,22 @@ func SocketOlymptrade(info wsdata.Info) {
 				return
 			}
 
-			var KlineData models.KlineLog
-			err = mysql.DB.Debug().
-				Model(models.KlineLog{}).
-				Select("log_id").
-				Where("contract_code", ContractCode).
-				Where("upstream_ts", UpstreamTs).
-				Where("kline_source", kconfig.KlineSource).
-				Find(&KlineData).Error
-			if err != nil {
-				logger.Error(err)
-			}
-			if KlineData.LogId > 0 {
-				return
-			}
 			// 当前数据源匹配就入库
 			if response.KlineSource(info.ContractCode) == kconfig.KlineSource {
+				var KlineData models.KlineLog
+				err = mysql.DB.Debug().
+					Model(models.KlineLog{}).
+					Select("log_id").
+					Where("contract_code", ContractCode).
+					Where("upstream_ts", UpstreamTs).
+					Where("kline_source", kconfig.KlineSource).
+					Find(&KlineData).Error
+				if err != nil {
+					logger.Error(err)
+				}
+				if KlineData.LogId > 0 {
+					return
+				}
 				lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
 				cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
 				if cerr1 != nil {
@@ -222,8 +222,6 @@ func SocketOlymptrade(info wsdata.Info) {
 					return
 				}
 			}
-
-
 
 			//// 历史存入 elastic
 			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)

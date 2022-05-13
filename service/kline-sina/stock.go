@@ -133,21 +133,21 @@ func collection(queryData Info) {
 		logger.Error(redisErr)
 		return
 	}
-	err = mysql.DB.Debug().
-		Model(models.KlineLog{}).
-		Select("log_id").
-		Where("contract_code", lineLogRes.ContractCode).
-		Where("upstream_ts", lineLogRes.UpstreamTs).
-		Where("kline_source", "sina").
-		Find(&KlineData).Error
-	if err != nil {
-		logger.Error(err)
-	}
-	if KlineData.LogId > 0 {
-		return
-	}
 	// 当前数据源匹配就入库
 	if response.KlineSource(lineLogRes.ContractCode) == "sina" {
+		err = mysql.DB.Debug().
+			Model(models.KlineLog{}).
+			Select("log_id").
+			Where("contract_code", lineLogRes.ContractCode).
+			Where("upstream_ts", lineLogRes.UpstreamTs).
+			Where("kline_source", "sina").
+			Find(&KlineData).Error
+		if err != nil {
+			logger.Error(err)
+		}
+		if KlineData.LogId > 0 {
+			return
+		}
 		cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
 		if cerr1 != nil {
 			logger.Error(cerr1)
