@@ -5,6 +5,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
+	"net/url"
 	"reflect"
 )
 
@@ -12,11 +13,11 @@ type WSPriceClient struct {
 	WebSocketOp
 }
 
-func (wsIx *WSPriceClient) Init(host, session string, callback closeChanCallback) *WSPriceClient {
+func (wsIx *WSPriceClient) Init(host, session string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
 	if host == "" {
 		host = config.LinearSwapDefaultHost
 	}
-	wsIx.open("/otp", host,session, callback)
+	wsIx.open("/otp", host, session, proxy, callback)
 	return wsIx
 }
 

@@ -12,6 +12,7 @@ import (
 	"goapi/service/kline-olymptrade/olymptrade/utils/zip"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"sync"
@@ -27,6 +28,7 @@ type CallbackFunc struct {
 
 type WebSocketOp struct {
 	host              string                   // 连接地址
+	proxy             *url.URL                 // 代理地址设置
 	session           string                   // session
 	path              string                   // 路由
 	conn              *websocket.Conn          // 基础连接
@@ -43,12 +45,13 @@ type WebSocketOp struct {
 	allSubStrs        list.List
 }
 
-func (ws *WebSocketOp) open(path, host, session string, closeChanCallback closeChanCallback) bool {
+func (ws *WebSocketOp) open(path, host, session string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
 	if host == "" {
 		ws.host = config.LinearSwapDefaultHost
 	}
 	ws.host = host
 	ws.session = session
+	ws.proxy = proxy
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
 	ws.readChan = make(chan []byte, 30)
@@ -64,7 +67,9 @@ func (ws *WebSocketOp) open(path, host, session string, closeChanCallback closeC
 func (ws *WebSocketOp) connServer() bool {
 	wssUrl := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
 	var err error
-	dialer := websocket.Dialer{}
+	dialer := websocket.Dialer{
+		Proxy: http.ProxyURL(ws.proxy),
+	}
 	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
 		"Origin": {"https://olymptrade.com"},
 		"Cookie": {ws.session},

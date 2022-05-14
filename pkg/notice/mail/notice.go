@@ -50,9 +50,21 @@ func check(address, t string) bool {
 		} else {
 			pass = false
 		}
+		// 最大通知次数
+		if redis.Client.Incr(key) > MaxNum {
+			pass = false
+		} else {
+			pass = true
+		}
 		break
 	case "msgNoSocket": // 检查时间段内是否通知过
 	case "msgStartSocket": // 检查时间段内是否通知过
+		// 最大通知次数
+		if redis.Client.Incr(key) > MaxNum {
+			pass = false
+		} else {
+			pass = true
+		}
 		if checkTime(address, t, 60*60) { // 1小时内内是否通知过
 			pass = false
 		} else {
@@ -61,16 +73,6 @@ func check(address, t string) bool {
 		break
 	default:
 		break
-	}
-	num := helpers.StringToInt64(value)
-	// 最大通知次数
-	if num > MaxNum {
-		pass = false
-	}
-	if redis.Client.Incr(key) > MaxNum {
-		pass = false
-	} else {
-		pass = true
 	}
 	// 管理员直接可以
 	if address == AdminMail || address == "yezhiming@yuctime.com" {

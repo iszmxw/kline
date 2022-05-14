@@ -96,7 +96,7 @@ func login() string {
 		"origin":            {"https://olymptrade.com"},
 		"referer":           {"https://olymptrade.com/"},
 		"User-Agent":        {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
-	}, string(str), nil)
+	}, string(str), config.Proxy())
 	if err != nil {
 		logger.Error(err)
 	}

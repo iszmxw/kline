@@ -124,15 +124,18 @@ func SocketHsb(info wsdata.Info) {
 				return
 			}
 			if rData.Time <= 0 {
-				err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
-				if err != nil {
-					logger.Error(err)
+				// 当前数据源匹配就入库
+				if response.KlineSource(info.ContractCode) == kconfig.KlineSource {
+					err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
+					if err != nil {
+						logger.Error(err)
+					}
+					// 通知
+					mail_notice.Notice("msgNoSocket", map[string]interface{}{
+						"service": kconfig.KlineSource,
+						"symbol":  info.ContractCode,
+					})
 				}
-				// 通知
-				mail_notice.Notice("msgNoSocket", map[string]interface{}{
-					"service": kconfig.KlineSource,
-					"symbol":  info.ContractCode,
-				})
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
 					info.ContractCode, resp)))

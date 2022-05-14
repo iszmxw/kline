@@ -17,11 +17,11 @@ func Heartbeat(num time.Duration) {
 	for {
 		logger.Info("每个一分钟检测一次")
 		for Symbol, KlineSource := range response.AllowKlineSource() {
-			for _, Source := range KlineSource.([]string) {
-				// 所有的数据源键值对
-				key := fmt.Sprintf("%v:market.%v.index.1min", Source, Symbol)
-				go check(key)
-			}
+			Source := response.KlineSource(Symbol)
+			logger.Info(KlineSource)
+			// 所有的数据源键值对
+			key := fmt.Sprintf("%v:market.%v.index.1min", Source, Symbol)
+			go check(key)
 		}
 		time.Sleep(time.Second * num)
 	}
