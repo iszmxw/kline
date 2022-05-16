@@ -11,6 +11,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
+	"goapi/pkg/config"
 	"goapi/pkg/echo"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
@@ -487,13 +488,13 @@ func (h *KlineController) GetAllKlineSourceHandler(c *gin.Context) {
 
 func (h *KlineController) GetRedisKeyHandler(c *gin.Context) {
 	keys := c.Query("keys")
-	arr, cursor, err := redis.Client.GetKeys(keys)
+	arr, cursor, err := redis.Client.GetKeys(15, keys)
 	if err != nil {
 		echo.Error(c, "FAILD", "")
 	} else {
 		result := cmap.New().Items()
 		for _, item := range arr {
-			value, _ := redis.Client.GetValue(item)
+			value, _ := redis.Client.SelectDbGet(15, strings.ReplaceAll(item, config.GetString("app.name")+":", ""))
 			result[item] = value
 		}
 		echo.Success(c, gin.H{"result": result, "cursor": cursor}, "")

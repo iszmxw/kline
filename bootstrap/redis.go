@@ -5,8 +5,8 @@ import (
 )
 
 // SetupRedis 初始化Redis
-func SetupRedis(selectDB string) {
-	new(redis.Redis).ConnectDB(selectDB)
+func SetupRedis(selectDB int) {
+	redis.Client = new(redis.Redis).ConnectDB(selectDB)
 }
 
 // RedisClose 关闭redis

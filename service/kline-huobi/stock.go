@@ -50,7 +50,7 @@ func main() {
 			}
 		}()
 	}
-	bootstrap.SetupRedis("15")
+	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	type topics struct {
 		Topic string `json:"topic"` // K线图代码

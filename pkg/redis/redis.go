@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"goapi/pkg/config"
-	"goapi/pkg/helpers"
+	"goapi/pkg/logger"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -21,8 +22,9 @@ type Redis struct {
 }
 
 // ConnectDB 初始化模型
-func (rdb *Redis) ConnectDB(selectDB string) {
-	rdb.expireTime = 600 // 过期时间
+func (rdb *Redis) ConnectDB(selectDB int) *Redis {
+	rdb.expireTime = 600     // 过期时间
+	rdb.DefaultDB = selectDB // 选择库
 	// 初始化 Redis 连接信息
 	var (
 		err       error
@@ -30,11 +32,6 @@ func (rdb *Redis) ConnectDB(selectDB string) {
 		RedisPort = config.GetString("redis.port")
 		Pw        = config.GetString("redis.password")
 	)
-	rdb.DefaultDB = config.GetInt("redis.db") // 默认 redis 库
-	if len(selectDB) > 0 {
-		// 选择库
-		rdb.DefaultDB = helpers.StringToInt(selectDB)
-	}
 	if len(Pw) > 0 {
 		rdb.Client = redis.NewClient(&redis.Options{
 			Addr:     RedisIp + ":" + RedisPort,
@@ -51,8 +48,7 @@ func (rdb *Redis) ConnectDB(selectDB string) {
 	if err != nil {
 		fmt.Println("redis连接错误" + err.Error())
 	}
-	// 赋值
-	Client = rdb
+	return rdb
 }
 
 func Set(key string) string {
@@ -127,24 +123,20 @@ func (rdb *Redis) WebGet(key string) (string, error) {
 func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
 	defer rdb.mutex.Unlock()
 	rdb.mutex.Lock()
-	rdb.Client.Do("select", db)
-	value, err := rdb.Client.Get(Set(key)).Result()
-	rdb.Client.Do("select", rdb.DefaultDB)
+	pipe := rdb.Client.Pipeline()
+	pipe.Do("select", db)
+	_, _ = pipe.Get(Set(key)).Result()
+	pipe.Do("select", rdb.DefaultDB)
+	cmderArr, err := pipe.Exec()
+	strMap := GetCmdResult(cmderArr)
+	value, _ := strMap[1].(string)
 	return value, err
 }
 
-func (rdb *Redis) GetKeys(key string) (keys []string, cursor uint64, err error) {
+func (rdb *Redis) GetKeys(db int, key string) (keys []string, cursor uint64, err error) {
 	newRdb := *rdb.Client
-	newRdb.Do("select", 15)
+	newRdb.Do("select", db)
 	keys, cursor, err = newRdb.Scan(0, Set(key), 10000).Result()
-	newRdb.Do("select", rdb.DefaultDB)
-	return
-}
-
-func (rdb *Redis) GetValue(key string) (value string, err error) {
-	newRdb := *rdb.Client
-	newRdb.Do("select", 15)
-	value, err = rdb.Client.Get(key).Result()
 	newRdb.Do("select", rdb.DefaultDB)
 	return
 }
@@ -179,4 +171,110 @@ func (rdb *Redis) Close() {
 	if err != nil {
 		fmt.Println("RedisCloseError", err.Error())
 	}
+}
+
+func GetCmdResult(cmderArr []redis.Cmder) map[int]interface{} {
+	strMap := make(map[int]interface{}, len(cmderArr))
+	for idx, cmder := range cmderArr {
+		StringType := reflect.TypeOf(cmder).String()
+		// *ClusterSlotsCmd 未实现
+		switch StringType {
+		case "*redis.Cmd":
+			cmd := cmder.(*redis.Cmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.StringCmd":
+			cmd := cmder.(*redis.StringCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.SliceCmd":
+			cmd := cmder.(*redis.SliceCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.StringSliceCmd":
+			cmd := cmder.(*redis.StringSliceCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.StringStringMapCmd":
+			cmd := cmder.(*redis.StringStringMapCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.StringIntMapCmd":
+			cmd := cmder.(*redis.StringIntMapCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.BoolCmd":
+			cmd := cmder.(*redis.BoolCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.BoolSliceCmd":
+			cmd := cmder.(*redis.BoolSliceCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.IntCmd":
+			cmd := cmder.(*redis.IntCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.FloatCmd":
+			cmd := cmder.(*redis.FloatCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.StatusCmd":
+			cmd := cmder.(*redis.StatusCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.TimeCmd":
+			cmd := cmder.(*redis.TimeCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.DurationCmd":
+			cmd := cmder.(*redis.DurationCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.StringStructMapCmd":
+			cmd := cmder.(*redis.StringStructMapCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.XMessageSliceCmd":
+			cmd := cmder.(*redis.XMessageSliceCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.XStreamSliceCmd":
+			cmd := cmder.(*redis.XStreamSliceCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.XPendingCmd":
+			cmd := cmder.(*redis.XPendingCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.XPendingExtCmd":
+			cmd := cmder.(*redis.XPendingExtCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.ZSliceCmd":
+			cmd := cmder.(*redis.ZSliceCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.ZWithKeyCmd":
+			cmd := cmder.(*redis.ZWithKeyCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.CommandsInfoCmd":
+			cmd := cmder.(*redis.CommandsInfoCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.GeoLocationCmd":
+			cmd := cmder.(*redis.GeoLocationCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		case "*redis.GeoPosCmd":
+			cmd := cmder.(*redis.GeoPosCmd)
+			strMap[idx], _ = cmd.Result()
+			break
+		default:
+			logger.Info(StringType)
+			break
+		}
+	}
+	return strMap
 }

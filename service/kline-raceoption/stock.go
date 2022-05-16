@@ -50,7 +50,7 @@ func main() {
 			}
 		}()
 	}
-	bootstrap.SetupRedis("15")
+	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	CodeData := code.GetData()
 	start := "ok"

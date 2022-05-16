@@ -51,7 +51,7 @@ func main() {
 			}
 		}()
 	}
-	bootstrap.SetupRedis("15")
+	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	var CodeData []Info
 	CodeData = append(CodeData,
