@@ -52,7 +52,6 @@ func main() {
 	defer bootstrap.RedisClose()
 	CodeData := code.GetData()
 	start := "ok"
-	rate := true
 	for {
 		if start == "ok" {
 			logger.Info(CodeData)
@@ -61,10 +60,6 @@ func main() {
 				go SocketQxbroker(obj)
 			}
 			start = "no"
-		}
-		if rate {
-			rate = false
-			//go api.GetRate()
 		}
 		time.Sleep(time.Second)
 	}

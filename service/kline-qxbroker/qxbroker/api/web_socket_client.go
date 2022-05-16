@@ -25,8 +25,8 @@ func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPric
 	if id == "" {
 		id = config.DefaultId
 	}
-	subData := info.Symbol // EURUSD
-	ch := info.Symbol      // EURUSD
-	fun := callbackFun     // 方法
-	wsIx.sub(subData, ch, fun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
+	ContractCode := info.ContractCode // EUR-USD
+	Symbol := info.Symbol             // EURUSD
+	fun := callbackFun                // 方法
+	wsIx.sub(ContractCode, Symbol, fun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }

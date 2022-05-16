@@ -6,7 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"goapi/app/models"
+	"goapi/app/response"
 	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-qxbroker/qxbroker/config"
@@ -61,6 +64,7 @@ type WebSocketOp struct {
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStars       list.List
+	ContractCode      string // 订阅的币种
 	Symbol            string // 订阅的币种
 	Login             Login  // 登录结构
 	IsLogin           bool   // 是否已经登录
@@ -150,8 +154,12 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		_, _ = ws.GetToken(true) // 登录失败，强制刷新 token
 		ws.Close()
 		break
-	case strings.Contains(string(message), "[]"): // [] 空数据
+	case strings.EqualFold(string(message), ws.Symbol): // 币种名称
+	case strings.EqualFold(string(message), "[]"): // [] 空数据
+	case strings.EqualFold(string(message), `{"list":[]}`): // {"list":[]}
+	case strings.EqualFold(string(message), `{"favorites":[],"list":[]}`): // {"favorites":[],"list":[]}
 	case strings.EqualFold(string(message), "3"): // 3 pong
+	case strings.Contains(string(message), "pingInterval"): // 0{"sid":"ceIYe8zRlMleiZeSIbjZ","upgrades":[],"pingInterval":25000,"pingTimeout":5000}
 	case strings.Contains(string(message), "history"): // 历史数据
 	case strings.Contains(string(message), "liveBalance"): // {"liveBalance":0,"demoBalance":10000} // 账户余额信息
 	case strings.Contains(string(message), "451-"): // 451-["depth/change",{"_placeholder":true,"num":0}]
@@ -163,7 +171,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 			logger.Info("准备登录")
 			// 登录需要获取 Token
 			_, token := ws.GetToken(false)
-			msg := fmt.Sprintf(`42["authorization",{"session":"%v","isDemo":0}]`, token)
+			msg := fmt.Sprintf(`42["authorization",{"session":"%v","isDemo":1}]`, token)
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
 				logger.Info(msg)
 				logger.Info(err.Error())
@@ -192,7 +200,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Info("暂无")
 				ws.Close()
 			}
-			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s_otc","period":60}]`, ws.Symbol))
+			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s","period":60}]`, ws.Symbol))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				logger.Error(err)
 				ws.Close()
@@ -201,7 +209,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Error(err)
 				ws.Close()
 			}
-			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["depth/follow","%s_otc"]"]`, ws.Symbol))); err != nil {
+			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["depth/follow","%s"]"]`, ws.Symbol))); err != nil {
 				logger.Error(err)
 				ws.Close()
 			}
@@ -210,34 +218,62 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 	default:
 		{
 			if len(string(message)) > 0 {
-				var data [][]interface{}
-				logger.Info(string(message))
+				var data interface{}
 				err := json.Unmarshal(message, &data)
 				if err != nil {
-					logger.Error(errors.New(fmt.Sprintf("msg to []map[string]json.RawMessage error: %s", err)))
+					logger.Info(string(message))
+					logger.Error(err)
 					return
 				}
-				// [[EURUSD_otc 1.651896650658e+09 1.04707 0]]
-				if len(data) > 0 && len(data[0]) >= 4 {
-					ch := strings.ReplaceAll(data[0][0].(string), "_otc", "") // 币种
-					TimeId := data[0][1]                                      // TimeId
-					Close := data[0][2]                                       // Close
-					Ping := data[0][3]                                        // Ping
-					if 0 == Ping {                                            // 是否ping
-						if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
-							logger.Error(err)
-							ws.Close()
+				switch reflect.TypeOf(data).String() {
+				case "[]interface {}":
+					arr := data.([]interface{})
+					if len(arr) == 1 {
+						kline := arr[0].([]interface{})
+						if len(kline) == 4 { // [[EURUSD_otc 1.651896650658e+09 1.04707 0]]
+							ch := strings.ReplaceAll(kline[0].(string), "_otc", "") // 币种
+							TimeId := kline[1]                                      // TimeId
+							Close := kline[2]                                       // Close
+							Ping := kline[3]                                        // Ping
+							if 0 == Ping {                                          // 是否ping
+								if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
+									logger.Error(err)
+									ws.Close()
+								}
+							}
+							ws.handleSubCallbackFun(ws.Symbol,
+								[]byte(fmt.Sprintf(
+									`{"symbol":"%v","timeId":%f,"close":%f,"ping":%f}`,
+									ch,     // 币种
+									TimeId, // TimeId
+									Close,  // Close
+									Ping,   // Ping
+								)), data,
+							)
+
+						}
+					} else {
+						for _, item := range arr {
+							if strings.EqualFold(item.([]interface{})[1].(string), ws.Symbol) { // 维护当前币种的利润率
+								if response.KlineSource(ws.ContractCode) == config.KlineSource { // 当前的数据源权限，使用当前数据源的利润率
+									logger.Info(fmt.Sprintf("当前币种为：%v,利润 - 1分钟为：%v,利润 - 5分钟以上：%v", ws.ContractCode, item.([]interface{})[18], item.([]interface{})[19]))
+									// 利润率处理 最低20% 最高75%
+									rate := item.([]interface{})[18].(float64)
+									if rate > 75 {
+										rate = 75
+									}
+									if rate < 20 {
+										rate = 20
+									}
+									go ws.UpdateRate(ws.ContractCode, rate/100)
+								}
+							}
 						}
 					}
-					ws.handleSubCallbackFun(ch,
-						[]byte(fmt.Sprintf(
-							`{"symbol":"%v","timeId":%f,"close":%v,"ping":%v}`,
-							ch,     // 币种
-							TimeId, // TimeId
-							Close,  // Close
-							Ping,   // Ping
-						)), data,
-					)
+					break
+				default:
+					logger.Info(reflect.TypeOf(data).String())
+					break
 				}
 				// ping
 				go ws.writePing()
@@ -246,6 +282,59 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		}
 		break
 	}
+}
+
+func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
+	// 修改费率
+	var TradingAssets response.TradingAssets
+	DB := mysql.DB.Debug()
+	err := DB.Model(models.TradingAssets{}).
+		Where("assets_code", ContractCode).
+		Where("is_valid", 1).
+		Where("is_show", 1).
+		Find(&TradingAssets).Error
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	tips := fmt.Sprintf("%v=>系统历史赔率：%v，该时间段的最终赔率：%v", TradingAssets.AssetsCode, TradingAssets.ReturnRate, returnRate)
+	logger.Info(tips)
+	// 当前资产赔率和此次预测一样，无需修改
+	if TradingAssets.ReturnRate == returnRate {
+		logger.Info(fmt.Sprintf("%v：当前资产赔率和历史赔率一样，无需修改", TradingAssets.AssetsCode))
+	} else {
+		// 赔率变动通知
+		mail_notice.Notice("msgRateChange", map[string]interface{}{
+			"service": config.KlineSource,
+			"tips":    tips,
+		})
+		DB.Begin()
+		err = DB.Model(models.TradingAssets{}).
+			Where("assets_code", ContractCode).
+			Where("is_valid", 1).
+			Where("is_show", 1).
+			Updates(map[string]interface{}{"update_date": time.Now(), "updater": "kline-system", "return_rate": returnRate}).Error
+		if err != nil {
+			DB.Rollback()
+			logger.Error(err)
+			return
+		}
+		// 记录修改历史记录
+		var TradingAssetsLog models.TradingAssetsLog
+		TradingAssetsLog.ItemCode = "IQO"
+		TradingAssetsLog.AssetsCode = ContractCode
+		TradingAssetsLog.CreateDate = time.Now()
+		TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate
+		TradingAssetsLog.ReturnRateNow = returnRate
+		TradingAssetsLog.KlineSource = config.KlineSource
+		err = DB.Model(TradingAssetsLog).Create(&TradingAssetsLog).Error
+		if err != nil {
+			DB.Rollback()
+			logger.Error(err)
+			return
+		}
+	}
+	DB.Commit()
 }
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
@@ -257,9 +346,8 @@ func (ws *WebSocketOp) SendMsg(data []byte) bool {
 	return true
 }
 
-func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata [][]interface{}) {
+func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata interface{}) {
 	var mi *CallbackFunc = nil
-	ch = strings.ToLower(ch)
 	if _, found := ws.SubTopicMap[ch]; found {
 		mi = ws.SubTopicMap[ch]
 	}
@@ -358,21 +446,21 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 }
 
 // 通用订阅
-func (ws *WebSocketOp) sub(subReq string, ch string, fun interface{}, param reflect.Type) bool {
-	ch = strings.ToLower(ch)
+func (ws *WebSocketOp) sub(ContractCode string, Symbol string, fun interface{}, param reflect.Type) bool {
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
 	var mi *CallbackFunc = nil
-	if _, found := ws.SubTopicMap[ch]; found {
+	if _, found := ws.SubTopicMap[Symbol]; found {
 		logger.Info(found)
 		mi = new(CallbackFunc).Init(fun, param)
-		ws.SubTopicMap[ch] = mi
+		ws.SubTopicMap[Symbol] = mi
 		return true
 	}
 	mi = new(CallbackFunc).Init(fun, param)
-	ws.SubTopicMap[ch] = mi
-	ws.allSubStars.PushBack(subReq)
-	ws.Symbol = subReq
+	ws.SubTopicMap[Symbol] = mi
+	ws.allSubStars.PushBack(Symbol)
+	ws.Symbol = Symbol
+	ws.ContractCode = ContractCode
 	return ws.SendMsg(nil)
 }
 
@@ -426,13 +514,13 @@ func (ws *WebSocketOp) login() {
 		},
 		Jar: jar,
 	}
-	response, err := c.Do(req)
+	do, err := c.Do(req)
 	if err != nil {
 		logger.Error(err)
 		return
 	}
-	if response.StatusCode == 200 {
-		body, err := ioutil.ReadAll(response.Body)
+	if do.StatusCode == 200 {
+		body, err := ioutil.ReadAll(do.Body)
 		if err == nil {
 			html := string(body)
 			if len(html) > 0 {
