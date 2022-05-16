@@ -26,7 +26,9 @@ func Proxy() *url.URL {
 	if conf.GetString("app.env") == "本地测试环境" { // 测试环境不需要走代理，走本地的代理
 		proxy = &url.URL{
 			Scheme: "http",
-			Host:   "127.0.0.1:10809",
+			//Host:   "47.104.184.7:888",
+			Host: "42.101.43.106:16790",
+			User: url.UserPassword("8319", "9742"),
 		}
 	}
 	// 正式环境的代理

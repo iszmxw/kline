@@ -167,7 +167,7 @@ func (ws *WebSocketOp) readLoop() {
 		}
 		select {
 		case ws.readChan <- message:
-			logger.Info("读消息管道写入成功")
+			break
 		case <-ws.closeChan:
 			logger.Info("读协程关闭chan")
 			goto ERR
