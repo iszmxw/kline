@@ -87,7 +87,10 @@ func GetRate() {
 						logger.Info(fmt.Sprintf("%v：大于0.75", item["symbol"]))
 						dynPayout = 0.75
 					}
-					go UpdateRate(info, dynPayout)
+					// 当前资产使用的该数据源才可以修改该费率
+					if res.KlineSource(info.ContractCode) == config.KlineSource {
+						go UpdateRate(info, dynPayout)
+					}
 				}
 			}
 		}
