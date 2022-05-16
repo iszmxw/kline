@@ -43,6 +43,7 @@ type WebSocketOp struct {
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStrs        list.List
+	IsPing            bool // 是否已开始ping
 }
 
 func (ws *WebSocketOp) open(path, host, session string, closeChanCallback closeChanCallback) bool {
@@ -140,6 +141,8 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 	if cmd == 4098 {
 		if pb, found := data["pb"]; found {
 			if tick, found := pb.(map[string]interface{})["tick"]; found {
+				// ping
+				go ws.writePing()
 				// 订阅成功
 				logger.Info(fmt.Sprint(fmt.Sprintf("%T", tick), tick))
 				Symbol := kline.GetSymbolById(helpers.StringToInt(fmt.Sprintf("%v", tick.(map[string]interface{})["id"])))
@@ -203,7 +206,6 @@ func (ws *WebSocketOp) readLoop() {
 ERR:
 	logger.Info("read 已关闭 ")
 	ws.Close()
-	close(ws.readChan)
 }
 
 //写协程
@@ -237,7 +239,6 @@ func (ws *WebSocketOp) writeLoop() {
 		}
 	}
 ERR:
-	close(ws.writeChan)
 	logger.Info("写协程已关闭")
 	ws.Close()
 }
@@ -253,11 +254,38 @@ func (ws *WebSocketOp) Close() {
 		}
 		if !ws.isClose {
 			ws.isClose = true
+			close(ws.readChan)
+			close(ws.writeChan)
 			close(ws.closeChan)
 			logger.Info("关闭chan")
 		}
 		ws.closeChanCallback <- struct{}{}
 	})
+}
+
+// 写 Ping 协程
+func (ws *WebSocketOp) writePing() {
+	if !ws.IsPing { // 只能发起一次 ping
+		ws.IsPing = true
+		ws.once.Do(func() {
+			// 使用time.Ticker
+			var ticker = time.NewTicker(30 * time.Second)
+			go func(ws *WebSocketOp) {
+				for {
+					for t := range ticker.C {
+						// ping
+						if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"cmd":4096,"pb":{"time":%v}}`, time.Now().UnixMilli()))); err != nil {
+							ticker.Stop()
+							logger.Info(err.Error())
+							logger.Info(t)
+							logger.Info("Ping协程已关闭")
+							ws.Close()
+						}
+					}
+				}
+			}(ws)
+		})
+	}
 }
 
 func (ws *WebSocketOp) runFunction(mi *CallbackFunc, data []byte) {
