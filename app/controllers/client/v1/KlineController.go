@@ -307,8 +307,6 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		Where("ts >= ?", beginDate).
 		Where("ts <= ?", endDate).
 		Order("ts desc")
-	// 查询来源
-	KlineDB = KlineDB.Where("kline_source", klineSource)
 	var Count int64 // 查询总条数
 	KlineDB.Count(&Count)
 	if Count > 3000 {
