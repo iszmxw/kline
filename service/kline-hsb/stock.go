@@ -9,6 +9,7 @@ import (
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -68,23 +69,9 @@ func main() {
 
 func SocketHsb(info wsdata.Info) {
 	callback := make(chan struct{}, 1)
-	var TradingAssets models.TradingAssets
 	var StartSub = true
-	errs := mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("assets_code", info.ContractCode).
-		//Where("assets_status", "1"). // 资产状态 1正常 2休市 3下架
-		Select("id,assets_code,assets_status").
-		Find(&TradingAssets).Error
-	if errs != nil {
-		logger.Error(errs)
-		time.Sleep(time.Second) // 休息1秒
-		StartSub = false
-		// 关闭
-		callback <- struct{}{}
-	}
-	// 资产不存在或者休市状态
-	if TradingAssets.Id <= 0 || TradingAssets.AssetsStatus != 1 {
-		logger.Info(TradingAssets)
+	// 资产休市状态
+	if kline.CheckSleep(kconfig.KlineSource, info.ContractCode) {
 		time.Sleep(time.Second) // 休息1秒
 		StartSub = false
 		// 关闭
@@ -92,9 +79,7 @@ func SocketHsb(info wsdata.Info) {
 	}
 	// 开始订阅
 	if StartSub {
-		// 必须传入登录session
-		session := "session=1629167146143495028583624161042912173895462127666685937664207996;"
-		wsmkClient := new(api.WSPriceClient).Init("", session, callback)
+		wsmkClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -237,8 +222,8 @@ func SocketHsb(info wsdata.Info) {
 	select {
 	case <-callback:
 		// 记录重连次数 连接
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, info.Symbol))
-		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
+		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, info.ContractCode))
+		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.ContractCode, num))
 		go SocketHsb(info)
 	}
 }

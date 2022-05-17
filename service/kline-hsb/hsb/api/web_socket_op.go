@@ -13,6 +13,7 @@ import (
 	"goapi/service/kline-hsb/hsb/config"
 	"goapi/service/kline-hsb/hsb/utils/zip"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"sync"
@@ -28,8 +29,8 @@ type CallbackFunc struct {
 
 type WebSocketOp struct {
 	host              string                   // 连接地址
+	proxy             *url.URL                 // 代理地址设置
 	auth              bool                     // 是否登录
-	session           string                   // session
 	path              string                   // 路由
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
@@ -43,15 +44,16 @@ type WebSocketOp struct {
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStrs        list.List
-	IsPing            bool // 是否已开始ping
+	IsPing            bool   // 是否已开始ping
+	Symbol            string // 订阅的币种
 }
 
-func (ws *WebSocketOp) open(path, host, session string, closeChanCallback closeChanCallback) bool {
+func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
 	if host == "" {
 		ws.host = config.LinearSwapDefaultHost
 	}
 	ws.host = host
-	ws.session = session
+	ws.proxy = proxy
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
 	ws.readChan = make(chan []byte, 30)
@@ -67,10 +69,11 @@ func (ws *WebSocketOp) open(path, host, session string, closeChanCallback closeC
 func (ws *WebSocketOp) connServer() bool {
 	wssUrl := fmt.Sprintf("wss://%s%s", ws.host, ws.path)
 	var err error
-	dialer := websocket.Dialer{}
+	dialer := websocket.Dialer{
+		Proxy: http.ProxyURL(ws.proxy),
+	}
 	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
 		"Origin": {"https://hsb.com"},
-		"Cookie": {ws.session},
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
@@ -94,7 +97,8 @@ func (ws *WebSocketOp) DoHand() {
 		select {
 		case msg, ok := <-ws.readChan:
 			if !ok {
-				continue
+				logger.Info(ws.Symbol + "不ok了")
+				goto ERR
 			}
 			ws.msgHand(msg)
 		case <-ws.closeChan:
@@ -323,14 +327,6 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
 	ws.allSubStrs.PushBack(string(subReq))
+	ws.Symbol = ch
 	return ws.SendMsg(subReq)
-}
-
-func closeChanCheck(ch <-chan byte) bool {
-	select {
-	case _, received := <-ch:
-		return !received
-	default:
-	}
-	return false
 }

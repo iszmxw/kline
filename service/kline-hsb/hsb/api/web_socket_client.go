@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"goapi/service/kline-hsb/hsb/config"
 	"goapi/service/kline-hsb/hsb/wsdata"
+	"net/url"
 	"reflect"
 )
 
@@ -11,11 +12,11 @@ type WSPriceClient struct {
 	WebSocketOp
 }
 
-func (wsIx *WSPriceClient) Init(host, session string, callback closeChanCallback) *WSPriceClient {
+func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
 	if host == "" {
 		host = config.LinearSwapDefaultHost
 	}
-	wsIx.open("/ws_quote", host, session, callback)
+	wsIx.open("/ws_quote", host, proxy, callback)
 	return wsIx
 }
 
