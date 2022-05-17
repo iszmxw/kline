@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/app/models"
 	"goapi/app/response"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -250,14 +251,19 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 									Ping,   // Ping
 								)), data,
 							)
-
 						}
 					} else {
 						for _, item := range arr {
 							if strings.EqualFold(item.([]interface{})[1].(string), ws.Symbol) { // 维护当前币种的利润率
 								if response.KlineSource(ws.ContractCode) == config.KlineSource { // 当前的数据源权限，使用当前数据源的利润率
-									logger.Info(fmt.Sprintf("当前币种为：%v,利润 - 1分钟为：%v,利润 - 5分钟以上：%v", ws.ContractCode, item.([]interface{})[18], item.([]interface{})[19]))
+									logger.Info(item)
+									logger.Info(fmt.Sprintf("当前币种为：%v,运行状态：【%v】利润 - 1分钟为：%v,利润 - 5分钟以上：%v", ws.ContractCode, item.([]interface{})[14], item.([]interface{})[18], item.([]interface{})[19]))
 									// 利润率处理 最低20% 最高75%
+									status := item.([]interface{})[14].(bool)
+									if status == false {
+										// 休市状态 数据源休市控制权，以及状态维护
+										go kline.UpdateSleep(config.KlineSource, ws.ContractCode)
+									}
 									rate := item.([]interface{})[18].(float64)
 									if rate > 75 {
 										rate = 75
@@ -375,7 +381,6 @@ func (ws *WebSocketOp) readLoop() {
 		}
 	}
 ERR:
-	close(ws.readChan)
 	logger.Info("读协程已关闭")
 	ws.Close()
 }
@@ -394,7 +399,6 @@ func (ws *WebSocketOp) writePing() {
 						if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
 							ticker.Stop()
 							logger.Info(err.Error())
-							close(ws.writeChan)
 							logger.Info(t)
 							logger.Info("Ping协程已关闭")
 							ws.Close()
@@ -407,23 +411,25 @@ func (ws *WebSocketOp) writePing() {
 }
 
 func (ws *WebSocketOp) Close() {
-	ws.once.Do(func() {
-		if ws.conn != nil {
-			err := ws.conn.Close()
-			if err != nil {
-				// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
-				logger.Info("关闭长连接失败:" + err.Error())
+	if !ws.isClose {
+		ws.once.Do(func() {
+			if ws.conn != nil {
+				err := ws.conn.Close()
+				if err != nil {
+					// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
+					logger.Info("关闭长连接失败:" + err.Error())
+				}
 			}
-		}
-		if !ws.isClose {
 			ws.IsLogin = false // 重置登录
 			ws.IsPing = false  // 重置 ping
 			ws.isClose = true  // 重置close
+			close(ws.writeChan)
+			close(ws.readChan)
 			close(ws.closeChan)
 			logger.Info("关闭chan")
-		}
-		ws.closeChanCallback <- struct{}{}
-	})
+			ws.closeChanCallback <- struct{}{}
+		})
+	}
 }
 
 func (ws *WebSocketOp) runFunction(mi *CallbackFunc, data []byte) {

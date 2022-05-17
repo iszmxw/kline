@@ -67,33 +67,13 @@ func main() {
 
 func SocketBian(info wsdata.Info) {
 	callback := make(chan struct{}, 1)
-	var TradingAssets models.TradingAssets
 	var StartSub = true
-	errs := mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("assets_code", info.ContractCode).
-		//Where("assets_status", "1"). // 资产状态 1正常 2休市 3下架
-		Select("id,assets_code,assets_status,sleep_time").
-		Find(&TradingAssets).Error
-	if errs != nil {
-		logger.Error(errs)
-		time.Sleep(time.Second) // 休息1秒
-		StartSub = false
-		// 关闭
-		callback <- struct{}{}
-	}
 	// 资产休市状态
-	if kline.CheckSleep(kconfig.KlineSource, TradingAssets) {
+	if kline.CheckSleep(kconfig.KlineSource, info.ContractCode) {
 		time.Sleep(time.Second) // 休息1秒
 		StartSub = false
 		// 关闭
 		callback <- struct{}{}
-	} else {
-		// 休市完毕开始订阅
-		StartSub = true
-		err := mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "1").Error
-		if err != nil {
-			logger.Error(err)
-		}
 	}
 	// 开始订阅
 	if StartSub {

@@ -67,34 +67,13 @@ func main() {
 
 func SocketQxbroker(info wsdata.Info) {
 	callback := make(chan struct{}, 1)
-	var TradingAssets models.TradingAssets
 	var StartSub = true
-	errs := mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("assets_code", info.ContractCode).
-		//Where("assets_status", "1"). // 资产状态 1正常 2休市 3下架
-		Select("id,assets_code,assets_status,sleep_time").
-		Find(&TradingAssets).Error
-	if errs != nil {
-		logger.Error(errs)
-		time.Sleep(time.Second) // 休息1秒
-		StartSub = false
-		// 关闭
-		callback <- struct{}{}
-	}
 	// 资产休市状态
-	logger.Info(TradingAssets)
-	if kline.CheckSleep(kconfig.KlineSource, TradingAssets) {
+	if kline.CheckSleep(kconfig.KlineSource, info.ContractCode) {
 		time.Sleep(time.Second) // 休息1秒
 		StartSub = false
 		// 关闭
 		callback <- struct{}{}
-	} else {
-		// 休市完毕开始订阅
-		StartSub = true
-		err := mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "1").Error
-		if err != nil {
-			logger.Error(err)
-		}
 	}
 	// 开始订阅
 	if StartSub {
@@ -127,21 +106,8 @@ func SocketQxbroker(info wsdata.Info) {
 			}
 			logger.Info(resp)
 			if resp.TimeId == 1 {
-				// 当前数据源匹配就入库
-				if response.KlineSource(info.ContractCode) == kconfig.KlineSource {
-					err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
-					if err != nil {
-						logger.Error(err)
-					}
-					// 通知
-					mail_notice.Notice("msgNoSocket", map[string]interface{}{
-						"service": kconfig.KlineSource,
-						"symbol":  info.ContractCode,
-					})
-				}
-				logger.Error(errors.New(fmt.Sprintf(
-					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
-					resp.Symbol, resp)))
+				// 数据源休市控制权，以及状态维护
+				go kline.UpdateSleep(kconfig.KlineSource, info.ContractCode)
 				// 关闭
 				callback <- struct{}{}
 				return
@@ -243,8 +209,8 @@ func SocketQxbroker(info wsdata.Info) {
 	select {
 	case <-callback:
 		// 记录重连次数 连接
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, info.Symbol))
-		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
+		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, info.ContractCode))
+		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.ContractCode, num))
 		go SocketQxbroker(info)
 	}
 }
