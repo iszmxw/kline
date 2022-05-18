@@ -320,10 +320,12 @@ func Notice(t string, data interface{}) {
 	default:
 		return
 	}
+	// telegram 通知
+	go telegram.Notice(Info)
+	// 邮件通知
 	for _, address := range conf.GetStringSlice("notify.email") {
 		if check(address, t) {
 			go func(address string) {
-				go telegram.Notice(Info)
 				err := email.SendEmail(Info, address)
 				if err != nil {
 					logger.Error(err)
