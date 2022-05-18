@@ -91,12 +91,12 @@ func SocketHuoBi(parentTopic string) {
 	callback := make(chan struct{}, 1)
 	var host string
 	// 本地环境打包走测试地址
-	if conf.GetString("app.env") == "shanghai" {
+	if conf.GetString("app.env") != "company_pro" {
 		host = "api.btcgateway.pro"
 	}
 	// websocket api
 	wsmkClient := new(api.WSIndexClient).Init(host, callback)
-	wsmkClient.SubIndexKLine(Topic[1], Topic[3], func(data *response.SubIndexKLineResponse) {
+	wsmkClient.SubIndexKLine(Topic[1], Topic[3], func(resp *response.SubIndexKLineResponse) {
 		defer func() {
 			if r := recover(); r != nil {
 				mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
@@ -109,82 +109,97 @@ func SocketHuoBi(parentTopic string) {
 		}()
 		runStr := time.Now().UnixMilli() // 开始时间
 		// RequestId 定义为 Ts 时间戳
-		logger.RequestId = fmt.Sprintf("%v", data.Ts)
+		logger.RequestId = fmt.Sprintf("%v", resp.Ts)
 		// 火币网推送的回来的数据转换为字符串
-		msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
+		msgData, err := json.Marshal(resp) //转换成JSON返回的是byte[]
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		if len(msgData) <= 0 {
+			logger.Error(errors.New(fmt.Sprintf(
+				"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",
+				parentTopic, resp)))
+			return
+		}
+		logger.Info(resp)
+		SystemTs := time.Now().UnixMilli() // 系統生成的Ts
+		UpstreamTs := resp.Ts              // 上游的ts
+		var data res.SubIndexKLineResponse
+		data.Ch = resp.Ch
+		data.Ts = SystemTs                                                                             // 系統生成的Ts
+		data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
+		data.Source = kconfig.KlineSource
+		data.Tick.Id = resp.Tick.Id
+		data.Tick.Vol = resp.Tick.Vol
+		data.Tick.Count = resp.Tick.Count
+		data.Tick.Open = resp.Tick.Open
+		data.Tick.Close = resp.Tick.Close
+		data.Tick.Low = resp.Tick.Low
+		data.Tick.High = resp.Tick.High
+		data.Tick.Amount = resp.Tick.Amount
+		tips := fmt.Sprintf(
+			"当前系统时间：%v(%v)<br>火币的 ts 时间：%v(%v)",
+			time.Now().UnixMilli(),
+			time.Now().Format("2006-01-02 15:04:05"),
+			UpstreamTs,
+			time.Unix(UpstreamTs/1000, 0).Format("2006-01-02 15:04:05"),
+		)
+		logger.Info(tips)
+		shicha := SystemTs - UpstreamTs
+		logger.Info(fmt.Sprintf("shicha=%v", shicha))
+		// 时间差大于 10 秒发送邮件通知
+		if shicha/1000 >= 20 {
+			mail_notice.Notice("msgTimeDiff", map[string]interface{}{
+				"ch":      data.Ch,
+				"tips":    tips,
+				"service": kconfig.KlineSource,
+				"shicha":  shicha,
+			})
+		}
+		jsonData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 		if MarshalJSONErr != nil {
 			logger.Error(MarshalJSONErr)
 			return
 		}
-		//logger.Info(fmt.Sprintf(
-		//	"SUCCESS 当前订阅的 topic 为：%v,返回的数据为：%v",
-		//	parentTopic, string(msgData)))
-		if len(msgData) > 0 {
-			//logger.Info(fmt.Sprintf("SUCCESS 当前订阅的 topic 为：%v", parentTopic))
-			// 收集数据缓存到redis
-			key := fmt.Sprintf("%v:%v", kconfig.KlineSource, data.Ch)
-			_, redisErr := redis.Client.Add(key, msgData, 0)
-			if redisErr != nil {
-				logger.Error(redisErr)
-				return
-			}
-			// 收集数据缓存到redis
-			// 历史 kline 入库 Format("2006-01-02 15:04:05")
-			AddData := res.KlineLogData(Topic, data)
-			tips := fmt.Sprintf(
-				"当前系统时间：%v(%v)<br>火币的 ts 时间：%v(%v)",
-				time.Now().UnixMilli(),
-				time.Now().Format("2006-01-02 15:04:05"),
-				AddData.Ts,
-				time.Unix(AddData.Ts/1000, 0).Format("2006-01-02 15:04:05"),
-			)
-			logger.Info(tips)
-			shicha := time.Now().UnixMilli() - AddData.Ts
-			logger.Info(fmt.Sprintf("shicha=%v", shicha))
-			// 时间差大于 10 秒发送邮件通知
-			if shicha/1000 >= 10 {
-				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
-					"ch":      parentTopic,
-					"tips":    tips,
-					"service": kconfig.KlineSource,
-					"shicha":  shicha,
-				})
-			}
-
-			// 当前数据源匹配就入库
-			if res.KlineSource(Topic[1]) == kconfig.KlineSource {
-				DB := mysql.DB.Debug()
-				result := DB.Model(models.KlineLog{}).Create(&AddData)
-				if result.Error != nil {
-					logger.Error(result.Error)
-					return
-				}
-			}
-			// 历史 kline 入库
-
-			//// 历史 kline 入队列
-			//lPushJson, lPushErr := json.Marshal(AddData)
-			//if lPushErr != nil {
-			//	logger.Error(lPushErr)
-			//	return
-			//}
-			//_, _ = redis.Client.Lpush("kline_log", lPushJson)
-			//// 历史 kline 入队列
-
-			//// 历史存入 elastic todo::暂时不开启
-			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
-			//if !putRes {
-			//	logger.Error(errors.New("历史存入 elastic 失败"))
-			//} else {
-			//	logger.Info("elastic-success")
-			//}
-			//time.Sleep(time.Nanosecond)
-		} else {
-			logger.Error(errors.New(fmt.Sprintf(
-				"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",
-				parentTopic, data)))
+		// 收集数据缓存到redis
+		key := fmt.Sprintf("%v:%v", kconfig.KlineSource, resp.Ch)
+		_, redisErr := redis.Client.Add(key, jsonData, 0)
+		if redisErr != nil {
+			logger.Error(redisErr)
 			return
 		}
+		// 当前数据源匹配就入库
+		if res.KlineSource(Topic[1]) == kconfig.KlineSource {
+			// 历史 kline 入库 Format("2006-01-02 15:04:05")
+			AddData := res.KlineLogData(Topic, resp)
+			DB := mysql.DB.Debug()
+			result := DB.Model(models.KlineLog{}).Create(&AddData)
+			if result.Error != nil {
+				logger.Error(result.Error)
+				return
+			}
+		}
+		// 历史 kline 入库
+
+		//// 历史 kline 入队列
+		//lPushJson, lPushErr := json.Marshal(AddData)
+		//if lPushErr != nil {
+		//	logger.Error(lPushErr)
+		//	return
+		//}
+		//_, _ = redis.Client.Lpush("kline_log", lPushJson)
+		//// 历史 kline 入队列
+
+		//// 历史存入 elastic todo::暂时不开启
+		//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
+		//if !putRes {
+		//	logger.Error(errors.New("历史存入 elastic 失败"))
+		//} else {
+		//	logger.Info("elastic-success")
+		//}
+		//time.Sleep(time.Nanosecond)
+
 		runEnd := time.Now().UnixMilli() // 开始时间
 		// 计算一次存储数据消耗的时间
 		logger.Info(fmt.Sprintf(
