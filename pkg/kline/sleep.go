@@ -2,8 +2,6 @@ package kline
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
@@ -91,16 +89,16 @@ func CheckSleep(KlineSource string, ContractCode string) bool {
 func UpdateSleep(KlineSource, ContractCode string) {
 	// 当前数据源匹配就入库
 	if response.KlineSource(ContractCode) == KlineSource {
-		err := mysql.DB.Debug().Model(models.TradingAssets{}).
-			Where("assets_code", ContractCode).
-			Update("assets_status", "2"). // 资产状态 1正常 2休市 3下架
-			Update("updater", KlineSource). // 更新人
-			Update("update_date", time.Now()). // 更新日期
-			Error
-		if err != nil {
-			logger.Error(err)
-		}
-		logger.Error(errors.New(fmt.Sprintf("数据源%v,%v正在休市", KlineSource, ContractCode)))
+		//err := mysql.DB.Debug().Model(models.TradingAssets{}).
+		//	Where("assets_code", ContractCode).
+		//	Update("assets_status", "2"). // 资产状态 1正常 2休市 3下架
+		//	Update("updater", KlineSource). // 更新人
+		//	Update("update_date", time.Now()). // 更新日期
+		//	Error
+		//if err != nil {
+		//	logger.Error(err)
+		//}
+		//logger.Error(errors.New(fmt.Sprintf("数据源%v,%v正在休市", KlineSource, ContractCode)))
 		// 通知
 		mail_notice.Notice("msgNoSocket", map[string]interface{}{
 			"service": KlineSource,
