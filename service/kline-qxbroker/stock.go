@@ -77,6 +77,10 @@ func SocketQxbroker(info wsdata.Info) {
 	}
 	// 开始订阅
 	if StartSub {
+		// OTC 数据源读取时间段
+		if kline.CheckOTC() && !strings.Contains(info.Symbol, "_otc") {
+			info.Symbol = info.Symbol + "_otc"
+		}
 		wsmkClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {

@@ -2,6 +2,9 @@ package kline
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/golang-module/carbon/v2"
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
@@ -98,7 +101,7 @@ func UpdateSleep(KlineSource, ContractCode string) {
 		//if err != nil {
 		//	logger.Error(err)
 		//}
-		//logger.Error(errors.New(fmt.Sprintf("数据源%v,%v正在休市", KlineSource, ContractCode)))
+		logger.Error(errors.New(fmt.Sprintf("数据源%v,%v正在休市", KlineSource, ContractCode)))
 		// 通知
 		mail_notice.Notice("msgNoSocket", map[string]interface{}{
 			"service": KlineSource,
@@ -133,4 +136,24 @@ func GetSymbolById(id int) string {
 	}
 	return Symbol
 
+}
+
+// 检测OTC可运行时间段
+
+func CheckOTC() bool {
+	// 从时分秒创建 Carbon 实例(年月日默认为当前年月日)
+	start := carbon.CreateFromTime(03, 00, 00).Timestamp() // 凌晨03:00 东七时区
+	end := carbon.CreateFromTime(11, 00, 00).Timestamp()   // 中午11:00
+	now := time.Now().Unix()
+	weekendStart := helpers.GetThisWeekStartTime("6").Unix()
+	weekendEnd := helpers.GetThisWeekStartTime("6").Unix() + 172800
+	if now >= weekendStart && now <= weekendEnd { // 周末直接走OTC
+		return true
+	}
+	// 中午11:00 - 凌晨03:00 东七时区
+	if now < start || now > end { // 走正常数据
+		return false
+	} else { // OTC
+		return true
+	}
 }
