@@ -9,6 +9,7 @@ import (
 	"goapi/pkg/email"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
+	"goapi/pkg/notice/telegram"
 	"goapi/pkg/redis"
 	"goapi/service/liveodds/utils"
 	"runtime/debug"
@@ -322,6 +323,7 @@ func Notice(t string, data interface{}) {
 	for _, address := range conf.GetStringSlice("notify.email") {
 		if check(address, t) {
 			go func(address string) {
+				go telegram.Notice(Info)
 				err := email.SendEmail(Info, address)
 				if err != nil {
 					logger.Error(err)
