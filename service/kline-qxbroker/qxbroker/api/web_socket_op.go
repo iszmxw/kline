@@ -301,6 +301,9 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 		logger.Error(err)
 		return
 	}
+	if TradingAssets.Id == 0 {
+		return
+	}
 	tips := fmt.Sprintf("%v=>系统历史赔率：%v，该时间段的最终赔率：%v", TradingAssets.AssetsCode, TradingAssets.ReturnRate, returnRate)
 	logger.Info(tips)
 	// 当前资产赔率和此次预测一样，无需修改

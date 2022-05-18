@@ -221,21 +221,21 @@ func SocketQxbroker(info wsdata.Info) {
 
 func LogData(resp *wsdata.SubPriceKLineResponse, SystemTs, UpstreamTs int64) models.KlineLog {
 	var klineLog models.KlineLog
-	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(resp.Symbol), "/", "-") // 合约代码 BTC-USD
-	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)           // kilne返回日期时间戳
-	klineLog.Ts = SystemTs                                                             // 自己生成的ts
-	klineLog.UpstreamTs = UpstreamTs                                                   // 上游的ts
-	klineLog.ID = SystemTs                                                             // 自己生成的ts/1000
-	klineLog.Mrid = 0.00                                                               // ID
-	klineLog.COpen = 0                                                                 // 起始峰值
-	klineLog.CClose = resp.Close                                                       // 结束峰值
-	klineLog.High = 0                                                                  // 最高峰值
-	klineLog.Low = 0                                                                   // 最低峰值
-	klineLog.Amount = 0                                                                // 成交金额 TODO
-	klineLog.Vol = 0                                                                   // 成交手 TODO
-	klineLog.CCount = 0                                                                // 交易笔数 TODO
-	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))     // Kline返回日期
-	klineLog.CreateDate = time.Now()                                                   // 创建日期
-	klineLog.KlineSource = kconfig.KlineSource                                         // K线来源qxbroker
+	klineLog.ContractCode = strings.ReplaceAll(resp.Symbol, "/", "-")              // 合约代码 BTC-USD
+	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)       // kilne返回日期时间戳
+	klineLog.Ts = SystemTs                                                         // 自己生成的ts
+	klineLog.UpstreamTs = UpstreamTs                                               // 上游的ts
+	klineLog.ID = SystemTs                                                         // 自己生成的ts/1000
+	klineLog.Mrid = 0.00                                                           // ID
+	klineLog.COpen = 0                                                             // 起始峰值
+	klineLog.CClose = resp.Close                                                   // 结束峰值
+	klineLog.High = 0                                                              // 最高峰值
+	klineLog.Low = 0                                                               // 最低峰值
+	klineLog.Amount = 0                                                            // 成交金额 TODO
+	klineLog.Vol = 0                                                               // 成交手 TODO
+	klineLog.CCount = 0                                                            // 交易笔数 TODO
+	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond)) // Kline返回日期
+	klineLog.CreateDate = time.Now()                                               // 创建日期
+	klineLog.KlineSource = kconfig.KlineSource                                     // K线来源qxbroker
 	return klineLog
 }
