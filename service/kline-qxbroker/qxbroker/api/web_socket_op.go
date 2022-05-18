@@ -112,11 +112,10 @@ func (ws *WebSocketOp) connServer() bool {
 		logger.Error(err)
 		ws.Close()
 		return false
-	} else {
-		logger.Info("WebSocket connected")
-		go ws.readLoop()
-		go ws.DoHand()
 	}
+	logger.Info(ws.Symbol + "WebSocket connected")
+	go ws.readLoop()
+	go ws.DoHand()
 	return true
 }
 
@@ -135,7 +134,7 @@ func (ws *WebSocketOp) DoHand() {
 		}
 	}
 ERR:
-	logger.Info("do 已关闭")
+	logger.Info(ws.Symbol + "do 已关闭")
 	ws.Close()
 }
 
@@ -147,11 +146,11 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 	}
 	switch true {
 	case strings.EqualFold(string(message), "41"): // 41 断开链接
-		logger.Info("断开链接")
+		logger.Info(ws.Symbol + "断开链接")
 		ws.closeChanCallback <- struct{}{} // 上游直接断开了，通知外部已断开
 		break
 	case strings.Contains(string(message), "authorization/reject"): // [] 空数据
-		logger.Info("授权/拒绝")
+		logger.Info(ws.Symbol + "授权/拒绝")
 		_, _ = ws.GetToken(true) // 登录失败，强制刷新 token
 		ws.Close()
 		break
@@ -169,13 +168,13 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		break
 	case strings.EqualFold(string(message), "40"): // 检测是否登录成功  42["s_authorization"]
 		{
-			logger.Info("准备登录")
+			logger.Info(ws.Symbol + "准备登录")
 			// 登录需要获取 Token
 			_, token := ws.GetToken(false)
 			msg := fmt.Sprintf(`42["authorization",{"session":"%v","isDemo":1}]`, token)
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
 				logger.Info(msg)
-				logger.Info(err.Error())
+				logger.Error(err)
 				_, _ = ws.GetToken(true) // 登录失败，强制刷新 token
 				ws.Close()
 			}
@@ -183,7 +182,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		break
 	case strings.Contains(string(message), "s_authorization"): // 检测是否登录成功  42["s_authorization"]
 		{
-			logger.Info("登录成功")
+			logger.Info(ws.Symbol + "登录成功")
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["indicator/list"]`)); err != nil {
 				logger.Error(err)
 				ws.Close()
@@ -196,7 +195,6 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Error(err)
 				ws.Close()
 			}
-			logger.Info(ws.Symbol)
 			if len(ws.Symbol) == 0 {
 				logger.Info("暂无")
 				ws.Close()
@@ -222,7 +220,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				var data interface{}
 				err := json.Unmarshal(message, &data)
 				if err != nil {
-					logger.Info(string(message))
+					logger.Info(ws.Symbol + string(message))
 					logger.Error(err)
 					return
 				}
@@ -230,13 +228,13 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				case "[]interface {}":
 					arr := data.([]interface{})
 					if len(arr) == 1 {
-						kline := arr[0].([]interface{})
-						if len(kline) == 4 { // [[EURUSD_otc 1.651896650658e+09 1.04707 0]]
-							ch := strings.ReplaceAll(kline[0].(string), "_otc", "") // 币种
-							TimeId := kline[1]                                      // TimeId
-							Close := kline[2]                                       // Close
-							Ping := kline[3]                                        // Ping
-							if 0 == Ping {                                          // 是否ping
+						klineArr := arr[0].([]interface{})
+						if len(klineArr) == 4 { // [[EURUSD_otc 1.651896650658e+09 1.04707 0]]
+							ch := strings.ReplaceAll(klineArr[0].(string), "_otc", "") // 币种
+							TimeId := klineArr[1]                                      // TimeId
+							Close := klineArr[2]                                       // Close
+							Ping := klineArr[3]                                        // Ping
+							if 0 == Ping {                                             // 是否ping
 								if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
 									logger.Error(err)
 									ws.Close()
@@ -345,7 +343,6 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
 	if ws.isClose {
-		logger.Info("send on closed channel 测试")
 		return false
 	}
 	ws.writeChan <- data
@@ -369,19 +366,19 @@ func (ws *WebSocketOp) readLoop() {
 	for {
 		_, message, err := ws.conn.ReadMessage()
 		if err != nil {
-			logger.Info(err.Error())
+			logger.Error(err)
 			goto ERR
 		}
 		select {
 		case ws.readChan <- message:
 			break
 		case <-ws.closeChan:
-			logger.Info("读协程关闭chan")
+			logger.Info(ws.Symbol + "读协程关闭chan")
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info("读协程已关闭")
+	logger.Info(ws.Symbol + "读协程已关闭")
 	ws.Close()
 }
 
@@ -398,9 +395,9 @@ func (ws *WebSocketOp) writePing() {
 						// ping
 						if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
 							ticker.Stop()
-							logger.Info(err.Error())
+							logger.Error(err)
 							logger.Info(t)
-							logger.Info("Ping协程已关闭")
+							logger.Info(ws.Symbol + "Ping协程已关闭")
 							ws.Close()
 						}
 					}
@@ -413,21 +410,25 @@ func (ws *WebSocketOp) writePing() {
 func (ws *WebSocketOp) Close() {
 	if !ws.isClose {
 		ws.once.Do(func() {
-			if ws.conn != nil {
-				err := ws.conn.Close()
-				if err != nil {
-					// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
-					logger.Info("关闭长连接失败:" + err.Error())
-				}
-			}
+			logger.Info(ws.Symbol + "关闭Socket:start")
 			ws.IsLogin = false // 重置登录
 			ws.IsPing = false  // 重置 ping
 			ws.isClose = true  // 重置close
 			close(ws.writeChan)
 			close(ws.readChan)
 			close(ws.closeChan)
-			logger.Info("关闭chan")
 			ws.closeChanCallback <- struct{}{}
+			if ws.conn != nil {
+				err := ws.conn.Close()
+				if err != nil {
+					// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
+					logger.Info(ws.Symbol + "关闭Socket:error" + err.Error())
+				} else {
+					logger.Info(ws.Symbol + "关闭Socket:success")
+				}
+			} else {
+				logger.Info(ws.Symbol + "关闭Socket:success")
+			}
 		})
 	}
 }
