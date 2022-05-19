@@ -147,6 +147,14 @@ func msgStartSocket(service, symbol string) map[string]interface{} {
 	return info
 }
 
+// 重启 socket 通知
+func msgRebootSocket(service, symbol string, num interface{}) map[string]interface{} {
+	info := cmap.New().Items()
+	info["title"] = fmt.Sprintf("断线重连==【环境：%v】【币种：%v】【服务：%v】", conf.GetString("app.env"), symbol, service)
+	info["content"] = fmt.Sprintf("这是第【%v】次socket断线重连", num)
+	return info
+}
+
 // 时差通知
 func msgTimeDiff(service, ch, tips string, shicha int64) map[string]interface{} {
 	info := cmap.New().Items()
@@ -241,10 +249,14 @@ func msgNetworkAnomaly(title interface{}, c *gin.Context, r, description, errInf
 }
 
 // Socket网络异常
-func msgSocketNetworkAnomaly(name string) map[string]interface{} {
+func msgSocketNetworkAnomaly(name, proxy string) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
 	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】socket采集连接异常，请查看详细信息", conf.GetString("app.env"), name)
-	brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip链接失败`)
+	if len(proxy) > 0 {
+		brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip【%v】链接失败`, proxy)
+	} else {
+		brokenInfo["content"] = fmt.Sprintf(`正常链接失败，未使用代理`)
+	}
 	return brokenInfo
 }
 
@@ -282,6 +294,10 @@ func Notice(t string, data interface{}) {
 		arr := data.(map[string]interface{})
 		Info = msgStartSocket(arr["service"].(string), arr["symbol"].(string))
 		break
+	case "msgRebootSocket": // 重启 socket 通知
+		arr := data.(map[string]interface{})
+		Info = msgRebootSocket(arr["service"].(string), arr["symbol"].(string), arr["num"])
+		break
 	case "msgTimeDiff":
 		arr := data.(map[string]interface{})
 		Info = msgTimeDiff(arr["service"].(string), arr["ch"].(string), arr["tips"].(string), arr["shicha"].(int64))
@@ -307,7 +323,7 @@ func Notice(t string, data interface{}) {
 		break
 	case "msgSocketNetworkAnomaly":
 		arr := data.(map[string]interface{})
-		Info = msgSocketNetworkAnomaly(arr["name"].(string))
+		Info = msgSocketNetworkAnomaly(arr["name"].(string), arr["proxy"].(string))
 		break
 	case "msgServiceAnomaly":
 		arr := data.(map[string]interface{})
@@ -318,6 +334,10 @@ func Notice(t string, data interface{}) {
 		Info = msgHeartbeatAnomaly(arr["name"].(string), arr["msg"].(string))
 		break
 	default:
+		return
+	}
+	// 时差不进行通知，避免通知泛滥
+	if t == "msgTimeDiff" {
 		return
 	}
 	// telegram 通知

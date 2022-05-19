@@ -217,6 +217,11 @@ func SocketHuoBi(parentTopic string) {
 		// 记录重连次数 连接
 		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, Topic[1]))
 		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", Topic[1], num))
+		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
+			"name":   kconfig.KlineSource,
+			"symbol": parentTopic,
+			"num":    num,
+		})
 		go SocketHuoBi(parentTopic)
 	}
 }

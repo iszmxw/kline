@@ -17,7 +17,7 @@ func GetData() []wsdata.Info {
 		wsdata.Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
 		wsdata.Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
 		// 周六周日启动OTC模式
-		wsdata.Info{Symbol: "NFLX_otc", Desc: "网飞", ContractCode: "Netflix"},
+		//wsdata.Info{Symbol: "NFLX_otc", Desc: "网飞", ContractCode: "Netflix"},
 		wsdata.Info{Symbol: "MSFT_otc", Desc: "微软", ContractCode: "Microsoft"},
 		wsdata.Info{Symbol: "INTC_otc", Desc: "英特尔", ContractCode: "Intel"},
 	)

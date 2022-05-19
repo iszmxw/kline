@@ -78,7 +78,8 @@ func (ws *WebSocketOp) connServer() bool {
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
 		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name": config.KlineSource,
+			"name":  config.KlineSource + "==>" + ws.Symbol,
+			"proxy": ws.proxy.String(),
 		})
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
@@ -313,6 +314,7 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 
 // 通用订阅
 func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param reflect.Type) bool {
+	ws.Symbol = ch
 	ch = strings.ToUpper(ch)
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()

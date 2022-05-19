@@ -43,6 +43,7 @@ type WebSocketOp struct {
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStrs        list.List
+	Symbol            string // 订阅的币种
 }
 
 func (ws *WebSocketOp) open(path, host, session string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -77,7 +78,8 @@ func (ws *WebSocketOp) connServer() bool {
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
 		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name": config.KlineSource,
+			"name":  config.KlineSource + "==>" + ws.Symbol,
+			"proxy": ws.proxy.String(),
 		})
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
@@ -242,6 +244,7 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 
 // 通用订阅
 func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param reflect.Type) bool {
+	ws.Symbol = ch
 	ch = strings.ToLower(ch)
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
@@ -257,13 +260,4 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	ws.SubTopicMap[ch] = mi
 	ws.allSubStrs.PushBack(string(subReq))
 	return ws.SendMsg(subReq)
-}
-
-func closeChanCheck(ch <-chan byte) bool {
-	select {
-	case _, received := <-ch:
-		return !received
-	default:
-	}
-	return false
 }
