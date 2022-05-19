@@ -46,6 +46,7 @@ type WebSocketOp struct {
 	allSubStrs        list.List
 	IsPing            bool   // 是否已开始ping
 	Symbol            string // 订阅的币种
+	Description       string // 描述
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -76,13 +77,9 @@ func (ws *WebSocketOp) connServer() bool {
 		"Origin": {"https://hsb.com"},
 	})
 	if err != nil {
-		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name":  config.KlineSource + "==>" + ws.Symbol,
-			"proxy": ws.proxy.String(),
-		})
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
+		ws.Description = fmt.Sprintf("[%v]握手链接失败 %v", ws.Symbol, ws.proxy.String())
 		ws.Close()
 		return false
 	}
@@ -98,16 +95,16 @@ func (ws *WebSocketOp) DoHand() {
 		select {
 		case msg, ok := <-ws.readChan:
 			if !ok {
-				logger.Info(ws.Symbol + "不ok了")
+				ws.Description = fmt.Sprintf("%v不ok了", ws.Symbol)
 				goto ERR
 			}
 			ws.msgHand(msg)
 		case <-ws.closeChan:
+			ws.Description = fmt.Sprintf("%v=DoHand已关闭", ws.Symbol)
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info("do 已关闭")
 	ws.Close()
 }
 
@@ -220,15 +217,17 @@ func (ws *WebSocketOp) writeLoop() {
 			select {
 			case msg, ok := <-ws.writeChan:
 				if !ok {
+					ws.Description = fmt.Sprintf("%v=writeChan失败了", ws.Symbol)
 					goto ERR
 				}
 				// 订阅
 				if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 					logger.Info(err.Error())
+					ws.Description = fmt.Sprintf("%v=WriteMessage失败了 %v", ws.Symbol, err.Error())
 					goto ERR
 				}
 			case <-ws.closeChan:
-				logger.Info("写协程关闭chan")
+				ws.Description = fmt.Sprintf("%v=写协程关闭chan", ws.Symbol)
 				goto ERR
 			}
 		} else {
@@ -236,7 +235,7 @@ func (ws *WebSocketOp) writeLoop() {
 			login := []byte(`{"cmd":4099,"pb":{"user_name":"test","passwd":"111111"}}`)
 			if err := ws.conn.WriteMessage(websocket.TextMessage, login); err != nil {
 				ws.auth = false
-				logger.Info(err.Error())
+				ws.Description = fmt.Sprintf("%v=登录失败  %v", ws.Symbol, err.Error())
 				goto ERR
 			} else {
 				ws.auth = true
@@ -244,7 +243,6 @@ func (ws *WebSocketOp) writeLoop() {
 		}
 	}
 ERR:
-	logger.Info("写协程已关闭")
 	ws.Close()
 }
 
@@ -257,6 +255,10 @@ func (ws *WebSocketOp) Close() {
 			close(ws.readChan)
 			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
+			go mail_notice.Notice("msgSocketClose", map[string]interface{}{
+				"name":        config.KlineSource + "==>" + ws.Symbol,
+				"description": ws.Description,
+			})
 			if ws.conn != nil {
 				err := ws.conn.Close()
 				if err != nil {
@@ -277,21 +279,21 @@ func (ws *WebSocketOp) writePing() {
 	if !ws.IsPing { // 只能发起一次 ping
 		ws.IsPing = true
 		ws.once.Do(func() {
-			// 使用time.Ticker
-			var ticker = time.NewTicker(30 * time.Second)
 			go func(ws *WebSocketOp) {
-				for {
-					for t := range ticker.C {
-						// ping
-						if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"cmd":4096,"pb":{"time":%v}}`, time.Now().UnixMilli()))); err != nil {
-							ticker.Stop()
-							logger.Info(err.Error())
-							logger.Info(t)
-							logger.Info("Ping协程已关闭")
-							ws.Close()
-						}
+				// 使用time.Ticker
+				var ticker = time.NewTicker(30 * time.Second)
+				for t := range ticker.C {
+					// ping
+					if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"cmd":4096,"pb":{"time":%v}}`, time.Now().UnixMilli()))); err != nil {
+						logger.Info(err.Error())
+						logger.Info(t)
+						ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
+						goto ERR
 					}
 				}
+			ERR:
+				ticker.Stop()
+				ws.Close()
 			}(ws)
 		})
 	}
@@ -329,7 +331,6 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 		ws.SubTopicMap[ch] = mi
 		return true
 	}
-	logger.Info(fmt.Sprintf("websocket has send data: %s", subReq))
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
 	ws.allSubStrs.PushBack(string(subReq))

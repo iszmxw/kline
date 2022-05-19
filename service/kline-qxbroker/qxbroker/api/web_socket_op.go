@@ -70,6 +70,7 @@ type WebSocketOp struct {
 	Login             Login  // 登录结构
 	IsLogin           bool   // 是否已经登录
 	IsPing            bool   // 是否已开始ping
+	Description       string // 描述
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -391,21 +392,21 @@ func (ws *WebSocketOp) writePing() {
 	if !ws.IsPing { // 只能发起一次 ping
 		ws.IsPing = true
 		ws.once.Do(func() {
-			// 使用time.Ticker
-			var ticker = time.NewTicker(25 * time.Second)
 			go func(ws *WebSocketOp) {
-				for {
-					for t := range ticker.C {
-						// ping
-						if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
-							ticker.Stop()
-							logger.Error(err)
-							logger.Info(t)
-							logger.Info(ws.Symbol + "Ping协程已关闭")
-							ws.Close()
-						}
+				// 使用time.Ticker
+				var ticker = time.NewTicker(25 * time.Second)
+				for t := range ticker.C {
+					// ping
+					if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
+						logger.Info(err.Error())
+						logger.Info(t)
+						ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
+						goto ERR
 					}
 				}
+			ERR:
+				ticker.Stop()
+				ws.Close()
 			}(ws)
 		})
 	}
