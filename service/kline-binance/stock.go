@@ -127,8 +127,8 @@ func SocketBian(info wsdata.Info) {
 				"bian时差：系统时间：%v(%v)<br>bian的 ts 时间：%v(%v)",
 				time.Now().UnixMilli(),
 				time.Now().Format("2006-01-02 15:04:05"),
-				data.Ts,
-				time.Unix(data.Ts/1000, 0).Format("2006-01-02 15:04:05"),
+				UpstreamTs,
+				time.Unix(UpstreamTs/1000, 0).Format("2006-01-02 15:04:05"),
 			)
 			logger.Info(tips)
 			shicha := SystemTs - UpstreamTs
@@ -205,9 +205,9 @@ func SocketBian(info wsdata.Info) {
 		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, info.Symbol))
 		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
 		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
-			"service":   kconfig.KlineSource,
-			"symbol": info.Symbol,
-			"num":    num,
+			"service": kconfig.KlineSource,
+			"symbol":  info.Symbol,
+			"num":     num,
 		})
 		go SocketBian(info)
 	}

@@ -146,8 +146,8 @@ func SocketHsb(info wsdata.Info) {
 				"hsb时差：系统时间：%v(%v)<br>hsb的 ts 时间：%v(%v)",
 				time.Now().UnixMilli(),
 				time.Now().Format("2006-01-02 15:04:05"),
-				data.Ts,
-				time.Unix(data.Ts/1000, 0).Format("2006-01-02 15:04:05"),
+				UpstreamTs,
+				time.Unix(UpstreamTs/1000, 0).Format("2006-01-02 15:04:05"),
 			)
 			logger.Info(tips)
 			shicha := SystemTs - UpstreamTs
