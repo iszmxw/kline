@@ -253,7 +253,7 @@ func SocketOlymptrade(info wsdata.Info) {
 		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, info.Symbol))
 		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
 		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
-			"name":   kconfig.KlineSource,
+			"service":   kconfig.KlineSource,
 			"symbol": info.Symbol,
 			"num":    num,
 		})

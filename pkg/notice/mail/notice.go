@@ -296,7 +296,7 @@ func Notice(t string, data interface{}) {
 		break
 	case "msgRebootSocket": // 重启 socket 通知
 		arr := data.(map[string]interface{})
-		Info = msgRebootSocket(arr["service"].(string), arr["symbol"].(string), arr["num"])
+		Info = msgRebootSocket(arr["service"].(string), arr["symbol"].(string), arr["num"].(int64))
 		break
 	case "msgTimeDiff":
 		arr := data.(map[string]interface{})
