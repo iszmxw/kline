@@ -200,7 +200,7 @@ func (ws *WebSocketOp) Close() {
 			close(ws.readChan)
 			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
-			mail_notice.Notice("msgSocketClose", map[string]interface{}{
+			go mail_notice.Notice("msgSocketClose", map[string]interface{}{
 				"name":        config.KlineSource + "==>" + ws.Symbol,
 				"description": ws.Description,
 			})

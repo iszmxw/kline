@@ -36,8 +36,9 @@ func Proxy() *url.URL {
 		proxy = &url.URL{
 			Scheme: "http",
 			//Host:   "47.104.184.7:888",
-			Host: "42.101.43.106:16790",
-			User: url.UserPassword("8319", "9742"),
+			Host: "47.242.148.57:18888", // 采用香港测试服务器来代理
+			//Host: "42.101.43.106:16790",
+			//User: url.UserPassword("8319", "9742"),
 		}
 	}
 	return proxy
