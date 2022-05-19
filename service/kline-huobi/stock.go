@@ -215,12 +215,23 @@ func SocketHuoBi(parentTopic string) {
 	select {
 	case <-callback:
 		// 记录重连次数 连接
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, Topic[1]))
+		timeKey := fmt.Sprintf("connect:%v:%v:time", kconfig.KlineSource, Topic[1])
+		timeStr, _ := redis.Client.Get(timeKey)
+		var lastRuntime int64
+		if len(timeStr) > 0 {
+			// 上次运行时间
+			UnixMilli := helpers.StringToInt64(timeStr)
+			// 上次
+			lastRuntime = time.Now().UnixMilli() - UnixMilli
+		}
+		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", kconfig.KlineSource, Topic[1]))
+		_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
 		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", Topic[1], num))
 		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
-			"service":   kconfig.KlineSource,
-			"symbol": parentTopic,
-			"num":    num,
+			"service":     kconfig.KlineSource,
+			"symbol":      Topic[1],
+			"num":         num,
+			"lastRuntime": lastRuntime,
 		})
 		go SocketHuoBi(parentTopic)
 	}

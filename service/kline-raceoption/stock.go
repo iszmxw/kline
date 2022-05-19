@@ -240,7 +240,7 @@ func SocketRaceOption(info wsdata.Info) {
 			// 上次
 			lastRuntime = time.Now().UnixMilli() - UnixMilli
 		}
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v", kconfig.KlineSource, info.Symbol))
+		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", kconfig.KlineSource, info.Symbol))
 		_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
 		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
 		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
