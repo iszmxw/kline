@@ -148,9 +148,15 @@ func msgStartSocket(service, symbol string) map[string]interface{} {
 }
 
 // 重启 socket 通知
-func msgRebootSocket(service, symbol string, num interface{}) map[string]interface{} {
+func msgRebootSocket(service, symbol string, num interface{}, lastRuntime int64) map[string]interface{} {
 	info := cmap.New().Items()
-	info["title"] = fmt.Sprintf("断线重连==【环境：%v】【币种：%v】【服务：%v】", conf.GetString("app.env"), symbol, service)
+	info["title"] = fmt.Sprintf(`
+断线重连==
+【环境：%v】
+【服务：%v】
+【币种：%v】
+【上次socket运行：%v 秒 】
+`, conf.GetString("app.env"), service, symbol, lastRuntime/1000)
 	info["content"] = fmt.Sprintf("这是第【%v】次socket断线重连", num)
 	return info
 }
@@ -251,12 +257,28 @@ func msgNetworkAnomaly(title interface{}, c *gin.Context, r, description, errInf
 // Socket网络异常
 func msgSocketNetworkAnomaly(name, proxy string) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
-	brokenInfo["title"] = fmt.Sprintf("环境【%v】【%v】socket采集连接异常，请查看详细信息", conf.GetString("app.env"), name)
+	brokenInfo["title"] = fmt.Sprintf(`
+环境【%v】
+名称【%v】
+socket采集连接异常，请查看详细信息
+`, conf.GetString("app.env"), name)
 	if len(proxy) > 0 {
 		brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip【%v】链接失败`, proxy)
 	} else {
 		brokenInfo["content"] = fmt.Sprintf(`正常链接失败，未使用代理`)
 	}
+	return brokenInfo
+}
+
+// Socket关闭
+func msgSocketClose(name, description string) map[string]interface{} {
+	brokenInfo := cmap.New().Items()
+	brokenInfo["title"] = fmt.Sprintf(`
+环境【%v】
+服务【%v】
+socket已关闭，请查看详细信息
+`, conf.GetString("app.env"), name)
+	brokenInfo["content"] = description
 	return brokenInfo
 }
 
@@ -296,7 +318,7 @@ func Notice(t string, data interface{}) {
 		break
 	case "msgRebootSocket": // 重启 socket 通知
 		arr := data.(map[string]interface{})
-		Info = msgRebootSocket(arr["service"].(string), arr["symbol"].(string), arr["num"].(int64))
+		Info = msgRebootSocket(arr["service"].(string), arr["symbol"].(string), arr["num"].(int64), arr["lastRuntime"].(int64))
 		break
 	case "msgTimeDiff":
 		arr := data.(map[string]interface{})
@@ -324,6 +346,10 @@ func Notice(t string, data interface{}) {
 	case "msgSocketNetworkAnomaly":
 		arr := data.(map[string]interface{})
 		Info = msgSocketNetworkAnomaly(arr["name"].(string), arr["proxy"].(string))
+		break
+	case "msgSocketClose":
+		arr := data.(map[string]interface{})
+		Info = msgSocketClose(arr["name"].(string), arr["description"].(string))
 		break
 	case "msgServiceAnomaly":
 		arr := data.(map[string]interface{})

@@ -3,13 +3,15 @@ package telegram
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
 	"strings"
 )
 
 const (
-	TOKEN  = "5202189634:AAHdLadirD9tujR-djCNbyAyiohJGiWFvAU"
-	chatID = -685844165
+	TOKEN      = "5202189634:AAHdLadirD9tujR-djCNbyAyiohJGiWFvAU"
+	chatIDPro  = -685844165     // 正式环境房间
+	chatIDTest = -1001786874645 // 测试环境房间
 )
 
 func Notice(info map[string]interface{}) {
@@ -29,11 +31,19 @@ func Notice(info map[string]interface{}) {
 	// 开启 debug
 	//bot.Debug = true
 	logger.Info(fmt.Sprintf("【%s】登录成功", bot.Self.UserName))
-	msg := tgbotapi.NewMessage(chatID, text)
-	send, err := bot.Send(msg)
-	if err != nil {
-		logger.Error(err)
-		return
+	if conf.GetString("app.env") == "company_pro" { // 正式环境监控
+		msg := tgbotapi.NewMessage(chatIDPro, text)
+		_, err = bot.Send(msg)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+	} else {
+		msg := tgbotapi.NewMessage(chatIDTest, text)
+		_, err = bot.Send(msg)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
 	}
-	logger.Info(send)
 }

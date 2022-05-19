@@ -1,13 +1,11 @@
 package main
 
 import (
-	"fmt"
-	cmap "github.com/orcaman/concurrent-map"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"goapi/bootstrap"
 	"goapi/config"
-	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
-	"goapi/pkg/notice/telegram"
+	"log"
 	"time"
 )
 
@@ -23,9 +21,30 @@ func init() {
 }
 
 func main() {
-	// 通知
-	Info := cmap.New().Items()
-	Info["title"] = fmt.Sprintf("环境【%v】%v %v 服务：恢复市场通知", conf.GetString("app.env"), "BTC-USD", "huobi")
-	Info["content"] = "休市已结束，市场正在恢复，请您查收"
-	telegram.Notice(Info)
+
+	bot, err := tgbotapi.NewBotAPI("5202189634:AAHdLadirD9tujR-djCNbyAyiohJGiWFvAU")
+	if err != nil {
+		log.Panic(err)
+	}
+
+	bot.Debug = true
+
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates := bot.GetUpdatesChan(u)
+
+	for update := range updates {
+		if update.Message != nil { // If we got a message
+			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+			msg.ReplyToMessageID = update.Message.MessageID
+			bot.Send(msg)
+		}
+	}
+
+
 }

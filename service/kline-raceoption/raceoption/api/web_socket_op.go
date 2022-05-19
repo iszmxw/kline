@@ -42,6 +42,7 @@ type WebSocketOp struct {
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStars       list.List
 	Symbol            string // 订阅的币种
+	Description       string // 描述
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -52,7 +53,7 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	ws.proxy = proxy
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
-	ws.readChan = make(chan []byte, 30)
+	ws.readChan = make(chan []byte)
 	ws.writeChan = make(chan []byte, 10)
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.ReqTopicMap = make(map[string]*CallbackFunc)
@@ -70,13 +71,9 @@ func (ws *WebSocketOp) connServer() bool {
 	}
 	ws.conn, _, err = dialer.Dial(wssUrl, nil)
 	if err != nil {
-		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name":  config.KlineSource + "==>" + ws.Symbol,
-			"proxy": ws.proxy.String(),
-		})
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
+		ws.Description = fmt.Sprintf("[%v]握手链接失败 %v", ws.Symbol, ws.proxy.String())
 		ws.Close()
 		return false
 	}
@@ -92,15 +89,16 @@ func (ws *WebSocketOp) DoHand() {
 		select {
 		case msg, ok := <-ws.readChan:
 			if !ok {
+				ws.Description = fmt.Sprintf("[%v]DoHand不ok", ws.Symbol)
 				goto ERR
 			}
 			ws.msgHand(msg)
 		case <-ws.closeChan:
+			ws.Description = fmt.Sprintf("[%v]DoHand关闭chan", ws.Symbol)
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info(ws.Symbol + "do 已关闭")
 	ws.Close()
 }
 
@@ -145,6 +143,7 @@ func (ws *WebSocketOp) readLoop() {
 		msgType, buf, err := ws.conn.ReadMessage()
 		if err != nil {
 			logger.Info(err.Error())
+			ws.Description = fmt.Sprintf("[%v]读取失败 %v", ws.Symbol, err.Error())
 			goto ERR
 		}
 		var message []byte
@@ -159,14 +158,13 @@ func (ws *WebSocketOp) readLoop() {
 		}
 		select {
 		case ws.readChan <- message:
-			logger.Info(ws.Symbol + "读消息管道写入成功")
+			ws.Description = fmt.Sprintf("[%v]读消息管道写入成功", ws.Symbol)
 		case <-ws.closeChan:
-			logger.Info(ws.Symbol + "读协程关闭chan")
+			ws.Description = fmt.Sprintf("[%v]读协程关闭chan", ws.Symbol)
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info(ws.Symbol + "读协程已关闭")
 	ws.Close()
 }
 
@@ -176,19 +174,20 @@ func (ws *WebSocketOp) writeLoop() {
 		select {
 		case msg, ok := <-ws.writeChan:
 			if !ok {
+				ws.Description = fmt.Sprintf("[%v]写协程不ok已关闭", ws.Symbol)
 				goto ERR
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				logger.Info(err.Error())
+				ws.Description = fmt.Sprintf("[%v]写协程错误即将关闭", ws.Symbol)
 				goto ERR
 			}
 		case <-ws.closeChan:
-			logger.Info(ws.Symbol + "写协程关闭chan")
+			ws.Description = fmt.Sprintf("[%v]写协程关闭chan", ws.Symbol)
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info(ws.Symbol + "写协程已关闭")
 	ws.Close()
 }
 
@@ -201,6 +200,10 @@ func (ws *WebSocketOp) Close() {
 			close(ws.readChan)
 			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
+			mail_notice.Notice("msgSocketClose", map[string]interface{}{
+				"name":        config.KlineSource + "==>" + ws.Symbol,
+				"description": ws.Description,
+			})
 			if ws.conn != nil {
 				err := ws.conn.Close()
 				if err != nil {
