@@ -86,7 +86,7 @@ func (ws *WebSocketOp) connServer() bool {
 		ws.Close()
 		return false
 	}
-	logger.Info("WebSocket connected")
+	logger.Info(ws.Symbol + "WebSocket connected")
 	go ws.readLoop()
 	go ws.writeLoop()
 	go ws.DoHand()
@@ -98,7 +98,7 @@ func (ws *WebSocketOp) DoHand() {
 		select {
 		case msg, ok := <-ws.readChan:
 			if !ok {
-				continue
+				goto ERR
 			}
 			ws.msgHand(msg)
 		case <-ws.closeChan:
@@ -106,7 +106,7 @@ func (ws *WebSocketOp) DoHand() {
 		}
 	}
 ERR:
-	logger.Info("do 已关闭")
+	logger.Info(ws.Symbol + "do 已关闭")
 	ws.Close()
 }
 
@@ -171,14 +171,13 @@ func (ws *WebSocketOp) readLoop() {
 		case ws.readChan <- message:
 			break
 		case <-ws.closeChan:
-			logger.Info("读协程关闭chan")
+			logger.Info(ws.Symbol + "读协程关闭chan")
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info("read 已关闭 ")
+	logger.Info(ws.Symbol + "read 已关闭 ")
 	ws.Close()
-	close(ws.readChan)
 }
 
 //写协程
@@ -194,33 +193,38 @@ func (ws *WebSocketOp) writeLoop() {
 				goto ERR
 			}
 		case <-ws.closeChan:
-			logger.Info("写协程关闭chan")
+			logger.Info(ws.Symbol + "写协程关闭chan")
 			goto ERR
 		}
 
 	}
 ERR:
-	close(ws.writeChan)
-	logger.Info("写协程已关闭")
+	logger.Info(ws.Symbol + "写协程已关闭")
 	ws.Close()
 }
 
 func (ws *WebSocketOp) Close() {
-	ws.once.Do(func() {
-		if ws.conn != nil {
-			err := ws.conn.Close()
-			if err != nil {
-				// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
-				logger.Info("关闭长连接失败:" + err.Error())
-			}
-		}
-		if !ws.isClose {
-			ws.isClose = true
+	if !ws.isClose {
+		ws.once.Do(func() {
+			logger.Info(ws.Symbol + "关闭Socket:start")
+			ws.isClose = true // 重置close
+			close(ws.writeChan)
+			close(ws.readChan)
 			close(ws.closeChan)
-			logger.Info("关闭chan")
-		}
-		ws.closeChanCallback <- struct{}{}
-	})
+			ws.closeChanCallback <- struct{}{}
+			if ws.conn != nil {
+				err := ws.conn.Close()
+				if err != nil {
+					// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
+					logger.Info(ws.Symbol + "关闭Socket:error" + err.Error())
+				} else {
+					logger.Info(ws.Symbol + "关闭Socket:success")
+				}
+			} else {
+				logger.Info(ws.Symbol + "关闭Socket:success")
+			}
+		})
+	}
 }
 
 func (ws *WebSocketOp) runFunction(mi *CallbackFunc, data []byte) {

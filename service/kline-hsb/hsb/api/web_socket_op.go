@@ -249,23 +249,27 @@ ERR:
 }
 
 func (ws *WebSocketOp) Close() {
-	ws.once.Do(func() {
-		if ws.conn != nil {
-			err := ws.conn.Close()
-			if err != nil {
-				// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
-				logger.Info("关闭长连接失败:" + err.Error())
-			}
-		}
-		if !ws.isClose {
-			ws.isClose = true
-			close(ws.readChan)
+	if !ws.isClose {
+		ws.once.Do(func() {
+			logger.Info(ws.Symbol + "关闭Socket:start")
+			ws.isClose = true // 重置close
 			close(ws.writeChan)
+			close(ws.readChan)
 			close(ws.closeChan)
-			logger.Info("关闭chan")
-		}
-		ws.closeChanCallback <- struct{}{}
-	})
+			ws.closeChanCallback <- struct{}{}
+			if ws.conn != nil {
+				err := ws.conn.Close()
+				if err != nil {
+					// 收到关闭信号，同时关闭火币长连接失败，不进行打断，只做记录，关闭我们下游的socket，给出关闭信号
+					logger.Info(ws.Symbol + "关闭Socket:error" + err.Error())
+				} else {
+					logger.Info(ws.Symbol + "关闭Socket:success")
+				}
+			} else {
+				logger.Info(ws.Symbol + "关闭Socket:success")
+			}
+		})
+	}
 }
 
 // 写 Ping 协程
