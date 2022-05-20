@@ -133,6 +133,27 @@ func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
 	return value, err
 }
 
+func (rdb *Redis) SelectDbAdd(db int, key string, value interface{}, exTime int) (bool, error) {
+	defer rdb.mutex.Unlock()
+	rdb.mutex.Lock()
+	pipe := rdb.Client.Pipeline()
+	pipe.Do("select", db)
+	if exTime >= 0 {
+		rdb.expireTime = exTime
+	}
+	err := pipe.Set(Set(key), value, time.Duration(rdb.expireTime)*time.Second).Err()
+	if err != nil {
+		pipe.Do("select", rdb.DefaultDB)
+		fmt.Println("设置key失败")
+		return false, err
+	}
+	pipe.Do("select", rdb.DefaultDB)
+	cmderArr, err := pipe.Exec()
+	strMap := GetCmdResult(cmderArr)
+	_, _ = strMap[1].(string)
+	return true, err
+}
+
 func (rdb *Redis) GetKeys(db int, key string) (keys []string, cursor uint64, err error) {
 	newRdb := *rdb.Client
 	newRdb.Do("select", db)

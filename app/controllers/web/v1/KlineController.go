@@ -437,6 +437,31 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		echo.Error(c, "FAILD", err.Error())
 		return
 	}
+	// 数据库维护该字段
+	var TradingAssets models.TradingAssets
+	DB := mysql.DB.Debug().Begin()
+	// 先撤销之前的配置
+	err = DB.Model(TradingAssets).
+		Where("assets_code", params.AssetsCode).
+		Update("is_valid", 0).
+		Error
+	if err != nil {
+		DB.Rollback()
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	// 设置当前资产走的数据源
+	err = DB.Model(TradingAssets).
+		Where("assets_code", params.AssetsCode).
+		Where("kline_source", params.KlineSource).
+		Update("is_valid", 1).
+		Error
+	if err != nil {
+		DB.Rollback()
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	DB.Commit()
 	echo.Success(c, nil, "")
 }
 

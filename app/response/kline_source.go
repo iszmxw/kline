@@ -3,14 +3,17 @@ package response
 import (
 	"fmt"
 	cmap "github.com/orcaman/concurrent-map"
+	"goapi/app/models"
 	"goapi/pkg/config"
 	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 )
 
 // 默认数据源获取
 
 func KlineSource(AssetsCode string) string {
+	// 查询缓存
 	key := fmt.Sprintf("kline_source:%v", AssetsCode)
 	Source, err := redis.Client.SelectDbGet(config.GetInt("redis.db"), key)
 	if err != nil && err.Error() != "redis: nil" {
@@ -18,6 +21,14 @@ func KlineSource(AssetsCode string) string {
 		Source = ""
 	}
 	if len(Source) > 0 {
+		return Source
+	}
+	// 查询数据库 todo 待验证
+	var TradingAssetsSource models.TradingAssetsSource
+	mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", AssetsCode).Where("is_valid", 1).Find(&TradingAssetsSource)
+	Source = TradingAssetsSource.KlineSource
+	if len(Source) > 0 {
+		_, _ = redis.Client.SelectDbAdd(config.GetInt("redis.db"), key, Source, 0)
 		return Source
 	}
 	switch AssetsCode {
