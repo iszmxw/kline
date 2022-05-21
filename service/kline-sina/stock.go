@@ -8,17 +8,14 @@ import (
 	"goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
-	conf "goapi/pkg/config"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/pprof"
 	"goapi/pkg/redis"
 	"goapi/service/kline-sina/utils"
-	"net/http"
-	_ "net/http/pprof"
-	"runtime"
 	"time"
 )
 
@@ -41,16 +38,7 @@ func init() {
 
 func main() {
 	// pprof 分析
-	if conf.GetBool("app.pprof") {
-		runtime.SetMutexProfileFraction(1) // 开启对锁调用的跟踪
-		runtime.SetBlockProfileRate(1)     // 开启对阻塞操作的跟踪
-		go func() {
-			// 启动一个 http server，注意 pprof 相关的 handler 已经自动注册过了
-			if err := http.ListenAndServe(":6062", nil); err != nil {
-				logger.Error(err)
-			}
-		}()
-	}
+	pprof.Debug(":6062")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	var CodeData []Info
