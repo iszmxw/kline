@@ -8,6 +8,7 @@ import (
 	"goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
+	conf "goapi/pkg/config"
 	"goapi/pkg/health"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
@@ -106,10 +107,9 @@ func SocketRaceOption(info wsdata.Info) {
 			if resp.TimeId == "1" {
 				// 当前数据源匹配就入库
 				if response.KlineSource(info.ContractCode) == kconfig.KlineSource {
-					err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
-					if err != nil {
-						logger.Error(err)
-					}
+					// 查询缓存
+					key := fmt.Sprintf("kline_source:%v", info.ContractCode)
+					_, _ = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), key, "qxbroker", 0)
 					// 通知
 					mail_notice.Notice("msgNoSocket", map[string]interface{}{
 						"service": kconfig.KlineSource,

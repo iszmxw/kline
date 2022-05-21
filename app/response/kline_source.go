@@ -25,7 +25,7 @@ func KlineSource(AssetsCode string) string {
 	}
 	// 查询数据库 todo 待验证
 	var TradingAssetsSource models.TradingAssetsSource
-	mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", AssetsCode).Where("is_valid", 1).Find(&TradingAssetsSource)
+	mysql.DB.Debug().Model(models.TradingAssetsSource{}).Where("assets_code", AssetsCode).Where("is_valid", 1).Find(&TradingAssetsSource)
 	Source = TradingAssetsSource.KlineSource
 	if len(Source) > 0 {
 		_, _ = redis.Client.SelectDbAdd(config.GetInt("redis.db"), key, Source, 0)

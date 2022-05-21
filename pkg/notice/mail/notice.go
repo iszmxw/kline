@@ -362,8 +362,8 @@ func Notice(t string, data interface{}) {
 	default:
 		return
 	}
-	// 时差不进行通知，避免通知泛滥
-	if t == "msgTimeDiff" {
+	// 时差不进行通知，避免通知泛滥d
+	if helpers.InArray(t, []string{"msgTimeDiff", "msgSocketClose", "msgRebootSocket"}) {
 		return
 	}
 	// telegram 通知

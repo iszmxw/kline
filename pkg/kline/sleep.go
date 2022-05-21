@@ -19,37 +19,22 @@ import (
 func CheckSleep(KlineSource string, ContractCode string) bool {
 	// 资产休市状态
 	var IsSleep = false
-	var TradingAssets models.TradingAssets
-	errs := mysql.DB.Debug().Model(models.TradingAssets{}).
+	var TradingAssetsSource models.TradingAssetsSource
+	errs := mysql.DB.Debug().Model(models.TradingAssetsSource{}).
+		Where("kline_source", KlineSource).
 		Where("assets_code", ContractCode).
-		Select("id,assets_code,assets_status,sleep_time").
-		Find(&TradingAssets).Error
+		Select("id,sleep_time").
+		Find(&TradingAssetsSource).Error
 	if errs != nil {
 		logger.Error(errs)
-		time.Sleep(time.Second) // 休息1秒
-		IsSleep = true
 	}
-	logger.Info(TradingAssets)
-	switch TradingAssets.AssetsStatus {
-	case 1:
-		IsSleep = false
-		break
-	case 2:
-		IsSleep = true
-		break
-	case 3:
-		IsSleep = true
-		break
-	default:
-		break
-	}
-	if TradingAssets.AssetsStatus == 2 && len(TradingAssets.SleepTime) > 0 {
+	logger.Info(TradingAssetsSource)
+	// 数据源休市
+	if TradingAssetsSource.Id > 0 && len(TradingAssetsSource.SleepTime) > 0 {
 		var SleepTime models.SleepTime
-		err := json.Unmarshal([]byte(TradingAssets.SleepTime), &SleepTime)
+		err := json.Unmarshal([]byte(TradingAssetsSource.SleepTime), &SleepTime)
 		if err != nil {
 			logger.Info(err)
-			// 未配置好休息时间段，直接休息
-			return true
 		}
 		nowUnix := time.Now().Unix()
 		start := helpers.GetThisWeekStartTime(SleepTime.Start).Unix()
@@ -64,14 +49,10 @@ func CheckSleep(KlineSource string, ContractCode string) bool {
 			IsSleep = false
 			mail_notice.Notice("msgStartSocket", map[string]interface{}{
 				"service": KlineSource,
-				"symbol":  TradingAssets.AssetsCode,
+				"symbol":  ContractCode,
 			})
 			// 发送邮件通知
 		}
-	}
-	// 资产不存在或者下架了，也判定为休息
-	if TradingAssets.Id == 0 || TradingAssets.AssetsStatus == 3 {
-		IsSleep = true
 	}
 	//if IsSleep == false {
 	//	// 休市完毕开始订阅
