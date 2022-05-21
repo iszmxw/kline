@@ -12,6 +12,7 @@ import (
 	"goapi/pkg/notice/telegram"
 	"goapi/pkg/redis"
 	"goapi/service/liveodds/utils"
+	"net/url"
 	"runtime/debug"
 )
 
@@ -255,15 +256,15 @@ func msgNetworkAnomaly(title interface{}, c *gin.Context, r, description, errInf
 }
 
 // Socket网络异常
-func msgSocketNetworkAnomaly(name, proxy string) map[string]interface{} {
+func msgSocketNetworkAnomaly(name string, proxy *url.URL) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
 	brokenInfo["title"] = fmt.Sprintf(`
 环境【%v】
 名称【%v】
 socket采集连接异常，请查看详细信息
 `, conf.GetString("app.env"), name)
-	if len(proxy) > 0 {
-		brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip【%v】链接失败`, proxy)
+	if proxy != nil {
+		brokenInfo["content"] = fmt.Sprintf(`当前使用的代理ip【%v】链接失败`, proxy.String())
 	} else {
 		brokenInfo["content"] = fmt.Sprintf(`正常链接失败，未使用代理`)
 	}
@@ -345,7 +346,7 @@ func Notice(t string, data interface{}) {
 		break
 	case "msgSocketNetworkAnomaly":
 		arr := data.(map[string]interface{})
-		Info = msgSocketNetworkAnomaly(arr["name"].(string), arr["proxy"].(string))
+		Info = msgSocketNetworkAnomaly(arr["name"].(string), arr["proxy"].(*url.URL))
 		break
 	case "msgSocketClose":
 		arr := data.(map[string]interface{})

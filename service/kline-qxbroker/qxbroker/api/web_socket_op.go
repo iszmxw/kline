@@ -109,7 +109,7 @@ func (ws *WebSocketOp) connServer() bool {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
 		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
 			"name":  config.KlineSource + "==>" + ws.Symbol,
-			"proxy": ws.proxy.String(),
+			"proxy": ws.proxy,
 		})
 		logger.Error(err)
 		ws.Close()

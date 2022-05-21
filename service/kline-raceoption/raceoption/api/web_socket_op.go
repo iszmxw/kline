@@ -73,7 +73,11 @@ func (ws *WebSocketOp) connServer() bool {
 	if err != nil {
 		logger.Error(err)
 		time.Sleep(time.Second * 5)
-		ws.Description = fmt.Sprintf("[%v]握手链接失败 %v", ws.Symbol, ws.proxy.String())
+		if ws.proxy != nil {
+			ws.Description = fmt.Sprintf("[%v]握手链接失败 %v", ws.Symbol, ws.proxy.String())
+		} else {
+			ws.Description = fmt.Sprintf("[%v]握手链接失败", ws.Symbol)
+		}
 		ws.Close()
 		return false
 	}

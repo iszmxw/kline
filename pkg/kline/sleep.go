@@ -126,8 +126,8 @@ func CheckOTC() bool {
 	start := carbon.CreateFromTime(03, 00, 00).Timestamp() // 凌晨03:00 东七时区
 	end := carbon.CreateFromTime(11, 00, 00).Timestamp()   // 中午11:00
 	now := time.Now().Unix()
-	weekendStart := helpers.GetThisWeekStartTime("6").Unix()
-	weekendEnd := helpers.GetThisWeekStartTime("6").Unix() + 172800
+	weekendStart := helpers.GetThisWeekStartTime("6-00:00").Unix()
+	weekendEnd := helpers.GetThisWeekStartTime("6-00:00").Unix() + 172800
 	if now >= weekendStart && now <= weekendEnd { // 周末直接走OTC
 		return true
 	}
