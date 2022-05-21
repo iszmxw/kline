@@ -8,7 +8,6 @@ import (
 	"goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
-	conf "goapi/pkg/config"
 	"goapi/pkg/health"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
@@ -66,16 +65,14 @@ func main() {
 
 func SocketRaceOption(info wsdata.Info) {
 	callback := make(chan struct{}, 1)
-	var StartSub = true
 	// 资产休市状态
 	if kline.CheckSleep(kconfig.KlineSource, info.ContractCode) {
 		time.Sleep(time.Second) // 休息1秒
-		StartSub = false
-		// 关闭
-		callback <- struct{}{}
+		// 休市切换 OTC 数据源读取时间段
+		info.Symbol = info.Symbol + ".W"
 	}
 	// 开始订阅
-	if StartSub {
+	{
 		wsmkClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
@@ -107,9 +104,9 @@ func SocketRaceOption(info wsdata.Info) {
 			if resp.TimeId == "1" {
 				// 当前数据源匹配就入库
 				if response.KlineSource(info.ContractCode) == kconfig.KlineSource {
-					// 查询缓存
-					key := fmt.Sprintf("kline_source:%v", info.ContractCode)
-					_, _ = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), key, "qxbroker", 0)
+					//// 查询缓存
+					//key := fmt.Sprintf("kline_source:%v", info.ContractCode)
+					//_, _ = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), key, "qxbroker", 0)
 					// 通知
 					mail_notice.Notice("msgNoSocket", map[string]interface{}{
 						"service": kconfig.KlineSource,

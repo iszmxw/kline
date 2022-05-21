@@ -28,7 +28,6 @@ func CheckSleep(KlineSource string, ContractCode string) bool {
 	if errs != nil {
 		logger.Error(errs)
 	}
-	logger.Info(TradingAssetsSource)
 	// 数据源休市
 	if TradingAssetsSource.Id > 0 && len(TradingAssetsSource.SleepTime) > 0 {
 		var SleepTime models.SleepTime
@@ -41,7 +40,7 @@ func CheckSleep(KlineSource string, ContractCode string) bool {
 		end := helpers.GetThisWeekStartTime(SleepTime.Start).Unix() + helpers.StringToInt64(SleepTime.TsLong)
 		if nowUnix > start && nowUnix < end {
 			// 休息
-			logger.Info("休息时间，正在休市")
+			logger.Info(fmt.Sprintf("%v:market.%v.index.1min=====>休息时间，正在休市", KlineSource, ContractCode))
 			// 配置成功，确实休息
 			IsSleep = true
 		} else {
