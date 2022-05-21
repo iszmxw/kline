@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"goapi/app/response"
+	"goapi/pkg/config"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
@@ -17,8 +18,14 @@ func Heartbeat(num time.Duration) {
 	for {
 		logger.Info("每个一分钟检测一次")
 		for Symbol, KlineSource := range response.AllowKlineSource() {
-			Source := response.KlineSource(Symbol)
-			logger.Info(KlineSource)
+			var Source string
+			if config.GetString("app.env") != "company_pro" { // 非正式环境检测所有的
+				for _, item := range KlineSource.([]string) {
+					Source = item
+				}
+			} else {
+				Source = response.KlineSource(Symbol)
+			}
 			// 所有的数据源键值对
 			key := fmt.Sprintf("%v:market.%v.index.1min", Source, Symbol)
 			go check(key)
@@ -28,6 +35,7 @@ func Heartbeat(num time.Duration) {
 }
 
 func check(key string) {
+	logger.Info(key)
 	push, getErr := redis.Client.SelectDbGet(15, key)
 	if getErr != nil && getErr.Error() != "redis: nil" {
 		logger.Error(getErr)
