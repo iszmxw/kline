@@ -235,51 +235,56 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				}
 				switch reflect.TypeOf(data).String() {
 				case "[]interface {}":
-					arr := data.([]interface{})
-					if len(arr) == 1 {
-						klineArr := arr[0].([]interface{})
-						if len(klineArr) == 4 { // [[EURUSD_otc 1.651896650658e+09 1.04707 0]]
-							ch := strings.ReplaceAll(klineArr[0].(string), "_otc", "") // 币种
-							TimeId := klineArr[1]                                      // TimeId
-							Close := klineArr[2]                                       // Close
-							Ping := klineArr[3]                                        // Ping
-							if 0 == Ping {                                             // 是否ping
-								if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
-									logger.Error(err)
-									ws.Close()
+					{
+						arr := data.([]interface{})
+						if len(arr) == 1 {
+							klineArr := arr[0].([]interface{})
+							if len(klineArr) == 4 { // [[EURUSD_otc 1.651896650658e+09 1.04707 0]]
+								ch := strings.ReplaceAll(klineArr[0].(string), "_otc", "") // 币种
+								TimeId := klineArr[1]                                      // TimeId
+								Close := klineArr[2]                                       // Close
+								Ping := klineArr[3]                                        // Ping
+								if 0 == Ping {                                             // 是否ping
+									if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
+										logger.Error(err)
+										ws.Close()
+										return
+									}
+								}
+								if ws.isClose {
 									return
 								}
+								ws.handleSubCallbackFun(ws.Symbol,
+									[]byte(fmt.Sprintf(
+										`{"symbol":"%v","timeId":%f,"close":%f,"ping":%f}`,
+										ch,     // 币种
+										TimeId, // TimeId
+										Close,  // Close
+										Ping,   // Ping
+									)), data,
+								)
 							}
-							ws.handleSubCallbackFun(ws.Symbol,
-								[]byte(fmt.Sprintf(
-									`{"symbol":"%v","timeId":%f,"close":%f,"ping":%f}`,
-									ch,     // 币种
-									TimeId, // TimeId
-									Close,  // Close
-									Ping,   // Ping
-								)), data,
-							)
-						}
-					} else {
-						for _, item := range arr {
-							if strings.EqualFold(item.([]interface{})[1].(string), ws.Symbol) { // 维护当前币种的利润率
-								if response.KlineSource(ws.ContractCode) == config.KlineSource { // 当前的数据源权限，使用当前数据源的利润率
-									logger.Info(item)
-									logger.Info(fmt.Sprintf("当前币种为：%v,运行状态：【%v】利润 - 1分钟为：%v,利润 - 5分钟以上：%v", ws.ContractCode, item.([]interface{})[14], item.([]interface{})[18], item.([]interface{})[19]))
-									// 利润率处理 最低20% 最高75%
-									status := item.([]interface{})[14].(bool)
-									if status == false {
-										// 休市状态 数据源休市控制权，以及状态维护
-										go kline.UpdateSleep(config.KlineSource, ws.ContractCode)
+						} else {
+							for _, item := range arr {
+								if strings.EqualFold(item.([]interface{})[1].(string), ws.Symbol) { // 维护当前币种的利润率
+									if response.KlineSource(ws.ContractCode) == config.KlineSource { // 当前的数据源权限，使用当前数据源的利润率
+										logger.Info(item)
+										logger.Info(fmt.Sprintf("当前币种为：%v,运行状态：【%v】利润 - 1分钟为：%v,利润 - 5分钟以上：%v", ws.ContractCode, item.([]interface{})[14], item.([]interface{})[18], item.([]interface{})[19]))
+										// 利润率处理 最低20% 最高75%
+										status := item.([]interface{})[14].(bool)
+										if status == false {
+											// 休市状态 数据源休市控制权，以及状态维护
+											go kline.UpdateSleep(config.KlineSource, ws.ContractCode)
+										}
+										rate := item.([]interface{})[18].(float64)
+										if rate > 75 {
+											rate = 75
+										}
+										if rate < 20 {
+											rate = 20
+										}
+										go ws.UpdateRate(ws.ContractCode, rate/100)
 									}
-									rate := item.([]interface{})[18].(float64)
-									if rate > 75 {
-										rate = 75
-									}
-									if rate < 20 {
-										rate = 20
-									}
-									go ws.UpdateRate(ws.ContractCode, rate/100)
 								}
 							}
 						}
