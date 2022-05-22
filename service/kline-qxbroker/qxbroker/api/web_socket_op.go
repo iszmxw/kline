@@ -188,31 +188,38 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["indicator/list"]`)); err != nil {
 				logger.Error(err)
 				ws.Close()
+				return
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["drawing/load"]`)); err != nil {
 				logger.Error(err)
 				ws.Close()
+				return
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["pending/list"]`)); err != nil {
 				logger.Error(err)
 				ws.Close()
+				return
 			}
 			if len(ws.Symbol) == 0 {
 				logger.Info("暂无")
 				ws.Close()
+				return
 			}
 			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s","period":60}]`, ws.Symbol))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				logger.Error(err)
 				ws.Close()
+				return
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["chart_notification/get"]`)); err != nil {
 				logger.Error(err)
 				ws.Close()
+				return
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["depth/follow","%s"]"]`, ws.Symbol))); err != nil {
 				logger.Error(err)
 				ws.Close()
+				return
 			}
 		}
 		break
@@ -240,6 +247,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 								if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
 									logger.Error(err)
 									ws.Close()
+									return
 								}
 							}
 							ws.handleSubCallbackFun(ws.Symbol,
