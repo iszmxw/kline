@@ -8,7 +8,6 @@ import (
 	"goapi/app/models"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
-	"goapi/pkg/mysql"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -245,45 +244,6 @@ func getCode(Symbol string) string {
 	return Symbol
 }
 
-// 测试新浪数据
-func sinaTest(resArr []string, Symbol string) {
-	_data := cmap.New().Items()
-	_data["name"] = strings.Replace(resArr[9], "\\u5373\\u671F\\u6C47\\u7387", "", -1)
-	_data["price"] = resArr[8]
-	_data["spj"] = resArr[3]
-	_data["open"] = resArr[5]
-	_data["higner"] = resArr[6]
-	_data["lower"] = resArr[7]
-	_data["updownCount"] = Decimal(helpers.StrToFloat64(resArr[8]) - helpers.StrToFloat64(resArr[3]))
-	_data["fullcompany"] = resArr[13]
-	_data["company"] = CutStr(resArr[13], 0, 40)
-	_data["percent"] = GetPercent(helpers.StrToFloat64(resArr[8]), helpers.StrToFloat64(resArr[3]), "percent")
-	_data["updown"] = GetPercent(helpers.StrToFloat64(resArr[8]), helpers.StrToFloat64(resArr[3]), "updown")
-	_data["zf"] = GetPercent2(helpers.StrToFloat64(resArr[6])-helpers.StrToFloat64(resArr[7]), helpers.StrToFloat64(resArr[3]))
-	_data["bofu"] = helpers.StrToFloat64(resArr[6]) - helpers.StrToFloat64(resArr[7])
-	_data["date"] = resArr[17] + " " + resArr[0]
-	_data["created_at"] = time.Now()
-	_data["updated_at"] = time.Now()
-	_data["symbol"] = strings.ToUpper(Symbol)
-	var Sina models.Sina
-	err := mysql.DB.Debug().
-		Model(models.Sina{}).
-		Select("id").
-		Where("symbol", _data["symbol"]).
-		Where("date", _data["date"]).
-		Find(&Sina).Error
-	if err != nil {
-		logger.Error(err)
-	}
-	if Sina.Id > 0 {
-		return
-	}
-	cerr := mysql.DB.Debug().Model(models.Sina{}).Create(&_data).Error
-	if cerr != nil {
-		logger.Error(cerr)
-	}
-}
-
 // GetStatus 比较数值
 // ['gray', 'red', 'green']
 func GetStatus(amt, base float64) string {
@@ -294,8 +254,4 @@ func GetStatus(amt, base float64) string {
 	} else {
 		return "green" // 2
 	}
-}
-
-func GetBuyAmount() {
-	//arr[11] === 0 ? "--" : tool.plus(tool.num_to_str(arr[11], 2)),
 }
