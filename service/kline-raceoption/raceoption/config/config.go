@@ -34,9 +34,9 @@ func Proxy() *url.URL {
 		proxy = &url.URL{
 			Scheme: "http",
 			//Host:   "47.242.148.57:18888", // 采用香港测试服务器来代理
-			Host: "54.215.250.124:18888", // 我的亚马逊服务器
-			//Host:   "43.154.141.242:10802", // 淘宝购买的香港ip
-			//User:   url.UserPassword("2533", "2113"),
+			//Host: "13.57.227.200:18888", // 我的亚马逊服务器
+			Host:   "43.154.141.242:10802", // 淘宝购买的香港ip
+			User:   url.UserPassword("2533", "2113"),
 		}
 	}
 	return proxy
