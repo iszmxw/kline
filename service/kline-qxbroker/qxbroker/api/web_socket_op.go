@@ -402,22 +402,24 @@ func (ws *WebSocketOp) writePing() {
 	if !ws.IsPing { // 只能发起一次 ping
 		ws.IsPing = true
 		ws.once.Do(func() {
-			go func(ws *WebSocketOp) {
-				// 使用time.Ticker
-				var ticker = time.NewTicker(25 * time.Second)
-				for t := range ticker.C {
-					// ping
-					if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
-						logger.Info(err.Error())
-						logger.Info(t)
-						ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
-						goto ERR
-					}
+			// 使用time.Ticker
+			var ticker = time.NewTicker(25 * time.Second)
+			for t := range ticker.C {
+				if ws.isClose {
+					ws.Description = fmt.Sprintf("%vPing协程已关闭当前握手已经关闭", ws.Symbol)
+					goto ERR
 				}
-			ERR:
-				ticker.Stop()
-				ws.Close()
-			}(ws)
+				// ping
+				if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
+					logger.Info(err.Error())
+					logger.Info(t)
+					ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
+					goto ERR
+				}
+			}
+		ERR:
+			ticker.Stop()
+			ws.Close()
 		})
 	}
 }
