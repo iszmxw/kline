@@ -46,33 +46,6 @@ func check(address, t string) bool {
 		// 只通知管理员
 		pass = false
 		break
-	case "msgTimeDiff": // 检测累计通知次数：时差：30秒内超过10次进行通知
-		if checkGrandTotal(address, t, 0, 30, 10) { // 30秒内超过10次进行通知
-			pass = true
-		} else {
-			pass = false
-		}
-		// 最大通知次数
-		if redis.Client.Incr(key) > MaxNum {
-			pass = false
-		} else {
-			pass = true
-		}
-		break
-	case "msgNoSocket": // 检查时间段内是否通知过
-	case "msgStartSocket": // 检查时间段内是否通知过
-		// 最大通知次数
-		if redis.Client.Incr(key) > MaxNum {
-			pass = false
-		} else {
-			pass = true
-		}
-		if checkTime(address, t, 60*60) { // 1小时内内是否通知过
-			pass = false
-		} else {
-			pass = true
-		}
-		break
 	default:
 		break
 	}
@@ -109,45 +82,6 @@ func checkGrandTotal(address, t string, InitNum, GrandTotalExTime, GrandTotal in
 	return false
 }
 
-// 检查一定时间内是否通知过
-func checkTime(address, t string, ExTime int) bool {
-	var Time = false
-	key := getNoticeKey("checkTime:"+address, t) // key=======>notice:mail:msgSocketNetworkAnomaly:grandTotal:mail@54zm.com
-	value, _ := redis.Client.Get(key)
-	// 初始化
-	if len(value) > 0 {
-		Time = true
-	} else {
-		// 四分钟累计
-		_, err := redis.Client.Add(key, InitNum, ExTime)
-		if err != nil {
-			Time = false
-		}
-	}
-	return Time
-}
-
-// 暂无 socket 通知
-func msgNoSocket(service, symbol string) map[string]interface{} {
-	info := cmap.New().Items()
-	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务通知：暂停socket推送", conf.GetString("app.env"), symbol, service)
-	info["content"] = fmt.Sprintf(`
-服务通知：<br>
-环境【%v】<br> 
-服务【%v】<br>
-币种【%v】 
-暂停socket推送`, conf.GetString("app.env"), service, symbol)
-	return info
-}
-
-// 恢复休市 socket 通知
-func msgStartSocket(service, symbol string) map[string]interface{} {
-	info := cmap.New().Items()
-	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务：恢复市场通知", conf.GetString("app.env"), symbol, service)
-	info["content"] = "休市已结束，市场正在恢复，请您查收"
-	return info
-}
-
 // 重启 socket 通知
 func msgRebootSocket(service, symbol string, num interface{}, lastRuntime int64) map[string]interface{} {
 	info := cmap.New().Items()
@@ -159,21 +93,6 @@ func msgRebootSocket(service, symbol string, num interface{}, lastRuntime int64)
 【上次socket运行：%v 秒 】
 `, conf.GetString("app.env"), service, symbol, lastRuntime/1000)
 	info["content"] = fmt.Sprintf("这是第【%v】次socket断线重连", num)
-	return info
-}
-
-// 时差通知
-func msgTimeDiff(service, ch, tips string, shicha int64) map[string]interface{} {
-	info := cmap.New().Items()
-	var diff int64
-	if shicha/1000 > 10 {
-		diff = 10
-	}
-	if shicha/1000 > 20 {
-		diff = 20
-	}
-	info["title"] = fmt.Sprintf("环境【%v】%v %v 服务通知：当前时间差为：%v秒大于 %v秒", conf.GetString("app.env"), ch, service, shicha/1000, diff)
-	info["content"] = tips
 	return info
 }
 
@@ -218,7 +137,6 @@ func msgStack(c *gin.Context, r interface{}, description, errInfo string) map[st
 	Info := cmap.New().Items()
 	Info["title"] = description + "当前环境：" + conf.GetString("app.env") + fmt.Sprintf("Recover: %v", r)
 	if c != nil {
-		url := c.Request.URL
 		method := c.Request.Method
 		Info["content"] = fmt.Sprintf(`
 							用户IP【<a href="https://www.ip138.com/iplookup.asp?ip=%v&action=2">%v</a>】，<br>
@@ -226,7 +144,7 @@ func msgStack(c *gin.Context, r interface{}, description, errInfo string) map[st
 							请求方法 【%v】<br>
 							错误信息 【%v】<br>
 							堆栈信息 【%v】<br>
-						`, c.ClientIP(), c.ClientIP(), url, method, r, errInfo)
+						`, c.ClientIP(), c.ClientIP(), c.Request.URL, method, r, errInfo)
 	} else {
 		Info["content"] = errInfo
 	}
@@ -236,7 +154,6 @@ func msgStack(c *gin.Context, r interface{}, description, errInfo string) map[st
 // 网络异常
 func msgNetworkAnomaly(title interface{}, c *gin.Context, r, description, errInfo interface{}) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
-	url := c.Request.URL
 	method := c.Request.Method
 	brokenInfo["title"] = fmt.Sprintf("环境【%v】 %v", conf.GetString("app.env"), title)
 	brokenInfo["content"] =
@@ -248,7 +165,7 @@ func msgNetworkAnomaly(title interface{}, c *gin.Context, r, description, errInf
 							请求地址 【%v】<br>
 							请求方法 【%v】<br>
 							错误信息 【%v】<br>
-					`, description, c.ClientIP(), c.ClientIP(), logger.RequestId, url, method, r)
+					`, description, c.ClientIP(), c.ClientIP(), logger.RequestId, c.Request.URL, method, r)
 	if errInfo != nil {
 		brokenInfo["content"] = fmt.Sprintf(`%v具体堆栈信息： <br>%v`, brokenInfo["content"], errInfo)
 	}
@@ -309,21 +226,9 @@ func msgHeartbeatAnomaly(name, msg string) map[string]interface{} {
 func Notice(t string, data interface{}) {
 	var Info map[string]interface{}
 	switch t {
-	case "msgNoSocket": // 休市通知
-		arr := data.(map[string]interface{})
-		Info = msgNoSocket(arr["service"].(string), arr["symbol"].(string))
-		break
-	case "msgStartSocket": // 恢复市场启动通知
-		arr := data.(map[string]interface{})
-		Info = msgStartSocket(arr["service"].(string), arr["symbol"].(string))
-		break
 	case "msgRebootSocket": // 重启 socket 通知
 		arr := data.(map[string]interface{})
 		Info = msgRebootSocket(arr["service"].(string), arr["symbol"].(string), arr["num"].(int64), arr["lastRuntime"].(int64))
-		break
-	case "msgTimeDiff":
-		arr := data.(map[string]interface{})
-		Info = msgTimeDiff(arr["service"].(string), arr["ch"].(string), arr["tips"].(string), arr["shicha"].(int64))
 		break
 	case "msgLiveOdds":
 		Info = msgLiveOdds(data.(utils.LogData))
@@ -364,7 +269,7 @@ func Notice(t string, data interface{}) {
 		return
 	}
 	// 时差不进行通知，避免通知泛滥d
-	if helpers.InArray(t, []string{"msgTimeDiff", "msgSocketClose", "msgRebootSocket"}) {
+	if helpers.InArray(t, []string{"msgSocketClose", "msgRebootSocket"}) {
 		return
 	}
 	// telegram 通知

@@ -10,7 +10,6 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
 	"time"
 )
 
@@ -46,11 +45,6 @@ func CheckSleep(KlineSource string, ContractCode string) bool {
 		} else {
 			// 配置成功，非休息时间段
 			IsSleep = false
-			mail_notice.Notice("msgStartSocket", map[string]interface{}{
-				"service": KlineSource,
-				"symbol":  ContractCode,
-			})
-			// 发送邮件通知
 		}
 	}
 	//if IsSleep == false {
@@ -82,11 +76,6 @@ func UpdateSleep(KlineSource, ContractCode string) {
 		//	logger.Error(err)
 		//}
 		logger.Error(errors.New(fmt.Sprintf("数据源%v,%v正在休市", KlineSource, ContractCode)))
-		// 通知
-		mail_notice.Notice("msgNoSocket", map[string]interface{}{
-			"service": KlineSource,
-			"symbol":  ContractCode,
-		})
 	}
 	return
 }

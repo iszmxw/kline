@@ -131,11 +131,6 @@ func SocketOlymptrade(info wsdata.Info) {
 					if err != nil {
 						logger.Error(err)
 					}
-					// 通知
-					mail_notice.Notice("msgNoSocket", map[string]interface{}{
-						"service": kconfig.KlineSource,
-						"symbol":  info.ContractCode,
-					})
 				}
 				logger.Error(errors.New(fmt.Sprintf(
 					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
@@ -169,15 +164,6 @@ func SocketOlymptrade(info wsdata.Info) {
 			logger.Info(tips)
 			shicha := time.Now().UnixMilli() - data.Ts
 			logger.Info(fmt.Sprintf("shicha=%v", shicha))
-			// 时间差大于 10 秒发送邮件通知
-			if shicha/1000 >= 20 {
-				mail_notice.Notice("msgTimeDiff", map[string]interface{}{
-					"ch":      data.Ch,
-					"tips":    tips,
-					"service": kconfig.KlineSource,
-					"shicha":  shicha,
-				})
-			}
 			msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 			if MarshalJSONErr != nil {
 				logger.Error(MarshalJSONErr)

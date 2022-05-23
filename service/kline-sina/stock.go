@@ -12,7 +12,6 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/pprof"
 	"goapi/pkg/redis"
 	"goapi/service/kline-sina/utils"
@@ -100,16 +99,6 @@ func collection(queryData Info) {
 	logger.Info(tips)
 	shicha := time.Now().UnixMilli() - data.Ts
 	logger.Info(fmt.Sprintf("shicha=%v", shicha))
-	// 时间差大于 10 秒发送邮件通知
-	if shicha/1000 >= 20 {
-		mail_notice.Notice("msgTimeDiff",
-			map[string]interface{}{
-				"ch":      lineLogRes.Ch,
-				"tips":    tips,
-				"service": "sina",
-				"shicha":  shicha,
-			})
-	}
 	msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 	if MarshalJSONErr != nil {
 		logger.Error(MarshalJSONErr)
