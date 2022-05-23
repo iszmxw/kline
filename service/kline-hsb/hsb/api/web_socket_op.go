@@ -281,8 +281,8 @@ func (ws *WebSocketOp) Close() {
 // 写 Ping 协程
 func (ws *WebSocketOp) writePing() {
 	if !ws.IsPing { // 只能发起一次 ping
-		ws.IsPing = true
 		ws.once.Do(func() {
+			ws.IsPing = true
 			go func(ws *WebSocketOp) {
 				// 使用time.Ticker
 				var ticker = time.NewTicker(30 * time.Second)
