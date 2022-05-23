@@ -51,7 +51,9 @@ func check(Source, Symbol string) {
 		return
 	}
 	// 差
-	diff := (time.Now().UnixMilli() - SubIndexKLineResponse.Ts) / 1000
+	SystemTs := time.Now().UnixMilli()
+	diff := (SystemTs - SubIndexKLineResponse.Ts) / 1000
+
 	KeyStatus := fmt.Sprintf("status:%v", key)
 	switch true {
 	case diff < 60*1:
@@ -70,8 +72,32 @@ func check(Source, Symbol string) {
 		// 警告，延迟过高
 		_, _ = redis.Client.Add(KeyStatus, 4, 0)
 		mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
-			"name": KeyStatus,
-			"msg":  "当前服务的Socket延迟过高，请留意对应的数据源",
+			"name": Source,
+			"msg": fmt.Sprintf(`
+    当前服务的 Socket 延迟过高，请留意对应的数据源
+
+【当前服务】：%v
+
+【对应资产】：%v
+
+【系统时间】：%v
+
+【数据最后更新时间】：%v
+
+【毫秒延迟】：%v ms
+
+【秒延迟】：%v s
+
+【分钟延迟】：%v min
+`,
+				Source,
+				Symbol,
+				time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"),
+				time.Unix(0, SubIndexKLineResponse.Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"),
+				SystemTs-SubIndexKLineResponse.Ts,
+				diff,
+				diff/60,
+			),
 		})
 		break
 	}
