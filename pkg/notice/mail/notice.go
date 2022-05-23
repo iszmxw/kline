@@ -78,7 +78,7 @@ func check(address, t string) bool {
 	}
 	// 管理员直接可以
 	if address == AdminMail || address == "yezhiming@yuctime.com" {
-		pass = true
+		pass = false
 	}
 	return pass
 }

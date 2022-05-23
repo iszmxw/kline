@@ -67,8 +67,6 @@ type WebSocketOp struct {
 	allSubStars       list.List
 	ContractCode      string // 订阅的币种
 	Symbol            string // 订阅的币种
-	Login             Login  // 登录结构
-	IsLogin           bool   // 是否已经登录
 	IsPing            bool   // 是否已开始ping
 	Description       string // 描述
 }
@@ -129,14 +127,13 @@ func (ws *WebSocketOp) DoHand() {
 				logger.Info(ws.Symbol + "不ok了")
 				goto ERR
 			}
-			go ws.msgHand(msg)
-			break
+			ws.msgHand(msg)
 		case <-ws.closeChan:
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info(ws.Symbol + "do 已关闭")
+	logger.Info(ws.Symbol + "do已关闭")
 	ws.Close()
 }
 
@@ -429,9 +426,8 @@ func (ws *WebSocketOp) Close() {
 	if !ws.isClose {
 		ws.once.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
-			ws.IsLogin = false // 重置登录
-			ws.IsPing = false  // 重置 ping
-			ws.isClose = true  // 重置close
+			ws.IsPing = false // 重置 ping
+			ws.isClose = true // 重置close
 			close(ws.writeChan)
 			close(ws.readChan)
 			close(ws.closeChan)
@@ -497,22 +493,20 @@ func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
 	// 刷新token
 	token, _ := redis.Client.Get(config.RedisKey)
 	// token失效，或者强制刷新token,就重新登录获取token
-	if (len(token) == 0 || true == refresh) && !ws.IsLogin {
+	if (len(token) == 0) || true == refresh {
 		isLogin, _ := redis.Client.Get(redisLoginKey)
 		// 一分钟之内登录过
 		if len(isLogin) > 0 {
-			return errors.New("一分钟之内已经进行登录操作，请稍后再试"), ""
+			logger.Error(errors.New("35秒之内已经进行登录操作，请稍后再试"))
+			return errors.New("35秒之内已经进行登录操作，请稍后再试"), ""
 		}
 		// 登录
-		ws.once.Do(func() {
-			ws.IsLogin = true
-			_, err := redis.Client.Add(redisLoginKey, "true", 60) // 60秒之内只能登录一次
-			if err != nil {
-				logger.Error(err)
-			}
-			// 异步登录获取 token
-			go ws.login()
-		})
+		_, err := redis.Client.Add(redisLoginKey, "true", 35) // 60秒之内只能登录一次
+		if err != nil {
+			logger.Error(err)
+		}
+		// 异步登录获取 token
+		go ws.login()
 	}
 	// 返回 token
 	return nil, token
@@ -552,7 +546,7 @@ func (ws *WebSocketOp) login() {
 				js := html[strings.Index(html, `"token"`):]
 				js = js[:strings.Index(js, `",`)]
 				token = strings.ReplaceAll(js, `"token":"`, "")
-				_, err = redis.Client.Add(config.RedisKey, token, 60*60*24*10) // 设置十天过期
+				_, err = redis.Client.Add(config.RedisKey, token, 60*60*2) // 两个小时过期一下
 				if err != nil {
 					logger.Error(err)
 				}

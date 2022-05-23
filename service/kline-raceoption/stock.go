@@ -69,7 +69,9 @@ func SocketRaceOption(info wsdata.Info) {
 	if kline.CheckSleep(kconfig.KlineSource, info.ContractCode) {
 		time.Sleep(time.Second) // 休息1秒
 		// 休市切换 OTC 数据源读取时间段
-		info.Symbol = info.Symbol + ".W"
+		if !strings.Contains(info.Symbol, ".W") {
+			info.Symbol = info.Symbol + ".W"
+		}
 	}
 	// 开始订阅
 	{
