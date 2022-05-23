@@ -465,32 +465,56 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 	echo.Success(c, nil, "")
 }
 
+// 获取系统允许的数据源
+
+func (h *KlineController) AllowKlineSource(c *gin.Context) {
+	// 对应币种允许的数据源
+	echo.Success(c, response.AllowKlineSource(), "")
+	return
+}
+
 // 获取当前币种可以设置的数据源
 
 func (h *KlineController) KlineSourceList(c *gin.Context) {
 	//user, _ := c.Get("user")
-	var params requests.Symbol
+	var params requests.KlineSourceList
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	var TradingAssetsSource []response.TradingAssetsSource
+	var TradingAssetsSource []models.TradingAssetsSource
+	var ResTradingAssetsSource []response.TradingAssetsSource
 	DB := mysql.DB.Debug()
-	DBList := DB.Model(&models.TradingAssetsSource{}).Where("is_valid=1").Select("*")
-	//if len(params.AssetsCode) > 0 {
-	//	DBList = DBList.Where("assets_code", params.AssetsCode)
-	//}
-	DBList.Order("id DESC").Find(&TradingAssetsSource)
-	//AllowKlineSource := response.AllowKlineSource()
-	//for index,item := range TradingAssetsSource {
-	//	data, ok := AllowKlineSource[item.AssetsCode]
-	//	if ok {
-	//		TradingAssetsSource[index].AllowKlineSource = data.([]string)
-	//	}
-	//}
+	DBList := DB.Model(&models.TradingAssetsSource{}).Where("is_valid", "1")
+	if len(params.AssetsCode) > 0 {
+		DBList = DBList.Where("assets_code", params.AssetsCode)
+	}
+	DBList.Group("assets_code").Order("id ASC").Find(&TradingAssetsSource)
+	AllowKlineSource := response.AllowKlineSource()
+	for index, item := range TradingAssetsSource {
+		ResTradingAssetsSource = append(ResTradingAssetsSource, response.TradingAssetsSource{
+			ItemCode:           item.ItemCode,
+			AssetsCode:         item.AssetsCode,
+			CurrentKlineSource: item.KlineSource,
+			SubscribeSymbol:    item.SubscribeSymbol,
+			SleepTime:          item.SleepTime,
+			IsValid:            item.IsValid,
+			Remark:             item.Remark,
+			Creator:            item.Creator,
+			Updater:            item.Updater,
+			CreateDate:         item.CreateDate,
+			UpdateDate:         item.UpdateDate,
+		})
+		data, ok := AllowKlineSource[item.AssetsCode]
+		if ok {
+			ResTradingAssetsSource[index].AllowKlineSource = data.([]string)
+		} else {
+			ResTradingAssetsSource[index].AllowKlineSource = []string{}
+		}
+	}
 	// 对应币种允许的数据源
-	echo.Success(c,TradingAssetsSource, "")
+	echo.Success(c, ResTradingAssetsSource, "")
 	return
 }
 

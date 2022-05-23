@@ -5,7 +5,6 @@ type SetKline struct {
 	KlineSource string `json:"kline_source" form:"kline_source" validate:"required"`
 }
 
-type Symbol struct {
+type KlineSourceList struct {
 	AssetsCode string `json:"assets_code" form:"assets_code"`
-	IsValid    int    `json:"is_valid" form:"is_valid"`
 }
