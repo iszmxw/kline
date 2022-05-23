@@ -26,8 +26,7 @@ func Proxy() *url.URL {
 	if conf.GetString("app.env") == "本地测试环境" { // 测试环境不需要走代理，走本地的代理
 		proxy = &url.URL{
 			Scheme: "http",
-			Host:   "43.154.141.242:10802", // 淘宝购买的香港ip
-			User:   url.UserPassword("2533", "2113"),
+			Host:   "127.0.0.1:10809",
 		}
 	}
 	//// 正式环境的代理
