@@ -406,7 +406,7 @@ func (ws *WebSocketOp) writePing() {
 			var ticker = time.NewTicker(25 * time.Second)
 			for t := range ticker.C {
 				if ws.isClose {
-					ws.Description = fmt.Sprintf("%vPing协程已关闭当前握手已经关闭", ws.Symbol)
+					ws.Description = fmt.Sprintf("%v当前握手已经关闭Ping协程已关闭", ws.Symbol)
 					goto ERR
 				}
 				// ping
