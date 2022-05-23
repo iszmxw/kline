@@ -27,7 +27,7 @@ func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
 	Config := WebV1.Group("/config")
 	{
 		// 【E34】 获取当前币种可以设置的数据源
-		Config.Any("/SymbolAllowKlineSource.json", WebV1Group.KlineController.SymbolAllowKlineSource)
+		Config.Any("/KlineSourceList.json", WebV1Group.KlineController.KlineSourceList)
 		// 【E34】 设置 KlineSource 信息
 		Config.Any("/setKlineSource.json", WebV1Group.KlineController.SetKlineSourceHandler)
 		// 【E35】 查看所有 KlineSource 配置

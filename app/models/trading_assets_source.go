@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"goapi/pkg/config"
+	"time"
+)
 
 // 数据源表，一个数据源对应多个资产，不同的数据源有不同的休市时间
 
@@ -17,4 +20,9 @@ type TradingAssetsSource struct {
 	Updater         string    `json:"updater"`          //更新人
 	CreateDate      time.Time `json:"create_date"`      //创建日期
 	UpdateDate      time.Time `json:"update_date"`      //更新日期
+}
+
+func (m *TradingAssetsSource) TableName() string {
+	prefix := config.GetString("database.mysql.prefix")
+	return prefix + "trading_assets_source"
 }

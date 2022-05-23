@@ -6,5 +6,6 @@ type SetKline struct {
 }
 
 type Symbol struct {
-	AssetsCode string `json:"assets_code" form:"assets_code" validate:"required"`
+	AssetsCode string `json:"assets_code" form:"assets_code"`
+	IsValid    int    `json:"is_valid" form:"is_valid"`
 }

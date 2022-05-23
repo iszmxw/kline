@@ -467,29 +467,30 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 
 // 获取当前币种可以设置的数据源
 
-func (h *KlineController) SymbolAllowKlineSource(c *gin.Context) {
-	user, _ := c.Get("user")
+func (h *KlineController) KlineSourceList(c *gin.Context) {
+	//user, _ := c.Get("user")
 	var params requests.Symbol
-	var allowSource interface{}
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	// 获取允许读取的数据源
-	AllowKlineSource := response.AllowKlineSource()
-	if data, ok := AllowKlineSource[params.AssetsCode]; ok {
-		allowSource = data
-	} else {
-		allowSource = nil
-	}
+	var TradingAssetsSource []response.TradingAssetsSource
+	DB := mysql.DB.Debug()
+	DBList := DB.Model(&models.TradingAssetsSource{}).Where("is_valid=1").Select("*")
+	//if len(params.AssetsCode) > 0 {
+	//	DBList = DBList.Where("assets_code", params.AssetsCode)
+	//}
+	DBList.Order("id DESC").Find(&TradingAssetsSource)
+	//AllowKlineSource := response.AllowKlineSource()
+	//for index,item := range TradingAssetsSource {
+	//	data, ok := AllowKlineSource[item.AssetsCode]
+	//	if ok {
+	//		TradingAssetsSource[index].AllowKlineSource = data.([]string)
+	//	}
+	//}
 	// 对应币种允许的数据源
-	echo.Success(c,
-		gin.H{
-			"user":         user,
-			"allow_source": allowSource,
-		}, "",
-	)
+	echo.Success(c,TradingAssetsSource, "")
 	return
 }
 
