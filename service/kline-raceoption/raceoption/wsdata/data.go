@@ -1,11 +1,5 @@
 package wsdata
 
-type Info struct {
-	Symbol       string `json:"symbol"`
-	Desc         string `json:"desc"`
-	ContractCode string `json:"contract_code"`
-}
-
 type WSSubData struct {
 	Operation string `json:"operation"`
 	Id        string `json:"id"`

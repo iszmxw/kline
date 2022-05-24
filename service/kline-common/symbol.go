@@ -1,0 +1,54 @@
+package kline_common
+
+type Info struct {
+	Symbol       string `json:"symbol"`
+	Desc         string `json:"desc"`
+	ContractCode string `json:"contract_code"`
+}
+
+// 获取资产信息编码
+
+func GetData(service string) []Info {
+	// raceoption
+	var CodeData []Info
+	switch service {
+	case "raceoption":
+		CodeData = RaceOption(CodeData)
+		break
+	case "qxbroker":
+		CodeData = QxBroker(CodeData)
+		break
+	default:
+		break
+	}
+	return CodeData
+}
+
+func RaceOption(CodeData []Info) []Info {
+	CodeData = append(CodeData,
+		Info{Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		Info{Symbol: "AUD/CAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		Info{Symbol: "USD/JPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		Info{Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
+		Info{Symbol: "XAG/USD", Desc: "伦敦银", ContractCode: "SILVER"},
+	)
+	return CodeData
+}
+
+func QxBroker(CodeData []Info) []Info {
+	CodeData = append(CodeData,
+		// 周六周日启动OTC模式
+		Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
+		Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		// 周六周日启动OTC模式
+		//Info{Symbol: "NFLX_otc", Desc: "网飞", ContractCode: "Netflix"},
+		Info{Symbol: "MSFT_otc", Desc: "微软", ContractCode: "Microsoft"},
+		Info{Symbol: "INTC_otc", Desc: "英特尔", ContractCode: "Intel"},
+	)
+	return CodeData
+}

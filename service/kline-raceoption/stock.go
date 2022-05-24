@@ -19,7 +19,6 @@ import (
 	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-raceoption/raceoption/api"
 	kconfig "goapi/service/kline-raceoption/raceoption/config"
-	"goapi/service/kline-raceoption/raceoption/utils/code"
 	"goapi/service/kline-raceoption/raceoption/wsdata"
 	"strings"
 	"time"
@@ -41,7 +40,7 @@ func main() {
 	pprof.Debug(":6061")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	CodeData := code.GetData()
+	CodeData := kline_common.GetData(kconfig.KlineSource)
 	start := "ok"
 	rate := true
 	for {
@@ -64,7 +63,7 @@ func main() {
 	}
 }
 
-func SocketRaceOption(info wsdata.Info) {
+func SocketRaceOption(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
 	// 资产休市状态
 	if kline.CheckSleep(kconfig.KlineSource, info.ContractCode) {

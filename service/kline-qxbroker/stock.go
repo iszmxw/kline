@@ -17,7 +17,6 @@ import (
 	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-qxbroker/qxbroker/api"
 	kconfig "goapi/service/kline-qxbroker/qxbroker/config"
-	"goapi/service/kline-qxbroker/qxbroker/utils/code"
 	"goapi/service/kline-qxbroker/qxbroker/wsdata"
 	"strings"
 	"time"
@@ -39,7 +38,7 @@ func main() {
 	pprof.Debug(":6066")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	CodeData := code.GetData()
+	CodeData := kline_common.GetData(kconfig.KlineSource)
 	start := "ok"
 	for {
 		if start == "ok" {
@@ -54,7 +53,7 @@ func main() {
 	}
 }
 
-func SocketQxbroker(info wsdata.Info) {
+func SocketQxbroker(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
 	var StartSub = true
 	// 资产休市状态

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/wsdata"
 	"net/url"
@@ -22,7 +23,7 @@ func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanC
 
 type OnSubPriceKLineResponse func(*wsdata.SubPriceKLineResponse)
 
-func (wsIx *WSPriceClient) SubPriceKLine(info wsdata.Info, callbackFun OnSubPriceKLineResponse, id string) {
+func (wsIx *WSPriceClient) SubPriceKLine(info kline_common.Info, callbackFun OnSubPriceKLineResponse, id string) {
 	if id == "" {
 		id = config.DefaultId
 	}
