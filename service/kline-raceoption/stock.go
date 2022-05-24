@@ -76,8 +76,8 @@ func SocketRaceOption(info wsdata.Info) {
 	}
 	// 开始订阅
 	{
-		wsmkClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
-		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
+		wsClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
+		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli() // 开始时间 系統生成的Ts
 			// RequestId 定义为 Ts 时间戳
 			logger.RequestId = fmt.Sprintf("%v", SystemTs)
@@ -108,9 +108,8 @@ func SocketRaceOption(info wsdata.Info) {
 				return
 			}
 			UpstreamTs := helpers.StringToInt64(resp.TimeId) // 上游的ts
-			// 时差提示
 			TimeDiff := SystemTs - UpstreamTs
-			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff))
+			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			logger.Info(kline_common.TimeDiffTips(kconfig.KlineSource, UpstreamTs))
 			data := RedisData(SystemTs, resp)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
