@@ -19,6 +19,7 @@ import (
 	kconfig "goapi/service/kline-binance/binance/config"
 	"goapi/service/kline-binance/binance/utils/code"
 	"goapi/service/kline-binance/binance/wsdata"
+	kline_common "goapi/service/kline-common"
 	"strings"
 	"time"
 )
@@ -66,7 +67,7 @@ func SocketBian(info wsdata.Info) {
 	// 开始订阅
 	if StartSub {
 		streamName := fmt.Sprintf("%s@indexPriceKline_%v", strings.ToLower(info.Symbol), "1m")
-		wsmkClient := new(api.WSPriceClient).Init("dstream.binance.com", streamName, kconfig.Proxy(), callback)
+		wsmkClient := new(api.WSPriceClient).Init("dstream.binance.com", streamName, kline_common.GetProxy(kconfig.KlineSource), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
