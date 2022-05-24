@@ -69,7 +69,7 @@ func SocketQxbroker(info kline_common.Info) {
 		if kline.CheckOTC() && !strings.Contains(info.Symbol, "_otc") {
 			info.Symbol = info.Symbol + "_otc"
 		}
-		wsClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
+		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(kconfig.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			logger.Info(resp)
 			SystemTs := time.Now().UnixMilli()             // 系統生成的Ts

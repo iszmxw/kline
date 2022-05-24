@@ -1,12 +1,5 @@
 package wsdata
 
-type Info struct {
-	ID           int    `json:"id"`
-	Symbol       string `json:"symbol"`
-	Desc         string `json:"desc"`
-	ContractCode string `json:"contract_code"`
-}
-
 type SubPriceKLineResponse struct {
 	Cmd float64 `json:"cmd"`
 	Pb  struct {

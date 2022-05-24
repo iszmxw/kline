@@ -1,6 +1,7 @@
 package kline_common
 
 type Info struct {
+	ID           int    `json:"id"`
 	Symbol       string `json:"symbol"`
 	Desc         string `json:"desc"`
 	ContractCode string `json:"contract_code"`
@@ -17,6 +18,12 @@ func GetData(service string) []Info {
 		break
 	case "qxbroker":
 		CodeData = QxBroker(CodeData)
+		break
+	case "olymptrade":
+		CodeData = OlyMpTrade(CodeData)
+		break
+	case "hsb":
+		CodeData = Hsb(CodeData)
 		break
 	default:
 		break
@@ -49,6 +56,35 @@ func QxBroker(CodeData []Info) []Info {
 		//Info{Symbol: "NFLX_otc", Desc: "网飞", ContractCode: "Netflix"},
 		Info{Symbol: "MSFT_otc", Desc: "微软", ContractCode: "Microsoft"},
 		Info{Symbol: "INTC_otc", Desc: "英特尔", ContractCode: "Intel"},
+	)
+	return CodeData
+}
+
+func OlyMpTrade(CodeData []Info) []Info {
+	CodeData = append(CodeData,
+		Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
+		Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+	)
+	return CodeData
+}
+
+func Hsb(CodeData []Info) []Info {
+	CodeData = append(CodeData,
+		// 153104--XAGUSD // {"cmd":4102,"pb":{"stk":[{"id":153104,"marketid":10}]}}
+		// 153105--XAUUSD // {"cmd":4102,"pb":{"stk":[{"id":153105,"marketid":10}]}}
+		// 153080--EURUSD // {"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}
+		// 153083--USDJPY // {"cmd":4102,"pb":{"stk":[{"id":153083,"marketid":8}]}}
+		// 153086--GBPUSD // {"cmd":4102,"pb":{"stk":[{"id":153086,"marketid":8}]}}
+		Info{ID: 153080, Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{ID: 153086, Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		Info{ID: 153083, Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		Info{ID: 153105, Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
+		Info{ID: 153104, Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		//Info{ID: 153080, Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"}, // 该平台暂无
 	)
 	return CodeData
 }

@@ -75,7 +75,7 @@ func SocketRaceOption(info kline_common.Info) {
 	}
 	// 开始订阅
 	{
-		wsClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
+		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(kconfig.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli() // 开始时间 系統生成的Ts
 			// RequestId 定义为 Ts 时间戳

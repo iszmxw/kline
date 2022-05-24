@@ -15,9 +15,9 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/pprof"
 	"goapi/pkg/redis"
+	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-hsb/hsb/api"
 	kconfig "goapi/service/kline-hsb/hsb/config"
-	"goapi/service/kline-hsb/hsb/utils/code"
 	"goapi/service/kline-hsb/hsb/wsdata"
 	"math"
 	"strings"
@@ -40,8 +40,7 @@ func main() {
 	pprof.Debug(":6064")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	var CodeData []wsdata.Info
-	CodeData = code.GetData()
+	CodeData := kline_common.GetData(kconfig.KlineSource)
 	start := "ok"
 	for {
 		if start == "ok" {
@@ -56,7 +55,7 @@ func main() {
 	}
 }
 
-func SocketHsb(info wsdata.Info) {
+func SocketHsb(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
 	var StartSub = true
 	// 资产休市状态
@@ -68,7 +67,7 @@ func SocketHsb(info wsdata.Info) {
 	}
 	// 开始订阅
 	if StartSub {
-		wsmkClient := new(api.WSPriceClient).Init("", kconfig.Proxy(), callback)
+		wsmkClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(kconfig.KlineSource), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {

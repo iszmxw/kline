@@ -14,9 +14,9 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/pprof"
 	"goapi/pkg/redis"
+	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/api"
 	kconfig "goapi/service/kline-olymptrade/olymptrade/config"
-	"goapi/service/kline-olymptrade/olymptrade/utils/code"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"strings"
 	"time"
@@ -38,8 +38,7 @@ func main() {
 	pprof.Debug(":6063")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	var CodeData []wsdata.Info
-	CodeData = code.GetData()
+	CodeData := kline_common.GetData(kconfig.KlineSource)
 	start := "ok"
 	for {
 		if start == "ok" {
@@ -54,7 +53,7 @@ func main() {
 	}
 }
 
-func SocketOlymptrade(info wsdata.Info) {
+func SocketOlymptrade(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
 	var TradingAssets models.TradingAssets
 	var StartSub = true
@@ -87,7 +86,7 @@ func SocketOlymptrade(info wsdata.Info) {
 			_, session = new(api.SocketSession).GetToken(false)
 			time.Sleep(time.Second * 3) // 休息3秒
 		}
-		wsmkClient := new(api.WSPriceClient).Init("", session, kconfig.Proxy(), callback)
+		wsmkClient := new(api.WSPriceClient).Init("", session, kline_common.GetProxy(kconfig.KlineSource), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
