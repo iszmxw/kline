@@ -67,8 +67,8 @@ func SocketHsb(info kline_common.Info) {
 	}
 	// 开始订阅
 	if StartSub {
-		wsmkClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(kconfig.KlineSource), callback)
-		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
+		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(kconfig.KlineSource), callback)
+		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
 					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
@@ -80,69 +80,35 @@ func SocketHsb(info kline_common.Info) {
 				}
 			}()
 			wsData := *resp
-			rData := wsData.Pb.Tick          // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
-			runStr := time.Now().UnixMilli() // 开始时间
+			rData := wsData.Pb.Tick            // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
+			SystemTs := time.Now().UnixMilli() // 开始时间 系統生成的Ts
 			// RequestId 定义为 Ts 时间戳
 			logger.RequestId = fmt.Sprintf("%v", rData.Time)
-			// hsb网推送的回来的数据转换为字符串
-			strData, err := json.Marshal(resp) //转换成JSON返回的是byte[]
-			if err != nil {
-				logger.Error(err)
-				return
-			}
-			if len(strData) <= 0 {
-				logger.Error(errors.New(fmt.Sprintf(
-					"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",
-					info.ContractCode, resp)))
-				return
-			}
 			if rData.Time <= 0 {
 				// 当前数据源匹配就入库
 				if response.KlineSource(info.ContractCode) == kconfig.KlineSource {
-					err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
-					if err != nil {
-						logger.Error(err)
-					}
+					// 休市
 				}
-				logger.Error(errors.New(fmt.Sprintf(
-					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
-					info.ContractCode, resp)))
+				logger.Error(
+					errors.New(fmt.Sprintf("订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v", info.ContractCode, resp)),
+				)
 				return
 			}
 			ContractCode := info.ContractCode
-			SystemTs := time.Now().UnixMilli()     // 系統生成的Ts
 			UpstreamTs := int64(rData.Time * 1000) // 上游的ts
-			var data response.SubIndexKLineResponse
-			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
-			data.Ts = SystemTs                                                                             // 系統生成的Ts
-			data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
-			data.Source = kconfig.KlineSource
-			data.Tick.Id = SystemTs
-			data.Tick.Vol = "0"
-			data.Tick.Count = 0
-			data.Tick.Open = fmt.Sprintf("%v", rData.Open/math.Pow(10, rData.Digits))
-			data.Tick.Close = fmt.Sprintf("%v", rData.Price/math.Pow(10, rData.Digits))
-			data.Tick.Low = ""
-			data.Tick.High = ""
-			data.Tick.Amount = "0"
-			tips := fmt.Sprintf(
-				"hsb时差：系统时间：%v(%v)<br>hsb的 ts 时间：%v(%v)",
-				time.Now().UnixMilli(),
-				time.Now().Format("2006-01-02 15:04:05"),
-				UpstreamTs,
-				time.Unix(UpstreamTs/1000, 0).Format("2006-01-02 15:04:05"),
-			)
-			logger.Info(tips)
-			shicha := SystemTs - UpstreamTs
-			logger.Info(fmt.Sprintf("shicha=%v", shicha))
-			msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
+			data := RedisData(SystemTs, resp)
+			TimeDiff := SystemTs - UpstreamTs
+			logger.Info(data)
+			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
+			logger.Info(kline_common.TimeDiffTips(kconfig.KlineSource, SystemTs))
+			redisData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 			if MarshalJSONErr != nil {
 				logger.Error(MarshalJSONErr)
 				return
 			}
 			// 收集数据缓存到redis
 			key := fmt.Sprintf("%v:%v", kconfig.KlineSource, data.Ch)
-			_, redisErr := redis.Client.Add(key, msgData, 0)
+			_, redisErr := redis.Client.Add(key, redisData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
 				return
@@ -150,7 +116,7 @@ func SocketHsb(info kline_common.Info) {
 			// 当前数据源匹配就入库
 			if response.KlineSource(ContractCode) == kconfig.KlineSource {
 				var KlineData models.KlineLog
-				err = mysql.DB.Debug().
+				err := mysql.DB.Debug().
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", ContractCode).
@@ -164,9 +130,8 @@ func SocketHsb(info kline_common.Info) {
 					return
 				}
 				lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
-				cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
-				if cerr1 != nil {
-					logger.Error(cerr1)
+				if err = mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
+					logger.Error(err)
 					return
 				}
 			}
@@ -178,18 +143,8 @@ func SocketHsb(info kline_common.Info) {
 			//} else {
 			//	logger.Info("elastic-success")
 			//}
-
-			runEnd := time.Now().UnixMilli() // 开始时间
 			// 计算一次存储数据消耗的时间
-			logger.Info(fmt.Sprintf(
-				"开始时间：%v(%v),结束时间%v(%v),消耗%vms",
-				runStr,
-				time.Unix(runStr/1000, 0).Format("2006-01-02 15:04:05"),
-				runEnd,
-				time.Unix(runEnd/1000, 0).Format("2006-01-02 15:04:05"),
-				runEnd-runStr,
-			))
-
+			logger.Info(kline_common.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		}, "")
 
 	}
@@ -237,4 +192,25 @@ func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs,
 	klineLog.CreateDate = time.Now()                                                    // 创建日期
 	klineLog.KlineSource = kconfig.KlineSource                                          // K线来源hsb
 	return klineLog
+}
+
+// RedisData 缓存进redis的数据
+func RedisData(SystemTs int64, resp *wsdata.SubPriceKLineResponse) response.SubIndexKLineResponse {
+	var data response.SubIndexKLineResponse
+	wsData := *resp
+	rData := wsData.Pb.Tick // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
+	ContractCode := kline_common.GetSymbolById(helpers.StringToInt(fmt.Sprintf("%v", rData.Id)))
+	data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
+	data.Ts = SystemTs                                                                             // 系統生成的Ts
+	data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
+	data.Source = kconfig.KlineSource
+	data.Tick.Id = SystemTs
+	data.Tick.Vol = "0"
+	data.Tick.Count = 0
+	data.Tick.Open = fmt.Sprintf("%v", rData.Open/math.Pow(10, rData.Digits))
+	data.Tick.Close = fmt.Sprintf("%v", rData.Price/math.Pow(10, rData.Digits))
+	data.Tick.Low = ""
+	data.Tick.High = ""
+	data.Tick.Amount = "0"
+	return data
 }

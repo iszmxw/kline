@@ -1,13 +1,10 @@
 package api
 
 import (
-	"container/list"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"goapi/pkg/helpers"
-	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/service/kline-hsb/hsb/config"
@@ -35,7 +32,8 @@ type WebSocketOp struct {
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
-	once              sync.Once                // 锁
+	onceClose         sync.Once                // 关闭动作锁
+	oncePing          sync.Once                // Ping动作锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              // 读消息管道
 	writeChan         chan []byte              // 写消息管道
@@ -43,10 +41,9 @@ type WebSocketOp struct {
 	ReqTopicMap       map[string]*CallbackFunc // 请求历史
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
-	allSubStrs        list.List
-	IsPing            bool   // 是否已开始ping
-	Symbol            string // 订阅的币种
-	Description       string // 描述
+	IsPing            bool                     // 是否已开始ping
+	Symbol            string                   // 订阅的币种
+	Description       string                   // 描述
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -61,7 +58,6 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	ws.writeChan = make(chan []byte, 10)
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.ReqTopicMap = make(map[string]*CallbackFunc)
-	ws.allSubStrs = list.List{}
 	ws.closeChanCallback = closeChanCallback
 	ret := ws.connServer()
 	return ret
@@ -146,18 +142,15 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 	// 订阅返回的数据
 	if cmd == 4098 {
 		if pb, found := data["pb"]; found {
-			if tick, found := pb.(map[string]interface{})["tick"]; found {
+			if _, found := pb.(map[string]interface{})["tick"]; found {
 				// ping
 				go ws.writePing()
 				// 订阅成功
-				logger.Info(fmt.Sprint(fmt.Sprintf("%T", tick), tick))
-				Symbol := kline.GetSymbolById(helpers.StringToInt(fmt.Sprintf("%v", tick.(map[string]interface{})["id"])))
-				logger.Info("订阅成功" + Symbol)
-				ws.handleSubCallbackFun(Symbol, message, data)
+				logger.Info("订阅成功" + ws.Symbol)
+				ws.handleSubCallbackFun(ws.Symbol, message, data)
 			}
 		}
 	}
-
 }
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
@@ -188,6 +181,7 @@ func (ws *WebSocketOp) readLoop() {
 	for {
 		msgType, buf, err := ws.conn.ReadMessage()
 		if err != nil {
+			ws.Description = fmt.Sprintf("%v=ReadMessage失败了", ws.Symbol)
 			logger.Info(err.Error())
 			goto ERR
 		}
@@ -203,14 +197,14 @@ func (ws *WebSocketOp) readLoop() {
 		}
 		select {
 		case ws.readChan <- message:
-			logger.Info("读消息管道写入成功")
+			//logger.Info("读消息管道写入成功")
 		case <-ws.closeChan:
-			logger.Info("读协程关闭chan")
+			//logger.Info("读协程关闭chan")
 			goto ERR
 		}
 	}
 ERR:
-	logger.Info("read 已关闭 ")
+	logger.Info("read已关闭")
 	ws.Close()
 }
 
@@ -251,10 +245,11 @@ ERR:
 }
 
 func (ws *WebSocketOp) Close() {
+	logger.Info(ws.Description)
 	if !ws.isClose {
-		ws.once.Do(func() {
+		ws.isClose = true
+		ws.onceClose.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
-			ws.isClose = true // 重置close
 			close(ws.writeChan)
 			close(ws.readChan)
 			close(ws.closeChan)
@@ -281,24 +276,22 @@ func (ws *WebSocketOp) Close() {
 // 写 Ping 协程
 func (ws *WebSocketOp) writePing() {
 	if !ws.IsPing { // 只能发起一次 ping
-		ws.once.Do(func() {
-			ws.IsPing = true
-			go func(ws *WebSocketOp) {
-				// 使用time.Ticker
-				var ticker = time.NewTicker(30 * time.Second)
-				for t := range ticker.C {
-					// ping
-					if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"cmd":4096,"pb":{"time":%v}}`, time.Now().UnixMilli()))); err != nil {
-						logger.Info(err.Error())
-						logger.Info(t)
-						ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
-						goto ERR
-					}
+		ws.IsPing = true
+		ws.oncePing.Do(func() {
+			// 使用time.Ticker
+			var ticker = time.NewTicker(30 * time.Second)
+			for t := range ticker.C {
+				// ping
+				if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"cmd":4096,"pb":{"time":%v}}`, time.Now().UnixMilli()))); err != nil {
+					logger.Info(err.Error())
+					logger.Info(t)
+					ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
+					goto ERR
 				}
-			ERR:
-				ticker.Stop()
-				ws.Close()
-			}(ws)
+			}
+		ERR:
+			ticker.Stop()
+			ws.Close()
 		})
 	}
 }
@@ -325,7 +318,6 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 // 通用订阅
 func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param reflect.Type) bool {
 	ws.Symbol = ch
-	ch = strings.ToUpper(ch)
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
 	var mi *CallbackFunc = nil
@@ -337,7 +329,5 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	}
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
-	ws.allSubStrs.PushBack(string(subReq))
-	ws.Symbol = ch
 	return ws.SendMsg(subReq)
 }

@@ -56,7 +56,9 @@ type WebSocketOp struct {
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
-	once              sync.Once                // 锁
+	onceTick          sync.Once                // Tick动作锁
+	onceClose         sync.Once                // 关闭动作锁
+	oncePing          sync.Once                // Ping动作锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              //读消息管道
 	writeChan         chan []byte              //写消息管道
@@ -398,7 +400,7 @@ ERR:
 func (ws *WebSocketOp) writePing() {
 	if !ws.IsPing { // 只能发起一次 ping
 		ws.IsPing = true
-		ws.once.Do(func() {
+		ws.oncePing.Do(func() {
 			// 使用time.Ticker
 			var ticker = time.NewTicker(25 * time.Second)
 			for t := range ticker.C {
@@ -425,7 +427,7 @@ func (ws *WebSocketOp) writePing() {
 func (ws *WebSocketOp) writeTick() {
 	if !ws.IsTick { // 只能发起一次 Tick
 		ws.IsTick = true
-		ws.once.Do(func() {
+		ws.onceTick.Do(func() {
 			// 使用time.Ticker
 			var ticker = time.NewTicker(1 * time.Second)
 			for t := range ticker.C {
@@ -450,10 +452,10 @@ func (ws *WebSocketOp) writeTick() {
 
 func (ws *WebSocketOp) Close() {
 	if !ws.isClose {
-		ws.once.Do(func() {
+		ws.isClose = true
+		ws.onceClose.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
 			ws.IsPing = false // 重置 ping
-			ws.isClose = true // 重置close
 			close(ws.writeChan)
 			close(ws.readChan)
 			close(ws.closeChan)

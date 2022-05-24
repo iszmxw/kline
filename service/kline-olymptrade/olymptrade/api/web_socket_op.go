@@ -34,7 +34,7 @@ type WebSocketOp struct {
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
-	once              sync.Once                // 锁
+	onceClose         sync.Once                // 锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              // 读消息管道
 	writeChan         chan []byte              // 写消息管道
@@ -205,9 +205,9 @@ ERR:
 
 func (ws *WebSocketOp) Close() {
 	if !ws.isClose {
-		ws.once.Do(func() {
+		ws.isClose = true
+		ws.onceClose.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
-			ws.isClose = true // 重置close
 			close(ws.writeChan)
 			close(ws.readChan)
 			close(ws.closeChan)

@@ -2,6 +2,7 @@ package code
 
 import (
 	kline_common "goapi/service/kline-common"
+	kconfig "goapi/service/kline-raceoption/raceoption/config"
 )
 
 // 订阅的资产
@@ -14,7 +15,7 @@ func SubSymbol() []string {
 
 func Convert(Symbol string) kline_common.Info {
 	Info := kline_common.Info{}
-	Codes := kline_common.GetData()
+	Codes := kline_common.GetData(kconfig.KlineSource)
 	subSymbol := SubSymbol()
 	for i := 0; i < len(subSymbol); i++ {
 		switch Symbol {

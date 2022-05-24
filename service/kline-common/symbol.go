@@ -88,3 +88,30 @@ func Hsb(CodeData []Info) []Info {
 	)
 	return CodeData
 }
+
+// hsb 通过 id 获取 Symbol
+
+func GetSymbolById(id int) string {
+	var Symbol string
+	switch id {
+	case 153080:
+		Symbol = "EUR-USD"
+		break
+	case 153086:
+		Symbol = "GBP-USD"
+		break
+	case 153083:
+		Symbol = "USD-JPY"
+		break
+	case 153105:
+		Symbol = "GOLD"
+		break
+	case 153104:
+		Symbol = "SILVER"
+		break
+	default:
+		break
+	}
+	return Symbol
+
+}

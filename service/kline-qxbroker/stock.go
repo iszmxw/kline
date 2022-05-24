@@ -71,7 +71,6 @@ func SocketQxbroker(info kline_common.Info) {
 		}
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(kconfig.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
-			logger.Info(resp)
 			SystemTs := time.Now().UnixMilli()             // 系統生成的Ts
 			logger.RequestId = fmt.Sprintf("%v", SystemTs) // RequestId 定义为 Ts 时间戳
 			resp.Symbol = info.ContractCode
@@ -97,6 +96,7 @@ func SocketQxbroker(info kline_common.Info) {
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			logger.Info(kline_common.TimeDiffTips(kconfig.KlineSource, UpstreamTs))
 			data := RedisData(SystemTs, resp)
+			logger.Info(data)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)

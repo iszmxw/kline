@@ -111,6 +111,7 @@ func SocketRaceOption(info kline_common.Info) {
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			logger.Info(kline_common.TimeDiffTips(kconfig.KlineSource, UpstreamTs))
 			data := RedisData(SystemTs, resp)
+			logger.Info(data)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)

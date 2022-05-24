@@ -9,9 +9,9 @@ import (
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
+	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/code"
-	"goapi/service/kline-raceoption/raceoption/wsdata"
 	"net/http"
 	"time"
 )
@@ -31,7 +31,7 @@ func getToken(refresh bool) (error, string) {
 			"origin":       {"https://trading.raceoption.com"},
 			"referer":      {"https://trading.raceoption.com/"},
 			"User-Agent":   {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
-		}, `{"login": "mail@54zm.com","password": "wap.54zm.com"}`, config.Proxy())
+		}, `{"login": "mail@54zm.com","password": "wap.54zm.com"}`, kline_common.GetProxy(config.KlineSource))
 		if err != nil {
 			logger.Error(err)
 			logger.Info(header)
@@ -70,7 +70,7 @@ func GetRate() {
 			"Cookie":     {fmt.Sprintf("rop-auth-token=%v", token)}, // 两个小时失效，所以每隔两个小时获取一次
 			"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
 			"referer":    {"https://trading.raceoption.com/"},
-		}, config.Proxy())
+		}, kline_common.GetProxy(config.KlineSource))
 		if err != nil {
 			logger.Error(err)
 			_, _ = getToken(true) // 强制刷新token
@@ -98,7 +98,7 @@ func GetRate() {
 	}
 }
 
-func UpdateRate(info wsdata.Info, returnRate float64) {
+func UpdateRate(info kline_common.Info, returnRate float64) {
 	// 修改费率
 	var TradingAssets res.TradingAssets
 	DB := mysql.DB.Debug()

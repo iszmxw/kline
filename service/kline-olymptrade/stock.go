@@ -104,73 +104,33 @@ func SocketOlymptrade(info kline_common.Info) {
 			if dType == 1 {
 				return
 			}
-			if dType == 2 {
-				logger.Info(rData)
-			}
-			runStr := time.Now().UnixMilli() // 开始时间
-			// RequestId 定义为 Ts 时间戳
-			logger.RequestId = fmt.Sprintf("%v", rData.T)
-			// olymptrade网推送的回来的数据转换为字符串
-			strData, err := json.Marshal(resp) //转换成JSON返回的是byte[]
-			if err != nil {
-				logger.Error(err)
-				return
-			}
-			if len(strData) <= 0 {
-				logger.Error(errors.New(fmt.Sprintf(
-					"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",
-					info.ContractCode, resp)))
-				return
-			}
-			logger.Info(resp)
+			SystemTs := time.Now().UnixMilli()             // 开始时间 系統生成的Ts
+			logger.RequestId = fmt.Sprintf("%v", SystemTs) // RequestId 定义为 Ts 时间戳
 			if rData.T <= 0 {
 				// 当前数据源匹配就入库
 				if response.KlineSource(info.ContractCode) == kconfig.KlineSource {
-					err = mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", info.ContractCode).Update("assets_status", "2").Error
-					if err != nil {
-						logger.Error(err)
-					}
+					logger.Info("休市")
 				}
-				logger.Error(errors.New(fmt.Sprintf(
-					"订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v",
-					info.ContractCode, resp)))
+				logger.Error(
+					errors.New(fmt.Sprintf("订阅失败 当前订阅的 topic 为：%v,返回的数据时间为：%v", info.ContractCode, resp)),
+				)
 				return
 			}
-			ContractCode := info.ContractCode
-			SystemTs := time.Now().UnixMilli()  // 系統生成的Ts
+			rData.P = info.ContractCode
 			UpstreamTs := int64(rData.T * 1000) // 上游的ts
-			var data response.SubIndexKLineResponse
-			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
-			data.Ts = SystemTs
-			data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
-			data.Source = kconfig.KlineSource
-			data.Tick.Id = SystemTs
-			data.Tick.Vol = "0"
-			data.Tick.Count = 0
-			data.Tick.Open = fmt.Sprintf("%v", rData.Open)
-			data.Tick.Close = fmt.Sprintf("%v", rData.Close)
-			data.Tick.Low = fmt.Sprintf("%v", rData.Low)
-			data.Tick.High = fmt.Sprintf("%v", rData.High)
-			data.Tick.Amount = "0"
-
-			tips := fmt.Sprintf(
-				"olymptrade时差：系统时间：%v(%v)<br>olymptrade的 ts 时间：%v(%v)",
-				time.Now().UnixMilli(),
-				time.Now().Format("2006-01-02 15:04:05"),
-				UpstreamTs,
-				time.Unix(UpstreamTs/1000, 0).Format("2006-01-02 15:04:05"),
-			)
-			logger.Info(tips)
-			shicha := time.Now().UnixMilli() - data.Ts
-			logger.Info(fmt.Sprintf("shicha=%v", shicha))
-			msgData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
+			TimeDiff := SystemTs - UpstreamTs
+			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
+			logger.Info(kline_common.TimeDiffTips(kconfig.KlineSource, UpstreamTs))
+			data := RedisData(SystemTs, resp)
+			logger.Info(data)
+			redisData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 			if MarshalJSONErr != nil {
 				logger.Error(MarshalJSONErr)
 				return
 			}
 			// 收集数据缓存到redis
 			key := fmt.Sprintf("%v:%v", kconfig.KlineSource, data.Ch)
-			_, redisErr := redis.Client.Add(key, msgData, 0)
+			_, redisErr := redis.Client.Add(key, redisData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
 				return
@@ -179,10 +139,10 @@ func SocketOlymptrade(info kline_common.Info) {
 			// 当前数据源匹配就入库
 			if response.KlineSource(info.ContractCode) == kconfig.KlineSource {
 				var KlineData models.KlineLog
-				err = mysql.DB.Debug().
+				err := mysql.DB.Debug().
 					Model(models.KlineLog{}).
 					Select("log_id").
-					Where("contract_code", ContractCode).
+					Where("contract_code", info.ContractCode).
 					Where("upstream_ts", UpstreamTs).
 					Where("kline_source", kconfig.KlineSource).
 					Find(&KlineData).Error
@@ -192,10 +152,9 @@ func SocketOlymptrade(info kline_common.Info) {
 				if KlineData.LogId > 0 {
 					return
 				}
-				lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
-				cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
-				if cerr1 != nil {
-					logger.Error(cerr1)
+				lineLogRes := LogData(wsData, info.ContractCode, SystemTs, UpstreamTs)
+				if err = mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
+					logger.Error(err)
 					return
 				}
 			}
@@ -207,18 +166,8 @@ func SocketOlymptrade(info kline_common.Info) {
 			//} else {
 			//	logger.Info("elastic-success")
 			//}
-
-			runEnd := time.Now().UnixMilli() // 开始时间
 			// 计算一次存储数据消耗的时间
-			logger.Info(fmt.Sprintf(
-				"开始时间：%v(%v),结束时间%v(%v),消耗%vms",
-				runStr,
-				time.Unix(runStr/1000, 0).Format("2006-01-02 15:04:05"),
-				runEnd,
-				time.Unix(runEnd/1000, 0).Format("2006-01-02 15:04:05"),
-				runEnd-runStr,
-			))
-
+			logger.Info(kline_common.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		}, "")
 	}
 	select {
@@ -266,4 +215,24 @@ func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs,
 	klineLog.CreateDate = time.Now()                                                    // 创建日期
 	klineLog.KlineSource = kconfig.KlineSource                                          // K线来源olymptrade
 	return klineLog
+}
+
+// RedisData 缓存进redis的数据
+func RedisData(SystemTs int64, resp *wsdata.SubPriceKLineResponse) response.SubIndexKLineResponse {
+	var data response.SubIndexKLineResponse
+	wsData := *resp
+	rData := wsData[0].D[0] // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
+	data.Ch = fmt.Sprintf("market.%v.index.1min", rData.P)
+	data.Ts = SystemTs
+	data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
+	data.Source = kconfig.KlineSource
+	data.Tick.Id = SystemTs
+	data.Tick.Vol = "0"
+	data.Tick.Count = 0
+	data.Tick.Open = fmt.Sprintf("%v", rData.Open)
+	data.Tick.Close = fmt.Sprintf("%v", rData.Close)
+	data.Tick.Low = fmt.Sprintf("%v", rData.Low)
+	data.Tick.High = fmt.Sprintf("%v", rData.High)
+	data.Tick.Amount = "0"
+	return data
 }
