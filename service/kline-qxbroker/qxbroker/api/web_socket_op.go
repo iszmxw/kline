@@ -68,6 +68,7 @@ type WebSocketOp struct {
 	ContractCode      string // 订阅的币种
 	Symbol            string // 订阅的币种
 	IsPing            bool   // 是否已开始ping
+	IsTick            bool   // 是否已开始Tick
 	Description       string // 描述
 }
 
@@ -159,11 +160,14 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 	case strings.EqualFold(string(message), `{"favorites":[],"list":[]}`): // {"favorites":[],"list":[]}
 	case strings.EqualFold(string(message), "3"): // 3 pong
 	case strings.Contains(string(message), "pingInterval"): // 0{"sid":"ceIYe8zRlMleiZeSIbjZ","upgrades":[],"pingInterval":25000,"pingTimeout":5000}
-	case strings.Contains(string(message), "history"): // 历史数据
 	case strings.Contains(string(message), "liveBalance"): // {"liveBalance":0,"demoBalance":10000} // 账户余额信息
 	case strings.Contains(string(message), "451-"): // 451-["depth/change",{"_placeholder":true,"num":0}]
 	case strings.Contains(string(message), "chart_id"):
 		// 直接跳过
+		break
+	case strings.Contains(string(message), "history"): // 历史数据
+		// 开启定时器 tick
+		go ws.writeTick()
 		break
 	case strings.EqualFold(string(message), "40"): // 检测是否登录成功  42["s_authorization"]
 		{
@@ -241,13 +245,6 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 								TimeId := klineArr[1]                                      // TimeId
 								Close := klineArr[2]                                       // Close
 								Ping := klineArr[3]                                        // Ping
-								if 0 == Ping {                                             // 是否ping
-									if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["tick"]`))); err != nil {
-										logger.Error(err)
-										ws.Close()
-										return
-									}
-								}
 								if ws.isClose {
 									return
 								}
@@ -414,6 +411,33 @@ func (ws *WebSocketOp) writePing() {
 					logger.Info(err.Error())
 					logger.Info(t)
 					ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
+					goto ERR
+				}
+			}
+		ERR:
+			ticker.Stop()
+			ws.Close()
+		})
+	}
+}
+
+// 写 Tick 协程
+func (ws *WebSocketOp) writeTick() {
+	if !ws.IsTick { // 只能发起一次 Tick
+		ws.IsTick = true
+		ws.once.Do(func() {
+			// 使用time.Ticker
+			var ticker = time.NewTicker(1 * time.Second)
+			for t := range ticker.C {
+				if ws.isClose {
+					ws.Description = fmt.Sprintf("%v当前握手已经关闭Tick协程已关闭", ws.Symbol)
+					goto ERR
+				}
+				// Tick
+				if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["tick"]`)); err != nil {
+					logger.Info(err.Error())
+					logger.Info(t)
+					ws.Description = fmt.Sprintf("%vTick协程已关闭 %v", ws.Symbol, err.Error())
 					goto ERR
 				}
 			}
