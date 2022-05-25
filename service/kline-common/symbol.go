@@ -12,7 +12,7 @@ type Info struct {
 func GetData(service string) []Info {
 	var CodeData []Info
 	switch service {
-	case "huibi":
+	case "huobi":
 		CodeData = HuoBi(CodeData)
 		break
 	case "binance":
