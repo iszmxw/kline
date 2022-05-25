@@ -127,9 +127,16 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 			if result, found := pb.(map[string]interface{})["result"]; found {
 				logger.Info(fmt.Sprint(fmt.Sprintf("%T", result), result))
 				if result.(bool) {
-					// 登录成功
-					ws.auth = true
-					logger.Info("登录成功")
+					// ping
+					if err = ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"cmd":4096,"pb":{"time":%v}}`, time.Now().UnixMilli()))); err != nil {
+						logger.Info(err.Error())
+						// 登录失败
+						ws.auth = false
+					}else{
+						// 登录成功
+						ws.auth = true
+						logger.Info("登录成功")
+					}
 				} else {
 					// 登录失败
 					ws.auth = false

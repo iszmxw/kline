@@ -2,6 +2,7 @@ package kline_common
 
 type Info struct {
 	ID           int    `json:"id"`
+	MarketId     int    `json:"marketid"`
 	Symbol       string `json:"symbol"`
 	Desc         string `json:"desc"`
 	ContractCode string `json:"contract_code"`
@@ -100,11 +101,11 @@ func Hsb(CodeData []Info) []Info {
 		// 153080--EURUSD // {"cmd":4102,"pb":{"stk":[{"id":153080,"marketid":8}]}}
 		// 153083--USDJPY // {"cmd":4102,"pb":{"stk":[{"id":153083,"marketid":8}]}}
 		// 153086--GBPUSD // {"cmd":4102,"pb":{"stk":[{"id":153086,"marketid":8}]}}
-		Info{ID: 153080, Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		Info{ID: 153086, Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
-		Info{ID: 153083, Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
-		Info{ID: 153105, Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
-		Info{ID: 153104, Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		Info{ID: 153080, MarketId: 8, Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{ID: 153086, MarketId: 8, Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		Info{ID: 153083, MarketId: 8, Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		Info{ID: 153105, MarketId: 10, Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
+		Info{ID: 153104, MarketId: 10, Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
 		//Info{ID: 153080, Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"}, // 该平台暂无
 	)
 	return CodeData

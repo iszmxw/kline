@@ -7,6 +7,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
 	kline_common "goapi/service/kline-common"
@@ -117,11 +118,11 @@ func UpdateRate(info kline_common.Info, returnRate float64) {
 	if TradingAssets.ReturnRate == returnRate {
 		logger.Info(fmt.Sprintf("%v：当前资产赔率和历史赔率一样，无需修改", TradingAssets.AssetsCode))
 	} else {
-		//// 赔率变动通知
-		//mail_notice.Notice("msgRateChange", map[string]interface{}{
-		//	"service": config.KlineSource,
-		//	"tips":    tips,
-		//})
+		// 赔率变动通知
+		mail_notice.Notice("msgRateChange", map[string]interface{}{
+			"service": config.KlineSource,
+			"tips":    tips,
+		})
 		DB.Begin()
 		err = DB.Model(models.TradingAssets{}).
 			Where("assets_code", info.ContractCode).
