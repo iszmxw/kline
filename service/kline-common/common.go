@@ -2,8 +2,27 @@ package kline_common
 
 import (
 	"fmt"
+	"goapi/pkg/logger"
+	"goapi/pkg/notice/telegram"
+	"runtime/debug"
 	"time"
 )
+
+// KlineRecover 异常捕获
+func KlineRecover(tips, service, symbol string) {
+	if r := recover(); r != nil {
+		title := fmt.Sprintf(`【%v】捕捉到异常：当前服务【%v】当前资产【%v】`, tips, service, symbol)
+		cutContent := r
+		errInfo := string(debug.Stack())
+		logger.Info(title)
+		logger.Info(cutContent)
+		logger.Info(errInfo)
+		telegram.Notice(map[string]interface{}{
+			"title":   title,
+			"content": errInfo,
+		})
+	}
+}
 
 // TimeDiffTips 时差提示
 func TimeDiffTips(service string, UpstreamTs int64) string {

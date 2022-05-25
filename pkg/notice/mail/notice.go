@@ -276,7 +276,7 @@ func Notice(t string, data interface{}) {
 	go telegram.Notice(Info)
 	// 邮件通知
 	for _, address := range conf.GetStringSlice("notify.email") {
-		if check(address, t) {
+		if (len(address) > 0) && check(address, t) {
 			go func(address string) {
 				err := email.SendEmail(Info, address)
 				if err != nil {

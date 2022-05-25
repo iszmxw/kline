@@ -1,53 +1,29 @@
 package main
 
 import (
-	"fmt"
-	"runtime"
+	"goapi/config"
+	"goapi/pkg/logger"
+	kline_common "goapi/service/kline-common"
 	"time"
 )
 
-func main() {
-	type topics struct {
-		Topic string `json:"topic"` // K线图代码
-	}
-	var Topics []topics
-	// 收集所有要订阅处理的 topic
-	Topics = append(Topics,
-		// BTC-USD
-		// 1分钟k线图
-		topics{
-			Topic: "market.BTC-USD.index.1min",
-		},
-		// ETH-USD
-		// 1分钟k线图
-		topics{
-			Topic: "market.ETH-USD.index.1min",
-		})
-	start := "ok"
-	for {
-		if start == "ok" {
-			for _, obj := range Topics {
-				go SocketHuoBi(obj.Topic)
-			}
-			start = "no"
-		}
-		// 消费消息队列，数据存入es里面
-		//go MsgQueue()
-		time.Sleep(time.Second)
-	}
+func init() {
+	// 初始化配置信息
+	config.Initialize()
+	// 定义日志目录
+	logger.Init("test")
 }
 
-func SocketHuoBi(parentTopic string) {
-	callback := make(chan struct{}, 1)
-	callback <- struct{}{}
-	select {
-	case <-callback:
-		fmt.Println(parentTopic + "：已关闭")
-		fmt.Println(parentTopic + "：正在重新启动 Goroutine")
-		go SocketHuoBi(parentTopic)
-	}
-	fmt.Println(123456)
-	time.Sleep(time.Second * 5)
-	runtime.Goexit()
-	// 退出
+func main() {
+	goroutine()
+	time.Sleep(time.Hour)
+}
+
+func goroutine() {
+	defer kline_common.KlineRecover("异常", "asasa", "asasas")
+	c := make(chan int, 10)
+	c <- 1
+	c <- 2
+	close(c)
+	c <- 3
 }

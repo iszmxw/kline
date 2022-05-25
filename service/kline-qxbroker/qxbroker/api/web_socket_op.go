@@ -13,6 +13,7 @@ import (
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
+	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-qxbroker/qxbroker/config"
 	"io/ioutil"
 	"net/http"
@@ -23,24 +24,6 @@ import (
 	"sync"
 	"time"
 )
-
-// 登录结构
-
-type Login struct {
-	List    []string `json:"list"`
-	Captcha struct {
-		Type string `json:"type"`
-		Data struct {
-			Token string `json:"token"`
-		} `json:"data"`
-	} `json:"captcha"`
-	Data struct {
-		Email      string `json:"email"`
-		Password   string `json:"password"`
-		FpId       string `json:"fp_id"`
-		HardwareId string `json:"hardware_id"`
-	} `json:"data"`
-}
 
 type closeChanCallback chan struct{}
 
@@ -123,6 +106,7 @@ func (ws *WebSocketOp) connServer() bool {
 }
 
 func (ws *WebSocketOp) DoHand() {
+	defer kline_common.KlineRecover("DoHand异常", config.KlineSource, ws.Symbol)
 	for {
 		select {
 		case msg, ok := <-ws.readChan:
@@ -141,6 +125,7 @@ ERR:
 }
 
 func (ws *WebSocketOp) msgHand(message []byte) {
+	defer kline_common.KlineRecover("msgHand异常", config.KlineSource, ws.Symbol)
 	// 去除 
 	if strings.Contains(string(message), ``) {
 		str := strings.ReplaceAll(string(message), ``, "")
@@ -300,6 +285,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 }
 
 func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
+	defer kline_common.KlineRecover("UpdateRate异常", config.KlineSource, ws.Symbol)
 	// 修改费率
 	var TradingAssets response.TradingAssets
 	DB := mysql.DB.Debug()
@@ -377,6 +363,7 @@ func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata interf
 
 // 读协程
 func (ws *WebSocketOp) readLoop() {
+	defer kline_common.KlineRecover("readLoop异常", config.KlineSource, ws.Symbol)
 	for {
 		_, message, err := ws.conn.ReadMessage()
 		if err != nil {
@@ -398,6 +385,7 @@ ERR:
 
 // 写 Ping 协程
 func (ws *WebSocketOp) writePing() {
+	defer kline_common.KlineRecover("writePing异常", config.KlineSource, ws.Symbol)
 	if !ws.IsPing { // 只能发起一次 ping
 		ws.IsPing = true
 		ws.oncePing.Do(func() {
@@ -425,6 +413,7 @@ func (ws *WebSocketOp) writePing() {
 
 // 写 Tick 协程
 func (ws *WebSocketOp) writeTick() {
+	defer kline_common.KlineRecover("writeTick异常", config.KlineSource, ws.Symbol)
 	if !ws.IsTick { // 只能发起一次 Tick
 		ws.IsTick = true
 		ws.onceTick.Do(func() {
@@ -451,6 +440,7 @@ func (ws *WebSocketOp) writeTick() {
 }
 
 func (ws *WebSocketOp) Close() {
+	defer kline_common.KlineRecover("Close异常", config.KlineSource, ws.Symbol)
 	if !ws.isClose {
 		ws.isClose = true
 		ws.onceClose.Do(func() {
@@ -516,6 +506,7 @@ func (ws *WebSocketOp) sub(ContractCode string, Symbol string, fun interface{}, 
 // 获取登录token
 
 func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
+	defer kline_common.KlineRecover("GetToken异常", config.KlineSource, ws.Symbol)
 	// 读取 session，如果未配置session进行邮件提醒
 	redisLoginKey := "kline:token:qxbroker:login"
 	// 刷新token
@@ -529,10 +520,7 @@ func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
 			return errors.New("35秒之内已经进行登录操作，请稍后再试"), ""
 		}
 		// 登录
-		_, err := redis.Client.Add(redisLoginKey, "true", 35) // 60秒之内只能登录一次
-		if err != nil {
-			logger.Error(err)
-		}
+		_, _ = redis.Client.Add(redisLoginKey, "true", 35) // 60秒之内只能登录一次
 		// 异步登录获取 token
 		go ws.login()
 	}
@@ -543,15 +531,18 @@ func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
 // demo登录
 
 func (ws *WebSocketOp) login() {
+	defer kline_common.KlineRecover("login异常", config.KlineSource, ws.Symbol)
 	var token string
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		logger.Error(err)
+		ws.Close()
 		return
 	}
 	req, err := http.NewRequest("GET", "https://qxbroker.com/zh/sign-up/fast/", nil)
 	if err != nil {
 		logger.Error(err)
+		ws.Close()
 		return
 	}
 	c := http.Client{
@@ -564,20 +555,25 @@ func (ws *WebSocketOp) login() {
 	do, err := c.Do(req)
 	if err != nil {
 		logger.Error(err)
+		ws.Close()
 		return
 	}
 	if do.StatusCode == 200 {
 		body, err := ioutil.ReadAll(do.Body)
-		if err == nil {
-			html := string(body)
-			if len(html) > 0 {
-				js := html[strings.Index(html, `"token"`):]
-				js = js[:strings.Index(js, `",`)]
-				token = strings.ReplaceAll(js, `"token":"`, "")
-				_, err = redis.Client.Add(config.RedisKey, token, 60*60*2) // 两个小时过期一下
-				if err != nil {
-					logger.Error(err)
-				}
+		if err != nil {
+			logger.Error(err)
+			ws.Close()
+			return
+		}
+		html := string(body)
+		if len(html) > 0 {
+			js := html[strings.Index(html, `"token"`):]
+			js = js[:strings.Index(js, `",`)]
+			token = strings.ReplaceAll(js, `"token":"`, "")
+			_, err = redis.Client.Add(config.RedisKey, token, 60*60*2) // 两个小时过期一下
+			if err != nil {
+				logger.Error(err)
+				ws.Close()
 			}
 		}
 	}
