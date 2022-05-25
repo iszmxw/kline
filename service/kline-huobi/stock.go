@@ -18,8 +18,8 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/pprof"
 	"goapi/pkg/redis"
+	kline_common "goapi/service/kline-common"
 	kconfig "goapi/service/kline-huobi/huobi/config"
-	"strings"
 	"time"
 )
 
@@ -41,29 +41,13 @@ func main() {
 	pprof.Debug(":6060")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	type topics struct {
-		Topic string `json:"topic"` // K线图代码
-	}
-	var Topics []topics
-	// 收集所有要订阅处理的 topic
-	Topics = append(Topics,
-		// BTC-USD
-		// 1分钟k线图
-		topics{
-			Topic: "market.BTC-USD.index.1min",
-		},
-		// ETH-USD
-		// 1分钟k线图
-		topics{
-			Topic: "market.ETH-USD.index.1min",
-		})
+	CodeData := kline_common.GetData(kconfig.KlineSource)
 	start := "ok"
 	for {
 		if start == "ok" {
-			logger.Info(Topics)
-			for _, obj := range Topics {
-				logger.Info("缓存 " + obj.Topic)
-				go SocketHuoBi(obj.Topic)
+			for _, obj := range CodeData {
+				logger.Info("缓存 " + obj.Symbol)
+				go SocketHuoBi(obj)
 			}
 			start = "no"
 		}
@@ -75,8 +59,7 @@ func main() {
 
 // 链接火币网
 
-func SocketHuoBi(parentTopic string) {
-	Topic := strings.Split(parentTopic, ".")
+func SocketHuoBi(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
 	var host string
 	// 本地环境打包走测试地址
@@ -84,8 +67,8 @@ func SocketHuoBi(parentTopic string) {
 		host = "api.btcgateway.pro"
 	}
 	// websocket api
-	wsmkClient := new(api.WSIndexClient).Init(host, callback)
-	wsmkClient.SubIndexKLine(Topic[1], Topic[3], func(resp *response.SubIndexKLineResponse) {
+	wsClient := new(api.WSIndexClient).Init(host, callback)
+	wsClient.SubIndexKLine(info.Symbol, "1min", func(resp *response.SubIndexKLineResponse) {
 		defer func() {
 			if r := recover(); r != nil {
 				mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
@@ -106,9 +89,7 @@ func SocketHuoBi(parentTopic string) {
 			return
 		}
 		if len(msgData) <= 0 {
-			logger.Error(errors.New(fmt.Sprintf(
-				"订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v",
-				parentTopic, resp)))
+			logger.Error(errors.New(fmt.Sprintf("订阅失败 当前订阅的 topic 为：%v,返回的数据为：%v", info.Symbol, resp)))
 			return
 		}
 		logger.Info(resp)
@@ -150,9 +131,9 @@ func SocketHuoBi(parentTopic string) {
 			return
 		}
 		// 当前数据源匹配就入库
-		if res.KlineSource(Topic[1]) == kconfig.KlineSource {
+		if res.KlineSource(info.ContractCode) == kconfig.KlineSource {
 			// 历史 kline 入库 Format("2006-01-02 15:04:05")
-			AddData := res.KlineLogData(Topic, resp)
+			AddData := res.KlineLogData(info.ContractCode, resp)
 			DB := mysql.DB.Debug()
 			result := DB.Model(models.KlineLog{}).Create(&AddData)
 			if result.Error != nil {
@@ -195,7 +176,7 @@ func SocketHuoBi(parentTopic string) {
 	select {
 	case <-callback:
 		// 记录重连次数 连接
-		timeKey := fmt.Sprintf("connect:%v:%v:time", kconfig.KlineSource, Topic[1])
+		timeKey := fmt.Sprintf("connect:%v:%v:time", kconfig.KlineSource, info.ContractCode)
 		timeStr, _ := redis.Client.Get(timeKey)
 		var lastRuntime int64
 		if len(timeStr) > 0 {
@@ -204,16 +185,16 @@ func SocketHuoBi(parentTopic string) {
 			// 上次
 			lastRuntime = time.Now().UnixMilli() - UnixMilli
 		}
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", kconfig.KlineSource, Topic[1]))
+		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", kconfig.KlineSource, info.ContractCode))
 		_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
-		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", Topic[1], num))
+		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.ContractCode, num))
 		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
 			"service":     kconfig.KlineSource,
-			"symbol":      Topic[1],
+			"symbol":      info.ContractCode,
 			"num":         num,
 			"lastRuntime": lastRuntime,
 		})
-		go SocketHuoBi(parentTopic)
+		go SocketHuoBi(info)
 	}
 }
 

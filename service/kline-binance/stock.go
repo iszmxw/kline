@@ -17,7 +17,6 @@ import (
 	"goapi/pkg/redis"
 	"goapi/service/kline-binance/binance/api"
 	kconfig "goapi/service/kline-binance/binance/config"
-	"goapi/service/kline-binance/binance/utils/code"
 	"goapi/service/kline-binance/binance/wsdata"
 	kline_common "goapi/service/kline-common"
 	"strings"
@@ -40,7 +39,7 @@ func main() {
 	pprof.Debug(":6065")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	CodeData := code.GetData()
+	CodeData := kline_common.GetData(kconfig.KlineSource)
 	start := "ok"
 	for {
 		if start == "ok" {
@@ -54,7 +53,7 @@ func main() {
 	}
 }
 
-func SocketBian(info wsdata.Info) {
+func SocketBian(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
 	var StartSub = true
 	// 资产休市状态

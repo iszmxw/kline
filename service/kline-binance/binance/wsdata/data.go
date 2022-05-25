@@ -1,11 +1,5 @@
 package wsdata
 
-type Info struct {
-	Symbol       string `json:"symbol"`
-	Desc         string `json:"desc"`
-	ContractCode string `json:"contract_code"`
-}
-
 //type SubPriceKLineResponse struct {
 //	E  string `json:"e"` // 事件类型
 //	E1 int64  `json:"E"` // 事件时间

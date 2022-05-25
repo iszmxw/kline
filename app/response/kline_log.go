@@ -75,9 +75,9 @@ type SubIndexKLineResponse struct {
 }
 
 // KlineLogData 组装数据
-func KlineLogData(Topic []string, data *response.SubIndexKLineResponse) *models.KlineLog {
+func KlineLogData(ContractCode string, data *response.SubIndexKLineResponse) *models.KlineLog {
 	return &models.KlineLog{
-		ContractCode: Topic[1],                                      // 合约代码 BTC-USD
+		ContractCode: ContractCode,                                  // 合约代码 BTC-USD
 		Ch:           data.Ch,                                       // k线类型请求kline的wss请求地址
 		Ts:           data.Ts,                                       // kilne返回日期时间戳
 		ID:           data.Tick.Id,                                  // 返回的id

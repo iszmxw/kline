@@ -10,9 +10,14 @@ type Info struct {
 // 获取资产信息编码
 
 func GetData(service string) []Info {
-	// raceoption
 	var CodeData []Info
 	switch service {
+	case "huibi":
+		CodeData = HuoBi(CodeData)
+		break
+	case "binance":
+		CodeData = Binance(CodeData)
+		break
 	case "raceoption":
 		CodeData = RaceOption(CodeData)
 		break
@@ -28,6 +33,22 @@ func GetData(service string) []Info {
 	default:
 		break
 	}
+	return CodeData
+}
+
+func HuoBi(CodeData []Info) []Info {
+	CodeData = append(CodeData,
+		Info{Symbol: "BTC-USD", Desc: "比特币/美元", ContractCode: "BTC-USD"},
+		Info{Symbol: "ETH-USD", Desc: "以太坊/美元", ContractCode: "ETH-USD"},
+	)
+	return CodeData
+}
+
+func Binance(CodeData []Info) []Info {
+	CodeData = append(CodeData,
+		Info{Symbol: "BTCUSD", Desc: "比特币/美元", ContractCode: "BTC-USD"},
+		Info{Symbol: "ETHUSD", Desc: "以太坊/美元", ContractCode: "ETH-USD"},
+	)
 	return CodeData
 }
 
