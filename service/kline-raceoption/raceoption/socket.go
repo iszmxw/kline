@@ -117,25 +117,8 @@ func SocketRaceOption(info kline_common.Info) {
 	}
 	select {
 	case <-callback:
-		timeKey := fmt.Sprintf("connect:%v:%v:time", config.KlineSource, info.Symbol)
-		// 记录重连次数 连接
-		timeStr, _ := redis.Client.Get(timeKey)
-		var lastRuntime int64
-		if len(timeStr) > 0 {
-			// 上次运行时间
-			UnixMilli := helpers.StringToInt64(timeStr)
-			// 上次
-			lastRuntime = time.Now().UnixMilli() - UnixMilli
-		}
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", config.KlineSource, info.Symbol))
-		_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
-		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
-		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
-			"service":     config.KlineSource,
-			"symbol":      info.Symbol,
-			"num":         num,
-			"lastRuntime": lastRuntime,
-		})
+		// 重启服务
+		kline_common.RebootSocketLog(config.KlineSource, info)
 		go SocketRaceOption(info)
 	}
 }

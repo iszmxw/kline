@@ -111,7 +111,7 @@ func SocketQxbroker(info kline_common.Info) {
 	select {
 	case <-callback:
 		// 重启服务
-		kline_common.RebootSocket(config.KlineSource, info)
+		kline_common.RebootSocketLog(config.KlineSource, info)
 		go SocketQxbroker(info)
 	}
 }

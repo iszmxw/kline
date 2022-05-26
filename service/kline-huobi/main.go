@@ -175,25 +175,8 @@ func SocketHuoBi(info kline_common.Info) {
 	}, "")
 	select {
 	case <-callback:
-		// 记录重连次数 连接
-		timeKey := fmt.Sprintf("connect:%v:%v:time", kconfig.KlineSource, info.ContractCode)
-		timeStr, _ := redis.Client.Get(timeKey)
-		var lastRuntime int64
-		if len(timeStr) > 0 {
-			// 上次运行时间
-			UnixMilli := helpers.StringToInt64(timeStr)
-			// 上次
-			lastRuntime = time.Now().UnixMilli() - UnixMilli
-		}
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", kconfig.KlineSource, info.ContractCode))
-		_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
-		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.ContractCode, num))
-		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
-			"service":     kconfig.KlineSource,
-			"symbol":      info.ContractCode,
-			"num":         num,
-			"lastRuntime": lastRuntime,
-		})
+		// 重启服务
+		kline_common.RebootSocketLog(kconfig.KlineSource, info)
 		go SocketHuoBi(info)
 	}
 }

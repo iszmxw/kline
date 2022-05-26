@@ -29,6 +29,7 @@ func main() {
 	defer bootstrap.RedisClose()
 	CodeData := kline_common.GetData(kconfig.KlineSource)
 	start := "ok"
+	heart := true
 	for {
 		if start == "ok" {
 			logger.Info(CodeData)
@@ -37,6 +38,11 @@ func main() {
 				go hsb.SocketHsb(obj)
 			}
 			start = "no"
+		}
+		if heart {
+			heart = false
+			// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
+			go kline_common.Heartbeat(30, kconfig.KlineSource, CodeData)
 		}
 		time.Sleep(time.Second)
 	}

@@ -1,4 +1,4 @@
-package health
+package kline_common
 
 import (
 	"encoding/json"
@@ -9,31 +9,33 @@ import (
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
+	"goapi/service/kline-binance/binance"
+	"goapi/service/kline-hsb/hsb"
+	"goapi/service/kline-olymptrade/olymptrade"
+	"goapi/service/kline-qxbroker/qxbroker"
+	"goapi/service/kline-raceoption/raceoption"
 	"time"
 )
 
 // 心跳 heartbeat 健康
 
-func Heartbeat(num time.Duration) {
+func Heartbeat(num time.Duration, Source string, CodeData []Info) {
+	time.Sleep(time.Minute * 5) //等待当前数据订阅5分钟后开始心跳检测
 	for {
-		logger.Info("每隔一分钟检测一次")
-		for Symbol, KlineSource := range response.AllowKlineSource() {
-			for _, item := range KlineSource.([]string) {
-				Source := item
-				go check(Source, Symbol)
-			}
+		for _, info := range CodeData {
+			go check(Source, info)
 		}
 		time.Sleep(time.Second * num)
 	}
 }
 
-func check(Source, Symbol string) {
+func check(Source string, info Info) {
 	// 资产休市状态
-	if kline.CheckSleep(Source, Symbol) {
+	if kline.CheckSleep(Source, info.ContractCode) {
 		return
 	}
 	// 所有的数据源键值对
-	key := fmt.Sprintf("%v:market.%v.index.1min", Source, Symbol)
+	key := fmt.Sprintf("%v:market.%v.index.1min", Source, info.ContractCode)
 	logger.Info(key)
 	push, getErr := redis.Client.SelectDbGet(15, key)
 	if getErr != nil && getErr.Error() != "redis: nil" {
@@ -73,7 +75,39 @@ func check(Source, Symbol string) {
 		_, _ = redis.Client.Add(KeyStatus, 4, 0)
 		mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
 			"name": Source,
-			"msg": fmt.Sprintf(`
+			"msg":  tips(Source, info.ContractCode, SystemTs, diff, SubIndexKLineResponse),
+		})
+		reboot(Source, info) // 心跳检测到异常了，重启协诚
+		break
+	}
+}
+
+// 心跳检测到异常了，重启协诚
+func reboot(Source string, info Info) {
+	switch Source {
+	case "raceoption":
+		go raceoption.SocketRaceOption(info)
+		break
+	case "qxbroker":
+		go qxbroker.SocketQxbroker(info)
+		break
+	case "olymptrade":
+		go olymptrade.SocketOlymptrade(info)
+		break
+	case "hsb":
+		go hsb.SocketHsb(info)
+		break
+	case "binance":
+		go binance.SocketBinance(info)
+		break
+	default:
+		break
+	}
+}
+
+// 提示模板
+func tips(Source, ContractCode string, SystemTs, diff int64, SubIndexKLineResponse *response.SubIndexKLineResponse) string {
+	return fmt.Sprintf(`
     当前服务的 Socket 延迟过高，请留意对应的数据源
 
 【当前服务】：%v
@@ -90,15 +124,12 @@ func check(Source, Symbol string) {
 
 【分钟延迟】：%v min
 `,
-				Source,
-				Symbol,
-				time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"),
-				time.Unix(0, SubIndexKLineResponse.Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"),
-				SystemTs-SubIndexKLineResponse.Ts,
-				diff,
-				diff/60,
-			),
-		})
-		break
-	}
+		Source,
+		ContractCode,
+		time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"),
+		time.Unix(0, SubIndexKLineResponse.Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"),
+		SystemTs-SubIndexKLineResponse.Ts,
+		diff,
+		diff/60,
+	)
 }

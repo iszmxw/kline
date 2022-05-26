@@ -116,24 +116,8 @@ func SocketHsb(info kline_common.Info) {
 	}
 	select {
 	case <-callback:
-		timeKey := fmt.Sprintf("connect:%v:%v:time", config.KlineSource, info.Symbol)
-		timeStr, _ := redis.Client.Get(timeKey)
-		var lastRuntime int64
-		if len(timeStr) > 0 {
-			// 上次运行时间
-			UnixMilli := helpers.StringToInt64(timeStr)
-			// 上次
-			lastRuntime = time.Now().UnixMilli() - UnixMilli
-		}
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", config.KlineSource, info.Symbol))
-		_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
-		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
-		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
-			"service":     config.KlineSource,
-			"symbol":      info.Symbol,
-			"num":         num,
-			"lastRuntime": lastRuntime,
-		})
+		// 重启服务
+		kline_common.RebootSocketLog(config.KlineSource, info)
 		go SocketHsb(info)
 	}
 }
@@ -156,7 +140,7 @@ func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs,
 	klineLog.CCount = 0                                                                 // 交易笔数 TODO
 	klineLog.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond))                    // Kline返回日期
 	klineLog.CreateDate = time.Now()                                                    // 创建日期
-	klineLog.KlineSource = config.KlineSource                                          // K线来源hsb
+	klineLog.KlineSource = config.KlineSource                                           // K线来源hsb
 	return klineLog
 }
 

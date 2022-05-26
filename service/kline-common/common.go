@@ -51,8 +51,8 @@ func ConsumeTime(start, finish int64) string {
 	)
 }
 
-// RebootSocket 重启 socket
-func RebootSocket(Source string, info Info) {
+// RebootSocketLog 重启 socket
+func RebootSocketLog(Source string, info Info) {
 	// 记录重连次数 连接
 	timeKey := fmt.Sprintf("connect:%v:%v:time", Source, info.Symbol)
 	// 记录重连次数 连接
@@ -73,5 +73,4 @@ func RebootSocket(Source string, info Info) {
 		"num":         num,
 		"lastRuntime": lastRuntime,
 	})
-	//go SocketQxbroker(info)
 }
