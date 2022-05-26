@@ -1,4 +1,4 @@
-package main
+package binance
 
 import (
 	"encoding/json"
@@ -6,58 +6,25 @@ import (
 	"fmt"
 	"goapi/app/models"
 	"goapi/app/response"
-	"goapi/bootstrap"
-	"goapi/config"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
-	"goapi/pkg/pprof"
 	"goapi/pkg/redis"
 	"goapi/service/kline-binance/binance/api"
-	kconfig "goapi/service/kline-binance/binance/config"
+	"goapi/service/kline-binance/binance/config"
 	"goapi/service/kline-binance/binance/wsdata"
 	kline_common "goapi/service/kline-common"
 	"strings"
 	"time"
 )
 
-func init() {
-	var cstZone = time.FixedZone("CST", 7*3600) // 东七
-	time.Local = cstZone
-	// 初始化配置信息
-	config.Initialize()
-	// 定义日志目录
-	logger.Init(kconfig.ServiceLog)
-	// 初始化 SQL
-	bootstrap.SetupDB()
-}
-
-func main() {
-	// pprof 分析
-	pprof.Debug(":6065")
-	bootstrap.SetupRedis(15)
-	defer bootstrap.RedisClose()
-	CodeData := kline_common.GetData(kconfig.KlineSource)
-	start := "ok"
-	for {
-		if start == "ok" {
-			for _, obj := range CodeData {
-				logger.Info("缓存 " + obj.Symbol)
-				go SocketBian(obj)
-			}
-			start = "no"
-		}
-		time.Sleep(time.Second)
-	}
-}
-
-func SocketBian(info kline_common.Info) {
+func SocketBinance(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
 	var StartSub = true
 	// 资产休市状态
-	if kline.CheckSleep(kconfig.KlineSource, info.ContractCode) {
+	if kline.CheckSleep(config.KlineSource, info.ContractCode) {
 		time.Sleep(time.Second) // 休息1秒
 		StartSub = false
 		// 关闭
@@ -66,12 +33,12 @@ func SocketBian(info kline_common.Info) {
 	// 开始订阅
 	if StartSub {
 		streamName := fmt.Sprintf("%s@indexPriceKline_%v", strings.ToLower(info.Symbol), "1m")
-		wsmkClient := new(api.WSPriceClient).Init("dstream.binance.com", streamName, kline_common.GetProxy(kconfig.KlineSource), callback)
+		wsmkClient := new(api.WSPriceClient).Init("dstream.binance.com", streamName, kline_common.GetProxy(config.KlineSource), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
 					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
-						"name": kconfig.KlineSource,
+						"name": config.KlineSource,
 						"r":    r,
 					})
 					// 关闭
@@ -102,7 +69,7 @@ func SocketBian(info kline_common.Info) {
 			data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
 			data.Ts = SystemTs                                                                             // 系統生成的Ts
 			data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
-			data.Source = kconfig.KlineSource
+			data.Source = config.KlineSource
 			data.Tick.Id = SystemTs
 			data.Tick.Vol = "0"
 			data.Tick.Count = 0
@@ -127,21 +94,21 @@ func SocketBian(info kline_common.Info) {
 				return
 			}
 			// 收集数据缓存到redis
-			key := fmt.Sprintf("%v:%v", kconfig.KlineSource, data.Ch)
+			key := fmt.Sprintf("%v:%v", config.KlineSource, data.Ch)
 			_, redisErr := redis.Client.Add(key, msgData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
 				return
 			}
 			// 当前数据源匹配就入库
-			if response.KlineSource(ContractCode) == kconfig.KlineSource {
+			if response.KlineSource(ContractCode) == config.KlineSource {
 				var KlineData models.KlineLog
 				err = mysql.DB.Debug().
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", ContractCode).
 					Where("upstream_ts", UpstreamTs).
-					Where("kline_source", kconfig.KlineSource).
+					Where("kline_source", config.KlineSource).
 					Find(&KlineData).Error
 				if err != nil {
 					logger.Error(err)
@@ -180,7 +147,7 @@ func SocketBian(info kline_common.Info) {
 	}
 	select {
 	case <-callback:
-		timeKey := fmt.Sprintf("connect:%v:%v:time", kconfig.KlineSource, info.Symbol)
+		timeKey := fmt.Sprintf("connect:%v:%v:time", config.KlineSource, info.Symbol)
 		timeStr, _ := redis.Client.Get(timeKey)
 		var lastRuntime int64
 		if len(timeStr) > 0 {
@@ -189,16 +156,16 @@ func SocketBian(info kline_common.Info) {
 			// 上次
 			lastRuntime = time.Now().UnixMilli() - UnixMilli
 		}
-		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", kconfig.KlineSource, info.Symbol))
+		num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", config.KlineSource, info.Symbol))
 		_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
 		logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
 		go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
-			"service":     kconfig.KlineSource,
+			"service":     config.KlineSource,
 			"symbol":      info.Symbol,
 			"num":         num,
 			"lastRuntime": lastRuntime,
 		})
-		go SocketBian(info)
+		go SocketBinance(info)
 	}
 }
 
@@ -219,6 +186,6 @@ func LogData(resp *wsdata.SubPriceKLineResponse, SystemTs, UpstreamTs int64) mod
 	klineLog.CCount = 0                                                            // 交易笔数 TODO
 	klineLog.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond))               // Kline返回日期
 	klineLog.CreateDate = time.Now()                                               // 创建日期
-	klineLog.KlineSource = kconfig.KlineSource                                     // K线来源binance
+	klineLog.KlineSource = config.KlineSource                                      // K线来源binance
 	return klineLog
 }
