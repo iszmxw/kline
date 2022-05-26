@@ -1,4 +1,4 @@
-package kline_common
+package heartbeat
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-binance/binance"
+	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-hsb/hsb"
 	"goapi/service/kline-olymptrade/olymptrade"
 	"goapi/service/kline-qxbroker/qxbroker"
@@ -19,7 +20,7 @@ import (
 
 // 心跳 heartbeat 健康
 
-func Heartbeat(num time.Duration, Source string, CodeData []Info) {
+func Start(num time.Duration, Source string, CodeData []kline_common.Info) {
 	time.Sleep(time.Minute * 5) //等待当前数据订阅5分钟后开始心跳检测
 	for {
 		for _, info := range CodeData {
@@ -29,7 +30,7 @@ func Heartbeat(num time.Duration, Source string, CodeData []Info) {
 	}
 }
 
-func check(Source string, info Info) {
+func check(Source string, info kline_common.Info) {
 	// 资产休市状态
 	if kline.CheckSleep(Source, info.ContractCode) {
 		return
@@ -83,7 +84,7 @@ func check(Source string, info Info) {
 }
 
 // 心跳检测到异常了，重启协诚
-func reboot(Source string, info Info) {
+func reboot(Source string, info kline_common.Info) {
 	switch Source {
 	case "raceoption":
 		go raceoption.SocketRaceOption(info)

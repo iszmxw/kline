@@ -8,6 +8,7 @@ import (
 	"goapi/service/kline-binance/binance"
 	kconfig "goapi/service/kline-binance/binance/config"
 	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common/heartbeat"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func main() {
 		if heart {
 			heart = false
 			// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
-			go kline_common.Heartbeat(30, kconfig.KlineSource, CodeData)
+			go heartbeat.Start(30, kconfig.KlineSource, CodeData)
 		}
 		time.Sleep(time.Second)
 	}
