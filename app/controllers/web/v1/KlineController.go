@@ -477,7 +477,10 @@ func (h *KlineController) AllowKlineSource(c *gin.Context) {
 
 func (h *KlineController) KlineSourceList(c *gin.Context) {
 	//user, _ := c.Get("user")
-	var params requests.KlineSourceList
+	var (
+		params   requests.KlineSourceList
+		pageList models.PageList // 返回数据
+	)
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
@@ -486,11 +489,31 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 	var TradingAssetsSource []models.TradingAssetsSource
 	var ResTradingAssetsSource []response.TradingAssetsSource
 	DB := mysql.DB.Debug()
-	DBList := DB.Model(&models.TradingAssetsSource{}).Where("is_valid", "1")
+	table := DB.Model(&models.TradingAssetsSource{})
 	if len(params.AssetsCode) > 0 {
-		DBList = DBList.Where("assets_code", params.AssetsCode)
+		table = table.Where(models.Prefix("$_trading_assets_source.assets_code"), params.AssetsCode)
 	}
-	DBList.Group("assets_code").Order("id ASC").Find(&TradingAssetsSource)
+	if len(params.KlineSource) > 0 {
+		table = table.Where(models.Prefix("$_trading_assets_source.kline_source"), params.KlineSource)
+	} else {
+		table = table.Where(models.Prefix("$_trading_assets_source.is_valid"), "1")
+	}
+	table.Count(&pageList.Total)
+	// 设置分页参数
+	pageList.CurrentPage = params.PageNum
+	pageList.PageSize = params.PageSize
+	models.InitPageList(&pageList)
+	// order by
+	table = table.
+		Select(models.Prefix("$_trading_assets_source.*,$_trading_assets.assets_logo_url,$_trading_assets.sort")).
+		Joins(models.Prefix("right join $_trading_assets on $_trading_assets.assets_code=$_trading_assets_source.assets_code")).
+		Order(models.Prefix("$_trading_assets.sort asc")).
+		Offset(int(pageList.PageNum)).
+		Limit(int(pageList.PageSize))
+	if err := table.Scan(&TradingAssetsSource).Error; err != nil {
+		// 记录错误
+		logger.Error(err)
+	}
 	AllowKlineSource := response.AllowKlineSource()
 	for index, item := range TradingAssetsSource {
 		ResTradingAssetsSource = append(ResTradingAssetsSource, response.TradingAssetsSource{
@@ -513,8 +536,9 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 			ResTradingAssetsSource[index].AllowKlineSource = []string{}
 		}
 	}
+	pageList.List = ResTradingAssetsSource
 	// 对应币种允许的数据源
-	echo.Success(c, ResTradingAssetsSource, "")
+	echo.Success(c, pageList, "")
 	return
 }
 

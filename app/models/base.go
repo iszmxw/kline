@@ -27,12 +27,10 @@ func (m *BaseModel) GetStringID() string {
 // PageList 分页返回数
 type PageList struct {
 	CurrentPage int64       `json:"current_page"`
-	FirstPage   int64       `json:"first_page"`
-	LastPage    int64       `json:"last_page"`
-	PageSize    int64       `json:"page_size"`
 	Total       int64       `json:"total"`
-	Data        interface{} `json:"data"`
-	Offset      int64       `json:"-"`
+	List        interface{} `json:"list"`
+	PageNum     int64       `json:"pageNum"`  // 第几页
+	PageSize    int64       `json:"pageSize"` // 每页多少条
 }
 
 // InitPageList 设置分页参数
@@ -40,26 +38,13 @@ func InitPageList(lists *PageList) {
 	// 当前页数
 	if lists.CurrentPage <= 0 {
 		lists.CurrentPage = 1
+	} // 第一页
+	if lists.PageNum == 0 {
+		lists.PageNum = 1
 	}
 	// 每页取出多少条数据，默认10条
 	if lists.PageSize == 0 {
 		lists.PageSize = 10
-	}
-	// 第一页
-	if lists.FirstPage == 0 {
-		lists.FirstPage = 1
-	}
-
-	lists.Offset = (lists.CurrentPage - 1) * lists.PageSize
-	if lists.Offset < 0 {
-		lists.Offset = 0
-	}
-
-	// 最后一页
-	if (lists.Total % lists.PageSize) != 0 {
-		lists.LastPage = (lists.Total / lists.PageSize) + 1
-	} else {
-		lists.LastPage = lists.Total / lists.PageSize
 	}
 }
 
