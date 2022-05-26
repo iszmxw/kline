@@ -31,6 +31,9 @@ func GetData(service string) []Info {
 	case "hsb":
 		CodeData = Hsb(CodeData)
 		break
+	case "mql5":
+		CodeData = Mql5(CodeData)
+		break
 	default:
 		break
 	}
@@ -107,6 +110,13 @@ func Hsb(CodeData []Info) []Info {
 		Info{ID: 153105, MarketId: 10, Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
 		Info{ID: 153104, MarketId: 10, Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
 		//Info{ID: 153080, Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"}, // 该平台暂无
+	)
+	return CodeData
+}
+
+func Mql5(CodeData []Info) []Info {
+	CodeData = append(CodeData,
+		Info{ID: 153080, MarketId: 8, Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
 	)
 	return CodeData
 }
