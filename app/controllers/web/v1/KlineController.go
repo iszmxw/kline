@@ -491,7 +491,6 @@ func (h *KlineController) AllowKlineSource(c *gin.Context) {
 	for assetsCode, item := range response.AllowKlineSource() {
 		for _, klineSource := range item.([]string) {
 			AllowKlineSource := cmap.New().Items()
-			logger.Info(klineSource)
 			AllowKlineSource["assets_code"] = assetsCode
 			AllowKlineSource["kline_source"] = klineSource
 			AllowKlineSource["status"] = kline.GetSourceStatus(klineSource, assetsCode)
