@@ -431,17 +431,11 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		echo.Error(c, "PARAMS_ERROR", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(data.([]string), "，")))
 		return
 	}
-	key := fmt.Sprintf("kline_source:%v", params.AssetsCode)
-	_, err := redis.Client.Add(key, params.KlineSource, 0)
-	if err != nil {
-		echo.Error(c, "FAILD", err.Error())
-		return
-	}
 	// 数据库维护该字段
-	var TradingAssets models.TradingAssets
+	var TradingAssetsSource models.TradingAssetsSource
 	DB := mysql.DB.Debug().Begin()
 	// 先撤销之前的配置
-	err = DB.Model(TradingAssets).
+	err := DB.Model(TradingAssetsSource).
 		Where("assets_code", params.AssetsCode).
 		Update("is_valid", 0).
 		Error
@@ -451,11 +445,35 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		return
 	}
 	// 设置当前资产走的数据源
-	err = DB.Model(TradingAssets).
+	err = DB.Model(TradingAssetsSource).
 		Where("assets_code", params.AssetsCode).
 		Where("kline_source", params.KlineSource).
 		Update("is_valid", 1).
 		Error
+	if err != nil {
+		DB.Rollback()
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	user, _ := c.Get("user")
+	// 记录操作日志
+	err = DB.Model(models.SystemOperateLog{}).Create(&models.SystemOperateLog{
+		ItemCode:       user.(response.WebLoginUser).ItemCode,
+		SystemUserId:   user.(response.WebLoginUser).SystemUserId,
+		SystemUserNick: user.(response.WebLoginUser).UserNick,
+		Content:        fmt.Sprintf("修改资产【%v】的数据源为【%v】", params.AssetsCode, params.KlineSource),
+		OperType:       3202,
+		CreateDate:     time.Now(),
+		IsShow:         1,
+		Result:         "true",
+	}).Error
+	if err != nil {
+		DB.Rollback()
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	key := fmt.Sprintf("kline_source:%v", params.AssetsCode)
+	_, err = redis.Client.Add(key, params.KlineSource, 0)
 	if err != nil {
 		DB.Rollback()
 		echo.Error(c, "FAILD", err.Error())

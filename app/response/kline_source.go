@@ -78,12 +78,12 @@ func AllowKlineSource() map[string]interface{} {
 	data := cmap.New().Items()
 	data["ETH-USD"] = []string{"huobi", "binance"}
 	data["BTC-USD"] = []string{"huobi", "binance"}
-	data["EUR-USD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-	data["GBP-USD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
+	data["EUR-USD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
+	data["GBP-USD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
 	data["AUD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker", "sina"}
-	data["USD-JPY"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-	data["GOLD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
-	data["SILVER"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker", "sina"}
+	data["USD-JPY"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
+	data["GOLD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
+	data["SILVER"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
 	data["Netflix"] = []string{"qxbroker"}
 	data["Microsoft"] = []string{"qxbroker"}
 	data["Intel"] = []string{"qxbroker"}
