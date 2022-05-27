@@ -169,7 +169,8 @@ func RedisData(SystemTs int64, resp *wsdata.SubPriceKLineResponse) response.SubI
 	var data response.SubIndexKLineResponse
 	wsData := *resp
 	rData := wsData[0].D[0] // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
-	data.Ch = fmt.Sprintf("market.%v.index.1min", kline_common.Convert(config.KlineSource, rData.P))
+	ContractCode := kline_common.Convert(config.KlineSource, rData.P).ContractCode
+	data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
 	data.Ts = SystemTs
 	data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
 	data.Source = config.KlineSource
