@@ -29,6 +29,10 @@ func SocketRaceOption(info kline_common.Info) {
 		if !strings.Contains(info.Symbol, ".W") {
 			info.Symbol = info.Symbol + ".W"
 		}
+	} else {
+		if strings.Contains(info.Symbol, ".W") {
+			info.Symbol = strings.ReplaceAll(info.Symbol, ".W", "") // 去除掉
+		}
 	}
 	// 开始订阅
 	{
@@ -48,7 +52,7 @@ func SocketRaceOption(info kline_common.Info) {
 					callback <- struct{}{}
 				}
 			}()
-			if resp.TimeId == "1" {
+			if resp.TimeId == "1" || resp.Strike == 0 {
 				logger.Info(resp)
 				// 当前数据源匹配就入库
 				if response.KlineSource(info.ContractCode) == config.KlineSource {

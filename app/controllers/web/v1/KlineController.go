@@ -486,8 +486,8 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 	if validate.ParamsError(c, params) {
 		return
 	}
-	var TradingAssetsSource []models.TradingAssetsSource
-	var ResTradingAssetsSource []response.TradingAssetsSource
+	var ListTradingAssetsSource []response.ListTradingAssetsSource
+	var TradingAssetsSource []response.TradingAssetsSource
 	DB := mysql.DB.Debug()
 	table := DB.Model(&models.TradingAssetsSource{})
 	if len(params.AssetsCode) > 0 {
@@ -503,12 +503,12 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 	pageList.CurrentPage = params.PageNum
 	pageList.PageSize = params.PageSize
 	models.InitPageList(&pageList)
-	// order by
+	// 设置分页参数
 	table = table.
-		Select(models.Prefix("$_trading_assets_source.*,$_trading_assets.assets_logo_url,$_trading_assets.sort")).
+		Select(models.Prefix("$_trading_assets_source.*,$_trading_assets.assets_name,$_trading_assets.assets_logo_url,$_trading_assets.sort")).
 		Joins(models.Prefix("right join $_trading_assets on $_trading_assets.assets_code=$_trading_assets_source.assets_code")).
 		Order(models.Prefix("$_trading_assets.sort asc")).
-		Offset(int(pageList.PageNum)).
+		Offset(int(pageList.Offset)).
 		Limit(int(pageList.PageSize))
 	if err := table.Scan(&TradingAssetsSource).Error; err != nil {
 		// 记录错误
@@ -516,27 +516,17 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 	}
 	AllowKlineSource := response.AllowKlineSource()
 	for index, item := range TradingAssetsSource {
-		ResTradingAssetsSource = append(ResTradingAssetsSource, response.TradingAssetsSource{
-			ItemCode:           item.ItemCode,
-			AssetsCode:         item.AssetsCode,
-			CurrentKlineSource: item.KlineSource,
-			SubscribeSymbol:    item.SubscribeSymbol,
-			SleepTime:          item.SleepTime,
-			IsValid:            item.IsValid,
-			Remark:             item.Remark,
-			Creator:            item.Creator,
-			Updater:            item.Updater,
-			CreateDate:         item.CreateDate,
-			UpdateDate:         item.UpdateDate,
-		})
-		data, ok := AllowKlineSource[item.AssetsCode]
+		data := response.ListTradingAssetsSource{}
+		data.TradingAssetsSource = item
+		ListTradingAssetsSource = append(ListTradingAssetsSource, data)
+		allowKlineSource, ok := AllowKlineSource[item.AssetsCode]
 		if ok {
-			ResTradingAssetsSource[index].AllowKlineSource = data.([]string)
+			ListTradingAssetsSource[index].AllowKlineSource = allowKlineSource.([]string)
 		} else {
-			ResTradingAssetsSource[index].AllowKlineSource = []string{}
+			ListTradingAssetsSource[index].AllowKlineSource = []string{}
 		}
 	}
-	pageList.List = ResTradingAssetsSource
+	pageList.List = ListTradingAssetsSource
 	// 对应币种允许的数据源
 	echo.Success(c, pageList, "")
 	return

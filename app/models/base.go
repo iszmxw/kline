@@ -31,6 +31,7 @@ type PageList struct {
 	List        interface{} `json:"list"`
 	PageNum     int64       `json:"pageNum"`  // 第几页
 	PageSize    int64       `json:"pageSize"` // 每页多少条
+	Offset      int64       `json:"-"`
 }
 
 // InitPageList 设置分页参数
@@ -45,6 +46,11 @@ func InitPageList(lists *PageList) {
 	// 每页取出多少条数据，默认10条
 	if lists.PageSize == 0 {
 		lists.PageSize = 10
+	}
+
+	lists.Offset = (lists.CurrentPage - 1) * lists.PageSize
+	if lists.Offset < 0 {
+		lists.Offset = 0
 	}
 }
 
