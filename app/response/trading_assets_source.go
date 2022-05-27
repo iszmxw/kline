@@ -25,5 +25,6 @@ type TradingAssetsSource struct {
 
 type ListTradingAssetsSource struct {
 	TradingAssetsSource
-	AllowKlineSource interface{} `json:"allow_kline_source"` // 允许 k线来源,数据源
+	AllowKlineSource    interface{} `json:"allow_kline_source"`    // 允许 k线来源,数据源
+	CurrentSourceStatus int64       `json:"current_source_status"` // 当前数据源状态
 }

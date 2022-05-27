@@ -15,6 +15,7 @@ import (
 	"goapi/pkg/echo"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -486,8 +487,22 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 // 获取系统允许的数据源
 
 func (h *KlineController) AllowKlineSource(c *gin.Context) {
+	var detail []interface{}
+	for assetsCode, item := range response.AllowKlineSource() {
+		for _, klineSource := range item.([]string) {
+			AllowKlineSource := cmap.New().Items()
+			logger.Info(klineSource)
+			AllowKlineSource["assets_code"] = assetsCode
+			AllowKlineSource["kline_source"] = klineSource
+			AllowKlineSource["status"] = kline.GetSourceStatus(klineSource, assetsCode)
+			detail = append(detail, AllowKlineSource)
+		}
+	}
 	// 对应币种允许的数据源
-	echo.Success(c, response.AllowKlineSource(), "")
+	echo.Success(c, gin.H{
+		"source_all":    response.GetSource(),
+		"source_detail": detail,
+	}, "")
 	return
 }
 
@@ -543,6 +558,7 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 		} else {
 			ListTradingAssetsSource[index].AllowKlineSource = []string{}
 		}
+		ListTradingAssetsSource[index].CurrentSourceStatus = kline.GetSourceStatus(item.KlineSource, item.AssetsCode)
 	}
 	pageList.List = ListTradingAssetsSource
 	// 对应币种允许的数据源
