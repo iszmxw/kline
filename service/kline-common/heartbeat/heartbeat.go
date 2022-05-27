@@ -20,17 +20,17 @@ import (
 
 // 心跳 heartbeat 健康
 
-func Start(num time.Duration, Source string, CodeData []kline_common.Info) {
+func Start(num time.Duration, Source string, CodeData []kline_common.Info, isReboot bool) {
 	time.Sleep(time.Minute * 5) //等待当前数据订阅5分钟后开始心跳检测
 	for {
 		for _, info := range CodeData {
-			go check(Source, info)
+			go check(Source, info, isReboot)
 		}
 		time.Sleep(time.Second * num)
 	}
 }
 
-func check(Source string, info kline_common.Info) {
+func check(Source string, info kline_common.Info, isReboot bool) {
 	// 资产休市状态
 	if kline.CheckSleep(Source, info.ContractCode) {
 		return
@@ -78,7 +78,9 @@ func check(Source string, info kline_common.Info) {
 			"name": Source,
 			"msg":  tips(Source, info.ContractCode, SystemTs, diff, SubIndexKLineResponse),
 		})
-		reboot(Source, info) // 心跳检测到异常了，重启协诚
+		if isReboot {
+			reboot(Source, info) // 心跳检测到异常了，重启协诚
+		}
 		break
 	}
 }

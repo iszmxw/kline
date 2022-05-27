@@ -43,7 +43,7 @@ func main() {
 		if heart {
 			heart = false
 			// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
-			go heartbeat.Start(30, kconfig.KlineSource, CodeData)
+			go heartbeat.Start(30, kconfig.KlineSource, CodeData, true)
 		}
 		time.Sleep(time.Second)
 	}
