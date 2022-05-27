@@ -147,3 +147,36 @@ func GetSymbolById(id int) string {
 	return Symbol
 
 }
+
+// 订阅的资产
+
+func SubSymbol(service string) []string {
+	var Symbol []string
+	CodeData := GetData(service)
+	if len(CodeData) > 0 {
+		for _, item := range CodeData {
+			if len(item.Symbol) > 0 {
+				Symbol = append(Symbol, item.Symbol)
+			}
+		}
+	}
+	return Symbol
+}
+
+// 转换
+
+func Convert(service, Symbol string) Info {
+	var info Info
+	Codes := GetData(service)
+	subSymbol := SubSymbol(service)
+	for i := 0; i < len(subSymbol); i++ {
+		switch Symbol {
+		case subSymbol[i]:
+			info = Codes[i]
+			break
+		default:
+			break
+		}
+	}
+	return info
+}

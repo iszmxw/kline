@@ -12,7 +12,6 @@ import (
 	"goapi/pkg/request"
 	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-raceoption/raceoption/config"
-	"goapi/service/kline-raceoption/raceoption/utils/code"
 	"net/http"
 	"time"
 )
@@ -81,8 +80,8 @@ func GetRate() {
 			data := resp["data"].([]interface{})
 			for i := 0; i < len(data); i++ {
 				item := data[i].(map[string]interface{})
-				if helpers.InArray(item["symbol"].(string), code.SubSymbol()) {
-					info := code.Convert(item["symbol"].(string))
+				if helpers.InArray(item["symbol"].(string), kline_common.SubSymbol(config.KlineSource)) {
+					info := kline_common.Convert(config.KlineSource, item["symbol"].(string))
 					dynPayout := item["dynPayout"].(float64)
 					if dynPayout > 0.75 {
 						logger.Info(fmt.Sprintf("%v：大于0.75", item["symbol"]))
