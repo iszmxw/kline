@@ -432,6 +432,8 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		echo.Error(c, "PARAMS_ERROR", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(data.([]string), "，")))
 		return
 	}
+	info, _ := c.Get("user")
+	User := info.(response.WebLoginUser)
 	// 数据库维护该字段
 	var TradingAssetsSource models.TradingAssetsSource
 	DB := mysql.DB.Debug().Begin()
@@ -439,6 +441,8 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 	err := DB.Model(TradingAssetsSource).
 		Where("assets_code", params.AssetsCode).
 		Update("is_valid", 0).
+		Update("updater", User.UserNick).
+		Update("update_date", time.Now()).
 		Error
 	if err != nil {
 		DB.Rollback()
@@ -450,18 +454,19 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		Where("assets_code", params.AssetsCode).
 		Where("kline_source", params.KlineSource).
 		Update("is_valid", 1).
+		Update("updater", User.UserNick).
+		Update("update_date", time.Now()).
 		Error
 	if err != nil {
 		DB.Rollback()
 		echo.Error(c, "FAILD", err.Error())
 		return
 	}
-	user, _ := c.Get("user")
 	// 记录操作日志
 	err = DB.Model(models.SystemOperateLog{}).Create(&models.SystemOperateLog{
-		ItemCode:       user.(response.WebLoginUser).ItemCode,
-		SystemUserId:   user.(response.WebLoginUser).SystemUserId,
-		SystemUserNick: user.(response.WebLoginUser).UserNick,
+		ItemCode:       User.ItemCode,
+		SystemUserId:   User.SystemUserId,
+		SystemUserNick: User.UserNick,
 		Content:        fmt.Sprintf("修改资产【%v】的数据源为【%v】", params.AssetsCode, params.KlineSource),
 		OperType:       3202,
 		CreateDate:     time.Now(),
