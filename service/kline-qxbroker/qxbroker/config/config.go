@@ -1,6 +1,11 @@
 package config
 
-const LinearSwapDefaultHost = "ws.qxbroker.com"
+//const LinearSwapDefaultHost = "ws.qxbroker.com"
+const LinearSwapDefaultHost = "ws.quotex-trade.io"
+const Origin = "https://quotex-trade.io"
+const Domain = "https://quotex-trade.io"
+
+//wss://ws.quotex-trade.io/socket.io
 
 const DefaultId = "api"
 

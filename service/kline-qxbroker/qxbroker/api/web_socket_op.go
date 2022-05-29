@@ -82,7 +82,7 @@ func (ws *WebSocketOp) connServer() bool {
 		Proxy: http.ProxyURL(ws.proxy),
 	}
 	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
-		"Origin":                   {"https://qxbroker.com"},
+		"Origin":                   {config.Origin},
 		"Pragma":                   {"no-cache"},
 		"Cache-Control":            {"no-cache"},
 		"Accept-Encoding":          {"gzip, deflate, br"},
@@ -539,7 +539,7 @@ func (ws *WebSocketOp) login() {
 		ws.Close()
 		return
 	}
-	req, err := http.NewRequest("GET", "https://qxbroker.com/zh/sign-up/fast/", nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%v/zh/sign-up/fast/", config.Domain), nil)
 	if err != nil {
 		logger.Error(err)
 		ws.Close()
