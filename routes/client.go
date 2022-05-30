@@ -25,6 +25,8 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				trade.Any("/wsIndex.json", ClientV1Group.KlineController.WsIndexHandler)
 				// 【C10】 wsReturnRate.json
 				trade.Any("/wsReturnRate.json", ClientV1Group.KlineController.WsReturnRateHandler)
+				// 删除kline_log表数据，维护数据表过大问题
+				trade.Any("/maintenanceTableData.json", ClientV1Group.KlineController.MaintenanceTableData)
 			}
 		}
 

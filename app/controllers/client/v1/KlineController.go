@@ -18,6 +18,7 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
+	"goapi/pkg/validate"
 	"goapi/pkg/websocket"
 	"reflect"
 	"strings"
@@ -92,6 +93,28 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 END:
 	logger.Info("socket被关闭，本次链接结束")
+}
+
+// MaintenanceTableData  删除kline_log表数据，维护数据表过大问
+func (h *KlineController) MaintenanceTableData(c *gin.Context) {
+	var (
+		SearchKlineLog []models.KlineLog
+		params         requests.DayTime
+	)
+	_ = c.Bind(&params)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	createDate := time.Now().AddDate(0, 0, -params.Num).Format("2006-01-02 15:04:05")
+	DB := mysql.DB.Debug()
+	DB.Model(models.KlineLog{}).Where("create_date < ?", createDate).Find(&SearchKlineLog)
+	for _, item := range SearchKlineLog {
+		go func(item models.KlineLog) {
+			DB.Model(models.KlineLog{}).Delete(&item)
+		}(item)
+	}
+	output.Rjson(c, nil, "success", 1)
 }
 
 // WsReturnRateHandler socket 负责转发数据库的 rate
