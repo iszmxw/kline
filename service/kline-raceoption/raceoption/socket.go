@@ -28,12 +28,15 @@ func SocketRaceOption(info kline_common.Info) {
 		// 休市切换 OTC 数据源读取时间段
 		if !strings.Contains(info.Symbol, ".W") {
 			info.Symbol = info.Symbol + ".W"
+			logger.Info("OTC时间")
 		}
 	} else {
 		if strings.Contains(info.Symbol, ".W") {
 			info.Symbol = strings.ReplaceAll(info.Symbol, ".W", "") // 去除掉
+			logger.Info("正常时间")
 		}
 	}
+	go kline_common.TickerReboot(config.KlineSource, info, callback)
 	// 开始订阅
 	{
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)
@@ -53,6 +56,7 @@ func SocketRaceOption(info kline_common.Info) {
 				}
 			}()
 			if resp.TimeId == "1" || resp.Strike == 0 {
+				info.Symbol = info.Symbol + ".W"
 				logger.Info(resp)
 				// 当前数据源匹配就入库
 				if response.KlineSource(info.ContractCode) == config.KlineSource {

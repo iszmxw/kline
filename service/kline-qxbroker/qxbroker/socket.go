@@ -28,12 +28,13 @@ func SocketQxbroker(info kline_common.Info) {
 		// 关闭
 		callback <- struct{}{}
 	}
+	// OTC 数据源读取时间段
+	if kline.CheckOTC() && !strings.Contains(info.Symbol, "_otc") {
+		info.Symbol = info.Symbol + "_otc"
+	}
+	go kline_common.TickerReboot(config.KlineSource, info, callback)
 	// 开始订阅
 	if StartSub {
-		// OTC 数据源读取时间段
-		if kline.CheckOTC() && !strings.Contains(info.Symbol, "_otc") {
-			info.Symbol = info.Symbol + "_otc"
-		}
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli()             // 系統生成的Ts
