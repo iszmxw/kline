@@ -61,7 +61,7 @@ func SocketQxbroker(info kline_common.Info) {
 			TimeDiff := SystemTs - UpstreamTs
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			logger.Info(kline_common.TimeDiffTips(config.KlineSource, UpstreamTs))
-			data := RedisData(SystemTs, resp)
+			data := RedisData(SystemTs, UpstreamTs, resp)
 			logger.Info(data)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
@@ -140,13 +140,13 @@ func LogData(resp *wsdata.SubPriceKLineResponse, SystemTs, UpstreamTs int64) mod
 }
 
 // RedisData 缓存进redis的数据
-func RedisData(SystemTs int64, resp *wsdata.SubPriceKLineResponse) response.SubIndexKLineResponse {
+func RedisData(SystemTs, UpstreamTs int64, resp *wsdata.SubPriceKLineResponse) response.SubIndexKLineResponse {
 	var data response.SubIndexKLineResponse
 	data.Ch = fmt.Sprintf("market.%v.index.1min", resp.Symbol)
 	data.Ts = SystemTs                                                                             // 系統生成的Ts
 	data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
 	data.Source = config.KlineSource
-	data.Tick.Id = SystemTs
+	data.Tick.Id = UpstreamTs
 	data.Tick.Vol = ""
 	data.Tick.Count = 0
 	data.Tick.Open = "0"
