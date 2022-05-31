@@ -218,7 +218,7 @@ func PushMessage(messageType int, ws *wss.WsConn, AssetsCode string) {
 		if diff > 60*5 {
 			// 警告，延迟过高
 			KeyStatus := fmt.Sprintf("status:%v", key)
-			_, _ = redis.Client.Add(KeyStatus, 4, 0)
+			_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
 			time.Sleep(time.Second * 5) // 休息5秒
 		}
 		// 1秒推送一次消息
@@ -349,7 +349,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	if len(data) <= 150 {
 		// 警告，延迟过高
 		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", klineSource, symbol)
-		_, _ = redis.Client.Add(KeyStatus, 4, 0)
+		_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
 		time.Sleep(time.Second * 5) // 休息5秒
 		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
 			"c":    c,
