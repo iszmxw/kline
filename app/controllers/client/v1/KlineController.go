@@ -212,16 +212,20 @@ func PushMessage(messageType int, ws *wss.WsConn, AssetsCode string) {
 		if config.GetString("app.env") != "company_pro" {
 			logger.Info(WsIndex)
 		}
-		WsIndexJson, WsIndexJsonErr := json.Marshal(WsIndex)
-		if WsIndexJsonErr != nil {
-			logger.Error(WsIndexJsonErr)
-			break
+		// 差
+		SystemTs := time.Now().UnixMilli()
+		diff := (SystemTs - WsIndex.Ts) / 1000
+		if diff > 60*5 {
+			// 警告，延迟过高
+			KeyStatus := fmt.Sprintf("status:%v", key)
+			_, _ = redis.Client.Add(KeyStatus, 4, 0)
+			time.Sleep(time.Second * 5) // 休息5秒
 		}
 		// 1秒推送一次消息
 		//time.Sleep(time.Second * 1)
 		time.Sleep(time.Millisecond * 200) // 每隔200 毫秒推送一次
 		ws.Mux.Lock()
-		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsIndexJson)
+		WriteMessageErr := ws.Conn.WriteMessage(messageType, []byte(push))
 		ws.Mux.Unlock()
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)
@@ -343,6 +347,10 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	}
 	// 侦测到数据小于 150 条的时候，发送邮件预警
 	if len(data) <= 150 {
+		// 警告，延迟过高
+		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", klineSource, symbol)
+		_, _ = redis.Client.Add(KeyStatus, 4, 0)
+		time.Sleep(time.Second * 5) // 休息5秒
 		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
 			"c":    c,
 			"tips": tips,
