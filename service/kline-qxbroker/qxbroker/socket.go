@@ -32,7 +32,6 @@ func SocketQxbroker(info kline_common.Info) {
 	if kline.CheckOTC() && !strings.Contains(info.Symbol, "_otc") {
 		info.Symbol = info.Symbol + "_otc"
 	}
-	go kline_common.TickerReboot(config.KlineSource, info, callback)
 	// 开始订阅
 	if StartSub {
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)

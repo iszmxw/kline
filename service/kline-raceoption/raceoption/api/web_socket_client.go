@@ -29,5 +29,5 @@ func (wsIx *WSPriceClient) SubPriceKLine(info kline_common.Info, callbackFun OnS
 	}
 	subData := wsdata.WSSubData{Operation: "SUBSCRIBE.TICK", Id: info.Symbol, Param: ""} // {"operation":"SUBSCRIBE.TICK","id":"EUR/USD","param":""}
 	data, _ := json.Marshal(subData)
-	wsIx.sub(data, info.Symbol, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
+	wsIx.sub(data, info, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }

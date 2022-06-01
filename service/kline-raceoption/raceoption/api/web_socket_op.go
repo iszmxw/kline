@@ -8,6 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/redis"
+	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/zip"
 	"net/http"
@@ -41,8 +43,9 @@ type WebSocketOp struct {
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStars       list.List
-	Symbol            string // 订阅的币种
-	Description       string // 描述
+	Info              kline_common.Info // 订阅的币种
+	Symbol            string            // 订阅的币种
+	Description       string            // 描述
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -86,6 +89,24 @@ func (ws *WebSocketOp) connServer() bool {
 	go ws.writeLoop()
 	go ws.DoHand()
 	return true
+}
+
+func (ws *WebSocketOp) TickerReboot() {
+	ticker := time.NewTicker(150 * time.Second) // 每隔150秒检查一次
+	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.Info.ContractCode)
+	for range ticker.C {
+		status, _ := redis.Client.Get(KeyStatus)
+		if status == "4" { // 延迟过高关闭重启
+			goto STOP
+		}
+		logger.Info(KeyStatus)
+		logger.Info(status)
+	}
+STOP:
+	// 关闭
+	ws.closeChanCallback <- struct{}{}
+	ticker.Stop()
+	logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
 }
 
 func (ws *WebSocketOp) DoHand() {
@@ -244,8 +265,10 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 }
 
 // 通用订阅
-func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param reflect.Type) bool {
+func (ws *WebSocketOp) sub(subReq []byte, info kline_common.Info, fun interface{}, param reflect.Type) bool {
+	ch := info.Symbol
 	ws.Symbol = ch
+	ws.Info = info
 	ch = strings.ToLower(ch)
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()

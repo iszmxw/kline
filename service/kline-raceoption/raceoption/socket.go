@@ -36,7 +36,6 @@ func SocketRaceOption(info kline_common.Info) {
 			logger.Info("正常时间")
 		}
 	}
-	go kline_common.TickerReboot(config.KlineSource, info, callback)
 	// 开始订阅
 	{
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)

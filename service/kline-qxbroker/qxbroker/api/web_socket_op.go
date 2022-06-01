@@ -102,7 +102,26 @@ func (ws *WebSocketOp) connServer() bool {
 	logger.Info(ws.Symbol + "WebSocket connected")
 	go ws.readLoop()
 	go ws.DoHand()
+	go ws.TickerReboot()
 	return true
+}
+
+func (ws *WebSocketOp) TickerReboot() {
+	ticker := time.NewTicker(150 * time.Second) // 每隔150秒检查一次
+	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
+	for range ticker.C {
+		status, _ := redis.Client.Get(KeyStatus)
+		if status == "4" { // 延迟过高关闭重启
+			goto STOP
+		}
+		logger.Info(KeyStatus)
+		logger.Info(status)
+	}
+STOP:
+	// 关闭
+	ws.closeChanCallback <- struct{}{}
+	ticker.Stop()
+	logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
 }
 
 func (ws *WebSocketOp) DoHand() {
