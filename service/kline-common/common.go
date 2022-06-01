@@ -30,7 +30,7 @@ func KlineRecover(tips, service, symbol string) {
 // TimeDiffTips 时差提示
 func TimeDiffTips(service string, UpstreamTs int64) string {
 	return fmt.Sprintf(
-		"%v时差：系统时间：%v【%v】<br>raceoption的 ts 时间：%v【%v】",
+		"%v时差：系统时间：%v【%v】<br> ts 时间：%v【%v】",
 		service,
 		time.Now().UnixMilli(),
 		time.Now().Format("2006-01-02 15:04:05"),
