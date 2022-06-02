@@ -65,6 +65,21 @@ func KlineSource(AssetsCode string) string {
 	case "Intel":
 		Source = "qxbroker"
 		break
+	case "Apple":
+		Source = "olymptrade"
+		break
+	case "Tesla":
+		Source = "olymptrade"
+		break
+	case "CAD-JPY":
+		Source = "raceoption"
+		break
+	case "EUR-AUD":
+		Source = "raceoption"
+		break
+	case "USD-CAD":
+		Source = "raceoption"
+		break
 	default:
 		Source = "unknown"
 		break
@@ -78,15 +93,20 @@ func AllowKlineSource() map[string]interface{} {
 	data := cmap.New().Items()
 	data["ETH-USD"] = []string{"huobi", "binance"}
 	data["BTC-USD"] = []string{"huobi", "binance"}
-	data["EUR-USD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
-	data["GBP-USD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
+	data["EUR-USD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["GBP-USD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
 	data["AUD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker"}
-	data["USD-JPY"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
-	data["GOLD"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
-	data["SILVER"] = []string{"raceoption", "hsb", "olymptrade", "qxbroker"}
+	data["USD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["GOLD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["SILVER"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
 	data["Netflix"] = []string{"qxbroker"}
 	data["Microsoft"] = []string{"qxbroker"}
 	data["Intel"] = []string{"qxbroker"}
+	data["Apple"] = []string{"olymptrade"}
+	data["Tesla"] = []string{"olymptrade"}
+	data["CAD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker"}
+	data["EUR-AUD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["USD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
 	return data
 }
 

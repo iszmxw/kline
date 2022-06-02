@@ -64,6 +64,10 @@ func RaceOption(CodeData []Info) []Info {
 		Info{Symbol: "USD/JPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
 		Info{Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
 		Info{Symbol: "XAG/USD", Desc: "伦敦银", ContractCode: "SILVER"},
+		// 2022年6月2号添加
+		Info{Symbol: "CAD/JPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
+		Info{Symbol: "EUR/AUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
+		Info{Symbol: "USD/CAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
 	)
 	return CodeData
 }
@@ -81,6 +85,10 @@ func QxBroker(CodeData []Info) []Info {
 		//Info{Symbol: "NFLX_otc", Desc: "网飞", ContractCode: "Netflix"},
 		Info{Symbol: "MSFT_otc", Desc: "微软", ContractCode: "Microsoft"},
 		Info{Symbol: "INTC_otc", Desc: "英特尔", ContractCode: "Intel"},
+		// 2022年6月2号添加
+		Info{Symbol: "CADJPY_otc", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
+		Info{Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
+		Info{Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
 	)
 	return CodeData
 }
@@ -93,6 +101,12 @@ func OlyMpTrade(CodeData []Info) []Info {
 		Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
 		Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
 		Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		// 2022年6月2号添加
+		Info{Symbol: "AAPL", Desc: "苹果", ContractCode: "Apple"},
+		Info{Symbol: "TSLA", Desc: "特斯拉", ContractCode: "Tesla"},
+		Info{Symbol: "CADJPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
+		Info{Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
+		Info{Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
 	)
 	return CodeData
 }
@@ -110,6 +124,9 @@ func Hsb(CodeData []Info) []Info {
 		Info{ID: 153105, MarketId: 10, Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
 		Info{ID: 153104, MarketId: 10, Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
 		//Info{ID: 153080, Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"}, // 该平台暂无
+		// 2022年6月2号添加
+		Info{ID: 153084, MarketId: 8, Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
+		Info{ID: 153088, MarketId: 8, Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
 	)
 	return CodeData
 }
@@ -140,6 +157,12 @@ func GetSymbolById(id int) string {
 		break
 	case 153104:
 		Symbol = "SILVER"
+		break
+	case 153084:
+		Symbol = "EUR-AUD"
+		break
+	case 153088:
+		Symbol = "USD-CAD"
 		break
 	default:
 		break

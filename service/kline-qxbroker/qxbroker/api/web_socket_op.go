@@ -119,8 +119,8 @@ func (ws *WebSocketOp) TickerReboot() {
 	}
 STOP:
 	// 关闭
-	ws.closeChanCallback <- struct{}{}
 	ticker.Stop()
+	ws.closeChanCallback <- struct{}{}
 	logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
 }
 
