@@ -14,25 +14,25 @@ func GetData(service string) []Info {
 	var CodeData []Info
 	switch service {
 	case "huobi":
-		CodeData = HuoBi(CodeData)
+		CodeData = HuoBi()
 		break
 	case "binance":
-		CodeData = Binance(CodeData)
+		CodeData = Binance()
 		break
 	case "raceoption":
-		CodeData = RaceOption(CodeData)
+		CodeData = RaceOption()
 		break
 	case "qxbroker":
-		CodeData = QxBroker(CodeData)
+		CodeData = QxBroker()
 		break
 	case "olymptrade":
-		CodeData = OlyMpTrade(CodeData)
+		CodeData = OlyMpTrade()
 		break
 	case "hsb":
-		CodeData = Hsb(CodeData)
+		CodeData = Hsb()
 		break
 	case "mql5":
-		CodeData = Mql5(CodeData)
+		CodeData = Mql5()
 		break
 	default:
 		break
@@ -40,7 +40,8 @@ func GetData(service string) []Info {
 	return CodeData
 }
 
-func HuoBi(CodeData []Info) []Info {
+func HuoBi() []Info {
+	var CodeData []Info
 	CodeData = append(CodeData,
 		Info{Symbol: "BTC-USD", Desc: "比特币/美元", ContractCode: "BTC-USD"},
 		Info{Symbol: "ETH-USD", Desc: "以太坊/美元", ContractCode: "ETH-USD"},
@@ -48,7 +49,8 @@ func HuoBi(CodeData []Info) []Info {
 	return CodeData
 }
 
-func Binance(CodeData []Info) []Info {
+func Binance() []Info {
+	var CodeData []Info
 	CodeData = append(CodeData,
 		Info{Symbol: "BTCUSD", Desc: "比特币/美元", ContractCode: "BTC-USD"},
 		Info{Symbol: "ETHUSD", Desc: "以太坊/美元", ContractCode: "ETH-USD"},
@@ -56,7 +58,8 @@ func Binance(CodeData []Info) []Info {
 	return CodeData
 }
 
-func RaceOption(CodeData []Info) []Info {
+func RaceOption() []Info {
+	var CodeData []Info
 	CodeData = append(CodeData,
 		Info{Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
 		Info{Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
@@ -72,7 +75,8 @@ func RaceOption(CodeData []Info) []Info {
 	return CodeData
 }
 
-func QxBroker(CodeData []Info) []Info {
+func QxBroker() []Info {
+	var CodeData []Info
 	CodeData = append(CodeData,
 		// 周六周日启动OTC模式
 		Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
@@ -93,7 +97,8 @@ func QxBroker(CodeData []Info) []Info {
 	return CodeData
 }
 
-func OlyMpTrade(CodeData []Info) []Info {
+func OlyMpTrade() []Info {
+	var CodeData []Info
 	CodeData = append(CodeData,
 		Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
 		Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
@@ -111,7 +116,8 @@ func OlyMpTrade(CodeData []Info) []Info {
 	return CodeData
 }
 
-func Hsb(CodeData []Info) []Info {
+func Hsb() []Info {
+	var CodeData []Info
 	CodeData = append(CodeData,
 		// 153104--XAGUSD // {"cmd":4102,"pb":{"stk":[{"id":153104,"marketid":10}]}}
 		// 153105--XAUUSD // {"cmd":4102,"pb":{"stk":[{"id":153105,"marketid":10}]}}
@@ -131,7 +137,8 @@ func Hsb(CodeData []Info) []Info {
 	return CodeData
 }
 
-func Mql5(CodeData []Info) []Info {
+func Mql5() []Info {
+	var CodeData []Info
 	CodeData = append(CodeData,
 		Info{ID: 153080, MarketId: 8, Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
 	)

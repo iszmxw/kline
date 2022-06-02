@@ -1,7 +1,6 @@
 package api
 
 import (
-	"container/list"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,8 +41,7 @@ type WebSocketOp struct {
 	ReqTopicMap       map[string]*CallbackFunc // 请求历史
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
-	allSubStrs        list.List
-	Symbol            string // 订阅的币种
+	Symbol            string                   // 订阅的币种
 }
 
 func (ws *WebSocketOp) open(path, host, session string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -59,7 +57,6 @@ func (ws *WebSocketOp) open(path, host, session string, proxy *url.URL, closeCha
 	ws.writeChan = make(chan []byte, 10)
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.ReqTopicMap = make(map[string]*CallbackFunc)
-	ws.allSubStrs = list.List{}
 	ws.closeChanCallback = closeChanCallback
 	ret := ws.connServer()
 	return ret
@@ -248,10 +245,10 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 
 // 通用订阅
 func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param reflect.Type) bool {
-	ws.Symbol = ch
-	ch = strings.ToLower(ch)
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
+	ws.Symbol = ch
+	ch = strings.ToLower(ch)
 	var mi *CallbackFunc = nil
 	if _, found := ws.SubTopicMap[ch]; found {
 		logger.Info(found)
@@ -262,6 +259,5 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	logger.Info(fmt.Sprintf("websocket has send data: %s", subReq))
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
-	ws.allSubStrs.PushBack(string(subReq))
 	return ws.SendMsg(subReq)
 }
