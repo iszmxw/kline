@@ -14,7 +14,6 @@ import (
 	"goapi/service/kline-olymptrade/olymptrade/api"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
-	"strings"
 	"time"
 )
 
@@ -146,23 +145,23 @@ func SocketOlymptrade(info kline_common.Info) {
 
 func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs, UpstreamTs int64) models.KlineLog {
 	var klineLog models.KlineLog
-	rData := wsData[0].D[0]                                                             // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
-	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(ContractCode), "/", "-") // 合约代码 BTC-USD
-	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)            // kilne返回日期时间戳
-	klineLog.Ts = SystemTs                                                              // 自己生成的ts
-	klineLog.UpstreamTs = UpstreamTs                                                    // 上游的ts
-	klineLog.ID = SystemTs                                                              // 自己生成的ts/1000
-	klineLog.Mrid = 0.00                                                                // ID
-	klineLog.COpen = 0                                                                  // 起始峰值
-	klineLog.CClose = rData.Close                                                       // 结束峰值
-	klineLog.High = rData.High                                                          // 最高峰值
-	klineLog.Low = rData.Low                                                            // 最低峰值
-	klineLog.Amount = 0                                                                 // 成交金额 TODO
-	klineLog.Vol = 0                                                                    // 成交手 TODO
-	klineLog.CCount = 0                                                                 // 交易笔数 TODO
-	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))      // Kline返回日期
-	klineLog.CreateDate = time.Now()                                                    // 创建日期
-	klineLog.KlineSource = config.KlineSource                                           // K线来源olymptrade
+	rData := wsData[0].D[0]                                                        // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
+	klineLog.ContractCode = ContractCode                                           // 合约代码 BTC-USD
+	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)       // kilne返回日期时间戳
+	klineLog.Ts = SystemTs                                                         // 自己生成的ts
+	klineLog.UpstreamTs = UpstreamTs                                               // 上游的ts
+	klineLog.ID = SystemTs                                                         // 自己生成的ts/1000
+	klineLog.Mrid = 0.00                                                           // ID
+	klineLog.COpen = 0                                                             // 起始峰值
+	klineLog.CClose = rData.Close                                                  // 结束峰值
+	klineLog.High = rData.High                                                     // 最高峰值
+	klineLog.Low = rData.Low                                                       // 最低峰值
+	klineLog.Amount = 0                                                            // 成交金额 TODO
+	klineLog.Vol = 0                                                               // 成交手 TODO
+	klineLog.CCount = 0                                                            // 交易笔数 TODO
+	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond)) // Kline返回日期
+	klineLog.CreateDate = time.Now()                                               // 创建日期
+	klineLog.KlineSource = config.KlineSource                                      // K线来源olymptrade
 	return klineLog
 }
 

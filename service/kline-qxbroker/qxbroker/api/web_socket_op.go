@@ -112,6 +112,11 @@ func (ws *WebSocketOp) TickerReboot() {
 	for range ticker.C {
 		status, _ := redis.Client.Get(KeyStatus)
 		if status == "4" { // 延迟过高关闭重启
+			logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
+			goto STOP
+		}
+		if ws.isClose {
+			logger.Info(KeyStatus + "当前数据已关闭握手" + ws.Symbol)
 			goto STOP
 		}
 		logger.Info(KeyStatus)
@@ -120,8 +125,7 @@ func (ws *WebSocketOp) TickerReboot() {
 STOP:
 	// 关闭
 	ticker.Stop()
-	ws.closeChanCallback <- struct{}{}
-	logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
+	ws.Close()
 }
 
 func (ws *WebSocketOp) DoHand() {

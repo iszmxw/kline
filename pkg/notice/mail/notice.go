@@ -37,6 +37,19 @@ func check(address, t string) bool {
 		}
 	}
 	switch t {
+	case "msgHeartbeatAnomaly": // 心跳通知
+		{
+			ok, _ := redis.Client.Get(key)
+			// 初始化
+			if len(ok) <= 0 {
+				// 15分钟通知一次
+				_, _ = redis.Client.Add(key, "ok", 15*60)
+				return true
+			} else {
+				return false
+			}
+		}
+		break
 	case "msgSocketNetworkAnomaly": // 检测累计通知次数：网络异常：一分钟内超过15次进行通知
 		if checkGrandTotal(address, t, 0, 1*60, 15) { // 一分钟内超过15次进行通知
 			pass = true

@@ -21,12 +21,13 @@ import (
 // 心跳 heartbeat 健康
 
 func Start(num time.Duration, Source string, CodeData []kline_common.Info, isReboot bool) {
-	time.Sleep(time.Minute * 5) //等待当前数据订阅5分钟后开始心跳检测
-	for {
+	time.Sleep(time.Minute * 5)                 //等待当前数据订阅5分钟后开始心跳检测
+	ticker := time.NewTicker(num * time.Second) // 每隔 num 秒检查一次
+	for range ticker.C {
 		for _, info := range CodeData {
+			logger.Info(fmt.Sprintf("%v开始心跳检测", info.ContractCode))
 			go check(Source, info, isReboot)
 		}
-		time.Sleep(time.Second * num)
 	}
 }
 
@@ -83,6 +84,7 @@ func check(Source string, info kline_common.Info, isReboot bool) {
 		}
 		break
 	}
+	logger.Info(fmt.Sprintf("%v结束心跳检测", info.ContractCode))
 }
 
 // 心跳检测到异常了，重启协诚

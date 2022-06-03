@@ -7,13 +7,13 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
+	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/utils/zip"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"net/http"
 	"net/url"
 	"reflect"
-	"strings"
 	"sync"
 	"time"
 )
@@ -125,6 +125,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 }
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
+	defer kline_common.KlineRecover("SendMsg异常", config.KlineSource, ws.Symbol)
 	if ws.isClose {
 		logger.Info("send on closed channel 测试")
 		return false
@@ -135,7 +136,6 @@ func (ws *WebSocketOp) SendMsg(data []byte) bool {
 
 func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata interface{}) {
 	var mi *CallbackFunc = nil
-	ch = strings.ToLower(ch)
 	if _, found := ws.SubTopicMap[ch]; found {
 		mi = ws.SubTopicMap[ch]
 	}
@@ -248,7 +248,6 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
 	ws.Symbol = ch
-	ch = strings.ToLower(ch)
 	var mi *CallbackFunc = nil
 	if _, found := ws.SubTopicMap[ch]; found {
 		logger.Info(found)
