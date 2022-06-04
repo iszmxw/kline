@@ -55,7 +55,6 @@ func SocketRaceOption(info kline_common.Info) {
 				}
 			}()
 			if resp.TimeId == "1" || resp.Strike == 0 {
-				info.Symbol = info.Symbol + ".W"
 				logger.Info(resp)
 				// 当前数据源匹配就入库
 				if response.KlineSource(info.ContractCode) == config.KlineSource {
