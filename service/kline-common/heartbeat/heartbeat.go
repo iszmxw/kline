@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"goapi/app/response"
+	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
@@ -33,7 +34,7 @@ func Start(num time.Duration, Source string, CodeData []kline_common.Info, isReb
 
 func check(Source string, info kline_common.Info, isReboot bool) {
 	// 资产休市状态
-	if kline.CheckSleep(Source, info.ContractCode) {
+	if kline.CheckSleep(Source, info.ContractCode) && !helpers.InArray(Source, []string{"raceoption"}) {
 		return
 	}
 	// 所有的数据源键值对
