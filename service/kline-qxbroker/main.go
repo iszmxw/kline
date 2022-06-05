@@ -29,21 +29,17 @@ func main() {
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	CodeData := kline_common.GetData(kconfig.KlineSource)
+	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
+	go heartbeat.Start(30, kconfig.KlineSource, CodeData, false)
 	start := "ok"
-	heart := true
 	for {
 		if start == "ok" {
+			start = "no"
 			logger.Info(CodeData)
 			for _, obj := range CodeData {
 				logger.Info("缓存 " + obj.Symbol)
 				go qxbroker.SocketQxbroker(obj)
 			}
-			start = "no"
-		}
-		if heart {
-			heart = false
-			// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
-			go heartbeat.Start(30, kconfig.KlineSource, CodeData, false)
 		}
 		time.Sleep(time.Second)
 	}

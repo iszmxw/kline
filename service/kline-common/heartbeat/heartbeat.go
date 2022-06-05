@@ -27,7 +27,7 @@ func Start(num time.Duration, Source string, CodeData []kline_common.Info, isReb
 	for range ticker.C {
 		for _, info := range CodeData {
 			logger.Info(fmt.Sprintf("%v开始心跳检测", info.ContractCode))
-			go check(Source, info, isReboot)
+			check(Source, info, isReboot)
 		}
 	}
 }
