@@ -100,21 +100,26 @@ func (h *KlineController) MaintenanceTableData(c *gin.Context) {
 	var (
 		SearchKlineLog []models.KlineLog
 		params         requests.DayTime
+		total          int64
+		limit          int64
 	)
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	createDate := time.Now().AddDate(0, 0, -params.Num).Format("2006-01-02 15:04:05")
+	Num := helpers.StringToInt(params.Num)
+	TsDate := time.Now().AddDate(0, 0, -Num).Format("2006-01-02 15:04:05")
 	DB := mysql.DB.Debug()
-	DB.Model(models.KlineLog{}).Where("create_date < ?", createDate).Find(&SearchKlineLog)
-	for _, item := range SearchKlineLog {
-		go func(item models.KlineLog) {
-			DB.Model(models.KlineLog{}).Delete(&item)
-		}(item)
+	DB = DB.Model(models.KlineLog{}).Where("ts_date < ?", TsDate)
+	DB.Count(&total)
+	limit = 100000
+	num := total / limit
+	if (total % limit) > 0 {
+		num = num + 1
 	}
-	output.Rjson(c, nil, "success", 1)
+	DB.Limit(int(limit)).Delete(&SearchKlineLog)
+	output.Rjson(c, gin.H{"total": total, "num": num}, "success", 1)
 }
 
 // WsReturnRateHandler socket 负责转发数据库的 rate

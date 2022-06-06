@@ -6,5 +6,5 @@ type Sub struct {
 }
 
 type DayTime struct {
-	Num int `json:"num" form:"num" validate:"required"`
+	Num string `json:"num" form:"num" validate:"required"`
 }
