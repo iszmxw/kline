@@ -30,8 +30,11 @@ func main() {
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	CodeData := kline_common.GetData(kconfig.KlineSource)
+	// 费率采集处理
+	go api.GetRate()
+	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
+	go heartbeat.Start(30, kconfig.KlineSource, CodeData, false)
 	start := "ok"
-	rate := true
 	for {
 		if start == "ok" {
 			for _, obj := range CodeData {
@@ -39,13 +42,6 @@ func main() {
 				go raceoption.SocketRaceOption(obj)
 			}
 			start = "no"
-		}
-		if rate {
-			rate = false
-			// 费率采集处理
-			go api.GetRate()
-			// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
-			go heartbeat.Start(30, kconfig.KlineSource, CodeData, false)
 		}
 		time.Sleep(time.Second)
 	}

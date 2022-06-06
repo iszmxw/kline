@@ -43,8 +43,9 @@ func main() {
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	CodeData := kline_common.GetData(kconfig.KlineSource)
+	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
+	go heartbeat.Start(30, kconfig.KlineSource, CodeData, true)
 	start := "ok"
-	heart := true
 	for {
 		if start == "ok" {
 			for _, obj := range CodeData {
@@ -52,11 +53,6 @@ func main() {
 				go SocketHuoBi(obj)
 			}
 			start = "no"
-		}
-		if heart {
-			heart = false
-			// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
-			go heartbeat.Start(30, kconfig.KlineSource, CodeData, true)
 		}
 		// 消费消息队列，数据存入es里面
 		//go MsgQueue()
