@@ -1,23 +1,28 @@
 package main
 
 import (
-	"fmt"
-	"sync"
+	"goapi/bootstrap"
+	"goapi/config"
+	"goapi/pkg/logger"
 	"time"
 )
 
+func init() {
+	var cstZone = time.FixedZone("CST", 7*3600) // 东七
+	time.Local = cstZone
+	time.Local = cstZone
+	// 初始化配置信息
+	config.Initialize()
+	// 定义日志目录
+	logger.Init("test")
+	// 初始化 SQL
+	bootstrap.SetupDB()
+}
+
 func main() {
-	var wg sync.WaitGroup
-	quit := time.Tick(time.Second * 1) // 给个定时器
+	bootstrap.SetupRedis(15)
+	defer bootstrap.RedisClose()
+	//go kline.TickerCheckTodaySleep(true)
+	//time.Sleep(time.Second * 125)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-quit
-		fmt.Println("over goroutine")
-		return
-	}()
-	wg.Wait()
-
-	fmt.Println("over all")
 }

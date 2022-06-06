@@ -2,14 +2,13 @@ package kline
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/golang-module/carbon/v2"
 	"goapi/app/models"
-	"goapi/app/response"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"strings"
 	"time"
 )
 
@@ -63,21 +62,16 @@ func CheckSleep(KlineSource string, ContractCode string) bool {
 }
 
 // UpdateSleep 修改
-func UpdateSleep(KlineSource, ContractCode string) {
-	// 当前数据源匹配就入库
-	if response.KlineSource(ContractCode) == KlineSource {
-		//err := mysql.DB.Debug().Model(models.TradingAssets{}).
-		//	Where("assets_code", ContractCode).
-		//	Update("assets_status", "2"). // 资产状态 1正常 2休市 3下架
-		//	Update("updater", KlineSource). // 更新人
-		//	Update("update_date", time.Now()). // 更新日期
-		//	Error
-		//if err != nil {
-		//	logger.Error(err)
-		//}
-		logger.Error(errors.New(fmt.Sprintf("数据源%v,%v正在休市", KlineSource, ContractCode)))
+func UpdateSleep(Updater, ContractCode, AssetsStatus string) {
+	err := mysql.DB.Debug().Model(models.TradingAssets{}).
+		Where("assets_code", ContractCode).
+		Update("assets_status", AssetsStatus). // 资产状态 1正常 2休市 3下架
+		Update("updater", Updater). // 更新人
+		Update("update_date", time.Now()). // 更新日期
+		Error
+	if err != nil {
+		logger.Error(err)
 	}
-	return
 }
 
 // 检测OTC可运行时间段
@@ -98,4 +92,73 @@ func CheckOTC() bool {
 	} else { // OTC
 		return true
 	}
+}
+
+// 检测今天的休市时间
+
+func GetTodayTimeDetail(WeekdayTimeDetail []models.WeekdayTimeDetail) models.WeekdayTimeDetail {
+	var result models.WeekdayTimeDetail
+	for _, item := range WeekdayTimeDetail {
+		if item.Name == time.Now().Weekday().String() {
+			return item
+		}
+	}
+	return result
+}
+
+func CheckTodaySleep(WeekdayTimeDetail []models.WeekdayTimeDetail) bool {
+	SleepTime := GetTodayTimeDetail(WeekdayTimeDetail).SleepTime
+	dateNow := time.Now()
+	dateNowUnix := dateNow.Unix()
+	for _, val := range SleepTime {
+		StartArr := strings.Split(val.Start, ":")
+		EndArr := strings.Split(val.End, ":")
+		startTime := time.Date(dateNow.Year(), dateNow.Month(), dateNow.Day(), helpers.StringToInt(StartArr[0]), helpers.StringToInt(StartArr[1]), 0, 0, dateNow.Location()).Unix()
+		endTime := time.Date(dateNow.Year(), dateNow.Month(), dateNow.Day(), helpers.StringToInt(EndArr[0]), helpers.StringToInt(EndArr[1]), 0, 0, dateNow.Location()).Unix()
+		if dateNowUnix > startTime && dateNowUnix < endTime {
+			logger.Info(fmt.Sprint("正在休息", startTime, endTime))
+			return true
+		}
+	}
+	return false
+}
+
+func TickerCheckTodaySleep(isTicker bool) {
+	ticker := time.NewTicker(60 * time.Second) // 每隔 60 秒检查一次，维护休市状态
+	for range ticker.C {
+		DB := mysql.DB.Debug()
+		var TradingAssets []models.TradingAssets
+		DB.Model(models.TradingAssets{}).Where("assets_status != ?", 3).Find(&TradingAssets)
+		for _, item := range TradingAssets {
+			if len(item.SleepTime) == 0 {
+				continue
+			}
+			go func(data models.TradingAssets) {
+				var WeekdayTimeDetail []models.WeekdayTimeDetail
+				err := json.Unmarshal([]byte(data.SleepTime), &WeekdayTimeDetail)
+				if err != nil {
+					logger.Error(err)
+					return
+				}
+				result := CheckTodaySleep(WeekdayTimeDetail)
+				if result {
+					if data.AssetsStatus == 1 {
+						UpdateSleep("kline-system", data.AssetsCode, "2")
+					}
+					logger.Info(data.AssetsCode + "休市中")
+				} else {
+					if data.AssetsStatus == 2 {
+						UpdateSleep("kline-system", data.AssetsCode, "1")
+					}
+					logger.Info(data.AssetsCode + "开市中")
+				}
+			}(item)
+		}
+		if isTicker == false {
+			goto Stop
+		}
+	}
+Stop:
+	logger.Info("一次性检查")
+	ticker.Stop()
 }

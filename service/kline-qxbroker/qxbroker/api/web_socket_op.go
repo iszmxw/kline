@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/app/models"
 	"goapi/app/response"
-	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -278,7 +277,10 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 										status := item.([]interface{})[14].(bool)
 										if status == false {
 											// 休市状态 数据源休市控制权，以及状态维护
-											go kline.UpdateSleep(config.KlineSource, ws.ContractCode)
+											//// 当前数据源匹配就入库
+											//if response.KlineSource(ws.ContractCode) == config.KlineSource {
+											//	go kline.UpdateSleep(config.KlineSource, ws.ContractCode)
+											//}
 										}
 										rate := item.([]interface{})[18].(float64)
 										if rate > 75 {

@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 // 资产表
 
@@ -26,4 +28,20 @@ type TradingAssets struct {
 type SleepTime struct {
 	Start  string `json:"start"`
 	TsLong string `json:"ts_long"`
+}
+
+type SetUpTime struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+}
+
+type WeekDay struct {
+	TradingTime []SetUpTime `json:"TradingTime"`
+	SleepTime   []SetUpTime `json:"SleepTime"`
+}
+
+type WeekdayTimeDetail struct {
+	Name        string      `json:"name"`
+	TradingTime []SetUpTime `json:"TradingTime"`
+	SleepTime   []SetUpTime `json:"SleepTime"`
 }

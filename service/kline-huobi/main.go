@@ -13,6 +13,7 @@ import (
 	conf "goapi/pkg/config"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -45,6 +46,7 @@ func main() {
 	CodeData := kline_common.GetData(kconfig.KlineSource)
 	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
 	go heartbeat.Start(30, kconfig.KlineSource, CodeData, true)
+	go kline.TickerCheckTodaySleep(true) // 定时每隔一分钟检查一次市场资产状态
 	start := "ok"
 	for {
 		if start == "ok" {

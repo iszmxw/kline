@@ -51,7 +51,10 @@ func SocketQxbroker(info kline_common.Info) {
 			}()
 			if resp.TimeId == 1 {
 				// 数据源休市控制权，以及状态维护
-				go kline.UpdateSleep(config.KlineSource, info.ContractCode)
+				//
+				//if response.KlineSource(info.ContractCode) == config.KlineSource {
+				//	go kline.UpdateSleep(config.KlineSource, info.ContractCode)
+				//}
 				// 关闭
 				callback <- struct{}{}
 				return

@@ -13,6 +13,7 @@ import (
 	"goapi/pkg/config"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -361,6 +362,13 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 			"tips": tips,
 		})
 	}
+
+	// 3 分钟内检测一次资产市场状态
+	if !redis.Client.CheckExist("TickerCheckTodaySleep") {
+		_, _ = redis.Client.Add("TickerCheckTodaySleep", ch, 3*60) // 3 分钟内不允许重复检测
+		kline.TickerCheckTodaySleep(false)                         // 检测一次资产市场状态
+	}
+
 	output.Rjson(c, gin.H{
 		"HistKlineLogs": data,
 		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
