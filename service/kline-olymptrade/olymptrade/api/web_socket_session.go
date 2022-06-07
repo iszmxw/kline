@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
 	api2captcha "goapi/pkg/recaptcha"
 	"goapi/pkg/redis"
@@ -82,10 +83,16 @@ func login() string {
 	lData.Captcha.Type = "recaptcha"
 	lData.Captcha.Data.Token = recaptcha()
 	// data
-	lData.Data.Email = "435311939@qq.com"
-	lData.Data.Password = "18219116520tdw"
-	lData.Data.FpId = "73ccb7266cf5f71cae07b114c087814e"
 	lData.Data.HardwareId = "hi_AXZujaPKIo1wlwthz1Ab3B2Oxa3CEtp8"
+	if conf.GetString("app.env") == "company_pro" {
+		lData.Data.Email = "open@54zm.com"
+		lData.Data.Password = "wap.54zm.com"
+		lData.Data.FpId = "32c2d37cf06c08b2b42c40331bc906af"
+	} else {
+		lData.Data.Email = "435311939@qq.com"
+		lData.Data.Password = "18219116520tdw"
+		lData.Data.FpId = "73ccb7266cf5f71cae07b114c087814e"
+	}
 	str, err := json.Marshal(lData)
 	if err != nil {
 		logger.Error(err)
@@ -103,22 +110,9 @@ func login() string {
 	}
 	if resp == nil {
 		logger.Info(resp)
-		return ""
 	}
-	// 检查登录返回错误信息，判断验证码是否验证成功
-	if e, found := resp["errors"]; found {
-		if "user_already_authorized" == e.([]map[string]interface{})[0]["code"].(string) {
-			token = exportSession(header)
-		}
-	}
-	// 检查登录返回参数，判断是否登录成功
-	if data, found := resp["data"]; found {
-		if res, found := data.(map[string]interface{})["data"]; found {
-			if _, found := res.(map[string]interface{})["id"]; found {
-				token = exportSession(header)
-			}
-		}
-	}
+	token = exportSession(header)
+	logger.Info(token)
 	return token
 }
 

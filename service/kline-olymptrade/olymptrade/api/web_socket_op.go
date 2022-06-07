@@ -85,7 +85,6 @@ func (ws *WebSocketOp) connServer() bool {
 	}
 	logger.Info(ws.Symbol + "WebSocket connected")
 	go ws.readLoop()
-	go ws.writeLoop()
 	go ws.DoHand()
 	return true
 }
@@ -130,7 +129,10 @@ func (ws *WebSocketOp) SendMsg(data []byte) bool {
 		logger.Info("send on closed channel 测试")
 		return false
 	}
-	ws.writeChan <- data
+	if err := ws.conn.WriteMessage(websocket.TextMessage, data); err != nil {
+		logger.Info(err.Error())
+		ws.Close()
+	}
 	return true
 }
 
@@ -174,29 +176,6 @@ func (ws *WebSocketOp) readLoop() {
 	}
 ERR:
 	logger.Info(ws.Symbol + "read 已关闭 ")
-	ws.Close()
-}
-
-//写协程
-func (ws *WebSocketOp) writeLoop() {
-	for {
-		select {
-		case msg, ok := <-ws.writeChan:
-			if !ok {
-				goto ERR
-			}
-			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-				logger.Info(err.Error())
-				goto ERR
-			}
-		case <-ws.closeChan:
-			logger.Info(ws.Symbol + "写协程关闭chan")
-			goto ERR
-		}
-
-	}
-ERR:
-	logger.Info(ws.Symbol + "写协程已关闭")
 	ws.Close()
 }
 

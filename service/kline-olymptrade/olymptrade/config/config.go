@@ -1,6 +1,6 @@
 package config
 
-const LinearSwapDefaultHost = "olymptrade.com"
+const LinearSwapDefaultHost = "ws.olymptrade.com"
 
 const DefaultId = "api"
 

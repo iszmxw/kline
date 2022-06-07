@@ -192,7 +192,7 @@ func (c *Client) res(req Request) (*string, error) {
 		return nil, err
 	}
 	data := body.String()
-	logger.Info("Status "+resp.Status+" data "+data)
+	//logger.Info("Status "+resp.Status+" data "+data)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, ErrApi
