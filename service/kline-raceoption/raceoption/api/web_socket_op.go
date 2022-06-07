@@ -190,6 +190,7 @@ func (ws *WebSocketOp) readLoop() {
 		}
 	}
 ERR:
+	close(ws.readChan)
 	ws.Close()
 }
 
@@ -223,7 +224,6 @@ func (ws *WebSocketOp) Close() {
 		ws.onceClose.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
 			close(ws.writeChan)
-			close(ws.readChan)
 			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
 			go mail_notice.Notice("msgSocketClose", map[string]interface{}{

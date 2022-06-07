@@ -36,7 +36,6 @@ type WebSocketOp struct {
 	onceClose         sync.Once                // 锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              // 读消息管道
-	writeChan         chan []byte              // 写消息管道
 	SubTopicMap       map[string]*CallbackFunc // 订阅历史
 	ReqTopicMap       map[string]*CallbackFunc // 请求历史
 	authConnect       int                      // 自动重连次数
@@ -54,7 +53,6 @@ func (ws *WebSocketOp) open(path, host, session string, proxy *url.URL, closeCha
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
 	ws.readChan = make(chan []byte, 30)
-	ws.writeChan = make(chan []byte, 10)
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.ReqTopicMap = make(map[string]*CallbackFunc)
 	ws.closeChanCallback = closeChanCallback
@@ -175,6 +173,7 @@ func (ws *WebSocketOp) readLoop() {
 		}
 	}
 ERR:
+	close(ws.readChan)
 	logger.Info(ws.Symbol + "read 已关闭 ")
 	ws.Close()
 }
@@ -184,8 +183,6 @@ func (ws *WebSocketOp) Close() {
 		ws.isClose = true
 		ws.onceClose.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
-			close(ws.writeChan)
-			close(ws.readChan)
 			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
 			if ws.conn != nil {
