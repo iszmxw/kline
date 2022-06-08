@@ -57,15 +57,11 @@ func check(address, t string) bool {
 			pass = false
 		}
 		break
+	case "msgAssetSleep": // 开市休市提醒
+		pass = true
+		break
 	default:
 		break
-	}
-	if helpers.InArray(address, []string{"yezhiming@yuctime.com", "lauren730@yuctime.com", "zhangfeng@yuctime.com", "licui@yuctime.com"}) {
-		if "msgAssetSleep" == t {
-			return true
-		} else {
-			return false
-		}
 	}
 	return pass
 }
