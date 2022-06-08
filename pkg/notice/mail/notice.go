@@ -60,7 +60,7 @@ func check(address, t string) bool {
 	default:
 		break
 	}
-	if helpers.InArray(address, []string{"lauren730@yuctime.com", "zhangfeng@yuctime.com", "licui@yuctime.com"}) {
+	if helpers.InArray(address, []string{"yezhiming@yuctime.com", "lauren730@yuctime.com", "zhangfeng@yuctime.com", "licui@yuctime.com"}) {
 		if "msgAssetSleep" == t {
 			return true
 		} else {
@@ -300,7 +300,7 @@ func Notice(t string, data interface{}) {
 	}
 	// telegram 通知
 	go telegram.Notice(Info)
-	if !helpers.InArray(t, []string{"msgHeartbeatAnomaly"}) {
+	if !helpers.InArray(t, []string{"msgHeartbeatAnomaly", "msgAssetSleep"}) { // 这两个才进行邮件通知
 		return
 	}
 	// 邮件通知

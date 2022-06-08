@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"goapi/bootstrap"
 	"goapi/config"
 	"goapi/pkg/logger"
+	mail_notice "goapi/pkg/notice/mail"
 	"time"
 )
 
@@ -20,9 +22,13 @@ func init() {
 }
 
 func main() {
-	bootstrap.SetupRedis(15)
+	bootstrap.SetupRedis(0)
 	defer bootstrap.RedisClose()
+	mail_notice.Notice("msgAssetSleep", map[string]interface{}{
+		"assets_code": "Apple",
+		"msg":         fmt.Sprintf("%v,休市完毕，准备开市交易", "Apple"),
+	})
 	//go kline.TickerCheckTodaySleep(true)
-	//time.Sleep(time.Second * 125)
+	time.Sleep(time.Second * 125)
 
 }
