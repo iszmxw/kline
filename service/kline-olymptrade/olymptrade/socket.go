@@ -50,8 +50,9 @@ func SocketOlymptrade(info kline_common.Info) {
 		for len(session) == 0 {
 			// 不断获取 session ，直到取到为止
 			_, session = new(api.SocketSession).GetToken(false)
-			time.Sleep(time.Second * 3) // 休息3秒
+			time.Sleep(time.Second * 3) // 休息 3 秒
 		}
+		time.Sleep(time.Second * 5) // 休息 5 秒
 		wsmkClient := new(api.WSPriceClient).Init("", session, kline_common.GetProxy(config.KlineSource), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {

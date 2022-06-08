@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"reflect"
 	"sync"
-	"time"
 )
 
 type closeChanCallback chan struct{}
@@ -77,7 +76,6 @@ func (ws *WebSocketOp) connServer() bool {
 			"proxy": ws.proxy,
 		})
 		logger.Error(err)
-		time.Sleep(time.Second * 5)
 		ws.Close()
 		return false
 	}
@@ -124,7 +122,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
 	defer kline_common.KlineRecover("SendMsg异常", config.KlineSource, ws.Symbol)
 	if ws.isClose {
-		logger.Info("send on closed channel 测试")
+		logger.Info("send on closed channel")
 		return false
 	}
 	if err := ws.conn.WriteMessage(websocket.TextMessage, data); err != nil {
@@ -164,17 +162,20 @@ func (ws *WebSocketOp) readLoop() {
 		} else if msgType == websocket.TextMessage {
 			message = buf
 		}
-		select {
-		case ws.readChan <- message:
-			break
-		case <-ws.closeChan:
-			logger.Info(ws.Symbol + "读协程关闭chan")
+		if ws.isClose {
 			goto ERR
+		} else {
+			select {
+			case ws.readChan <- message:
+				break
+			case <-ws.closeChan:
+				logger.Info(ws.Symbol + "读协程关闭chan")
+				goto ERR
+			}
 		}
 	}
 ERR:
-	close(ws.readChan)
-	logger.Info(ws.Symbol + "read 已关闭 ")
+	logger.Info(ws.Symbol + "读协程已关闭")
 	ws.Close()
 }
 
@@ -183,8 +184,9 @@ func (ws *WebSocketOp) Close() {
 		ws.isClose = true
 		ws.onceClose.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
-			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
+			close(ws.readChan)
+			close(ws.closeChan)
 			if ws.conn != nil {
 				err := ws.conn.Close()
 				if err != nil {
