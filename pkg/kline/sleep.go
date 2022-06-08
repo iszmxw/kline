@@ -8,6 +8,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	mail_notice "goapi/pkg/notice/mail"
 	"strings"
 	"time"
 )
@@ -62,10 +63,11 @@ func CheckSleep(KlineSource string, ContractCode string) bool {
 }
 
 // UpdateSleep 修改
-func UpdateSleep(Updater, ContractCode, AssetsStatus string) {
+func UpdateSleep(Updater, ContractCode, AssetsStatus, IsValid string) {
 	err := mysql.DB.Debug().Model(models.TradingAssets{}).
 		Where("assets_code", ContractCode).
 		Update("assets_status", AssetsStatus). // 资产状态 1正常 2休市 3下架
+		Update("is_valid", IsValid). // 是否有效 1是 0否
 		Update("updater", Updater). // 更新人
 		Update("update_date", time.Now()). // 更新日期
 		Error
@@ -143,12 +145,20 @@ func TickerCheckTodaySleep(isTicker bool) {
 				result := CheckTodaySleep(WeekdayTimeDetail)
 				if result {
 					if data.AssetsStatus == 1 {
-						UpdateSleep("kline-system", data.AssetsCode, "2")
+						go mail_notice.Notice("msgAssetSleep", map[string]interface{}{
+							"assets_code": data.AssetsCode,
+							"msg":         fmt.Sprintf("%v,结束交易准备开始休市", data.AssetsCode),
+						})
+						UpdateSleep("kline-system", data.AssetsCode, "2", "0")
 					}
 					logger.Info(data.AssetsCode + "休市中")
 				} else {
 					if data.AssetsStatus == 2 {
-						UpdateSleep("kline-system", data.AssetsCode, "1")
+						go mail_notice.Notice("msgAssetSleep", map[string]interface{}{
+							"assets_code": data.AssetsCode,
+							"msg":         fmt.Sprintf("%v,休市完毕，准备开市交易", data.AssetsCode),
+						})
+						UpdateSleep("kline-system", data.AssetsCode, "1", "1")
 					}
 					logger.Info(data.AssetsCode + "开市中")
 				}

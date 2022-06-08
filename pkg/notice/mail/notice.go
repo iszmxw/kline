@@ -44,9 +44,9 @@ func check(address, t string) bool {
 			if len(ok) <= 0 {
 				// 15分钟通知一次
 				_, _ = redis.Client.Add(key, "ok", 15*60)
-				return true
+				pass = true
 			} else {
-				return false
+				pass = false
 			}
 		}
 		break
@@ -60,10 +60,13 @@ func check(address, t string) bool {
 	default:
 		break
 	}
-	//// 管理员直接可以
-	//if address == AdminMail || address == "yezhiming@yuctime.com" {
-	//	pass = false
-	//}
+	if helpers.InArray(address, []string{"lauren730@yuctime.com", "zhangfeng@yuctime.com", "licui@yuctime.com"}) {
+		if "msgAssetSleep" == t {
+			return true
+		} else {
+			return false
+		}
+	}
 	return pass
 }
 
@@ -232,6 +235,14 @@ func msgHeartbeatAnomaly(name, msg string) map[string]interface{} {
 	return brokenInfo
 }
 
+// 心跳检测，服务健康通知
+func msgAssetSleep(AssetsCode, msg string) map[string]interface{} {
+	brokenInfo := cmap.New().Items()
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】资产(%v)变动，请查看详细信息", conf.GetString("app.env"), AssetsCode)
+	brokenInfo["content"] = msg
+	return brokenInfo
+}
+
 // 发送通知
 
 func Notice(t string, data interface{}) {
@@ -275,6 +286,10 @@ func Notice(t string, data interface{}) {
 	case "msgHeartbeatAnomaly":
 		arr := data.(map[string]interface{})
 		Info = msgHeartbeatAnomaly(arr["name"].(string), arr["msg"].(string))
+		break
+	case "msgAssetSleep":
+		arr := data.(map[string]interface{})
+		Info = msgAssetSleep(arr["assets_code"].(string), arr["msg"].(string))
 		break
 	default:
 		return

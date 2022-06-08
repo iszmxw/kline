@@ -392,16 +392,19 @@ func (ws *WebSocketOp) readLoop() {
 			logger.Error(err)
 			goto ERR
 		}
-		select {
-		case ws.readChan <- message:
-			break
-		case <-ws.closeChan:
-			logger.Info(ws.Symbol + "读协程关闭chan")
+		if ws.isClose {
 			goto ERR
+		} else {
+			select {
+			case ws.readChan <- message:
+				break
+			case <-ws.closeChan:
+				logger.Info(ws.Symbol + "读协程关闭chan")
+				goto ERR
+			}
 		}
 	}
 ERR:
-	close(ws.readChan)
 	logger.Info(ws.Symbol + "读协程已关闭")
 	ws.Close()
 }
@@ -468,9 +471,10 @@ func (ws *WebSocketOp) Close() {
 		ws.isClose = true
 		ws.onceClose.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
-			ws.IsPing = false // 重置 ping
-			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
+			ws.IsPing = false // 重置 ping
+			close(ws.readChan)
+			close(ws.closeChan)
 			if ws.conn != nil {
 				err := ws.conn.Close()
 				if err != nil {
