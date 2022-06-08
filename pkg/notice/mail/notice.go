@@ -26,36 +26,23 @@ func getNoticeKey(address, t string) string {
 func check(address, t string) bool {
 	var pass = true
 	key := getNoticeKey(address, t)
-	logger.Info(key) // key=======>notice:mail:msgSocketNetworkAnomaly:mail@54zm.com
-	value, _ := redis.Client.Get(key)
-	// 初始化
-	if len(value) <= 0 {
-		_, err := redis.Client.Add(key, InitNum, ExTime)
-		if err != nil {
-			pass = false
-			value = "0"
-		}
-	}
 	switch t {
 	case "msgHeartbeatAnomaly": // 心跳通知
 		{
+			if !helpers.InArray(address, []string{AdminMail, "yezhiming@yuctime.com"}) {
+				return false
+			}
 			ok, _ := redis.Client.Get(key)
 			// 初始化
-			if len(ok) <= 0 {
-				// 15分钟通知一次
-				_, _ = redis.Client.Add(key, "ok", 15*60)
-				pass = true
-			} else {
-				pass = false
+			if len(ok) > 0 {
+				return false
 			}
+			// 15分钟通知一次
+			_, _ = redis.Client.Add(key, "ok", 15*60)
 		}
 		break
 	case "msgSocketNetworkAnomaly": // 检测累计通知次数：网络异常：一分钟内超过15次进行通知
-		if checkGrandTotal(address, t, 0, 1*60, 15) { // 一分钟内超过15次进行通知
-			pass = true
-		} else {
-			pass = false
-		}
+		pass = checkGrandTotal(address, t, 0, 1*60, 15)
 		break
 	case "msgAssetSleep": // 开市休市提醒
 		pass = true
