@@ -406,6 +406,7 @@ func (ws *WebSocketOp) readLoop() {
 	}
 ERR:
 	logger.Info(ws.Symbol + "读协程已关闭")
+	close(ws.readChan)
 	ws.Close()
 }
 
@@ -473,7 +474,6 @@ func (ws *WebSocketOp) Close() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
 			ws.closeChanCallback <- struct{}{}
 			ws.IsPing = false // 重置 ping
-			close(ws.readChan)
 			close(ws.closeChan)
 			if ws.conn != nil {
 				err := ws.conn.Close()
