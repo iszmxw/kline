@@ -7,7 +7,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
-	"goapi/pkg/kline"
+	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -22,19 +22,19 @@ import (
 
 func SocketRaceOption(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
-	// 资产休市状态
-	if kline.CheckSleep(config.KlineSource, info.ContractCode) {
+	// OTC 数据源读取时间段
+	if otc.RaceOptionCheckOTC() {
 		time.Sleep(time.Second) // 休息1秒
 		// 休市切换 OTC 数据源读取时间段
 		if !strings.Contains(info.Symbol, ".W") {
 			info.Symbol = info.Symbol + ".W"
-			logger.Info("OTC时间")
 		}
-	} else {
+		logger.Info("OTC时间")
+	}else{
 		if strings.Contains(info.Symbol, ".W") {
 			info.Symbol = strings.ReplaceAll(info.Symbol, ".W", "") // 去除掉
-			logger.Info("正常时间")
 		}
+		logger.Info("正常时间")
 	}
 	// 开始订阅
 	{

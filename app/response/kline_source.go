@@ -23,10 +23,9 @@ func KlineSource(AssetsCode string) string {
 	if len(Source) > 0 {
 		return Source
 	}
-	// 查询数据库 todo 待验证
-	var TradingAssetsSource models.TradingAssetsSource
-	mysql.DB.Debug().Model(models.TradingAssetsSource{}).Where("assets_code", AssetsCode).Where("is_valid", 1).Find(&TradingAssetsSource)
-	Source = TradingAssetsSource.KlineSource
+	var Data models.TradingAssetsSource
+	mysql.DB.Debug().Model(models.TradingAssetsSource{}).Where("assets_code", AssetsCode).Where("is_valid", 1).Find(&Data)
+	Source = Data.KlineSource
 	if len(Source) > 0 {
 		_, _ = redis.Client.SelectDbAdd(config.GetInt("redis.db"), key, Source, 0)
 		return Source

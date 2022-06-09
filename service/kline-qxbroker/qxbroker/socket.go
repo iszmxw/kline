@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"goapi/app/models"
 	"goapi/app/response"
-	"goapi/pkg/kline"
+	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -20,20 +20,12 @@ import (
 
 func SocketQxbroker(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
-	var StartSub = true
-	// 资产休市状态
-	if kline.CheckSleep(config.KlineSource, info.ContractCode) {
-		time.Sleep(time.Second) // 休息1秒
-		StartSub = false
-		// 关闭
-		callback <- struct{}{}
-	}
 	// OTC 数据源读取时间段
-	if kline.CheckOTC() && !strings.Contains(info.Symbol, "_otc") {
+	if otc.QxbrokerCheckOTC() && !strings.Contains(info.Symbol, "_otc") {
 		info.Symbol = info.Symbol + "_otc"
 	}
 	// 开始订阅
-	if StartSub {
+	{
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli()             // 系統生成的Ts

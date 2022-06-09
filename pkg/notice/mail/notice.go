@@ -226,6 +226,22 @@ func msgAssetSleep(AssetsCode, msg string) map[string]interface{} {
 	return brokenInfo
 }
 
+// 检测切换数据源
+func msgCheckSwitchSource(msg string) map[string]interface{} {
+	brokenInfo := cmap.New().Items()
+	brokenInfo["title"] = "自动切换数据源"
+	brokenInfo["content"] = msg
+	return brokenInfo
+}
+
+// 没有可以切换的数据源
+func msgNoSwitchSource(msg string) map[string]interface{} {
+	brokenInfo := cmap.New().Items()
+	brokenInfo["title"] = "无数据源"
+	brokenInfo["content"] = msg
+	return brokenInfo
+}
+
 // 发送通知
 
 func Notice(t string, data interface{}) {
@@ -273,6 +289,14 @@ func Notice(t string, data interface{}) {
 	case "msgAssetSleep":
 		arr := data.(map[string]interface{})
 		Info = msgAssetSleep(arr["assets_code"].(string), arr["msg"].(string))
+		break
+	case "msgCheckSwitchSource":
+		arr := data.(map[string]interface{})
+		Info = msgCheckSwitchSource(arr["msg"].(string))
+		break
+	case "msgNoSwitchSource":
+		arr := data.(map[string]interface{})
+		Info = msgNoSwitchSource(arr["msg"].(string))
 		break
 	default:
 		return

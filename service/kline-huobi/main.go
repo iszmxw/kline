@@ -47,6 +47,7 @@ func main() {
 	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
 	go heartbeat.Start(30, kconfig.KlineSource, CodeData, true)
 	go kline.TickerCheckTodaySleep(true) // 定时每隔一分钟检查一次市场资产状态
+	go kline.TickerCheckSwitchSource()   // 十分钟后，每隔30秒，检查切数据源
 	start := "ok"
 	for {
 		if start == "ok" {
