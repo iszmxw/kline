@@ -2,6 +2,7 @@ package api
 
 import (
 	"container/list"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/service/kline-mql5/mql5/config"
-	"goapi/service/kline-mql5/mql5/utils/zip"
 	"net/url"
 	"reflect"
 	"strings"
@@ -31,6 +31,7 @@ type WebSocketOp struct {
 	conn              *websocket.Conn          // 基础连接
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
+	isConnServer      bool                     // 是否连接到服务器了
 	onceClose         sync.Once                // 关闭动作锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              //读消息管道
@@ -81,6 +82,7 @@ func (ws *WebSocketOp) connServer() bool {
 		ws.Close()
 		return false
 	}
+	ws.isConnServer = true
 	logger.Info(ws.Symbol + "WebSocket connected")
 	go ws.readLoop()
 	go ws.writeLoop()
@@ -143,64 +145,70 @@ func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata map[st
 
 // 读协程
 func (ws *WebSocketOp) readLoop() {
+	//for {
+	//	if !ws.isConnServer {
+	//		continue
+	//	}
+	//	//select {
+	//	//case ws.readChan <- message:
+	//	//	ws.Description = fmt.Sprintf("[%v]读消息管道写入成功", ws.Symbol)
+	//	//case <-ws.closeChan:
+	//	//	ws.Description = fmt.Sprintf("[%v]读协程关闭chan", ws.Symbol)
+	//	//	goto ERR
+	//	//}
+	//}
+	//ERR:
+	//	ws.Close()
+}
+
+//写协程
+func (ws *WebSocketOp) writeLoop() { // 登录
+	var once sync.Once
+	for ws.isConnServer {
+		once.Do(func() {
+			decodeString, _ := hex.DecodeString("480000000200000000008782f84164007972417a785a4d6169465058655259586653387772624d5963546571324b4557514473506e444461333466486877346750465a354d6d43677875774e45673246")
+			if err := ws.conn.WriteMessage(websocket.BinaryMessage, decodeString); err != nil {
+				logger.Info(err.Error())
+				ws.Description = fmt.Sprintf("[%v]写协程错误即将关闭", ws.Symbol)
+				ws.Close()
+			}
+			time.Sleep(time.Second * 2)
+			decodeString1, _ := hex.DecodeString("20000000030000006917e317d32d4cb3e381b183344729b082ed94755379d0b19a0fee18d0e66d8a")
+			if err := ws.conn.WriteMessage(websocket.BinaryMessage, decodeString1); err != nil {
+				logger.Info(err.Error())
+				ws.Description = fmt.Sprintf("[%v]写协程错误即将关闭", ws.Symbol)
+				ws.Close()
+			}
+		})
+		goto END
+	}
+END:
+	logger.Info("完成订阅")
 	for {
 		msgType, buf, err := ws.conn.ReadMessage()
 		if err != nil {
+			logger.Info(string(buf))
 			logger.Info(err.Error())
 			ws.Description = fmt.Sprintf("[%v]读取失败 %v", ws.Symbol, err.Error())
 			goto ERR
 		}
 		var message []byte
 		if msgType == websocket.BinaryMessage {
-			message, err = zip.GZipDecompress(buf)
-			if err != nil {
-				logger.Error(errors.New(fmt.Sprintf("UnGZip data error: %s", err)))
-				continue
-			}
+			message = buf
 		} else if msgType == websocket.TextMessage {
 			message = buf
 		}
-		select {
-		case ws.readChan <- message:
-			ws.Description = fmt.Sprintf("[%v]读消息管道写入成功", ws.Symbol)
-		case <-ws.closeChan:
-			ws.Description = fmt.Sprintf("[%v]读协程关闭chan", ws.Symbol)
-			goto ERR
-		}
-	}
-ERR:
-	ws.Close()
-}
-
-//写协程
-func (ws *WebSocketOp) writeLoop() {
-	for {
-		select {
-		case _, ok := <-ws.writeChan:
-			if !ok {
-				ws.Description = fmt.Sprintf("[%v]写协程不ok已关闭", ws.Symbol)
-				goto ERR
-			}
-			time.Sleep(time.Second*5)
-			// 登录
-			if err := ws.conn.WriteMessage(websocket.BinaryMessage, []byte(`SAAAAAIAAAAAAEs6LABkAEpiZmlkZXJXaEFBc3dadVNwWGlkeWdkbUNYTHplWGpxRHhSS0xxRTN1Z014SnlFbUpCUDdjQURrOExOcG1KU2M=`)); err != nil {
-				logger.Info(err.Error())
-				ws.Description = fmt.Sprintf("[%v]写协程错误即将关闭", ws.Symbol)
-				goto ERR
-			}else{
-				logger.Info(123456)
-				time.Sleep(time.Second*5)
-				// 订阅
-				if err := ws.conn.WriteMessage(websocket.BinaryMessage, []byte(`IAAAAAMAAAB/p3vjGASFx3ekINLU26PGeI5LYmGEbOMyibaPss6QLw==`)); err != nil {
-					logger.Info(err.Error())
-					ws.Description = fmt.Sprintf("[%v]写协程错误即将关闭", ws.Symbol)
-					goto ERR
-				}
-			}
-		case <-ws.closeChan:
-			ws.Description = fmt.Sprintf("[%v]写协程关闭chan", ws.Symbol)
-			goto ERR
-		}
+		// {
+		//    "signal_server": "gwt5.mql5.com:443",
+		//    "ping": 1,
+		//    "key": "b19cff2af78783bd7e73b00f9e8d95370ca8855746b6c799b0f44400a0f3ec04",
+		//    "token": "zJNjgQkXy8LnYJY8svCKwnDfKZS5jAPSpdTtrEUuufr3eJMKmFhbUxE7drH9RpMR",
+		//    "version": 5,
+		//    "enabled": true
+		//}
+		fmt.Println(string(message))
+		fmt.Println(fmt.Sprintf("%T",message))
+		//logger.Info(message)
 	}
 ERR:
 	ws.Close()

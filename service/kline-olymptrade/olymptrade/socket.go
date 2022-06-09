@@ -32,16 +32,14 @@ func SocketOlymptrade(info kline_common.Info) {
 		StartSub = false
 		// 关闭
 		callback <- struct{}{}
-		return
 	}
 	// 资产不存在或者休市状态
 	if TradingAssets.Id <= 0 || TradingAssets.AssetsStatus != 1 {
 		logger.Info(TradingAssets)
-		time.Sleep(time.Second) // 休息1秒
+		time.Sleep(time.Second * 2) // 休息 2 秒
 		StartSub = false
 		// 关闭
 		callback <- struct{}{}
-		return
 	}
 	// 开始订阅
 	if StartSub {
