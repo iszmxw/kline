@@ -55,7 +55,7 @@ func CheckSwitchSource(CurrentKlineSource, ContractCode string) {
 			FailTotal++
 			if FailTotal == AllowTotal { // 没有可用的数据源了
 				// 发送邮件通知
-				mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
+				mail_notice.Notice("msgNoSwitchSource", map[string]interface{}{
 					"msg": fmt.Sprintf("资产【%v】没有可用数据源了", ContractCode),
 				})
 			}
@@ -97,7 +97,7 @@ func CheckSwitchSource(CurrentKlineSource, ContractCode string) {
 		}
 		DB.Commit()
 		// 发送邮件通知
-		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
+		mail_notice.Notice("msgCheckSwitchSource", map[string]interface{}{
 			"msg": fmt.Sprintf("资产【%v】对应的【%v】数据源不健康，已切换到健康的【%v】数据眼，请您留意", ContractCode, CurrentKlineSource, AllowSource),
 		})
 		return

@@ -46,6 +46,12 @@ func check(address, t string) bool {
 		break
 	case "msgAssetSleep": // 开市休市提醒
 		pass = true
+	case "msgCheckSwitchSource": // 自动切换数据源
+	case "msgNoSwitchSource": // 没有可用数据源切换
+		if !helpers.InArray(address, []string{AdminMail, "yezhiming@yuctime.com"}) {
+			return false
+		}
+		pass = true
 		break
 	default:
 		break
@@ -307,7 +313,7 @@ func Notice(t string, data interface{}) {
 	}
 	// telegram 通知
 	go telegram.Notice(Info)
-	if !helpers.InArray(t, []string{"msgHeartbeatAnomaly", "msgAssetSleep"}) { // 这两个才进行邮件通知
+	if !helpers.InArray(t, []string{"msgHeartbeatAnomaly", "msgAssetSleep", "msgCheckSwitchSource", "msgNoSwitchSource"}) { // 这四个才进行邮件通知
 		return
 	}
 	// 邮件通知
