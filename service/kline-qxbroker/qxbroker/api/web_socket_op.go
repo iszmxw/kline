@@ -13,7 +13,7 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	kline_common "goapi/service/kline-common"
-	"goapi/service/kline-common/heartbeat"
+	"goapi/service/kline-common/source"
 	"goapi/service/kline-qxbroker/qxbroker/config"
 	"io/ioutil"
 	"net/http"
@@ -449,10 +449,10 @@ func (ws *WebSocketOp) writeTick() {
 
 func (ws *WebSocketOp) TickerReboot() {
 	ws.onceReboot.Do(func() {
-		ticker := time.NewTicker(150 * time.Second) // 每隔150秒检查一次
+		ticker := time.NewTicker(100 * time.Second) // 每隔 100 秒检查一次
 		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
 		for range ticker.C {
-			status := heartbeat.CheckStatus(config.KlineSource, ws.ContractCode)
+			status := source.CheckStatus(config.KlineSource, ws.ContractCode)
 			if status == "4" { // 延迟过高关闭重启
 				logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
 				goto STOP
