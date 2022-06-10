@@ -29,31 +29,32 @@ func CheckStatus(Source, ContractCode string) string {
 		logger.Error(errors.New("json解析错误：" + push))
 		logger.Error(WsIndexErr)
 		status = "-3" // -1 代表解析 redis 的数据错误
-	}
-	// 差
-	SystemTs := time.Now().UnixMilli()
-	diff := (SystemTs - SubIndexKLineResponse.Ts) / 1000
-	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", Source, ContractCode)
-	switch true {
-	case diff < 60*1:
-		status = "1" // 正常，绿色
-		break
-	case (diff > 60) && (diff < 60*2):
-		status = "2" // 延迟，黄色
-		break
-	case (diff > 60*3) && (diff < 60*5):
-		status = "3" // 警告，延迟过高
-		break
-	case diff > 60*5:
-		status = "4" // 警告，延迟过高
-		mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
-			"name": Source,
-			"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
-		})
-		break
-	}
-	if len(push) > 0 { // 有数据记录 缓存
-		_, _ = redis.Client.Add(KeyStatus, status, 0)
+	} else {
+		// 差
+		SystemTs := time.Now().UnixMilli()
+		diff := (SystemTs - SubIndexKLineResponse.Ts) / 1000
+		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", Source, ContractCode)
+		switch true {
+		case diff < 60*1:
+			status = "1" // 正常，绿色
+			break
+		case (diff > 60) && (diff < 60*2):
+			status = "2" // 延迟，黄色
+			break
+		case (diff > 60*3) && (diff < 60*5):
+			status = "3" // 警告，延迟过高
+			break
+		case diff > 60*5:
+			status = "4" // 警告，延迟过高
+			mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
+				"name": Source,
+				"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
+			})
+			break
+		}
+		if len(push) > 0 { // 有数据记录 缓存
+			_, _ = redis.Client.Add(KeyStatus, status, 0)
+		}
 	}
 	return status
 }
