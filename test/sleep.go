@@ -6,6 +6,8 @@ import (
 	"goapi/bootstrap"
 	"goapi/config"
 	"goapi/pkg/logger"
+	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common/heartbeat"
 	"time"
 )
 
@@ -24,6 +26,10 @@ func init() {
 func main() {
 	bootstrap.SetupRedis(0)
 	defer bootstrap.RedisClose()
+	CodeData := kline_common.GetData("qxbroker")
+	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
+	heartbeat.Start(30, "qxbroker", CodeData)
+	time.Sleep(time.Minute * 10)
 	// {
 	//    "signal_server": "gwt5.mql5.com:443",
 	//    "ping": 1,

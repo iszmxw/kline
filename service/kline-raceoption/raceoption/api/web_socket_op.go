@@ -8,8 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
-	"goapi/pkg/redis"
 	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common/heartbeat"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/zip"
 	"net/http"
@@ -35,6 +35,7 @@ type WebSocketOp struct {
 	closeChan         chan byte                // 关闭chan
 	isClose           bool                     // 是否关闭
 	onceClose         sync.Once                // 关闭动作锁
+	onceReboot        sync.Once                // Reboot动作锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              //读消息管道
 	writeChan         chan []byte              //写消息管道
@@ -92,21 +93,26 @@ func (ws *WebSocketOp) connServer() bool {
 }
 
 func (ws *WebSocketOp) TickerReboot() {
-	ticker := time.NewTicker(150 * time.Second) // 每隔150秒检查一次
-	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.Info.ContractCode)
-	for range ticker.C {
-		status, _ := redis.Client.Get(KeyStatus)
-		if status == "4" { // 延迟过高关闭重启
-			goto STOP
+	ws.onceReboot.Do(func() {
+		ticker := time.NewTicker(150 * time.Second) // 每隔150秒检查一次
+		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.Info.ContractCode)
+		for range ticker.C {
+			status := heartbeat.CheckStatus(config.KlineSource, ws.Info.ContractCode)
+			if status == "4" { // 延迟过高关闭重启
+				logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
+				goto STOP
+			}
+			if ws.isClose {
+				logger.Info(KeyStatus + "当前数据已关闭握手" + ws.Symbol)
+				goto STOP
+			}
 		}
-		logger.Info(KeyStatus)
-		logger.Info(status)
-	}
-STOP:
-	// 关闭
-	ws.closeChanCallback <- struct{}{}
-	ticker.Stop()
-	logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
+	STOP:
+		// 关闭
+		ws.closeChanCallback <- struct{}{}
+		ticker.Stop()
+		ws.Close()
+	})
 }
 
 func (ws *WebSocketOp) DoHand() {

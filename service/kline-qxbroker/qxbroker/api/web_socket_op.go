@@ -13,6 +13,7 @@ import (
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common/heartbeat"
 	"goapi/service/kline-qxbroker/qxbroker/config"
 	"io/ioutil"
 	"net/http"
@@ -41,6 +42,7 @@ type WebSocketOp struct {
 	onceTick          sync.Once                // Tick动作锁
 	onceClose         sync.Once                // 关闭动作锁
 	oncePing          sync.Once                // Ping动作锁
+	onceReboot        sync.Once                // Reboot动作锁
 	mutex             sync.Mutex               // 锁
 	readChan          chan []byte              //读消息管道
 	SubTopicMap       map[string]*CallbackFunc // 订阅历史
@@ -99,30 +101,7 @@ func (ws *WebSocketOp) connServer() bool {
 	logger.Info(ws.Symbol + "WebSocket connected")
 	go ws.readLoop()
 	go ws.DoHand()
-	go ws.TickerReboot()
 	return true
-}
-
-func (ws *WebSocketOp) TickerReboot() {
-	ticker := time.NewTicker(150 * time.Second) // 每隔150秒检查一次
-	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
-	for range ticker.C {
-		status, _ := redis.Client.Get(KeyStatus)
-		if status == "4" { // 延迟过高关闭重启
-			logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
-			goto STOP
-		}
-		if ws.isClose {
-			logger.Info(KeyStatus + "当前数据已关闭握手" + ws.Symbol)
-			goto STOP
-		}
-		logger.Info(KeyStatus)
-		logger.Info(status)
-	}
-STOP:
-	// 关闭
-	ticker.Stop()
-	ws.Close()
 }
 
 func (ws *WebSocketOp) DoHand() {
@@ -300,6 +279,8 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				}
 				// ping
 				go ws.writePing()
+				// 定时检测数据源健康斌决定是否关闭重连
+				go ws.TickerReboot()
 
 			}
 		}
@@ -464,6 +445,29 @@ func (ws *WebSocketOp) writeTick() {
 			ws.Close()
 		})
 	}
+}
+
+func (ws *WebSocketOp) TickerReboot() {
+	ws.onceReboot.Do(func() {
+		ticker := time.NewTicker(150 * time.Second) // 每隔150秒检查一次
+		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
+		for range ticker.C {
+			status := heartbeat.CheckStatus(config.KlineSource, ws.ContractCode)
+			if status == "4" { // 延迟过高关闭重启
+				logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
+				goto STOP
+			}
+			if ws.isClose {
+				logger.Info(KeyStatus + "当前数据已关闭握手" + ws.Symbol)
+				goto STOP
+			}
+		}
+	STOP:
+		// 关闭
+		ws.closeChanCallback <- struct{}{}
+		ticker.Stop()
+		ws.Close()
+	})
 }
 
 func (ws *WebSocketOp) Close() {

@@ -30,7 +30,7 @@ func main() {
 	defer bootstrap.RedisClose()
 	CodeData := kline_common.GetData(kconfig.KlineSource)
 	// 启动监控，监控数据源活跃状态，设置参数每隔30秒检测一次
-	go heartbeat.Start(30, kconfig.KlineSource, CodeData, false)
+	go heartbeat.Start(30, kconfig.KlineSource, CodeData)
 	start := "ok"
 	for {
 		if start == "ok" {

@@ -21,71 +21,66 @@ import (
 
 // 心跳 heartbeat 健康
 
-func Start(num time.Duration, Source string, CodeData []kline_common.Info, isReboot bool) {
+func Start(num time.Duration, Source string, CodeData []kline_common.Info) {
 	time.Sleep(time.Minute * 5)                 //等待当前数据订阅5分钟后开始心跳检测
 	ticker := time.NewTicker(num * time.Second) // 每隔 num 秒检查一次
 	for range ticker.C {
 		for _, info := range CodeData {
-			logger.Info(fmt.Sprintf("%v开始心跳检测", info.ContractCode))
-			check(Source, info, isReboot)
+			// 休市的数据源不检测状态
+			if helpers.InArray(Source, []string{"olymptrade", "hsb"}) && kline.CheckSleep(Source, info.ContractCode) {
+				continue
+			}
+			status := CheckStatus(Source, info.ContractCode)
+			logger.Info(fmt.Sprintf("数据源【%v】对应资产【%v】健康状态：【%v】", Source, info.ContractCode, status))
 		}
 	}
 }
 
-func check(Source string, info kline_common.Info, isReboot bool) {
-	// 资产休市状态
-	if kline.CheckSleep(Source, info.ContractCode) && !helpers.InArray(Source, []string{"raceoption"}) {
-		return
-	}
+func CheckStatus(Source, ContractCode string) string {
+	status := "-1"
 	// 所有的数据源键值对
-	key := fmt.Sprintf("%v:market.%v.index.1min", Source, info.ContractCode)
-	logger.Info(key)
+	key := fmt.Sprintf("%v:market.%v.index.1min", Source, ContractCode)
 	push, getErr := redis.Client.SelectDbGet(15, key)
 	if getErr != nil && getErr.Error() != "redis: nil" {
 		logger.Error(getErr)
-		return
+		status = "-1" // -1 代表读取redis的数据错误
 	}
 	if len(push) == 0 {
-		return
+		status = "-2" // -2 代表读取redis暂无数据
 	}
 	var SubIndexKLineResponse *response.SubIndexKLineResponse
 	WsIndexErr := json.Unmarshal([]byte(push), &SubIndexKLineResponse)
 	if WsIndexErr != nil {
 		logger.Error(errors.New("json解析错误：" + push))
 		logger.Error(WsIndexErr)
-		return
+		status = "-3" // -1 代表解析 redis 的数据错误
 	}
 	// 差
 	SystemTs := time.Now().UnixMilli()
 	diff := (SystemTs - SubIndexKLineResponse.Ts) / 1000
-
-	KeyStatus := fmt.Sprintf("status:%v", key)
+	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", Source, ContractCode)
 	switch true {
 	case diff < 60*1:
-		// 正常，绿色
-		_, _ = redis.Client.Add(KeyStatus, 1, 0)
+		status = "1" // 正常，绿色
 		break
 	case (diff > 60) && (diff < 60*2):
-		// 延迟，黄色
-		_, _ = redis.Client.Add(KeyStatus, 2, 0)
+		status = "2" // 延迟，黄色
 		break
 	case (diff > 60*3) && (diff < 60*5):
-		// 警告，延迟过高
-		_, _ = redis.Client.Add(KeyStatus, 3, 0)
+		status = "3" // 警告，延迟过高
 		break
 	case diff > 60*5:
-		// 警告，延迟过高
-		_, _ = redis.Client.Add(KeyStatus, 4, 0)
+		status = "4" // 警告，延迟过高
 		mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
 			"name": Source,
-			"msg":  tips(Source, info.ContractCode, SystemTs, diff, SubIndexKLineResponse),
+			"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
 		})
-		if isReboot {
-			reboot(Source, info) // 心跳检测到异常了，重启协诚
-		}
 		break
 	}
-	logger.Info(fmt.Sprintf("%v结束心跳检测", info.ContractCode))
+	if diff > 0 { // 有时差记录 缓存
+		_, _ = redis.Client.Add(KeyStatus, status, 0)
+	}
+	return status
 }
 
 // 心跳检测到异常了，重启协诚
