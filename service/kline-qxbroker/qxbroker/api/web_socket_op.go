@@ -52,8 +52,9 @@ type WebSocketOp struct {
 	allSubStars       list.List
 	ContractCode      string // 订阅的币种
 	Symbol            string // 订阅的币种
-	IsPing            bool   // 是否已开始ping
-	IsTick            bool   // 是否已开始Tick
+	IsPing            bool   // 是否已开始 ping
+	IsTick            bool   // 是否已开始 Tick
+	IsReboot          bool   // 是否已 Reboot
 	Description       string // 描述
 }
 
@@ -448,26 +449,30 @@ func (ws *WebSocketOp) writeTick() {
 }
 
 func (ws *WebSocketOp) TickerReboot() {
-	ws.onceReboot.Do(func() {
-		ticker := time.NewTicker(100 * time.Second) // 每隔 100 秒检查一次
-		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
-		for range ticker.C {
-			status := source.CheckStatus(config.KlineSource, ws.ContractCode)
-			if status == "4" { // 延迟过高关闭重启
-				logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
-				goto STOP
+	defer kline_common.KlineRecover("TickerReboot异常", config.KlineSource, ws.Symbol)
+	if !ws.IsReboot { // 只能发起一次 Reboot
+		ws.IsReboot = true
+		ws.onceReboot.Do(func() {
+			ticker := time.NewTicker(100 * time.Second) // 每隔 100 秒检查一次
+			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
+			for range ticker.C {
+				status := source.CheckStatus(config.KlineSource, ws.ContractCode)
+				if status == "4" { // 延迟过高关闭重启
+					logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
+					goto STOP
+				}
+				if ws.isClose {
+					logger.Info(KeyStatus + "当前数据已关闭握手" + ws.Symbol)
+					goto STOP
+				}
 			}
-			if ws.isClose {
-				logger.Info(KeyStatus + "当前数据已关闭握手" + ws.Symbol)
-				goto STOP
-			}
-		}
-	STOP:
-		// 关闭
-		ws.closeChanCallback <- struct{}{}
-		ticker.Stop()
-		ws.Close()
-	})
+		STOP:
+			// 关闭
+			ws.closeChanCallback <- struct{}{}
+			ticker.Stop()
+			ws.Close()
+		})
+	}
 }
 
 func (ws *WebSocketOp) Close() {

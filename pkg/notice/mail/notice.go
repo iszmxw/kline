@@ -235,7 +235,7 @@ func msgAssetSleep(AssetsCode, msg string) map[string]interface{} {
 // 检测切换数据源
 func msgCheckSwitchSource(msg string) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
-	brokenInfo["title"] = "自动切换数据源"
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】自动切换数据源", conf.GetString("app.env"))
 	brokenInfo["content"] = msg
 	return brokenInfo
 }
@@ -243,7 +243,7 @@ func msgCheckSwitchSource(msg string) map[string]interface{} {
 // 没有可以切换的数据源
 func msgNoSwitchSource(msg string) map[string]interface{} {
 	brokenInfo := cmap.New().Items()
-	brokenInfo["title"] = "无数据源"
+	brokenInfo["title"] = fmt.Sprintf("环境【%v】无数据源", conf.GetString("app.env"))
 	brokenInfo["content"] = msg
 	return brokenInfo
 }
