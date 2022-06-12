@@ -125,7 +125,6 @@ ERR:
 }
 
 func (ws *WebSocketOp) msgHand(message []byte) {
-	defer kline_common.KlineRecover("msgHand", config.KlineSource, ws.Symbol)
 	// 去除 
 	if strings.Contains(string(message), ``) {
 		str := strings.ReplaceAll(string(message), ``, "")
@@ -394,7 +393,6 @@ ERR:
 
 // 写 Ping 协程
 func (ws *WebSocketOp) writePing() {
-	defer kline_common.KlineRecover("writePing", config.KlineSource, ws.Symbol)
 	if !ws.IsPing { // 只能发起一次 ping
 		ws.IsPing = true
 		ws.oncePing.Do(func() {
@@ -422,7 +420,6 @@ func (ws *WebSocketOp) writePing() {
 
 // 写 Tick 协程
 func (ws *WebSocketOp) writeTick() {
-	defer kline_common.KlineRecover("writeTick", config.KlineSource, ws.Symbol)
 	if !ws.IsTick { // 只能发起一次 Tick
 		ws.IsTick = true
 		ws.onceTick.Do(func() {
@@ -449,7 +446,6 @@ func (ws *WebSocketOp) writeTick() {
 }
 
 func (ws *WebSocketOp) TickerReboot() {
-	defer kline_common.KlineRecover("TickerReboot", config.KlineSource, ws.Symbol)
 	if !ws.IsReboot { // 只能发起一次 Reboot
 		ws.IsReboot = true
 		ws.onceReboot.Do(func() {
