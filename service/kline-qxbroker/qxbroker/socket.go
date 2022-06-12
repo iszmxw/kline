@@ -19,13 +19,16 @@ import (
 )
 
 func SocketQxbroker(info kline_common.Info) {
-	callback := make(chan struct{}, 1)
+	//  3 定时检测数据健康状况，不健康通知外部
+	//  2 上游直接断开了，通知外部已断开
+	callback := make(chan int, 1)
 	// OTC 数据源读取时间段
 	if otc.QxbrokerCheckOTC() && !strings.Contains(info.Symbol, "_otc") {
 		info.Symbol = info.Symbol + "_otc"
 	}
 	// 开始订阅
 	{
+		logger.Info(info)
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli()             // 系統生成的Ts
@@ -38,7 +41,7 @@ func SocketQxbroker(info kline_common.Info) {
 						"r":    r,
 					})
 					// 关闭
-					callback <- struct{}{}
+					callback <- 1
 				}
 			}()
 			if resp.TimeId == 1 {
@@ -48,7 +51,7 @@ func SocketQxbroker(info kline_common.Info) {
 				//	go kline.UpdateSleep(config.KlineSource, info.ContractCode)
 				//}
 				// 关闭
-				callback <- struct{}{}
+				callback <- 1
 				return
 			}
 			UpstreamTs := int64(resp.TimeId * 1000) // 上游的ts
@@ -104,7 +107,12 @@ func SocketQxbroker(info kline_common.Info) {
 		}, "")
 	}
 	select {
-	case <-callback:
+	case msg, ok := <-callback:
+		if !ok {
+			logger.Info(ok)
+			return
+		}
+		logger.Info(msg)
 		// 重启服务
 		kline_common.RebootSocketLog(config.KlineSource, info)
 		go SocketQxbroker(info)

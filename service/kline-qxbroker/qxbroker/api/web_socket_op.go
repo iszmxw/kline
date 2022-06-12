@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-type closeChanCallback chan struct{}
+type closeChanCallback chan int
 
 type CallbackFunc struct {
 	fun   interface{}
@@ -48,7 +48,7 @@ type WebSocketOp struct {
 	SubTopicMap       map[string]*CallbackFunc // 订阅历史
 	ReqTopicMap       map[string]*CallbackFunc // 请求历史
 	authConnect       int                      // 自动重连次数
-	closeChanCallback chan struct{}            // 关闭通知外部
+	closeChanCallback chan int                 // 关闭通知外部
 	allSubStars       list.List
 	ContractCode      string // 订阅的币种
 	Symbol            string // 订阅的币种
@@ -96,7 +96,7 @@ func (ws *WebSocketOp) connServer() bool {
 			"proxy": ws.proxy,
 		})
 		logger.Error(err)
-		ws.Close()
+		ws.Close(1)
 		return false
 	}
 	logger.Info(ws.Symbol + "WebSocket connected")
@@ -121,7 +121,7 @@ func (ws *WebSocketOp) DoHand() {
 	}
 ERR:
 	logger.Info(ws.Symbol + "do已关闭")
-	ws.Close()
+	ws.Close(2)
 }
 
 func (ws *WebSocketOp) msgHand(message []byte) {
@@ -134,12 +134,12 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 	switch true {
 	case strings.EqualFold(string(message), "41"): // 41 断开链接
 		logger.Info(ws.Symbol + "断开链接")
-		ws.closeChanCallback <- struct{}{} // 上游直接断开了，通知外部已断开
+		ws.closeChanCallback <- 2 // 上游直接断开了，通知外部已断开
 		break
 	case strings.Contains(string(message), "authorization/reject"): // [] 空数据
 		logger.Info(ws.Symbol + "授权/拒绝")
 		_, _ = ws.GetToken(true) // 登录失败，强制刷新 token
-		ws.Close()
+		ws.Close(3)
 		break
 	case strings.EqualFold(string(message), ws.Symbol): // 币种名称
 	case strings.EqualFold(string(message), "[]"): // [] 空数据
@@ -166,7 +166,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Info(msg)
 				logger.Error(err)
 				_, _ = ws.GetToken(true) // 登录失败，强制刷新 token
-				ws.Close()
+				ws.Close(4)
 			}
 		}
 		break
@@ -175,38 +175,38 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 			logger.Info(ws.Symbol + "登录成功")
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["indicator/list"]`)); err != nil {
 				logger.Error(err)
-				ws.Close()
+				ws.Close(5)
 				return
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["drawing/load"]`)); err != nil {
 				logger.Error(err)
-				ws.Close()
+				ws.Close(5)
 				return
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["pending/list"]`)); err != nil {
 				logger.Error(err)
-				ws.Close()
+				ws.Close(5)
 				return
 			}
 			if len(ws.Symbol) == 0 {
 				logger.Info("暂无")
-				ws.Close()
+				ws.Close(5)
 				return
 			}
 			msg := []byte(fmt.Sprintf(`42["instruments/update",{"asset":"%s","period":60}]`, ws.Symbol))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				logger.Error(err)
-				ws.Close()
+				ws.Close(5)
 				return
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["chart_notification/get"]`)); err != nil {
 				logger.Error(err)
-				ws.Close()
+				ws.Close(5)
 				return
 			}
 			if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`42["depth/follow","%s"]"]`, ws.Symbol))); err != nil {
 				logger.Error(err)
-				ws.Close()
+				ws.Close(5)
 				return
 			}
 		}
@@ -389,7 +389,7 @@ func (ws *WebSocketOp) readLoop() {
 ERR:
 	logger.Info(ws.Symbol + "读协程已关闭")
 	close(ws.readChan)
-	ws.Close()
+	ws.Close(6)
 }
 
 // 写 Ping 协程
@@ -415,7 +415,7 @@ func (ws *WebSocketOp) writePing() {
 			}
 		ERR:
 			ticker.Stop()
-			ws.Close()
+			ws.Close(7)
 		})
 	}
 }
@@ -443,7 +443,7 @@ func (ws *WebSocketOp) writeTick() {
 			}
 		ERR:
 			ticker.Stop()
-			ws.Close()
+			ws.Close(8)
 		})
 	}
 }
@@ -468,20 +468,19 @@ func (ws *WebSocketOp) TickerReboot() {
 			}
 		STOP:
 			// 关闭
-			ws.closeChanCallback <- struct{}{}
 			ticker.Stop()
-			ws.Close()
+			ws.Close(3)
 		})
 	}
 }
 
-func (ws *WebSocketOp) Close() {
+func (ws *WebSocketOp) Close(CloseType int) {
 	defer kline_common.KlineRecover("Close异常", config.KlineSource, ws.Symbol)
 	if !ws.isClose {
 		ws.isClose = true
 		ws.onceClose.Do(func() {
 			logger.Info(ws.Symbol + "关闭Socket:start")
-			ws.closeChanCallback <- struct{}{}
+			ws.closeChanCallback <- CloseType
 			ws.IsPing = false // 重置 ping
 			close(ws.closeChan)
 			if ws.conn != nil {
@@ -570,13 +569,13 @@ func (ws *WebSocketOp) login() {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		logger.Error(err)
-		ws.Close()
+		ws.Close(9)
 		return
 	}
 	req, err := http.NewRequest("GET", fmt.Sprintf("%v/zh/sign-up/fast/", config.Domain), nil)
 	if err != nil {
 		logger.Error(err)
-		ws.Close()
+		ws.Close(9)
 		return
 	}
 	c := http.Client{
@@ -589,14 +588,14 @@ func (ws *WebSocketOp) login() {
 	do, err := c.Do(req)
 	if err != nil {
 		logger.Error(err)
-		ws.Close()
+		ws.Close(9)
 		return
 	}
 	if do.StatusCode == 200 {
 		body, err := ioutil.ReadAll(do.Body)
 		if err != nil {
 			logger.Error(err)
-			ws.Close()
+			ws.Close(9)
 			return
 		}
 		html := string(body)
@@ -607,7 +606,7 @@ func (ws *WebSocketOp) login() {
 			_, err = redis.Client.Add(config.RedisKey, token, 60*60*2) // 两个小时过期一下
 			if err != nil {
 				logger.Error(err)
-				ws.Close()
+				ws.Close(9)
 			}
 		}
 	}
