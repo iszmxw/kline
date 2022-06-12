@@ -38,13 +38,13 @@ func CheckStatus(Source, ContractCode string) string {
 		case diff < 60*1:
 			status = "1" // 正常，绿色
 			break
-		case (diff > 60) && (diff < 60*2):
+		case (diff >= 60) && (diff < 60*2):
 			status = "2" // 延迟，黄色
 			break
-		case (diff > 60*3) && (diff < 60*5):
+		case (diff >= 60*2) && (diff < 60*3):
 			status = "3" // 警告，延迟过高
 			break
-		case diff > 60*5:
+		case diff >= 60*3:
 			status = "4" // 警告，延迟过高
 			mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
 				"name": Source,
