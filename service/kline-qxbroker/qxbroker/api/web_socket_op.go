@@ -106,7 +106,7 @@ func (ws *WebSocketOp) connServer() bool {
 }
 
 func (ws *WebSocketOp) DoHand() {
-	defer kline_common.KlineRecover("DoHand异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("DoHand", config.KlineSource, ws.Symbol)
 	for {
 		select {
 		case msg, ok := <-ws.readChan:
@@ -125,7 +125,7 @@ ERR:
 }
 
 func (ws *WebSocketOp) msgHand(message []byte) {
-	defer kline_common.KlineRecover("msgHand异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("msgHand", config.KlineSource, ws.Symbol)
 	// 去除 
 	if strings.Contains(string(message), ``) {
 		str := strings.ReplaceAll(string(message), ``, "")
@@ -290,7 +290,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 }
 
 func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
-	defer kline_common.KlineRecover("UpdateRate异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("UpdateRate", config.KlineSource, ws.Symbol)
 	// 修改费率
 	var TradingAssets response.TradingAssets
 	DB := mysql.DB.Debug()
@@ -367,7 +367,7 @@ func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata interf
 
 // 读协程
 func (ws *WebSocketOp) readLoop() {
-	defer kline_common.KlineRecover("readLoop异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("readLoop", config.KlineSource, ws.Symbol)
 	for {
 		_, message, err := ws.conn.ReadMessage()
 		if err != nil {
@@ -394,7 +394,7 @@ ERR:
 
 // 写 Ping 协程
 func (ws *WebSocketOp) writePing() {
-	defer kline_common.KlineRecover("writePing异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("writePing", config.KlineSource, ws.Symbol)
 	if !ws.IsPing { // 只能发起一次 ping
 		ws.IsPing = true
 		ws.oncePing.Do(func() {
@@ -422,7 +422,7 @@ func (ws *WebSocketOp) writePing() {
 
 // 写 Tick 协程
 func (ws *WebSocketOp) writeTick() {
-	defer kline_common.KlineRecover("writeTick异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("writeTick", config.KlineSource, ws.Symbol)
 	if !ws.IsTick { // 只能发起一次 Tick
 		ws.IsTick = true
 		ws.onceTick.Do(func() {
@@ -449,7 +449,7 @@ func (ws *WebSocketOp) writeTick() {
 }
 
 func (ws *WebSocketOp) TickerReboot() {
-	defer kline_common.KlineRecover("TickerReboot异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("TickerReboot", config.KlineSource, ws.Symbol)
 	if !ws.IsReboot { // 只能发起一次 Reboot
 		ws.IsReboot = true
 		ws.onceReboot.Do(func() {
@@ -475,7 +475,7 @@ func (ws *WebSocketOp) TickerReboot() {
 }
 
 func (ws *WebSocketOp) Close(CloseType int) {
-	defer kline_common.KlineRecover("Close异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("Close", config.KlineSource, ws.Symbol)
 	if !ws.isClose {
 		ws.isClose = true
 		ws.onceClose.Do(func() {
@@ -539,7 +539,7 @@ func (ws *WebSocketOp) sub(ContractCode string, Symbol string, fun interface{}, 
 // 获取登录token
 
 func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
-	defer kline_common.KlineRecover("GetToken异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("GetToken", config.KlineSource, ws.Symbol)
 	// 读取 session，如果未配置session进行邮件提醒
 	redisLoginKey := "kline:token:qxbroker:login"
 	// 刷新token
@@ -564,7 +564,7 @@ func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
 // demo登录
 
 func (ws *WebSocketOp) login() {
-	defer kline_common.KlineRecover("login异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("login", config.KlineSource, ws.Symbol)
 	var token string
 	jar, err := cookiejar.New(nil)
 	if err != nil {

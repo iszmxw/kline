@@ -12,9 +12,9 @@ import (
 )
 
 // KlineRecover 异常捕获
-func KlineRecover(tips, service, symbol string) {
+func KlineRecover(action, service, symbol string) {
 	if r := recover(); r != nil {
-		title := fmt.Sprintf(`【%v】捕捉到异常：当前服务【%v】当前资产【%v】`, tips, service, symbol)
+		title := fmt.Sprintf(`【%v】捕捉到异常：当前服务【%v】当前资产【%v】`, action, service, symbol)
 		cutContent := r
 		errInfo := string(debug.Stack())
 		logger.Info(title)
@@ -24,6 +24,8 @@ func KlineRecover(tips, service, symbol string) {
 			"title":   title,
 			"content": errInfo,
 		})
+	} else {
+		logger.Info(fmt.Sprintf("当前服务【%v】-当前资产【%v】-退出【%v】方法", action, service, symbol))
 	}
 }
 

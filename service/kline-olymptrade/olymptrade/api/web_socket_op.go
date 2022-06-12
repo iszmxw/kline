@@ -120,7 +120,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 }
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
-	defer kline_common.KlineRecover("SendMsg异常", config.KlineSource, ws.Symbol)
+	defer kline_common.KlineRecover("SendMsg", config.KlineSource, ws.Symbol)
 	if ws.isClose {
 		logger.Info("send on closed channel")
 		return false
