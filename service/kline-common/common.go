@@ -25,7 +25,7 @@ func KlineRecover(action, service, symbol string) {
 			"content": errInfo,
 		})
 	} else {
-		logger.Info(fmt.Sprintf("当前服务【%v】-当前资产【%v】-退出【%v】方法", action, service, symbol))
+		logger.Info(fmt.Sprintf("当前服务【%v】-当前资产【%v】-退出【%v】方法", service, symbol, action))
 	}
 }
 
