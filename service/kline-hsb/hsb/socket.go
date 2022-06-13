@@ -7,7 +7,6 @@ import (
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
-	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -15,6 +14,7 @@ import (
 	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-hsb/hsb/api"
 	"goapi/service/kline-hsb/hsb/config"
+	"goapi/service/kline-hsb/hsb/config/trade_sleep"
 	"goapi/service/kline-hsb/hsb/wsdata"
 	"math"
 	"strings"
@@ -25,7 +25,7 @@ func SocketHsb(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
 	var StartSub = true
 	// 资产休市状态
-	if kline.CheckSleep(config.KlineSource, info.ContractCode) {
+	if trade_sleep.GetTimeIsSleep(info.ContractCode) {
 		time.Sleep(time.Second) // 休息1秒
 		StartSub = false
 		// 关闭

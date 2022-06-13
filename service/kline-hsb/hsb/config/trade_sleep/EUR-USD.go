@@ -1,109 +1,71 @@
+package trade_sleep
+
+const EUR_USD = `
 [
   {
     "name": "Monday",
     "TradingTime": [
       {
-        "start": "20:30",
+        "start": "00:00",
         "end": "23:59"
       }
     ],
-    "SleepTime": [
-      {
-        "start": "00:00",
-        "end": "20:30"
-      }
-    ]
+    "SleepTime": []
   },
   {
     "name": "Tuesday",
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
-      },
-      {
-        "start": "20:30",
         "end": "23:59"
       }
     ],
-    "SleepTime": [
-      {
-        "start": "03:00",
-        "end": "20:30"
-      }
-    ]
+    "SleepTime": []
   },
   {
     "name": "Wednesday",
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
-      },
-      {
-        "start": "20:30",
         "end": "23:59"
       }
     ],
-    "SleepTime": [
-      {
-        "start": "03:00",
-        "end": "20:30"
-      }
-    ]
+    "SleepTime": []
   },
   {
     "name": "Thursday",
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
-      },
-      {
-        "start": "20:30",
         "end": "23:59"
       }
     ],
-    "SleepTime": [
-      {
-        "start": "03:00",
-        "end": "20:30"
-      }
-    ]
+    "SleepTime": []
   },
   {
     "name": "Friday",
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
-      },
-      {
-        "start": "20:30",
         "end": "23:59"
       }
     ],
-    "SleepTime": [
-      {
-        "start": "03:00",
-        "end": "20:30"
-      }
-    ]
+    "SleepTime": []
   },
   {
     "name": "Saturday",
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
+        "end": "04:00"
       }
-    ],
+	],
     "SleepTime": [
       {
-        "start": "03:00",
+        "start": "04:00",
         "end": "23:59"
       }
-    ]
+	]
   },
   {
     "name": "Sunday",
@@ -116,3 +78,4 @@
     ]
   }
 ]
+`

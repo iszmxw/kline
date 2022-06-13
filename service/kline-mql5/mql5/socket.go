@@ -7,7 +7,6 @@ import (
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
-	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -22,14 +21,6 @@ import (
 
 func Socketmql5(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
-	// 资产休市状态
-	if kline.CheckSleep(config.KlineSource, info.ContractCode) {
-		time.Sleep(time.Second) // 休息1秒
-		// 休市切换 OTC 数据源读取时间段
-		if !strings.Contains(info.Symbol, ".W") {
-			info.Symbol = info.Symbol + ".W"
-		}
-	}
 	// 开始订阅
 	{
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)

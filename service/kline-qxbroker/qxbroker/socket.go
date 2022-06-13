@@ -32,7 +32,7 @@ func SocketQxbroker(info kline_common.Info) {
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli()             // 系統生成的Ts
-			logger.RequestId = fmt.Sprintf("%v", SystemTs) // RequestId 定义为 Ts 时间戳
+			logger.RequestId = fmt.Sprintf("%v@%v", SystemTs,info.ContractCode) // RequestId 定义为 Ts 时间戳
 			resp.Symbol = info.ContractCode
 			defer func() {
 				if r := recover(); r != nil {

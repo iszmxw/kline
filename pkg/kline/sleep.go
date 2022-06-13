@@ -4,61 +4,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"goapi/app/models"
-	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
-	"strings"
+	"goapi/pkg/xtime"
+	tradeSleepHsb "goapi/service/kline-hsb/hsb/config/trade_sleep"
+	tradeSleepOlymptrade "goapi/service/kline-olymptrade/olymptrade/config/trade_sleep"
+	tradeSleepRaceoption "goapi/service/kline-raceoption/raceoption/config/trade_sleep"
 	"time"
 )
 
 // 休市状态检测
 
-func CheckSleep(KlineSource string, ContractCode string) bool {
-	// 资产休市状态
-	var IsSleep = false
-	var TradingAssetsSource models.TradingAssetsSource
-	errs := mysql.DB.Debug().Model(models.TradingAssetsSource{}).
-		Where("kline_source", KlineSource).
-		Where("assets_code", ContractCode).
-		Select("id,sleep_time").
-		Find(&TradingAssetsSource).Error
-	if errs != nil {
-		logger.Error(errs)
+func CheckSourceSleep(KlineSource string, ContractCode string) bool {
+	var result bool
+	switch KlineSource {
+	case "hsb":
+		result = tradeSleepHsb.GetTimeIsSleep(ContractCode)
+		break
+	case "raceoption":
+		result = tradeSleepRaceoption.GetTimeIsSleep(ContractCode)
+		break
+	case "olymptrade":
+		result = tradeSleepOlymptrade.GetTimeIsSleep(ContractCode)
+		break
+	default:
+		result = false
+		break
 	}
-	// 数据源休市
-	if TradingAssetsSource.Id > 0 && len(TradingAssetsSource.SleepTime) > 0 {
-		var SleepTime models.SleepTime
-		err := json.Unmarshal([]byte(TradingAssetsSource.SleepTime), &SleepTime)
-		if err != nil {
-			logger.Info(err)
-		}
-		nowUnix := time.Now().Unix()
-		start := helpers.GetThisWeekStartTime(SleepTime.Start).Unix()
-		end := helpers.GetThisWeekStartTime(SleepTime.Start).Unix() + helpers.StringToInt64(SleepTime.TsLong)
-		if nowUnix > start && nowUnix < end {
-			// 休息
-			logger.Info(fmt.Sprintf("%v:market.%v.index.1min=====>休息时间，正在休市", KlineSource, ContractCode))
-			// 配置成功，确实休息
-			IsSleep = true
-		} else {
-			// 配置成功，非休息时间段
-			IsSleep = false
-		}
-	}
-	//if IsSleep == false {
-	//	// 休市完毕开始订阅
-	//	err := mysql.DB.Debug().Model(models.TradingAssets{}).
-	//		Where("assets_code", ContractCode).
-	//		Update("assets_status", "1"). // 资产状态 1正常 2休市 3下架
-	//		Update("updater", KlineSource). // 更新人
-	//		Update("update_date", time.Now()). // 更新日期
-	//		Error
-	//	if err != nil {
-	//		logger.Error(err)
-	//	}
-	//}
-	return IsSleep
+	return result
 }
 
 // UpdateSleep 修改
@@ -73,35 +47,6 @@ func UpdateSleep(Updater, ContractCode, AssetsStatus, IsValid string) {
 	if err != nil {
 		logger.Error(err)
 	}
-}
-
-// 检测今天的休市时间
-
-func GetTodayTimeDetail(WeekdayTimeDetail []models.WeekdayTimeDetail) models.WeekdayTimeDetail {
-	var result models.WeekdayTimeDetail
-	for _, item := range WeekdayTimeDetail {
-		if item.Name == time.Now().Weekday().String() {
-			return item
-		}
-	}
-	return result
-}
-
-func CheckTodaySleep(WeekdayTimeDetail []models.WeekdayTimeDetail) bool {
-	SleepTime := GetTodayTimeDetail(WeekdayTimeDetail).SleepTime
-	dateNow := time.Now()
-	dateNowUnix := dateNow.Unix()
-	for _, val := range SleepTime {
-		StartArr := strings.Split(val.Start, ":")
-		EndArr := strings.Split(val.End, ":")
-		startTime := time.Date(dateNow.Year(), dateNow.Month(), dateNow.Day(), helpers.StringToInt(StartArr[0]), helpers.StringToInt(StartArr[1]), 0, 0, dateNow.Location()).Unix()
-		endTime := time.Date(dateNow.Year(), dateNow.Month(), dateNow.Day(), helpers.StringToInt(EndArr[0]), helpers.StringToInt(EndArr[1]), 0, 0, dateNow.Location()).Unix()
-		if dateNowUnix > startTime && dateNowUnix < endTime {
-			logger.Info(fmt.Sprint("正在休息", startTime, endTime))
-			return true
-		}
-	}
-	return false
 }
 
 func TickerCheckTodaySleep(isTicker bool) {
@@ -121,7 +66,7 @@ func TickerCheckTodaySleep(isTicker bool) {
 					logger.Error(err)
 					return
 				}
-				result := CheckTodaySleep(WeekdayTimeDetail)
+				result := xtime.CheckTodaySleep(WeekdayTimeDetail)
 				if result {
 					if data.AssetsStatus == 1 {
 						go mail_notice.Notice("msgAssetSleep", map[string]interface{}{

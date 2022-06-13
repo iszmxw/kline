@@ -23,7 +23,7 @@ func Start(num time.Duration, Source string, CodeData []kline_common.Info) {
 	for range ticker.C {
 		for _, info := range CodeData {
 			// 休市的数据源不检测状态
-			if helpers.InArray(Source, []string{"olymptrade", "hsb"}) && kline.CheckSleep(Source, info.ContractCode) {
+			if helpers.InArray(Source, []string{"olymptrade", "hsb"}) && kline.CheckSourceSleep(Source, info.ContractCode) {
 				continue
 			}
 			status := source.CheckStatus(Source, info.ContractCode)

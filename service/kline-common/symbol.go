@@ -112,6 +112,11 @@ func OlyMpTrade() []Info {
 		Info{Symbol: "CADJPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
 		Info{Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
 		Info{Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
+		// 2022年6月13日添加
+		Info{Symbol: "MSFT", Desc: "微软", ContractCode: "Microsoft"},
+		Info{Symbol: "ADS", Desc: "阿迪达斯", ContractCode: "Adidas"},
+		Info{Symbol: "NG", Desc: "NGAS", ContractCode: "NGAS"},
+		Info{Symbol: "_BRN", Desc: "BRENT", ContractCode: "BRENT"},
 	)
 	return CodeData
 }

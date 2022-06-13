@@ -1,16 +1,19 @@
+package trade_sleep
+
+const Apple = `
 [
   {
     "name": "Monday",
     "TradingTime": [
       {
-        "start": "20:30",
+        "start": "20:35",
         "end": "23:59"
       }
     ],
     "SleepTime": [
       {
         "start": "00:00",
-        "end": "20:30"
+        "end": "20:35"
       }
     ]
   },
@@ -19,17 +22,17 @@
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
+        "end": "02:55"
       },
       {
-        "start": "20:30",
+        "start": "20:35",
         "end": "23:59"
       }
     ],
     "SleepTime": [
       {
-        "start": "03:00",
-        "end": "20:30"
+        "start": "02:55",
+        "end": "20:35"
       }
     ]
   },
@@ -38,17 +41,17 @@
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
+        "end": "02:55"
       },
       {
-        "start": "20:30",
+        "start": "20:35",
         "end": "23:59"
       }
     ],
     "SleepTime": [
       {
-        "start": "03:00",
-        "end": "20:30"
+        "start": "02:55",
+        "end": "20:35"
       }
     ]
   },
@@ -57,17 +60,17 @@
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
+        "end": "02:55"
       },
       {
-        "start": "20:30",
+        "start": "20:35",
         "end": "23:59"
       }
     ],
     "SleepTime": [
       {
-        "start": "03:00",
-        "end": "20:30"
+        "start": "02:55",
+        "end": "20:35"
       }
     ]
   },
@@ -76,17 +79,17 @@
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
+        "end": "02:55"
       },
       {
-        "start": "20:30",
+        "start": "20:35",
         "end": "23:59"
       }
     ],
     "SleepTime": [
       {
-        "start": "03:00",
-        "end": "20:30"
+        "start": "02:55",
+        "end": "20:35"
       }
     ]
   },
@@ -95,12 +98,12 @@
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "03:00"
+        "end": "02:55"
       }
     ],
     "SleepTime": [
       {
-        "start": "03:00",
+        "start": "02:55",
         "end": "23:59"
       }
     ]
@@ -116,3 +119,4 @@
     ]
   }
 ]
+`

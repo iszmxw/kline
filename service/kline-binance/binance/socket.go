@@ -7,7 +7,6 @@ import (
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
-	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -22,16 +21,8 @@ import (
 
 func SocketBinance(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
-	var StartSub = true
-	// 资产休市状态
-	if kline.CheckSleep(config.KlineSource, info.ContractCode) {
-		time.Sleep(time.Second) // 休息1秒
-		StartSub = false
-		// 关闭
-		callback <- struct{}{}
-	}
 	// 开始订阅
-	if StartSub {
+	{
 		streamName := fmt.Sprintf("%s@indexPriceKline_%v", strings.ToLower(info.Symbol), "1m")
 		wsmkClient := new(api.WSPriceClient).Init("dstream.binance.com", streamName, kline_common.GetProxy(config.KlineSource), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {

@@ -13,29 +13,15 @@ import (
 	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/api"
 	"goapi/service/kline-olymptrade/olymptrade/config"
+	"goapi/service/kline-olymptrade/olymptrade/config/trade_sleep"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"time"
 )
 
 func SocketOlymptrade(info kline_common.Info) {
 	callback := make(chan struct{}, 1)
-	var TradingAssets models.TradingAssets
 	var StartSub = true
-	errs := mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("assets_code", info.ContractCode).
-		//Where("assets_status", "1"). // 资产状态 1正常 2休市 3下架
-		Select("id,assets_code,assets_status").
-		Find(&TradingAssets).Error
-	if errs != nil {
-		logger.Error(errs)
-		time.Sleep(time.Second) // 休息1秒
-		StartSub = false
-		// 关闭
-		callback <- struct{}{}
-	}
-	// 资产不存在或者休市状态
-	if TradingAssets.Id <= 0 || TradingAssets.AssetsStatus != 1 {
-		logger.Info(TradingAssets)
+	if trade_sleep.GetTimeIsSleep(info.ContractCode) {
 		time.Sleep(time.Second * 2) // 休息 2 秒
 		StartSub = false
 		// 关闭

@@ -99,13 +99,16 @@ func AllowKlineSource() map[string]interface{} {
 	data["GOLD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
 	data["SILVER"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
 	data["Netflix"] = []string{"qxbroker"}
-	data["Microsoft"] = []string{"qxbroker"}
+	data["Microsoft"] = []string{"olymptrade", "qxbroker"}
 	data["Intel"] = []string{"qxbroker"}
 	data["Apple"] = []string{"olymptrade"}
 	data["Tesla"] = []string{"olymptrade"}
 	data["CAD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker"}
 	data["EUR-AUD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
 	data["USD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["Adidas"] = []string{"olymptrade"}
+	data["NGAS"] = []string{"olymptrade"}
+	data["BRENT"] = []string{"olymptrade"}
 	return data
 }
 
