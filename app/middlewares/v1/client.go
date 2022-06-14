@@ -5,12 +5,30 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"goapi/pkg/address"
+	"goapi/pkg/config"
 	"goapi/pkg/echo"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
 	"strconv"
 )
+
+// AddressLimit 地区限制
+func AddressLimit() gin.HandlerFunc {
+	/** 您所在的地区限制使用 */
+	return func(c *gin.Context) {
+		logger.Info(c.ClientIP())
+		// 正式环境检测
+		if config.GetString("app.env") == "company_pro" && address.LimitAddress(c.ClientIP()) {
+			echo.Error(c, "COUNTRY_LIMIT_USE", "")
+			c.Abort()
+			return
+		} else {
+			c.Next()
+		}
+	}
+}
 
 // Client 定义客户端中间件
 func Client() gin.HandlerFunc {
