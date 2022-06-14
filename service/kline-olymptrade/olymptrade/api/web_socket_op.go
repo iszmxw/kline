@@ -10,10 +10,10 @@ import (
 	kline_common "goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/utils/zip"
-	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -103,19 +103,73 @@ ERR:
 }
 
 func (ws *WebSocketOp) msgHand(message []byte) {
-	var data wsdata.SubPriceKLineResponse
+	var data interface{}
 	err := json.Unmarshal(message, &data)
 	if err != nil {
-		logger.Error(errors.New(fmt.Sprintf("msg to map[string]json.RawMessage error: %s", err)))
+		logger.Error(err)
 		return
 	}
-	dType := data[0].E // 读取E的类型
-	if dType == 1 {    // [{"d":[{"p":"AUDCAD","t":1650514321.284,"q":0.92792}],"e":1}]
-		ws.handleSubCallbackFun(data[0].D[0].P, message, data)
-	} else if dType == 2 { // [{"d":[{"p":"AUDCAD","t":1650514320,"open":0.92792,"low":0.92792,"high":0.92792,"close":0.92792}],"e":2}]
-		ws.handleSubCallbackFun(data[0].D[0].P, message, data)
-	} else {
-		logger.Info(fmt.Sprintf("WebSocket received unknow data: %v", data))
+	if fmt.Sprintf("%T", data) == "[]interface {}" {
+		dataMap := data.([]interface{})[0]
+		if fmt.Sprintf("%T", dataMap) == "map[string]interface {}" {
+			logger.Info(dataMap.(map[string]interface{})["e"])
+			switch true {
+			case strings.EqualFold(fmt.Sprintf("%v", dataMap.(map[string]interface{})["e"]), "1"):
+				{ // [{"d":[{"p":"AUDCAD","t":1650514321.284,"q":0.92792}],"e":1}]
+					array := dataMap.(map[string]interface{})["d"]
+					arrayMap := array.([]interface{})[0].(map[string]interface{})
+					ws.handleSubCallbackFun(ws.Symbol,
+						[]byte(fmt.Sprintf(
+							`{"id":%v,"symbol":"%v","open":%v,"close":%v,"low":%v,"high":%v}`,
+							arrayMap["t"], // id 时间戳
+							arrayMap["p"], // symbol
+							0,             // open
+							arrayMap["q"], // close
+							0,             // low
+							0,             // high
+						)), data,
+					)
+				}
+				break
+			case strings.EqualFold(fmt.Sprintf("%v", dataMap.(map[string]interface{})["e"]), "2"):
+				{ // [{"d":[{"p":"AUDCAD","t":1650514320,"open":0.92792,"low":0.92792,"high":0.92792,"close":0.92792}],"e":2}]
+					array := dataMap.(map[string]interface{})["d"]
+					arrayMap := array.([]interface{})[0].(map[string]interface{})
+					ws.handleSubCallbackFun(ws.Symbol,
+						[]byte(fmt.Sprintf(
+							`{"id":%v,"symbol":"%v","open":%v,"close":%v,"low":%v,"high":%v}`,
+							arrayMap["t"],     // id 时间戳
+							arrayMap["p"],     // symbol
+							arrayMap["open"],  // open
+							arrayMap["close"], // close
+							arrayMap["low"],   // low
+							arrayMap["high"],  // high
+						)), data,
+					)
+				}
+				break
+			case strings.EqualFold(fmt.Sprintf("%v", dataMap.(map[string]interface{})["e"]), "2002"):
+				{ // [{"d":[{"p":"ADS","t":1655197116.984,"a":167.1,"m":167.08,"b":167.06}],"e":2002}]
+					array := dataMap.(map[string]interface{})["d"]
+					arrayMap := array.([]interface{})[0].(map[string]interface{})
+					ws.handleSubCallbackFun(ws.Symbol,
+						[]byte(fmt.Sprintf(
+							`{"id":%v,"symbol":"%v","open":%v,"close":%v,"low":%v,"high":%v}`,
+							arrayMap["t"], // id 时间戳
+							arrayMap["p"], // symbol
+							arrayMap["a"], // open
+							arrayMap["b"], // close
+							arrayMap["m"], // low
+							0,             // high
+						)), data,
+					)
+				}
+				break
+			default:
+				logger.Info(fmt.Sprint(fmt.Sprintf("%v", dataMap.(map[string]interface{})["e"]), string(message)))
+				break
+			}
+		}
 	}
 }
 

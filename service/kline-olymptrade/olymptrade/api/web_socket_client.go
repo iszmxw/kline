@@ -28,6 +28,6 @@ func (wsIx *WSPriceClient) SubPriceKLine(info kline_common.Info, callbackFun OnS
 	if id == "" {
 		id = config.DefaultId
 	}
-	data := []byte(fmt.Sprintf(`[{"t":2,"e":8,"uuid":"L28G%v","d":[{"pair":"%v"}]}]`, helpers.GetUUID16(), info.Symbol))
+	data := []byte(fmt.Sprintf(`[{"t":2,"e":%v,"uuid":"L4DX%v","d":[{"pair":"%v"}]}]`, info.MarketId, helpers.GetUUID16(), info.Symbol))
 	wsIx.sub(data, info.Symbol, callbackFun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }

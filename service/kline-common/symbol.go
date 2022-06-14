@@ -100,23 +100,23 @@ func QxBroker() []Info {
 func OlyMpTrade() []Info {
 	var CodeData []Info
 	CodeData = append(CodeData,
-		Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
-		Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
-		Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
-		Info{Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
-		Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
-		// 2022年6月2号添加
-		Info{Symbol: "AAPL", Desc: "苹果", ContractCode: "Apple"},
-		Info{Symbol: "TSLA", Desc: "特斯拉", ContractCode: "Tesla"},
-		Info{Symbol: "CADJPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
-		Info{Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
-		Info{Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
-		// 2022年6月13日添加
-		Info{Symbol: "MSFT", Desc: "微软", ContractCode: "Microsoft"},
-		Info{Symbol: "ADS", Desc: "阿迪达斯", ContractCode: "Adidas"},
-		Info{Symbol: "NG", Desc: "NGAS", ContractCode: "NGAS"},
-		Info{Symbol: "_BRN", Desc: "BRENT", ContractCode: "BRENT"},
+		Info{MarketId: 12, Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{MarketId: 12, Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		Info{MarketId: 12, Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		Info{MarketId: 12, Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		Info{MarketId: 12, Symbol: "XAUUSD", Desc: "伦敦金", ContractCode: "GOLD"},
+		Info{MarketId: 12, Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
+		//// 2022年6月2号添加
+		Info{MarketId: 2010, Symbol: "AAPL", Desc: "苹果", ContractCode: "Apple"},
+		Info{MarketId: 2010, Symbol: "TSLA", Desc: "特斯拉", ContractCode: "Tesla"},
+		Info{MarketId: 12, Symbol: "CADJPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
+		Info{MarketId: 12, Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
+		Info{MarketId: 12, Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
+		//// 2022年6月13日添加
+		Info{MarketId: 2010, Symbol: "MSFT", Desc: "微软", ContractCode: "Microsoft"},
+		Info{MarketId: 2010, Symbol: "ADS", Desc: "阿迪达斯", ContractCode: "Adidas"},
+		Info{MarketId: 12, Symbol: "NG", Desc: "NGAS", ContractCode: "NGAS"},
+		Info{MarketId: 12, Symbol: "_BRN", Desc: "BRENT", ContractCode: "BRENT"},
 	)
 	return CodeData
 }

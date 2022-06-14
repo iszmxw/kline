@@ -49,15 +49,9 @@ func SocketOlymptrade(info kline_common.Info) {
 					callback <- struct{}{}
 				}
 			}()
-			wsData := *resp
-			dType := wsData[0].E    // 读取E的类型
-			rData := wsData[0].D[0] // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
-			if dType == 1 {
-				return
-			}
 			SystemTs := time.Now().UnixMilli()             // 开始时间 系統生成的Ts
 			logger.RequestId = fmt.Sprintf("%v", SystemTs) // RequestId 定义为 Ts 时间戳
-			if rData.T <= 0 {
+			if resp.Id <= 0 {
 				// 当前数据源匹配就入库
 				if response.KlineSource(info.ContractCode) == config.KlineSource {
 					logger.Info("休市")
@@ -67,7 +61,7 @@ func SocketOlymptrade(info kline_common.Info) {
 				)
 				return
 			}
-			UpstreamTs := int64(rData.T * 1000) // 上游的ts
+			UpstreamTs := int64(resp.Id * 1000) // 上游的ts
 			TimeDiff := SystemTs - UpstreamTs
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			logger.Info(kline_common.TimeDiffTips(config.KlineSource, UpstreamTs))
@@ -102,7 +96,7 @@ func SocketOlymptrade(info kline_common.Info) {
 				if KlineData.LogId > 0 {
 					return
 				}
-				lineLogRes := LogData(wsData, info.ContractCode, SystemTs, UpstreamTs)
+				lineLogRes := LogData(resp, info.ContractCode, SystemTs, UpstreamTs)
 				if err = mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
 					logger.Error(err)
 					return
@@ -128,9 +122,8 @@ func SocketOlymptrade(info kline_common.Info) {
 	}
 }
 
-func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs, UpstreamTs int64) models.KlineLog {
+func LogData(wsData *wsdata.SubPriceKLineResponse, ContractCode string, SystemTs, UpstreamTs int64) models.KlineLog {
 	var klineLog models.KlineLog
-	rData := wsData[0].D[0]                                                        // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
 	klineLog.ContractCode = ContractCode                                           // 合约代码 BTC-USD
 	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)       // kilne返回日期时间戳
 	klineLog.Ts = SystemTs                                                         // 自己生成的ts
@@ -138,9 +131,9 @@ func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs,
 	klineLog.ID = SystemTs                                                         // 自己生成的ts/1000
 	klineLog.Mrid = 0.00                                                           // ID
 	klineLog.COpen = 0                                                             // 起始峰值
-	klineLog.CClose = rData.Close                                                  // 结束峰值
-	klineLog.High = rData.High                                                     // 最高峰值
-	klineLog.Low = rData.Low                                                       // 最低峰值
+	klineLog.CClose = wsData.Close                                                  // 结束峰值
+	klineLog.High = wsData.High                                                     // 最高峰值
+	klineLog.Low = wsData.Low                                                       // 最低峰值
 	klineLog.Amount = 0                                                            // 成交金额 TODO
 	klineLog.Vol = 0                                                               // 成交手 TODO
 	klineLog.CCount = 0                                                            // 交易笔数 TODO
@@ -153,9 +146,7 @@ func LogData(wsData wsdata.SubPriceKLineResponse, ContractCode string, SystemTs,
 // RedisData 缓存进redis的数据
 func RedisData(SystemTs int64, resp *wsdata.SubPriceKLineResponse) response.SubIndexKLineResponse {
 	var data response.SubIndexKLineResponse
-	wsData := *resp
-	rData := wsData[0].D[0] // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
-	ContractCode := kline_common.Convert(config.KlineSource, rData.P).ContractCode
+	ContractCode := kline_common.Convert(config.KlineSource, resp.Symbol).ContractCode
 	data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
 	data.Ts = SystemTs
 	data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
@@ -163,10 +154,10 @@ func RedisData(SystemTs int64, resp *wsdata.SubPriceKLineResponse) response.SubI
 	data.Tick.Id = SystemTs
 	data.Tick.Vol = "0"
 	data.Tick.Count = 0
-	data.Tick.Open = fmt.Sprintf("%v", rData.Open)
-	data.Tick.Close = fmt.Sprintf("%v", rData.Close)
-	data.Tick.Low = fmt.Sprintf("%v", rData.Low)
-	data.Tick.High = fmt.Sprintf("%v", rData.High)
+	data.Tick.Open = fmt.Sprintf("%v", resp.Open)
+	data.Tick.Close = fmt.Sprintf("%v", resp.Close)
+	data.Tick.Low = fmt.Sprintf("%v", resp.Low)
+	data.Tick.High = fmt.Sprintf("%v", resp.High)
 	data.Tick.Amount = "0"
 	return data
 }

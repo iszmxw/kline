@@ -34,7 +34,6 @@ type KlineController struct {
 
 // WsIndexHandler socket 负责转发redis缓存的socket数据
 func (h *KlineController) WsIndexHandler(c *gin.Context) {
-	RequestId := logger.RequestId
 	ws, err := wss.GetSocket(c)
 	if err != nil {
 		logger.Error(err)
@@ -47,7 +46,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
 			logger.Error(ReadMessageErr)
-			wss.WsClose(ws)
 			// 跳出for关闭后面的读取
 			goto END
 		}
@@ -57,34 +55,19 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
-			wss.WsClose(ws)
 			goto END
 		}
 		// 订阅的 market.ETH-USD.index.1min，没有值
 		if len(SubStruct.Sub) == 0 {
 			logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
-			wss.WsClose(ws)
 			goto END
 		}
 		// 订阅的 ETH-USD，没有值
 		AssetsCode := strings.Split(SubStruct.Sub, ".")[1]
 		if len(AssetsCode) == 0 {
 			logger.Error(errors.New("订阅的 ETH-USD，没有值"))
-			wss.WsClose(ws)
 			goto END
 		}
-		// 2 小时内一个长连接禁止重复订阅相同的 topic
-		checkMsg := "socket_request:" + RequestId + ":" + AssetsCode
-		if redis.Client.CheckExist(checkMsg) {
-			logger.Info("该订阅已存在，请勿重新订阅")
-			continue
-		}
-		_, redisAddErr := redis.Client.Add(checkMsg, AssetsCode, 30*60) // 半个小时内不允许重复请求
-		if redisAddErr != nil {
-			logger.Error(redisAddErr)
-			break
-		}
-		// 24 小时内一个长连接禁止重复订阅相同的 topic
 		// 链接已关闭
 		if ws.IsClose {
 			goto END
@@ -93,6 +76,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		go PushMessage(mt, ws, AssetsCode)
 	}
 END:
+	wss.WsClose(ws)
 	logger.Info("socket被关闭，本次链接结束")
 }
 
@@ -139,7 +123,6 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
 			logger.Error(ReadMessageErr)
-			wss.WsClose(ws)
 			// 跳出for关闭后面的读取
 			goto END
 		}
@@ -149,7 +132,6 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
-			wss.WsClose(ws)
 			goto END
 		}
 		msg := SubStruct.Sub
@@ -177,14 +159,23 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		go PushRate(mt, ws, msg)
 	}
 END:
+	wss.WsClose(ws)
 	logger.Info("socket被关闭，本次链接结束")
 }
 
 // 推送socket消息
 
 func PushMessage(messageType int, ws *wss.WsConn, AssetsCode string) {
+	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
+	SubKey := "socket_request:" + logger.RequestId
+	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4) // 4小时失效
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
+		SubAssetsCode, _ := redis.Client.Get(SubKey)
+		if len(SubAssetsCode) > 0 && SubAssetsCode != AssetsCode {
+			logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求ID==%v", AssetsCode, SubAssetsCode, logger.RequestId)))
+			goto END
+		}
 		klineSource := response.KlineSource(AssetsCode)
 		// 没有读取到 klineSource
 		if len(klineSource) == 0 {
@@ -225,7 +216,7 @@ func PushMessage(messageType int, ws *wss.WsConn, AssetsCode string) {
 			// 警告，延迟过高
 			KeyStatus := fmt.Sprintf("status:%v", key)
 			_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
-			time.Sleep(time.Second * 5) // 休息5秒
+			//time.Sleep(time.Second * 5) // 休息5秒
 		}
 		// 1秒推送一次消息
 		//time.Sleep(time.Second * 1)
@@ -238,10 +229,9 @@ func PushMessage(messageType int, ws *wss.WsConn, AssetsCode string) {
 			// 跳出for关闭后面的推送
 			goto END
 		}
-		// 返回数据给用户
 	}
 END:
-	logger.Info("已经跳出协诚的循环推送")
+	logger.Error(errors.New("已经跳出协诚的循环推送"))
 }
 
 // 推送Rate socket消息
@@ -251,7 +241,7 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 	for !ws.IsClose {
 		// 空消息跳过
 		if len(assetsCode) <= 0 {
-			continue
+			goto END
 		}
 		var PushRateData []response.PushRateData
 		DB := mysql.DB

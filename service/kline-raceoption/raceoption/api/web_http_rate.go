@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"goapi/app/models"
 	res "goapi/app/response"
@@ -20,7 +21,9 @@ import (
 func getToken(refresh bool) (error, string) {
 	// 刷新token
 	token, err := redis.Client.Get(config.RedisKey)
-	if err != nil {
+	if err != nil && err.Error() == "redis: nil" {
+		return errors.New("未获取到数据"), ""
+	} else {
 		logger.Error(err)
 	}
 	// token失效，或者强制刷新token,就重新登录获取token
