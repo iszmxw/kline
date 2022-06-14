@@ -64,9 +64,9 @@ func ProxyOlyMpTrade(proxy *url.URL) *url.URL {
 		proxy = &url.URL{
 			Scheme: "http",
 			//Host: "209.209.114.15:18888", // justhost.ru
-			//Host: "13.57.227.200:18888", // 亚马逊 国家不允许
-			Host:   "43.154.141.242:10802", // 淘宝购买的香港ip
-			User:   url.UserPassword("2533", "2113"),
+			Host: "13.57.227.200:18888", // 亚马逊 国家不允许
+			//Host:   "43.154.141.242:10802", // 淘宝购买的香港ip
+			//User:   url.UserPassword("2533", "2113"),
 		}
 	}
 	return proxy

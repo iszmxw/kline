@@ -6,6 +6,7 @@ import (
 	"goapi/app/response"
 	"goapi/pkg/config"
 	"goapi/pkg/helpers"
+	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
@@ -42,9 +43,18 @@ func TickerCheckSwitchSource() {
 }
 
 func CheckSwitchSource(CurrentKlineSource, ContractCode string) {
-	AllowKlineSource := response.AllowKlineSource()[ContractCode] // 查找该资产所有允许的源
-	AllowTotal := len(AllowKlineSource.([]string))                // 总共可走的数据源
-	FailTotal := 0                                                // 失败的总数
+	AllowKlineSourceData := response.AllowKlineSource()
+	if len(AllowKlineSourceData) <= 0 {
+		logger.Info("noAllowKlineSourceData")
+		return
+	}
+	AllowKlineSource := AllowKlineSourceData[ContractCode] // 查找该资产所有允许的源
+	if AllowKlineSource == nil {
+		logger.Info("nil")
+		return
+	}
+	AllowTotal := len(AllowKlineSource.([]string)) // 总共可走的数据源
+	FailTotal := 0                                 // 失败的总数
 	for _, AllowSource := range AllowKlineSource.([]string) {
 		if CurrentKlineSource == AllowSource { // 当前源坏掉了，跳过
 			FailTotal++
