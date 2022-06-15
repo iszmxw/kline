@@ -403,6 +403,7 @@ func (ws *WebSocketOp) writePing() {
 					ws.Description = fmt.Sprintf("%v当前握手已经关闭Ping协程已关闭", ws.Symbol)
 					goto ERR
 				}
+				ws.mutex.Lock()
 				// ping
 				if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
 					logger.Info(err.Error())
@@ -410,6 +411,7 @@ func (ws *WebSocketOp) writePing() {
 					ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
 					goto ERR
 				}
+				ws.mutex.Unlock()
 			}
 		ERR:
 			ticker.Stop()

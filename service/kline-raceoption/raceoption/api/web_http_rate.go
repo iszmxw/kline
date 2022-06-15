@@ -21,13 +21,12 @@ import (
 func getToken(refresh bool) (error, string) {
 	// 刷新token
 	token, err := redis.Client.Get(config.RedisKey)
-	if err != nil && err.Error() == "redis: nil" {
-		return errors.New("未获取到数据"), ""
-	} else {
+	if err != nil && err.Error() != "redis: nil" {
 		logger.Error(err)
 	}
 	// token失效，或者强制刷新token,就重新登录获取token
 	if len(token) <= 0 || true == refresh {
+		time.Sleep(time.Second * 5) // 防止5秒盾牌
 		resp, header, err := request.Post("https://trading.raceoption.com/api/login", http.Header{
 			"authority":    {"trading.raceoption.com"},
 			"content-type": {"application/json; charset=utf-8"},
@@ -49,23 +48,23 @@ func getToken(refresh bool) (error, string) {
 			}
 		}
 	}
-	time.Sleep(time.Second * 5) // 防止5秒盾牌
 	// 返回 token
 	return nil, token
 }
 
-func GetRate() {
+func GetRate(num time.Duration) {
 	// 捕获异常，如果出错就
 	defer func() {
 		if r := recover(); r != nil {
+			logger.Error(errors.New("费率退出"))
 			logger.Info(fmt.Sprintf("%v", r))
 		}
-		// 重新启动
-		go GetRate()
 	}()
-	for {
+	ticker := time.NewTicker(num * time.Second) // 每隔 num 秒检查一次
+	for range ticker.C {
 		err, token := getToken(false)
 		if err != nil {
+			logger.Error(err)
 			continue
 		}
 		// 开始获取赔率
@@ -97,7 +96,6 @@ func GetRate() {
 				}
 			}
 		}
-		time.Sleep(time.Second * 10) // 每隔 10 秒读取一次
 	}
 }
 
