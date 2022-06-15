@@ -180,7 +180,7 @@ func explainData(line []float64, LogData utils.LogData) {
 		// 2 方差多大为大，方差多小为小
 		// 3 基数为，过去20分钟的波动方差
 		var WaveRate []models.TradingAssetsCalculate
-		mysql.DB.Debug().
+		mysql.DB.
 			Model(models.TradingAssetsCalculate{}).
 			Select("wave_rate").
 			Where("assets_code", LogData.AssetsCode).

@@ -112,7 +112,7 @@ func collection(queryData Info) {
 	}
 	// 当前数据源匹配就入库
 	if response.KlineSource(lineLogRes.ContractCode) == "sina" {
-		err = mysql.DB.Debug().
+		err = mysql.DB.
 			Model(models.KlineLog{}).
 			Select("log_id").
 			Where("contract_code", lineLogRes.ContractCode).
@@ -125,7 +125,7 @@ func collection(queryData Info) {
 		if KlineData.LogId > 0 {
 			return
 		}
-		cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
+		cerr1 := mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error
 		if cerr1 != nil {
 			logger.Error(cerr1)
 			return

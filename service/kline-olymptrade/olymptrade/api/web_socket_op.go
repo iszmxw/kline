@@ -112,7 +112,6 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 	if fmt.Sprintf("%T", data) == "[]interface {}" {
 		dataMap := data.([]interface{})[0]
 		if fmt.Sprintf("%T", dataMap) == "map[string]interface {}" {
-			logger.Info(dataMap.(map[string]interface{})["e"])
 			switch true {
 			case strings.EqualFold(fmt.Sprintf("%v", dataMap.(map[string]interface{})["e"]), "1"):
 				{ // [{"d":[{"p":"AUDCAD","t":1650514321.284,"q":0.92792}],"e":1}]
@@ -166,7 +165,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				}
 				break
 			default:
-				logger.Info(fmt.Sprint(fmt.Sprintf("%v", dataMap.(map[string]interface{})["e"]), string(message)))
+				//logger.Info(fmt.Sprint(fmt.Sprintf("%v", dataMap.(map[string]interface{})["e"]), string(message)))
 				break
 			}
 		}

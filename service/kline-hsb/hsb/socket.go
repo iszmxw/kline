@@ -66,7 +66,7 @@ func SocketHsb(info kline_common.Info) {
 			TimeDiff := SystemTs - UpstreamTs
 			logger.Info(data)
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
-			logger.Info(kline_common.TimeDiffTips(config.KlineSource, SystemTs))
+			//logger.Info(kline_common.TimeDiffTips(config.KlineSource, SystemTs))
 			redisData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 			if MarshalJSONErr != nil {
 				logger.Error(MarshalJSONErr)
@@ -82,7 +82,7 @@ func SocketHsb(info kline_common.Info) {
 			// 当前数据源匹配就入库
 			if response.KlineSource(ContractCode) == config.KlineSource {
 				var KlineData models.KlineLog
-				err := mysql.DB.Debug().
+				err := mysql.DB.
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", ContractCode).
@@ -96,7 +96,7 @@ func SocketHsb(info kline_common.Info) {
 					return
 				}
 				lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
-				if err = mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
+				if err = mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
 					logger.Error(err)
 					return
 				}

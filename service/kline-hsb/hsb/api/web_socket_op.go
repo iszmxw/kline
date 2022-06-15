@@ -132,7 +132,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 						logger.Info(err.Error())
 						// 登录失败
 						ws.auth = false
-					}else{
+					} else {
 						// 登录成功
 						ws.auth = true
 						logger.Info("登录成功")
@@ -153,7 +153,6 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				// ping
 				go ws.writePing()
 				// 订阅成功
-				logger.Info("订阅成功" + ws.Symbol)
 				ws.handleSubCallbackFun(ws.Symbol, message, data)
 			}
 		}

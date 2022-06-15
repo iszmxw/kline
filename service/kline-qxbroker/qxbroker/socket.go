@@ -31,8 +31,8 @@ func SocketQxbroker(info kline_common.Info) {
 		logger.Info(info)
 		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
-			SystemTs := time.Now().UnixMilli()             // 系統生成的Ts
-			logger.RequestId = fmt.Sprintf("%v@%v", SystemTs,info.ContractCode) // RequestId 定义为 Ts 时间戳
+			SystemTs := time.Now().UnixMilli()                                   // 系統生成的Ts
+			logger.RequestId = fmt.Sprintf("%v@%v", SystemTs, info.ContractCode) // RequestId 定义为 Ts 时间戳
 			resp.Symbol = info.ContractCode
 			defer func() {
 				if r := recover(); r != nil {
@@ -57,7 +57,7 @@ func SocketQxbroker(info kline_common.Info) {
 			UpstreamTs := int64(resp.TimeId * 1000) // 上游的ts
 			TimeDiff := SystemTs - UpstreamTs
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
-			logger.Info(kline_common.TimeDiffTips(config.KlineSource, UpstreamTs))
+			//logger.Info(kline_common.TimeDiffTips(config.KlineSource, UpstreamTs))
 			data := RedisData(SystemTs, UpstreamTs, resp)
 			logger.Info(data)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
@@ -75,7 +75,7 @@ func SocketQxbroker(info kline_common.Info) {
 			// 当前数据源匹配就入库
 			if response.KlineSource(info.ContractCode) == config.KlineSource {
 				var KlineData models.KlineLog
-				err = mysql.DB.Debug().
+				err = mysql.DB.
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", resp.Symbol).
@@ -89,7 +89,7 @@ func SocketQxbroker(info kline_common.Info) {
 					return
 				}
 				lineLogRes := LogData(resp, SystemTs, UpstreamTs)
-				if err = mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
+				if err = mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
 					logger.Error(err)
 					return
 				}

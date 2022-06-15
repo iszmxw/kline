@@ -94,7 +94,7 @@ func SocketBinance(info kline_common.Info) {
 			// 当前数据源匹配就入库
 			if response.KlineSource(ContractCode) == config.KlineSource {
 				var KlineData models.KlineLog
-				err = mysql.DB.Debug().
+				err = mysql.DB.
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", ContractCode).
@@ -108,7 +108,7 @@ func SocketBinance(info kline_common.Info) {
 					return
 				}
 				lineLogRes := LogData(resp, SystemTs, UpstreamTs)
-				cerr1 := mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error
+				cerr1 := mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error
 				if cerr1 != nil {
 					logger.Error(cerr1)
 					return

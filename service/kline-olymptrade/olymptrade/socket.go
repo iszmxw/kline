@@ -64,7 +64,7 @@ func SocketOlymptrade(info kline_common.Info) {
 			UpstreamTs := int64(resp.Id * 1000) // 上游的ts
 			TimeDiff := SystemTs - UpstreamTs
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
-			logger.Info(kline_common.TimeDiffTips(config.KlineSource, UpstreamTs))
+			//logger.Info(kline_common.TimeDiffTips(config.KlineSource, UpstreamTs))
 			data := RedisData(SystemTs, resp)
 			logger.Info(data)
 			redisData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
@@ -83,7 +83,7 @@ func SocketOlymptrade(info kline_common.Info) {
 			// 当前数据源匹配就入库
 			if response.KlineSource(info.ContractCode) == config.KlineSource {
 				var KlineData models.KlineLog
-				err := mysql.DB.Debug().
+				err := mysql.DB.
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", info.ContractCode).
@@ -97,7 +97,7 @@ func SocketOlymptrade(info kline_common.Info) {
 					return
 				}
 				lineLogRes := LogData(resp, info.ContractCode, SystemTs, UpstreamTs)
-				if err = mysql.DB.Debug().Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
+				if err = mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
 					logger.Error(err)
 					return
 				}
