@@ -292,8 +292,7 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 	defer kline_common.KlineRecover("UpdateRate", config.KlineSource, ws.Symbol)
 	// 修改费率
 	var TradingAssets response.TradingAssets
-	DB := mysql.DB.Debug()
-	err := DB.Model(models.TradingAssets{}).
+	err := mysql.DB.Model(models.TradingAssets{}).
 		Where("assets_code", ContractCode).
 		Where("is_valid", 1).
 		Where("is_show", 1).
@@ -316,6 +315,7 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 			"service": config.KlineSource,
 			"tips":    tips,
 		})
+		DB := mysql.DB
 		DB.Begin()
 		err = DB.Model(models.TradingAssets{}).
 			Where("assets_code", ContractCode).
@@ -341,8 +341,8 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 			logger.Error(err)
 			return
 		}
+		DB.Commit()
 	}
-	DB.Commit()
 }
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
@@ -405,13 +405,14 @@ func (ws *WebSocketOp) writePing() {
 				}
 				ws.mutex.Lock()
 				// ping
-				if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
+				err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`))
+				ws.mutex.Unlock()
+				if err != nil {
 					logger.Info(err.Error())
 					logger.Info(t)
 					ws.Description = fmt.Sprintf("%vPing协程已关闭 %v", ws.Symbol, err.Error())
 					goto ERR
 				}
-				ws.mutex.Unlock()
 			}
 		ERR:
 			ticker.Stop()
@@ -517,8 +518,6 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 
 // 通用订阅
 func (ws *WebSocketOp) sub(ContractCode string, Symbol string, fun interface{}, param reflect.Type) bool {
-	ws.mutex.Lock()
-	defer ws.mutex.Unlock()
 	var mi *CallbackFunc = nil
 	if _, found := ws.SubTopicMap[Symbol]; found {
 		logger.Info(found)

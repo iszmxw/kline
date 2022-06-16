@@ -101,6 +101,7 @@ func (rdb *Redis) Delete(key string) bool {
 	err := rdb.Client.Del(Set(key)).Err()
 	if err != nil {
 		fmt.Println("删除key失败" + err.Error())
+		logger.Error(err)
 		return false
 	}
 	return true

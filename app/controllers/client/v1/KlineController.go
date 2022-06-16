@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/olivere/elastic"
 	"goapi/app/models"
 	"goapi/app/requests"
@@ -39,7 +40,8 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		logger.Error(err)
 		return
 	}
-	logger.Info("客户端建立socket成功")
+	socketId := uuid.New().String()
+	logger.Info("客户端建立socket成功socketId=" + socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -58,6 +60,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			goto END
 		}
 		switch true {
+		case ws.IsClose:
+			{
+				goto END
+			}
 		case strings.EqualFold(SubStruct.Id, "02"):
 			{
 				// 开启协诚处理推送历史记录
@@ -67,7 +73,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		default:
 			{
 				// 开启协诚处理推送消息
-				go PushMessage(mt, ws, SubStruct)
+				go PushMessage(socketId, mt, ws, SubStruct)
 			}
 			break
 		}
@@ -191,20 +197,29 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 	beginDate := SubHistory.BeginDate
 	endDate := SubHistory.EndDate
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
+		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte("beginDate 起始交易日期必填"))
+		ws.Mux.Unlock()
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Error(errors.New("越界查询"))
+		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte("越界查询 beginDate error"))
+		ws.Mux.Unlock()
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
+		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte("endDate 截止交易日期必填"))
+		ws.Mux.Unlock()
 		return
 	}
 	if len(symbol) <= 0 {
+		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte("symbol 不能为空"))
+		ws.Mux.Unlock()
+		return
 	}
 	tips := fmt.Sprintf(
 		"当前系统时间为【%v】 查询范围从【%v】，到【%v】",
@@ -216,7 +231,9 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 	// 没有读取到 klineSource
 	if len(klineSource) == 0 {
 		logger.Error(errors.New("没有读取到 klineSource"))
+		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte("没有读取到 klineSource"))
+		ws.Mux.Unlock()
 		return
 	}
 	var data []response.KlineLog
@@ -235,7 +252,9 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 	err = KlineDB.Limit(int(Count)).Find(&data).Error
 	if err != nil {
 		logger.Error(err)
+		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte("no data"))
+		ws.Mux.Unlock()
 		return
 	}
 	// 侦测到数据小于 150 条的时候，发送邮件预警
@@ -266,14 +285,16 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 		logger.Error(err)
 		return
 	}
+	ws.Mux.Lock()
 	err = ws.Conn.WriteMessage(messageType, marshal)
+	ws.Mux.Unlock()
 	if err != nil {
 		logger.Error(err)
 		return
 	}
 }
 
-func PushMessage(messageType int, ws *wss.WsConn, SubStruct requests.Sub) {
+func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub) {
 	// 订阅的 market.ETH-USD.index.1min，没有值
 	if len(SubStruct.Sub) == 0 {
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
@@ -286,14 +307,18 @@ func PushMessage(messageType int, ws *wss.WsConn, SubStruct requests.Sub) {
 		return
 	}
 	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
-	SubKey := "socket_request:" + logger.RequestId
-	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4) // 4小时失效
+	SubKey := fmt.Sprintf("socket_request:%v", socketId)
+	IsSubKey := fmt.Sprintf("socket_request:%v:%v", socketId, AssetsCode)
+	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4)   // 当前请求正在订阅的资产，4小时失效
+	_, _ = redis.Client.Add(IsSubKey, AssetsCode, 60*60*4) // 4小时失效
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		SubAssetsCode, _ := redis.Client.Get(SubKey)
-		if len(SubAssetsCode) > 0 && SubAssetsCode != AssetsCode {
-			logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求ID==%v", AssetsCode, SubAssetsCode, logger.RequestId)))
-			goto END
+		SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
+		if len(SubAssetsCode) > 0 {
+			if SubAssetsCode != AssetsCode { // 关闭释放掉历史的订阅
+				logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", AssetsCode, SubAssetsCode, socketId)))
+				goto END
+			}
 		}
 		klineSource := response.KlineSource(AssetsCode)
 		// 没有读取到 klineSource
@@ -336,6 +361,9 @@ func PushMessage(messageType int, ws *wss.WsConn, SubStruct requests.Sub) {
 			KeyStatus := fmt.Sprintf("status:%v", key)
 			_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
 			//time.Sleep(time.Second * 5) // 休息5秒
+		}
+		if ws.IsClose {
+			goto END
 		}
 		// 1秒推送一次消息
 		//time.Sleep(time.Second * 1)
