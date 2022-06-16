@@ -2,8 +2,6 @@ package heartbeat
 
 import (
 	"fmt"
-	"goapi/pkg/helpers"
-	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/service/kline-binance/binance"
 	kline_common "goapi/service/kline-common"
@@ -23,9 +21,9 @@ func Start(num time.Duration, Source string, CodeData []kline_common.Info) {
 	for range ticker.C {
 		for _, info := range CodeData {
 			// 休市的数据源不检测状态
-			if helpers.InArray(Source, []string{"olymptrade", "hsb"}) && kline.CheckSourceSleep(Source, info.ContractCode) {
-				continue
-			}
+			//if helpers.InArray(Source, []string{"olymptrade", "hsb"}) && kline.CheckSourceSleep(Source, info.ContractCode) {
+			//	continue
+			//}
 			status := source.CheckStatus(Source, info.ContractCode)
 			logger.Info(fmt.Sprintf("数据源【%v】对应资产【%v】健康状态：【%v】", Source, info.ContractCode, status))
 		}
