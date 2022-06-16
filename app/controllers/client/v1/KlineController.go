@@ -40,10 +40,13 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		logger.Error(err)
 		return
 	}
+	HeartBeatingMessage := make(chan string)
 	socketId := uuid.New().String()
 	logger.Info("客户端建立socket成功socketId=" + socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
+		// 开启协诚处理心跳机制
+		go HeartBeating(socketId, HeartBeatingMessage, ws)
 		// 读取用户客户端ws中订阅的 topic
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
@@ -68,6 +71,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			{
 				// 开启协诚处理推送历史记录
 				go PushHistory(mt, ws, SubStruct, c)
+			}
+			break
+		case strings.EqualFold(SubStruct.Id, "03"):
+			{
+				// 处理心跳数据
+				HeartBeatingMessage <- time.Now().Format("2006-01-02 15:04:05")
 			}
 			break
 		default:
@@ -380,6 +389,17 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	}
 END:
 	logger.Error(errors.New("已经跳出协诚的循环推送"))
+}
+
+func HeartBeating(socketId string, bytes chan string, ws *wss.WsConn) {
+	select {
+	case fk := <-bytes:
+		logger.Info(fmt.Sprintf("socketId=%v当前心跳时间：%v", socketId, fk))
+		break
+	case <-time.After(20 * time.Second):
+		wss.WsClose(ws)
+		logger.Info(fmt.Sprintf("socketId=%v没有进行心跳，您已退出", socketId))
+	}
 }
 
 // 推送Rate socket消息
