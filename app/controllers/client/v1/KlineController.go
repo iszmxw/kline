@@ -363,6 +363,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 			//time.Sleep(time.Second * 5) // 休息5秒
 		}
 		if ws.IsClose {
+			wss.WsClose(ws)
 			goto END
 		}
 		// 1秒推送一次消息

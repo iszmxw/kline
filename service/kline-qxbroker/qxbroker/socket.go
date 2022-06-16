@@ -55,11 +55,11 @@ func SocketQxbroker(info kline_common.Info) {
 				return
 			}
 			UpstreamTs := int64(resp.TimeId * 1000) // 上游的ts
-			TimeDiff := SystemTs - UpstreamTs
-			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
+			//TimeDiff := SystemTs - UpstreamTs
+			//logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			//logger.Info(kline_common.TimeDiffTips(config.KlineSource, UpstreamTs))
 			data := RedisData(SystemTs, UpstreamTs, resp)
-			logger.Info(data)
+			//logger.Info(data)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)
@@ -103,7 +103,7 @@ func SocketQxbroker(info kline_common.Info) {
 			//	logger.Info("elastic-success")
 			//}
 			// 计算一次存储数据消耗的时间
-			logger.Info(kline_common.ConsumeTime(SystemTs, time.Now().UnixMilli()))
+			//logger.Info(kline_common.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		}, "")
 	}
 	select {

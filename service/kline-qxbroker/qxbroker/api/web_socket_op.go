@@ -311,19 +311,17 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 		logger.Info(fmt.Sprintf("%v：当前资产赔率和历史赔率一样，无需修改", TradingAssets.AssetsCode))
 	} else {
 		// 赔率变动通知
-		mail_notice.Notice("msgRateChange", map[string]interface{}{
-			"service": config.KlineSource,
-			"tips":    tips,
-		})
+		//mail_notice.Notice("msgRateChange", map[string]interface{}{
+		//	"service": config.KlineSource,
+		//	"tips":    tips,
+		//})
 		DB := mysql.DB
-		DB.Begin()
 		err = DB.Model(models.TradingAssets{}).
 			Where("assets_code", ContractCode).
 			Where("is_valid", 1).
 			Where("is_show", 1).
 			Updates(map[string]interface{}{"update_date": time.Now(), "updater": "kline-system", "return_rate": returnRate}).Error
 		if err != nil {
-			DB.Rollback()
 			logger.Error(err)
 			return
 		}
@@ -337,11 +335,9 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 		TradingAssetsLog.KlineSource = config.KlineSource
 		err = DB.Model(TradingAssetsLog).Create(&TradingAssetsLog).Error
 		if err != nil {
-			DB.Rollback()
 			logger.Error(err)
 			return
 		}
-		DB.Commit()
 	}
 }
 
@@ -396,6 +392,7 @@ func (ws *WebSocketOp) writePing() {
 	if !ws.IsPing { // 只能发起一次 ping
 		ws.IsPing = true
 		ws.oncePing.Do(func() {
+			defer kline_common.KlineRecover("writePing", config.KlineSource, ws.Symbol)
 			// 使用time.Ticker
 			var ticker = time.NewTicker(25 * time.Second)
 			for t := range ticker.C {
@@ -403,8 +400,8 @@ func (ws *WebSocketOp) writePing() {
 					ws.Description = fmt.Sprintf("%v当前握手已经关闭Ping协程已关闭", ws.Symbol)
 					goto ERR
 				}
-				ws.mutex.Lock()
 				// ping
+				ws.mutex.Lock()
 				err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`2`))
 				ws.mutex.Unlock()
 				if err != nil {
@@ -426,6 +423,7 @@ func (ws *WebSocketOp) writeTick() {
 	if !ws.IsTick { // 只能发起一次 Tick
 		ws.IsTick = true
 		ws.onceTick.Do(func() {
+			defer kline_common.KlineRecover("writeTick", config.KlineSource, ws.Symbol)
 			// 使用time.Ticker
 			var ticker = time.NewTicker(1 * time.Second)
 			for t := range ticker.C {
@@ -434,7 +432,10 @@ func (ws *WebSocketOp) writeTick() {
 					goto ERR
 				}
 				// Tick
-				if err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["tick"]`)); err != nil {
+				ws.mutex.Lock()
+				err := ws.conn.WriteMessage(websocket.TextMessage, []byte(`42["tick"]`))
+				ws.mutex.Unlock()
+				if err != nil {
 					logger.Info(err.Error())
 					logger.Info(t)
 					ws.Description = fmt.Sprintf("%vTick协程已关闭 %v", ws.Symbol, err.Error())
@@ -452,11 +453,14 @@ func (ws *WebSocketOp) TickerReboot() {
 	if !ws.IsReboot { // 只能发起一次 Reboot
 		ws.IsReboot = true
 		ws.onceReboot.Do(func() {
-			ticker := time.NewTicker(100 * time.Second) // 每隔 100 秒检查一次
+			defer kline_common.KlineRecover("TickerReboot", config.KlineSource, ws.Symbol)
+			ticker := time.NewTicker(10 * time.Second) // 每隔 10 秒检查一次
 			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
 			for range ticker.C {
+				//status, _ := redis.Client.SelectDbGet(15, KeyStatus)
+				//logger.Info(KeyStatus + "当前数据健康状况：" + status)
 				status := source.CheckStatus(config.KlineSource, ws.ContractCode)
-				if status == "4" { // 延迟过高关闭重启
+				if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
 					logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
 					goto STOP
 				}
