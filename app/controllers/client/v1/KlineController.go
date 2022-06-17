@@ -43,10 +43,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	HeartBeatingMessage := make(chan string)
 	socketId := uuid.New().String()
 	logger.Info("客户端建立socket成功socketId=" + socketId)
+	// 开启协诚处理心跳机制
+	go HeartBeating(socketId, HeartBeatingMessage, ws)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		// 开启协诚处理心跳机制
-		go HeartBeating(socketId, HeartBeatingMessage, ws)
 		// 读取用户客户端ws中订阅的 topic
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
@@ -283,12 +283,15 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 		kline.TickerCheckTodaySleep(false)                         // 检测一次资产市场状态
 	}
 	marshal, err := json.Marshal(gin.H{
-		"HistKlineLogs": data,
-		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
-		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
-		"klineSource":   klineSource,
-		"totals":        Count,
-		"contractCode":  symbol,
+		"id": "02",
+		"data": gin.H{
+			"HistKlineLogs": data,
+			"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
+			"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
+			"klineSource":   klineSource,
+			"totals":        Count,
+			"contractCode":  symbol,
+		},
 	})
 	if err != nil {
 		logger.Error(err)
@@ -371,11 +374,20 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 			wss.WsClose(ws)
 			goto END
 		}
+		pushData := gin.H{
+			"id":   "01",
+			"data": WsIndex,
+		}
+		marshal, err := json.Marshal(pushData)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
 		// 1秒推送一次消息
 		//time.Sleep(time.Second * 1)
 		time.Sleep(time.Millisecond * 200) // 每隔200 毫秒推送一次
 		ws.Mux.Lock()
-		WriteMessageErr := ws.Conn.WriteMessage(messageType, []byte(push))
+		WriteMessageErr := ws.Conn.WriteMessage(messageType, marshal)
 		ws.Mux.Unlock()
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)
@@ -388,29 +400,34 @@ END:
 }
 
 func HeartBeating(socketId string, bytes chan string, ws *wss.WsConn) {
-	select {
-	case fk := <-bytes:
-		{
-			logger.Info(fmt.Sprintf("socketId=%v当前心跳时间：%v", socketId, fk))
-			ws.Mux.Lock()
-			WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`pong`))
-			ws.Mux.Unlock()
-			if WriteMessageErr != nil {
-				logger.Error(WriteMessageErr)
-				wss.WsClose(ws)
+	time.Sleep(time.Second * 5)
+	for {
+		select {
+		case fk := <-bytes:
+			{
+				logger.Info(fmt.Sprintf("socketId=%v当前心跳时间：%v", socketId, fk))
+				ws.Mux.Lock()
+				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
+				ws.Mux.Unlock()
+				if WriteMessageErr != nil {
+					logger.Error(WriteMessageErr)
+					wss.WsClose(ws)
+				}
 			}
+			break
+		case <-time.After(20 * time.Second):
+			goto STOP
 		}
-		break
-	case <-time.After(20 * time.Second):
-		ws.Mux.Lock()
-		WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte("no heartbeat, you are logged out"))
-		ws.Mux.Unlock()
-		if WriteMessageErr != nil {
-			logger.Error(WriteMessageErr)
-		}
-		wss.WsClose(ws)
-		logger.Info(fmt.Sprintf("socketId=%v没有进行心跳，您已退出", socketId))
 	}
+STOP:
+	ws.Mux.Lock()
+	WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte("no heartbeat, you are logged out"))
+	ws.Mux.Unlock()
+	if WriteMessageErr != nil {
+		logger.Error(WriteMessageErr)
+	}
+	wss.WsClose(ws)
+	logger.Info(fmt.Sprintf("socketId=%v没有进行心跳，您已退出", socketId))
 }
 
 // 推送Rate socket消息
