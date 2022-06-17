@@ -47,10 +47,6 @@ func CheckStatus(Source, ContractCode string) string {
 			break
 		case diff >= 60*3:
 			status = "4" // 警告，延迟过高
-			mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
-				"name": Source,
-				"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
-			})
 			break
 		}
 		if len(push) > 0 { // 有数据记录 缓存
@@ -59,6 +55,13 @@ func CheckStatus(Source, ContractCode string) string {
 		if kline.CheckSourceSleep(Source, ContractCode) { // 休市
 			status = "5" // 当前数据源处于休市状态
 			_, _ = redis.Client.Add(KeyStatus, status, 0)
+		}
+		// 最终结果
+		if status == "4" {
+			mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
+				"name": Source,
+				"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
+			})
 		}
 	}
 	return status
