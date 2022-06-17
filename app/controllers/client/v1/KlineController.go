@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/olivere/elastic"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
-	"goapi/pkg/config"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
@@ -358,10 +358,6 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 			logger.Error(WsIndexErr)
 			break
 		}
-		// 记录日志
-		if config.GetString("app.env") != "company_pro" {
-			logger.Info(WsIndex)
-		}
 		// 差
 		SystemTs := time.Now().UnixMilli()
 		diff := (SystemTs - WsIndex.Ts) / 1000
@@ -394,9 +390,24 @@ END:
 func HeartBeating(socketId string, bytes chan string, ws *wss.WsConn) {
 	select {
 	case fk := <-bytes:
-		logger.Info(fmt.Sprintf("socketId=%v当前心跳时间：%v", socketId, fk))
+		{
+			logger.Info(fmt.Sprintf("socketId=%v当前心跳时间：%v", socketId, fk))
+			ws.Mux.Lock()
+			WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`pong`))
+			ws.Mux.Unlock()
+			if WriteMessageErr != nil {
+				logger.Error(WriteMessageErr)
+				wss.WsClose(ws)
+			}
+		}
 		break
 	case <-time.After(20 * time.Second):
+		ws.Mux.Lock()
+		WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte("no heartbeat, you are logged out"))
+		ws.Mux.Unlock()
+		if WriteMessageErr != nil {
+			logger.Error(WriteMessageErr)
+		}
 		wss.WsClose(ws)
 		logger.Info(fmt.Sprintf("socketId=%v没有进行心跳，您已退出", socketId))
 	}
