@@ -56,9 +56,11 @@ func GetProxy(service string) *url.URL {
 		break
 	default:
 		logger.Error(errors.New("未知服务名称，暂时没有设置对应的代理"))
-		return nil
+		break
 	}
-	_, _ = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), proxyKey, proxy.String(), -1)
+	if proxy != nil {
+		_, _ = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), proxyKey, proxy.String(), -1)
+	}
 	return proxy
 }
 
