@@ -424,7 +424,7 @@ func HeartBeating(socketId string, bytes chan string, ws *wss.WsConn) {
 	}
 STOP:
 	ws.Mux.Lock()
-	WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"104","data":"no heartbeat, you are logged out"}`))
+	WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10408","data":"no heartbeat, you are logged out"}`))
 	ws.Mux.Unlock()
 	if WriteMessageErr != nil {
 		logger.Error(WriteMessageErr)
