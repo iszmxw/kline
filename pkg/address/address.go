@@ -33,9 +33,9 @@ type Address struct {
 
 func dataBase() map[string]interface{} {
 	data := cmap.New().Items()
-	data["countrys"] = "China|Israel"                                  // 限制国家
-	data["timezones"] = "Europe"                                       // 限制时区
-	data["whitelist"] = "47.242.148.57|113.87.233.186|183.237.196.214" // ip白名单
+	data["countrys"] = "China|Israel"            // 限制国家
+	data["timezones"] = "Europe"                 // 限制时区
+	data["whitelist"] = "113.87.*.*|183.237.*.*" // ip白名单
 	return data
 }
 
