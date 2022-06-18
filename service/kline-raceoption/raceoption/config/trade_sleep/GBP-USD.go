@@ -57,25 +57,20 @@ const GBP_USD = `
     "TradingTime": [
       {
         "start": "00:00",
-        "end": "04:00"
-      }
-	],
-    "SleepTime": [
-      {
-        "start": "04:00",
         "end": "23:59"
       }
-	]
+    ],
+    "SleepTime": []
   },
   {
     "name": "Sunday",
-    "TradingTime": [],
-    "SleepTime": [
+    "TradingTime": [
       {
         "start": "00:00",
         "end": "23:59"
       }
-    ]
+    ],
+    "SleepTime": []
   }
 ]
 `
