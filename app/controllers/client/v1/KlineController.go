@@ -191,6 +191,7 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 	// 订阅 历史消息
 	if len(SubStruct.Sub) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10401","data":"订阅历史消息条件参数缺失"}`))
 		return
 	}
 	var (
@@ -207,26 +208,26 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 	endDate := SubHistory.EndDate
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte("beginDate 起始交易日期必填"))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10402","data":"beginDate 起始交易日期必填"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Error(errors.New("越界查询"))
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte("越界查询 beginDate error"))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10403","data":"越界查询 beginDate error"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte("endDate 截止交易日期必填"))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10404","data":"endDate 截止交易日期必填"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if len(symbol) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte("symbol 不能为空"))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10405","data":"symbol 不能为空"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -241,7 +242,7 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 	if len(klineSource) == 0 {
 		logger.Error(errors.New("没有读取到 klineSource"))
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte("没有读取到 klineSource"))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10406","data":"没有读取到 klineSource"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -262,7 +263,7 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 	if err != nil {
 		logger.Error(err)
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte("no data"))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -309,12 +310,14 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub) {
 	// 订阅的 market.ETH-USD.index.1min，没有值
 	if len(SubStruct.Sub) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
 		return
 	}
 	// 订阅的 ETH-USD，没有值
 	AssetsCode := strings.Split(SubStruct.Sub, ".")[1]
 	if len(AssetsCode) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
 		logger.Error(errors.New("订阅的 ETH-USD，没有值"))
 		return
 	}
@@ -415,13 +418,13 @@ func HeartBeating(socketId string, bytes chan string, ws *wss.WsConn) {
 				}
 			}
 			break
-		case <-time.After(20 * time.Second):
+		case <-time.After(30 * time.Second):
 			goto STOP
 		}
 	}
 STOP:
 	ws.Mux.Lock()
-	WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte("no heartbeat, you are logged out"))
+	WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"104","data":"no heartbeat, you are logged out"}`))
 	ws.Mux.Unlock()
 	if WriteMessageErr != nil {
 		logger.Error(WriteMessageErr)

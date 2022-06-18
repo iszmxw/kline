@@ -39,6 +39,30 @@ func dataBase() map[string]interface{} {
 	return data
 }
 
+/**
+ * . 提取请求IP的波段
+ * @param ip
+ * @return
+ */
+
+func IpDomainByIp(ip string, num int) string {
+	str := ""
+	if 0 == len(ip) {
+		return str
+	}
+	nums := strings.Split(ip, ".")
+	for index, string_ := range nums {
+		if index < num {
+			if index == num-1 {
+				str = str + string_
+			} else {
+				str = str + string_ + "."
+			}
+		}
+	}
+	return str
+}
+
 // 缓存 ip
 
 func IpSet(ip string, isLimit bool) {
@@ -58,7 +82,7 @@ func LimitAddress(ip string) bool {
 		return false
 	}
 	data := dataBase()
-	if strings.Contains(data["whitelist"].(string), ip) {
+	if strings.Contains(data["whitelist"].(string), IpDomainByIp(ip, 2)) {
 		return false
 	}
 	ok, _ := redis.Client.SelectDbGet(config.GetInt("redis.db"), fmt.Sprintf("LimitAddress:ip:%v", ip))

@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"goapi/pkg/address"
 )
 
 func main() {
-	if strings.Contains("47.242.148.57|183.237.196.214", "47.242.148.57") {
-		fmt.Println(123456)
-	}
-	fmt.Println(666)
+	fmt.Println(address.IpDomainByIp("183.237.196.214:8080", 2))
+	//if strings.Contains("183.237.196.214", "47.242.148.57") {
+	//	fmt.Println(123456)
+	//}
 }
