@@ -33,7 +33,8 @@ func TickerCheckSwitchSource() {
 		for _, item := range TradingAssetsSource {
 			ContractCode := item.AssetsCode
 			CurrentKlineSource := response.KlineSource(ContractCode)
-			if 4 != GetSourceStatus(CurrentKlineSource, ContractCode) { // 健康数据直接跳过，不进行切换
+			CurrentKlineSourceStatus := GetSourceStatus(CurrentKlineSource, ContractCode)
+			if 4 != CurrentKlineSourceStatus { // 健康数据直接跳过，不进行切换
 				continue
 			}
 			// 系统资产走的数据源不健康
@@ -61,7 +62,7 @@ func CheckSwitchSource(CurrentKlineSource, ContractCode string) {
 			continue
 		}
 		status := GetSourceStatus(AllowSource, ContractCode)
-		if 4 == status { // 当前允许走的源也坏掉了，跳过
+		if 4 == status || 5 == status { // 当前允许走的源也坏掉了，跳过
 			FailTotal++
 			if FailTotal == AllowTotal { // 没有可用的数据源了
 				// 发送邮件通知
