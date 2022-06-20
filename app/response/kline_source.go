@@ -79,6 +79,18 @@ func KlineSource(AssetsCode string) string {
 	case "USD-CAD":
 		Source = "raceoption"
 		break
+	case "Amazon":
+		Source = "olymptrade"
+		break
+	case "AUD-CHF":
+		Source = "raceoption"
+		break
+	case "AUD-JPY":
+		Source = "raceoption"
+		break
+	case "GBP-AUD":
+		Source = "raceoption"
+		break
 	default:
 		Source = "unknown"
 		break
@@ -109,6 +121,10 @@ func AllowKlineSource() map[string]interface{} {
 	data["Adidas"] = []string{"olymptrade"}
 	data["NGAS"] = []string{"olymptrade"}
 	data["BRENT"] = []string{"olymptrade"}
+	data["Amazon"] = []string{"olymptrade"}
+	data["AUD-CHF"] = []string{"raceoption", "olymptrade", "qxbroker"}
+	data["AUD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["GBP-AUD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
 	return data
 }
 

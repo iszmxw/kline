@@ -39,6 +39,15 @@ func GetTimeIsSleep(ContractCode string) bool {
 	case "USD-CAD":
 		config = USD_CAD
 		break
+	case "AUD-CHF":
+		config = AUD_CHF
+		break
+	case "AUD-JPY":
+		config = AUD_JPY
+		break
+	case "GBP-AUD":
+		config = GBP_AUD
+		break
 	}
 	if len(config) > 0 {
 		result = true

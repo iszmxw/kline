@@ -71,6 +71,10 @@ func RaceOption() []Info {
 		Info{Symbol: "CAD/JPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
 		Info{Symbol: "EUR/AUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
 		Info{Symbol: "USD/CAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
+		//// 2022年6月20日添加
+		Info{Symbol: "AUD/CHF", Desc: "澳大利亚元/瑞士法郎", ContractCode: "AUD-CHF"},
+		Info{Symbol: "AUD/JPY", Desc: "澳大利亚元/日元", ContractCode: "AUD-JPY"},
+		Info{Symbol: "GBP/AUD", Desc: "英镑/澳大利亚元", ContractCode: "GBP-AUD"},
 	)
 	return CodeData
 }
@@ -93,6 +97,10 @@ func QxBroker() []Info {
 		Info{Symbol: "CADJPY_otc", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
 		Info{Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
 		Info{Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
+		//// 2022年6月20日添加
+		Info{Symbol: "AUDCHF", Desc: "澳大利亚元/瑞士法郎", ContractCode: "AUD-CHF"},
+		Info{Symbol: "AUDJPY", Desc: "澳大利亚元/日元", ContractCode: "AUD-JPY"},
+		Info{Symbol: "GBPAUD", Desc: "英镑/澳大利亚元", ContractCode: "GBP-AUD"},
 	)
 	return CodeData
 }
@@ -117,6 +125,11 @@ func OlyMpTrade() []Info {
 		Info{MarketId: 2010, Symbol: "ADS", Desc: "阿迪达斯", ContractCode: "Adidas"},
 		Info{MarketId: 12, Symbol: "NG", Desc: "NGAS", ContractCode: "NGAS"},
 		Info{MarketId: 12, Symbol: "_BRN", Desc: "BRENT", ContractCode: "BRENT"},
+		//// 2022年6月20日添加
+		Info{MarketId: 12, Symbol: "AMZN", Desc: "亚马逊", ContractCode: "Amazon"},
+		Info{MarketId: 12, Symbol: "AUDCHF", Desc: "澳大利亚元/瑞士法郎", ContractCode: "AUD-CHF"},
+		Info{MarketId: 12, Symbol: "AUDJPY", Desc: "澳大利亚元/日元", ContractCode: "AUD-JPY"},
+		Info{MarketId: 12, Symbol: "GBPAUD", Desc: "英镑/澳大利亚元", ContractCode: "GBP-AUD"},
 	)
 	return CodeData
 }
@@ -138,6 +151,9 @@ func Hsb() []Info {
 		// 2022年6月2号添加
 		Info{ID: 153084, MarketId: 8, Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
 		Info{ID: 153088, MarketId: 8, Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
+		// 2022年6月20号添加
+		Info{ID: 153087, MarketId: 8, Symbol: "AUDJPY", Desc: "澳大利亚元/日元", ContractCode: "AUD-JPY"},
+		Info{ID: 153092, MarketId: 8, Symbol: "GBPAUD", Desc: "英镑/澳大利亚元", ContractCode: "GBP-AUD"},
 	)
 	return CodeData
 }
