@@ -8,7 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
 	"github.com/olivere/elastic"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
@@ -44,7 +46,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	socketId := uuid.New().String()
 	logger.Info("客户端建立socket成功socketId=" + socketId)
 	// 开启协诚处理心跳机制
-	go HeartBeating(socketId, HeartBeatingMessage, ws)
+	go HeartBeating(socketId, 5, 30, HeartBeatingMessage, ws)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -128,7 +130,11 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		logger.Error(err)
 		return
 	}
-	logger.Info("客户端建立socket成功")
+	HeartBeatingMessage := make(chan string)
+	socketId := uuid.New().String()
+	logger.Info("客户端建立socket成功socketId=" + socketId)
+	// 开启协诚处理心跳机制
+	go HeartBeating(socketId, 6, 36, HeartBeatingMessage, ws)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -147,21 +153,6 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 			goto END
 		}
 		subInfo := SubStruct.Sub
-		if len(subInfo) <= 0 {
-			logger.Info("空订阅，跳过")
-			continue
-		}
-		// 2 小时内一个长连接禁止重复订阅相同的 topic
-		checkMsg := fmt.Sprintf("rate:socket_request:%v:%v", RequestId, SubStruct.Id)
-		if redis.Client.CheckExist(checkMsg) {
-			logger.Info("该订阅已存在，请勿重新订阅")
-			continue
-		}
-		_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
-		if redisAddErr != nil {
-			logger.Error(redisAddErr)
-			break
-		}
 		// 24 小时内一个长连接禁止重复订阅相同的 topic
 		// 链接已关闭
 		if ws.IsClose {
@@ -169,12 +160,31 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		}
 		switch true {
 		case strings.EqualFold(SubStruct.Id, "01"):
-			// 开启协诚处理推送费率
-			go PushRate(mt, ws, subInfo)
+			{
+				// 2 小时内一个长连接禁止重复订阅相同的 topic
+				checkMsg := fmt.Sprintf("rate:socket_request:%v:%v", RequestId, SubStruct.Id)
+				if redis.Client.CheckExist(checkMsg) {
+					logger.Info("该订阅已存在，请勿重新订阅")
+					continue
+				}
+				_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
+				if redisAddErr != nil {
+					logger.Error(redisAddErr)
+					break
+				}
+				// 开启协诚处理推送费率
+				go PushRate(mt, ws, subInfo)
+			}
 			break
 		case strings.EqualFold(SubStruct.Id, "02"):
 			// 开启协诚处理推送余额
 			go PushUserInfo(mt, ws, subInfo)
+			break
+		case strings.EqualFold(SubStruct.Id, "03"):
+			{
+				// 处理心跳数据
+				HeartBeatingMessage <- time.Now().Format("2006-01-02 15:04:05")
+			}
 			break
 		default:
 			break
@@ -402,8 +412,8 @@ END:
 	logger.Error(errors.New("已经跳出协诚的循环推送"))
 }
 
-func HeartBeating(socketId string, bytes chan string, ws *wss.WsConn) {
-	time.Sleep(time.Second * 5)
+func HeartBeating(socketId string, SecondAfterStart, SecondAfterEnd time.Duration, bytes chan string, ws *wss.WsConn) {
+	time.Sleep(SecondAfterStart * time.Second) // 几秒后开始
 	for {
 		select {
 		case fk := <-bytes:
@@ -418,7 +428,7 @@ func HeartBeating(socketId string, bytes chan string, ws *wss.WsConn) {
 				}
 			}
 			break
-		case <-time.After(30 * time.Second):
+		case <-time.After(SecondAfterEnd * time.Second):
 			goto STOP
 		}
 	}
@@ -450,6 +460,7 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			//Where("is_show", 1).
 			Find(&PushRateData).Error
 		if err != nil {
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
 			logger.Error(err)
 			return
 		}
@@ -460,13 +471,17 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 				}
 			}
 		}
-		WsPushRateJson, WsPushRateErr := json.Marshal(PushRateData)
-		if WsPushRateErr != nil {
-			logger.Error(WsPushRateErr)
-			break
+		marshal, err := json.Marshal(gin.H{
+			"id":   "01",
+			"data": PushRateData,
+		})
+		if err != nil {
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			logger.Error(err)
+			return
 		}
 		ws.Mux.Lock()
-		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsPushRateJson)
+		WriteMessageErr := ws.Conn.WriteMessage(messageType, marshal)
 		ws.Mux.Unlock()
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)
@@ -496,18 +511,43 @@ func PushUserInfo(messageType int, ws *wss.WsConn, subInfo string) {
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		var AppUser response.AppUser
-		DB := mysql.DB
+		var HistoryTrading response.HistoryTrading
+		DB := mysql.DB.Debug()
 		err = DB.Model(models.AppUser{}).
 			Where("item_code", "IQO").
 			Where("app_user_id", SubUserInfo.AppUserId).
 			//Where("is_show", 1).
 			Find(&AppUser).Error
 		if err != nil {
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
 			logger.Error(err)
 			return
 		}
-		marshal, err := json.Marshal(AppUser)
+		result := cmap.New().Items()
+		err = DB.Model(models.TradingOrder{}).
+			Where("app_user_id", SubUserInfo.AppUserId).
+			Select("count(1) AS hisTradingCount,sum(amounts) AS hisTradingAmounts").
+			Find(&result).Error
 		if err != nil {
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		// map转struct
+		err = mapstructure.Decode(result, &HistoryTrading)
+		if err != nil {
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		AppUser.HisTradingCount = HistoryTrading.HisTradingCount     // 历史交易次数
+		AppUser.HisTradingAmounts = HistoryTrading.HisTradingAmounts // 历史交易金额
+		marshal, err := json.Marshal(gin.H{
+			"id":   "02",
+			"data": AppUser,
+		})
+		if err != nil {
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
 			logger.Error(err)
 			return
 		}
@@ -519,8 +559,8 @@ func PushUserInfo(messageType int, ws *wss.WsConn, subInfo string) {
 			// 跳出for关闭后面的推送
 			goto END
 		}
-		// 5秒推送一次消息
-		time.Sleep(time.Second * 5)
+		// 3秒推送一次消息
+		time.Sleep(time.Second * 3)
 		// 返回数据给用户
 	}
 END:
