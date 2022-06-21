@@ -418,6 +418,11 @@ func HeartBeating(socketId string, SecondAfterStart, SecondAfterEnd time.Duratio
 		select {
 		case fk := <-bytes:
 			{
+				select {
+				case <-time.After(SecondAfterEnd * time.Second):
+					logger.Info("两者都满足")
+				default:
+				}
 				logger.Info(fmt.Sprintf("socketId=%v当前心跳时间：%v", socketId, fk))
 				ws.Mux.Lock()
 				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
