@@ -508,11 +508,12 @@ func PushUserInfo(messageType int, ws *wss.WsConn, subInfo string) {
 		wss.WsClose(ws)
 		return
 	}
+	logger.Info(SubUserInfo)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		var AppUser response.AppUser
 		var HistoryTrading response.HistoryTrading
-		DB := mysql.DB.Debug()
+		DB := mysql.DB
 		err = DB.Model(models.AppUser{}).
 			Where("item_code", "IQO").
 			Where("app_user_id", SubUserInfo.AppUserId).
