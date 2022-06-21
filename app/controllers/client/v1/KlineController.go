@@ -6,14 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	"github.com/mitchellh/mapstructure"
 	"github.com/olivere/elastic"
-	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
+	"goapi/pkg/config"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
@@ -37,22 +34,20 @@ type KlineController struct {
 
 // WsIndexHandler socket 负责转发redis缓存的socket数据
 func (h *KlineController) WsIndexHandler(c *gin.Context) {
+	RequestId := logger.RequestId
 	ws, err := wss.GetSocket(c)
 	if err != nil {
 		logger.Error(err)
 		return
 	}
-	HeartBeatingMessage := make(chan string)
-	socketId := uuid.New().String()
-	logger.Info("客户端建立socket成功socketId=" + socketId)
-	// 开启协诚处理心跳机制
-	go HeartBeating(socketId, 5, 30, HeartBeatingMessage, ws)
+	logger.Info("客户端建立socket成功")
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
 			logger.Error(ReadMessageErr)
+			wss.WsClose(ws)
 			// 跳出for关闭后面的读取
 			goto END
 		}
@@ -62,35 +57,42 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
+			wss.WsClose(ws)
 			goto END
 		}
-		switch true {
-		case ws.IsClose:
-			{
-				goto END
-			}
-		case strings.EqualFold(SubStruct.Id, "02"):
-			{
-				// 开启协诚处理推送历史记录
-				go PushHistory(mt, ws, SubStruct, c)
-			}
-			break
-		case strings.EqualFold(SubStruct.Id, "03"):
-			{
-				// 处理心跳数据
-				HeartBeatingMessage <- time.Now().Format("2006-01-02 15:04:05")
-			}
-			break
-		default:
-			{
-				// 开启协诚处理推送消息
-				go PushMessage(socketId, mt, ws, SubStruct)
-			}
+		// 订阅的 market.ETH-USD.index.1min，没有值
+		if len(SubStruct.Sub) == 0 {
+			logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
+			wss.WsClose(ws)
+			goto END
+		}
+		// 订阅的 ETH-USD，没有值
+		AssetsCode := strings.Split(SubStruct.Sub, ".")[1]
+		if len(AssetsCode) == 0 {
+			logger.Error(errors.New("订阅的 ETH-USD，没有值"))
+			wss.WsClose(ws)
+			goto END
+		}
+		// 2 小时内一个长连接禁止重复订阅相同的 topic
+		checkMsg := "socket_request:" + RequestId + ":" + AssetsCode
+		if redis.Client.CheckExist(checkMsg) {
+			logger.Info("该订阅已存在，请勿重新订阅")
+			continue
+		}
+		_, redisAddErr := redis.Client.Add(checkMsg, AssetsCode, 30*60) // 半个小时内不允许重复请求
+		if redisAddErr != nil {
+			logger.Error(redisAddErr)
 			break
 		}
+		// 24 小时内一个长连接禁止重复订阅相同的 topic
+		// 链接已关闭
+		if ws.IsClose {
+			goto END
+		}
+		// 开启协诚处理推送消息
+		go PushMessage(mt, ws, AssetsCode)
 	}
 END:
-	wss.WsClose(ws)
 	logger.Info("socket被关闭，本次链接结束")
 }
 
@@ -130,17 +132,14 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		logger.Error(err)
 		return
 	}
-	HeartBeatingMessage := make(chan string)
-	socketId := uuid.New().String()
-	logger.Info("客户端建立socket成功socketId=" + socketId)
-	// 开启协诚处理心跳机制
-	go HeartBeating(socketId, 6, 36, HeartBeatingMessage, ws)
+	logger.Info("客户端建立socket成功")
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
 		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
 			logger.Error(ReadMessageErr)
+			wss.WsClose(ws)
 			// 跳出for关闭后面的读取
 			goto END
 		}
@@ -150,201 +149,42 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
+			wss.WsClose(ws)
 			goto END
 		}
-		subInfo := SubStruct.Sub
+		msg := SubStruct.Sub
+		if len(msg) <= 0 {
+			logger.Info("空订阅，跳过")
+			continue
+		}
+		// 2 小时内一个长连接禁止重复订阅相同的 topic
+		checkMsg := "rate:socket_request:" + RequestId
+		if redis.Client.CheckExist(checkMsg) {
+			logger.Info("该订阅已存在，请勿重新订阅")
+			continue
+		}
+		_, redisAddErr := redis.Client.Add(checkMsg, msg, 30*60) // 半个小时内不允许重复请求
+		if redisAddErr != nil {
+			logger.Error(redisAddErr)
+			break
+		}
 		// 24 小时内一个长连接禁止重复订阅相同的 topic
 		// 链接已关闭
 		if ws.IsClose {
 			goto END
 		}
-		switch true {
-		case strings.EqualFold(SubStruct.Id, "01"):
-			{
-				// 2 小时内一个长连接禁止重复订阅相同的 topic
-				checkMsg := fmt.Sprintf("rate:socket_request:%v:%v", RequestId, SubStruct.Id)
-				if redis.Client.CheckExist(checkMsg) {
-					logger.Info("该订阅已存在，请勿重新订阅")
-					continue
-				}
-				_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
-				if redisAddErr != nil {
-					logger.Error(redisAddErr)
-					break
-				}
-				// 开启协诚处理推送费率
-				go PushRate(mt, ws, subInfo)
-			}
-			break
-		case strings.EqualFold(SubStruct.Id, "02"):
-			// 开启协诚处理推送余额
-			go PushUserInfo(mt, ws, subInfo)
-			break
-		case strings.EqualFold(SubStruct.Id, "03"):
-			{
-				// 处理心跳数据
-				HeartBeatingMessage <- time.Now().Format("2006-01-02 15:04:05")
-			}
-			break
-		default:
-			break
-		}
+		// 开启协诚处理推送消息
+		go PushRate(mt, ws, msg)
 	}
 END:
-	wss.WsClose(ws)
 	logger.Info("socket被关闭，本次链接结束")
 }
 
 // 推送socket消息
 
-func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
-	// 订阅 历史消息
-	if len(SubStruct.Sub) == 0 {
-		logger.Error(errors.New("订阅历史消息条件参数缺失"))
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10401","data":"订阅历史消息条件参数缺失"}`))
-		return
-	}
-	var (
-		SubHistory requests.SubHistory // {"symbol":"BTC-USD","beginDate":"","endDate":""}
-		Count      = int64(3000)       // 查询总条数
-	)
-	err := json.Unmarshal([]byte(SubStruct.Sub), &SubHistory)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	symbol := SubHistory.Symbol
-	beginDate := SubHistory.BeginDate
-	endDate := SubHistory.EndDate
-	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
-		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10402","data":"beginDate 起始交易日期必填"}`))
-		ws.Mux.Unlock()
-		return
-	}
-	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
-		logger.Error(errors.New("越界查询"))
-		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10403","data":"越界查询 beginDate error"}`))
-		ws.Mux.Unlock()
-		return
-	}
-	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
-		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10404","data":"endDate 截止交易日期必填"}`))
-		ws.Mux.Unlock()
-		return
-	}
-	if len(symbol) <= 0 {
-		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10405","data":"symbol 不能为空"}`))
-		ws.Mux.Unlock()
-		return
-	}
-	tips := fmt.Sprintf(
-		"当前系统时间为【%v】 查询范围从【%v】，到【%v】",
-		time.Now().Format("2006-01-02 15:04:05"),
-		time.Unix(0, helpers.StringToInt64(beginDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
-		time.Unix(0, helpers.StringToInt64(endDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
-	)
-	klineSource := response.KlineSource(symbol)
-	// 没有读取到 klineSource
-	if len(klineSource) == 0 {
-		logger.Error(errors.New("没有读取到 klineSource"))
-		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10406","data":"没有读取到 klineSource"}`))
-		ws.Mux.Unlock()
-		return
-	}
-	var data []response.KlineLog
-	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), "1min")
-	DB := mysql.DB.Debug()
-	// 一次取出历史记录最新三百条
-	KlineDB := DB.Model(models.KlineLog{}).
-		Where("ch", ch).
-		Where("ts >= ?", beginDate).
-		Where("ts <= ?", endDate).
-		Order("ts desc")
-	KlineDB.Count(&Count)
-	if Count > 3000 {
-		Count = 3000
-	}
-	err = KlineDB.Limit(int(Count)).Find(&data).Error
-	if err != nil {
-		logger.Error(err)
-		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
-		ws.Mux.Unlock()
-		return
-	}
-	// 侦测到数据小于 150 条的时候，发送邮件预警
-	if len(data) <= 150 {
-		// 警告，延迟过高
-		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", klineSource, symbol)
-		_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
-		time.Sleep(time.Second * 5) // 休息5秒
-		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
-			"c":    c,
-			"tips": tips,
-		})
-	}
-	// 3 分钟内检测一次资产市场状态
-	if !redis.Client.CheckExist("TickerCheckTodaySleep") {
-		_, _ = redis.Client.Add("TickerCheckTodaySleep", ch, 3*60) // 3 分钟内不允许重复检测
-		kline.TickerCheckTodaySleep(false)                         // 检测一次资产市场状态
-	}
-	marshal, err := json.Marshal(gin.H{
-		"id": "02",
-		"data": gin.H{
-			"HistKlineLogs": data,
-			"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
-			"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
-			"klineSource":   klineSource,
-			"totals":        Count,
-			"contractCode":  symbol,
-		},
-	})
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	ws.Mux.Lock()
-	err = ws.Conn.WriteMessage(messageType, marshal)
-	ws.Mux.Unlock()
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-}
-
-func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub) {
-	// 订阅的 market.ETH-USD.index.1min，没有值
-	if len(SubStruct.Sub) == 0 {
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
-		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
-		return
-	}
-	// 订阅的 ETH-USD，没有值
-	AssetsCode := strings.Split(SubStruct.Sub, ".")[1]
-	if len(AssetsCode) == 0 {
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
-		logger.Error(errors.New("订阅的 ETH-USD，没有值"))
-		return
-	}
-	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
-	SubKey := fmt.Sprintf("socket_request:%v", socketId)
-	IsSubKey := fmt.Sprintf("socket_request:%v:%v", socketId, AssetsCode)
-	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4)   // 当前请求正在订阅的资产，4小时失效
-	_, _ = redis.Client.Add(IsSubKey, AssetsCode, 60*60*4) // 4小时失效
+func PushMessage(messageType int, ws *wss.WsConn, AssetsCode string) {
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
-		if len(SubAssetsCode) > 0 {
-			if SubAssetsCode != AssetsCode { // 关闭释放掉历史的订阅
-				logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", AssetsCode, SubAssetsCode, socketId)))
-				goto END
-			}
-		}
 		klineSource := response.KlineSource(AssetsCode)
 		// 没有读取到 klineSource
 		if len(klineSource) == 0 {
@@ -374,6 +214,10 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 			logger.Error(WsIndexErr)
 			break
 		}
+		// 记录日志
+		if config.GetString("app.env") != "company_pro" {
+			logger.Info(WsIndex)
+		}
 		// 差
 		SystemTs := time.Now().UnixMilli()
 		diff := (SystemTs - WsIndex.Ts) / 1000
@@ -381,71 +225,23 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 			// 警告，延迟过高
 			KeyStatus := fmt.Sprintf("status:%v", key)
 			_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
-			//time.Sleep(time.Second * 5) // 休息5秒
-		}
-		if ws.IsClose {
-			wss.WsClose(ws)
-			goto END
-		}
-		pushData := gin.H{
-			"id":   "01",
-			"data": WsIndex,
-		}
-		marshal, err := json.Marshal(pushData)
-		if err != nil {
-			logger.Error(err)
-			continue
+			time.Sleep(time.Second * 5) // 休息5秒
 		}
 		// 1秒推送一次消息
 		//time.Sleep(time.Second * 1)
 		time.Sleep(time.Millisecond * 200) // 每隔200 毫秒推送一次
 		ws.Mux.Lock()
-		WriteMessageErr := ws.Conn.WriteMessage(messageType, marshal)
+		WriteMessageErr := ws.Conn.WriteMessage(messageType, []byte(push))
 		ws.Mux.Unlock()
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)
 			// 跳出for关闭后面的推送
 			goto END
 		}
+		// 返回数据给用户
 	}
 END:
-	logger.Error(errors.New("已经跳出协诚的循环推送"))
-}
-
-func HeartBeating(socketId string, SecondAfterStart, SecondAfterEnd time.Duration, bytes chan string, ws *wss.WsConn) {
-	time.Sleep(SecondAfterStart * time.Second) // 几秒后开始
-	for {
-		select {
-		case fk := <-bytes:
-			{
-				select {
-				case <-time.After(SecondAfterEnd * time.Second):
-					logger.Info("两者都满足")
-				default:
-				}
-				logger.Info(fmt.Sprintf("socketId=%v当前心跳时间：%v", socketId, fk))
-				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
-				ws.Mux.Unlock()
-				if WriteMessageErr != nil {
-					logger.Error(WriteMessageErr)
-					wss.WsClose(ws)
-				}
-			}
-			break
-		case <-time.After(SecondAfterEnd * time.Second):
-			goto STOP
-		}
-	}
-STOP:
-	ws.Mux.Lock()
-	WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10408","data":"no heartbeat, you are logged out"}`))
-	ws.Mux.Unlock()
-	if WriteMessageErr != nil {
-		logger.Error(WriteMessageErr)
-	}
-	wss.WsClose(ws)
-	logger.Info(fmt.Sprintf("socketId=%v没有进行心跳，您已退出", socketId))
+	logger.Info("已经跳出协诚的循环推送")
 }
 
 // 推送Rate socket消息
@@ -455,7 +251,7 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 	for !ws.IsClose {
 		// 空消息跳过
 		if len(assetsCode) <= 0 {
-			goto END
+			continue
 		}
 		var PushRateData []response.PushRateData
 		DB := mysql.DB
@@ -465,7 +261,6 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			//Where("is_show", 1).
 			Find(&PushRateData).Error
 		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
 			logger.Error(err)
 			return
 		}
@@ -476,17 +271,13 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 				}
 			}
 		}
-		marshal, err := json.Marshal(gin.H{
-			"id":   "01",
-			"data": PushRateData,
-		})
-		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
-			logger.Error(err)
-			return
+		WsPushRateJson, WsPushRateErr := json.Marshal(PushRateData)
+		if WsPushRateErr != nil {
+			logger.Error(WsPushRateErr)
+			break
 		}
 		ws.Mux.Lock()
-		WriteMessageErr := ws.Conn.WriteMessage(messageType, marshal)
+		WriteMessageErr := ws.Conn.WriteMessage(messageType, WsPushRateJson)
 		ws.Mux.Unlock()
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)
@@ -495,78 +286,6 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 		}
 		// 5秒推送一次消息
 		time.Sleep(time.Second * 5)
-		// 返回数据给用户
-	}
-END:
-	logger.Info("已经跳出协诚的循环推送")
-}
-
-func PushUserInfo(messageType int, ws *wss.WsConn, subInfo string) {
-	var SubUserInfo requests.SubUserInfo // {"appUserId":"123456"}
-	err := json.Unmarshal([]byte(subInfo), &SubUserInfo)
-	if err != nil {
-		logger.Error(err)
-		wss.WsClose(ws)
-		return
-	}
-	if len(SubUserInfo.AppUserId) == 0 {
-		wss.WsClose(ws)
-		return
-	}
-	logger.Info(SubUserInfo)
-	// 为了释放for死循环的资源
-	for !ws.IsClose {
-		var AppUser response.AppUser
-		var HistoryTrading response.HistoryTrading
-		DB := mysql.DB
-		err = DB.Model(models.AppUser{}).
-			Where("item_code", "IQO").
-			Where("app_user_id", SubUserInfo.AppUserId).
-			//Where("is_show", 1).
-			Find(&AppUser).Error
-		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
-			logger.Error(err)
-			return
-		}
-		result := cmap.New().Items()
-		err = DB.Model(models.TradingOrder{}).
-			Where("app_user_id", SubUserInfo.AppUserId).
-			Select("count(1) AS hisTradingCount,sum(amounts) AS hisTradingAmounts").
-			Find(&result).Error
-		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
-			logger.Error(err)
-			return
-		}
-		// map转struct
-		err = mapstructure.Decode(result, &HistoryTrading)
-		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
-			logger.Error(err)
-			return
-		}
-		AppUser.HisTradingCount = HistoryTrading.HisTradingCount     // 历史交易次数
-		AppUser.HisTradingAmounts = HistoryTrading.HisTradingAmounts // 历史交易金额
-		marshal, err := json.Marshal(gin.H{
-			"id":   "02",
-			"data": AppUser,
-		})
-		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
-			logger.Error(err)
-			return
-		}
-		ws.Mux.Lock()
-		WriteMessageErr := ws.Conn.WriteMessage(messageType, marshal)
-		ws.Mux.Unlock()
-		if WriteMessageErr != nil {
-			wss.WsClose(ws)
-			// 跳出for关闭后面的推送
-			goto END
-		}
-		// 3秒推送一次消息
-		time.Sleep(time.Second * 3)
 		// 返回数据给用户
 	}
 END:
