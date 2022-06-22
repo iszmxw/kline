@@ -14,6 +14,7 @@ import (
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
+	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -265,8 +266,9 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			return
 		}
 		for index, item := range PushRateData {
-			if response.KlineSource(item.AssetsCode) == "qxbroker" {
-				if !strings.Contains(strings.ToUpper(item.AssetsName), "OTC") { // 不包含otc才加上
+			if otc.RaceOptionCheckOTC() {
+				if !strings.Contains(strings.ToUpper(item.AssetsName), "OTC") {
+					// 不包含otc才加上
 					PushRateData[index].AssetsName = item.AssetsName + "(OTC)"
 				}
 			}

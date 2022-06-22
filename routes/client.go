@@ -4,12 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 	clientV1 "goapi/app/controllers/client/v1"
 	clientV2 "goapi/app/controllers/client/v2"
-	middlewares "goapi/app/middlewares/v1"
 )
 
 // RegisterClientRoutes 注册Client路由
 func RegisterClientRoutes(router *gin.RouterGroup) {
-	router.Use(middlewares.AddressLimit()) // 地区限制
+	//router.Use(middlewares.AddressLimit()) // 地区限制
 	//router.Use(middlewares.Client())
 	// 路由分组 客户端 模块
 	AppRoute := router.Group("/app")
