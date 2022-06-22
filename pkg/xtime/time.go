@@ -37,3 +37,13 @@ func CheckTodaySleep(WeekdayTimeDetail []models.WeekdayTimeDetail) bool {
 	}
 	return false
 }
+
+func Parse(strTime string) time.Time {
+	var result time.Time
+	// 东七
+	result, err := time.ParseInLocation("2006-01-02 15:04:05", strTime, time.FixedZone("CST", 7*3600)) // 2006-01-02 15:04:05是转换的格式如php的"Y-m-d H:i:s"
+	if err != nil {
+		logger.Error(err)
+	}
+	return result
+}
