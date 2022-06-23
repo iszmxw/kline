@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
 	"github.com/olivere/elastic"
@@ -25,6 +24,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
 	"goapi/pkg/websocket"
+	wss_heart_beating "goapi/pkg/wss-heart-beating"
 	"reflect"
 	"strings"
 	"time"
@@ -43,11 +43,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		logger.Error(err)
 		return
 	}
-	HeartBeatingMessage := make(chan string)
-	socketId := uuid.New().String()
-	logger.Info("客户端建立socket成功socketId=" + socketId)
-	// 开启协诚处理心跳机制
-	go HeartBeating(socketId, 5, 30, HeartBeatingMessage, ws)
+	socketId := c.GetHeader("Sec-WebSocket-Key")
+	logger.RequestId = socketId
+	HeartBeatingKey := fmt.Sprintf("WsIndexHeartBeatingKey:%v", socketId)
+	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -73,13 +72,22 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(SubStruct.Id, "02"):
 			{
 				// 开启协诚处理推送历史记录
-				go PushHistory(mt, ws, SubStruct, c)
+				go PushHistory(socketId, mt, ws, SubStruct, c)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "03"):
 			{
 				// 处理心跳数据
-				HeartBeatingMessage <- time.Now().Format("2006-01-02 15:04:05")
+				currentTime := time.Now().Format("2006-01-02 15:04:05")
+				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
+				ws.Mux.Lock()
+				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
+				ws.Mux.Unlock()
+				if WriteMessageErr != nil {
+					logger.Error(WriteMessageErr)
+					wss.WsClose(ws)
+				}
+				logger.Info(fmt.Sprintf("当前心跳时间：%v", currentTime))
 			}
 			break
 		default:
@@ -131,11 +139,10 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		logger.Error(err)
 		return
 	}
-	HeartBeatingMessage := make(chan string)
-	socketId := uuid.New().String()
-	logger.Info("客户端建立socket成功socketId=" + socketId)
-	// 开启协诚处理心跳机制
-	go HeartBeating(socketId, 6, 36, HeartBeatingMessage, ws)
+	socketId := c.GetHeader("Sec-WebSocket-Key")
+	logger.RequestId = socketId
+	HeartBeatingKey := fmt.Sprintf("WsReturnRateHeartBeatingKey:%v", socketId)
+	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -174,17 +181,26 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 					break
 				}
 				// 开启协诚处理推送费率
-				go PushRate(mt, ws, subInfo)
+				go PushRate(socketId, mt, ws, subInfo)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "02"):
 			// 开启协诚处理推送余额
-			go PushUserInfo(mt, ws, subInfo)
+			go PushUserInfo(socketId, mt, ws, subInfo)
 			break
 		case strings.EqualFold(SubStruct.Id, "03"):
 			{
 				// 处理心跳数据
-				HeartBeatingMessage <- time.Now().Format("2006-01-02 15:04:05")
+				currentTime := time.Now().Format("2006-01-02 15:04:05")
+				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
+				ws.Mux.Lock()
+				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
+				ws.Mux.Unlock()
+				if WriteMessageErr != nil {
+					logger.Error(WriteMessageErr)
+					wss.WsClose(ws)
+				}
+				logger.Info(fmt.Sprintf("当前心跳时间：%v", currentTime))
 			}
 			break
 		default:
@@ -198,7 +214,8 @@ END:
 
 // 推送socket消息
 
-func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
+func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
+	logger.RequestId = socketId
 	// 订阅 历史消息
 	if len(SubStruct.Sub) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
@@ -319,6 +336,7 @@ func PushHistory(messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 }
 
 func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub) {
+	logger.RequestId = socketId
 	// 订阅的 market.ETH-USD.index.1min，没有值
 	if len(SubStruct.Sub) == 0 {
 		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
@@ -333,12 +351,16 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		return
 	}
 	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
+	HeartBeatingKey := fmt.Sprintf("WsIndexHeartBeatingKey:%v", socketId)
 	SubKey := fmt.Sprintf("socket_request:%v", socketId)
 	IsSubKey := fmt.Sprintf("socket_request:%v:%v", socketId, AssetsCode)
 	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4)   // 当前请求正在订阅的资产，4小时失效
 	_, _ = redis.Client.Add(IsSubKey, AssetsCode, 60*60*4) // 4小时失效
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
+		if wss_heart_beating.IsDie(HeartBeatingKey) {
+			goto STOP
+		}
 		SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 		if len(SubAssetsCode) > 0 {
 			if SubAssetsCode != AssetsCode { // 关闭释放掉历史的订阅
@@ -409,51 +431,23 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 			goto END
 		}
 	}
-END:
-	logger.Error(errors.New("已经跳出协诚的循环推送"))
-}
-
-func HeartBeating(socketId string, SecondAfterStart, SecondAfterEnd time.Duration, bytes chan string, ws *wss.WsConn) {
-	time.Sleep(SecondAfterStart * time.Second) // 几秒后开始
-	for {
-		select {
-		case fk := <-bytes:
-			{
-				select {
-				case <-time.After(SecondAfterEnd * time.Second):
-					logger.Info("两者都满足")
-				default:
-				}
-				logger.Info(fmt.Sprintf("socketId=%v当前心跳时间：%v", socketId, fk))
-				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
-				ws.Mux.Unlock()
-				if WriteMessageErr != nil {
-					logger.Error(WriteMessageErr)
-					wss.WsClose(ws)
-				}
-			}
-			break
-		case <-time.After(SecondAfterEnd * time.Second):
-			goto STOP
-		}
-	}
 STOP:
-	ws.Mux.Lock()
-	WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10408","data":"no heartbeat, you are logged out"}`))
-	ws.Mux.Unlock()
-	if WriteMessageErr != nil {
-		logger.Error(WriteMessageErr)
-	}
+	logger.Error(errors.New("PushMessage关闭Socket"))
 	wss.WsClose(ws)
-	logger.Info(fmt.Sprintf("socketId=%v没有进行心跳，您已退出", socketId))
+END:
+	logger.Error(errors.New("PushMessage已经跳出协诚的循环推送"))
 }
 
 // 推送Rate socket消息
 
-func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
+func PushRate(socketId string, messageType int, ws *wss.WsConn, assetsCode string) {
+	logger.RequestId = socketId
+	HeartBeatingKey := fmt.Sprintf("WsReturnRateHeartBeatingKey:%v", socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
+		if wss_heart_beating.IsDie(HeartBeatingKey) {
+			goto STOP
+		}
 		// 空消息跳过
 		if len(assetsCode) <= 0 {
 			goto END
@@ -499,11 +493,15 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 		time.Sleep(time.Second * 5)
 		// 返回数据给用户
 	}
+STOP:
+	logger.Error(errors.New("PushRate关闭Socket"))
+	wss.WsClose(ws)
 END:
-	logger.Info("已经跳出协诚的循环推送")
+	logger.Info("PushRate已经跳出协诚的循环推送")
 }
 
-func PushUserInfo(messageType int, ws *wss.WsConn, subInfo string) {
+func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
+	logger.RequestId = socketId
 	var SubUserInfo requests.SubUserInfo // {"appUserId":"123456"}
 	err := json.Unmarshal([]byte(subInfo), &SubUserInfo)
 	if err != nil {
