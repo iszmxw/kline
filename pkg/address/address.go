@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	cmap "github.com/orcaman/concurrent-map"
+	"goapi/app/models"
 	"goapi/pkg/config"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 	"io/ioutil"
 	"net/http"
@@ -33,10 +36,20 @@ type Address struct {
 
 func dataBase() map[string]interface{} {
 	data := cmap.New().Items()
-	data["countrys"] = "China|Israel"            // 限制国家
-	data["timezones"] = "Europe"                 // 限制时区
-	data["whitelist"] = "113.87.*.*|183.237.*.*" // ip白名单
+	data["countrys"] = "China|Israel"           // 限制国家
+	data["timezones"] = "Europe"                // 限制时区
+	data["whitelist"] = GetPassLimitHostList(1) // ip白名单
 	return data
+}
+
+func GetPassLimitHostList(passLevel int) []string {
+	var result []string
+	mysql.DB.Debug().Model(models.AppPassLimitHost{}).Where(map[string]interface{}{
+		"is_show":    1,
+		"is_delete":  0,
+		"pass_level": passLevel,
+	}).Select("pass_host").Find(&result)
+	return result
 }
 
 /**
@@ -82,7 +95,10 @@ func LimitAddress(ip string) bool {
 		return false
 	}
 	data := dataBase()
-	if strings.Contains(data["whitelist"].(string), IpDomainByIp(ip, 2)) {
+	if helpers.InArray(ip,data["whitelist"].([]string)) {
+		return false
+	}
+	if helpers.InArray(IpDomainByIp(ip, 2),data["whitelist"].([]string)) {
 		return false
 	}
 	ok, _ := redis.Client.SelectDbGet(config.GetInt("redis.db"), fmt.Sprintf("LimitAddress:ip:%v", ip))

@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"goapi/bootstrap"
 	"goapi/config"
+	"goapi/pkg/address"
 	"goapi/pkg/logger"
-	kline_common "goapi/service/kline-common"
 	"time"
 )
 func init() {
@@ -23,5 +22,6 @@ func init() {
 func main() {
 	bootstrap.SetupRedis(0)
 	defer bootstrap.RedisClose()
-	fmt.Println(kline_common.GetProxy("hsb"))
+	result := address.GetPassLimitHostList(1)
+	logger.Info(result)
 }

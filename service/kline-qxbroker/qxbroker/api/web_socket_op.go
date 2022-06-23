@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/app/models"
 	"goapi/app/response"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -266,7 +267,12 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 										if rate < 20 {
 											rate = 20
 										}
-										go ws.UpdateRate(ws.ContractCode, rate/100)
+										if kline.AutoRateWhitelistCheck(ws.ContractCode) {
+											logger.Error(errors.New(fmt.Sprintf("白名单资产[%v]，无需自动变化赔率", ws.ContractCode)))
+											return
+										} else {
+											go ws.UpdateRate(ws.ContractCode, rate/100)
+										}
 									}
 								}
 							}

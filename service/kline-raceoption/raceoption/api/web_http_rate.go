@@ -6,6 +6,7 @@ import (
 	"goapi/app/models"
 	res "goapi/app/response"
 	"goapi/pkg/helpers"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -91,7 +92,12 @@ func GetRate(num time.Duration) {
 					}
 					// 当前资产使用的该数据源才可以修改该费率
 					if res.KlineSource(info.ContractCode) == config.KlineSource {
-						go UpdateRate(info, dynPayout)
+						if kline.AutoRateWhitelistCheck(info.ContractCode) {
+							logger.Error(errors.New(fmt.Sprintf("白名单资产[%v]，无需自动变化赔率", info.ContractCode)))
+							return
+						} else {
+							go UpdateRate(info, dynPayout)
+						}
 					}
 				}
 			}
