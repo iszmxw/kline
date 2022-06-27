@@ -17,7 +17,7 @@ func init() {
 	config.Initialize()
 	// 定义日志目录
 	logger.Init("test")
-	// 初始化 SQL
+	// 初始化 SQL 回滚
 	bootstrap.SetupDB()
 }
 
