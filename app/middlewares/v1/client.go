@@ -20,7 +20,7 @@ func AddressLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		logger.Info(c.ClientIP())
 		// 正式环境检测
-		if config.GetString("app.env") == "company_pro" && address.LimitAddress(c.ClientIP()) {
+		if config.GetBool("app.address_limit") && address.LimitAddress(c.ClientIP()) {
 			echo.Error(c, "COUNTRY_LIMIT_USE", "")
 			c.Abort()
 			return

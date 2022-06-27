@@ -34,5 +34,8 @@ func init() {
 
 
 		"https": config.Env("HTTPS", "0"),
+
+		// IP地区限制
+		"address_limit": config.Env("ADDRESS_LIMIT", false),
 	})
 }
