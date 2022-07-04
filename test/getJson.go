@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"goapi/config"
 	"goapi/pkg/logger"
-	"goapi/service/kline-olymptrade/olymptrade/config/trade_sleep"
+	"math"
 	"time"
 )
 
@@ -19,8 +19,9 @@ func init() {
 }
 
 func main() {
-	data := trade_sleep.GetTimeIsSleep("Apple")
-	//res := xjson.GetConfig("./service/kline-olymptrade/olymptrade/config/source_time/Adidas.json")
-	//fmt.Println(res)
-	fmt.Println(data)
+	//data := trade_sleep.GetTimeIsSleep("Apple")
+	////res := xjson.GetConfig("./service/kline-olymptrade/olymptrade/config/source_time/Adidas.json")
+	////fmt.Println(res)
+	//fmt.Println(data)
+	fmt.Println(math.Floor(58.99999))
 }
