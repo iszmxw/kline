@@ -10,7 +10,7 @@ import (
 
 const (
 	TOKEN      = "5202189634:AAHdLadirD9tujR-djCNbyAyiohJGiWFvAU"
-	chatIDPro  = -1001505716949     // 正式环境房间
+	chatIDPro  = -1001505716949 // 正式环境房间
 	chatIDTest = -1001786874645 // 测试环境房间
 )
 
@@ -39,7 +39,7 @@ func Notice(info map[string]interface{}) {
 			return
 		}
 	} else {
-		msg := tgbotapi.NewMessage(chatIDPro, text)
+		msg := tgbotapi.NewMessage(chatIDTest, text)
 		_, err = bot.Send(msg)
 		if err != nil {
 			logger.Error(err)
