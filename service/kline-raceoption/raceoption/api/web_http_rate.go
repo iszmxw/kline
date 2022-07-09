@@ -142,7 +142,7 @@ func UpdateRate(info kline_common.Info, returnRate float64) {
 		}
 		// 记录修改历史记录
 		var TradingAssetsLog models.TradingAssetsLog
-		TradingAssetsLog.ItemCode = "IQO"
+		TradingAssetsLog.ItemCode = TradingAssets.ItemCode
 		TradingAssetsLog.AssetsCode = info.ContractCode
 		TradingAssetsLog.CreateDate = time.Now()
 		TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate

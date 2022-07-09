@@ -333,7 +333,7 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 		}
 		// 记录修改历史记录
 		var TradingAssetsLog models.TradingAssetsLog
-		TradingAssetsLog.ItemCode = "IQO"
+		TradingAssetsLog.ItemCode = TradingAssets.ItemCode
 		TradingAssetsLog.AssetsCode = ContractCode
 		TradingAssetsLog.CreateDate = time.Now()
 		TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate
@@ -347,7 +347,7 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 	}
 }
 
-func (ws *WebSocketOp) SendMsg(data []byte) bool {
+func (ws *WebSocketOp) SendMsg() bool {
 	if ws.isClose {
 		return false
 	}
@@ -540,7 +540,7 @@ func (ws *WebSocketOp) sub(ContractCode string, Symbol string, fun interface{}, 
 	ws.allSubStars.PushBack(Symbol)
 	ws.Symbol = Symbol
 	ws.ContractCode = ContractCode
-	return ws.SendMsg(nil)
+	return ws.SendMsg()
 }
 
 // 获取登录token
