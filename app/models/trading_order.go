@@ -30,5 +30,8 @@ type TradingOrder struct {
 	UserGainAmounts     float64   `json:"user_gain_amounts"`                                        //用户真实亏损，大于0为客户盈利反之则亏
 	LockingKey          string    `json:"locking_key"`
 	AssetsCode          string    `json:"assets_code"`
-	ReturnRate          float64   `json:"return_rate"` //收益率
+	ReturnRate          float64   `json:"return_rate"`   //收益率
+	CurrencyType        string    `json:"currency_type"` //货币类型 IDR USD CNY
+	Balance             float64   `json:"balance"`       //交易时余额
+	Nation              string    `json:"nation"`        //绑定国家
 }

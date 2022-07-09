@@ -12,7 +12,18 @@ type SubHistory struct {
 }
 
 type SubUserInfo struct {
-	AppUserId    string `json:"appUserId"`
+	AppUserId string `json:"appUserId"`
+}
+
+type TradeOrderInfo struct {
+	AppUserId           string `json:"appUserId"`
+	AssetsCode          string `json:"assetsCode"`
+	TradeBeginTimestamp string `json:"tradeBeginTimestamp"`
+	BeginAssetsPrice    string `json:"beginAssetsPrice"`
+	EndAssetsPrice      string `json:"endAssetsPrice"`
+	UpDownType          string `json:"upDownType"`
+	Amounts             string `json:"amounts"`
+	IsDemo              string `json:"isDemo"`
 }
 
 type DayTime struct {

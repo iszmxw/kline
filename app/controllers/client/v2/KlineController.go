@@ -93,6 +93,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(SubStruct.Id, "04"): // 下单开奖通知
 			{
 				// 开启协诚处理 下单开奖通知
+				go PushNotice(socketId, mt, ws, SubStruct.Sub)
 			}
 			break
 		default:
@@ -442,6 +443,130 @@ STOP:
 	wss.WsClose(ws)
 END:
 	logger.Error(errors.New("PushMessage已经跳出协诚的循环推送"))
+}
+
+// 下单结果通知
+
+func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
+	logger.RequestId = socketId
+	if len(subInfo) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
+		logger.Error(errors.New("下单通知结构体为空"))
+		return
+	}
+	var TradeOrderInfo requests.TradeOrderInfo
+	err := json.Unmarshal([]byte(subInfo), &TradeOrderInfo)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	if len(TradeOrderInfo.AppUserId) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,AppUserId not right"}`))
+		logger.Error(errors.New("err sub,AppUserId not right"))
+		return
+	}
+	if len(TradeOrderInfo.AssetsCode) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,AssetsCode not right"}`))
+		logger.Error(errors.New("err sub,AssetsCode not right"))
+		return
+	}
+	if len(TradeOrderInfo.TradeBeginTimestamp) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,TradeBeginTimestamp not right"}`))
+		logger.Error(errors.New("err sub,TradeBeginTimestamp not right"))
+		return
+	}
+	if len(TradeOrderInfo.BeginAssetsPrice) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,BeginAssetsPrice not right"}`))
+		logger.Error(errors.New("err sub,BeginAssetsPrice not right"))
+		return
+	}
+	if len(TradeOrderInfo.UpDownType) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,UpDownType not right"}`))
+		logger.Error(errors.New("err sub,UpDownType not right"))
+		return
+	}
+	if len(TradeOrderInfo.Amounts) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,Amounts not right"}`))
+		logger.Error(errors.New("err sub,Amounts not right"))
+		return
+	}
+	if len(TradeOrderInfo.IsDemo) == 0 {
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,IsDemo not right"}`))
+		logger.Error(errors.New("err sub,IsDemo not right"))
+		return
+	}
+	// 开启定时器，60 秒后查询结果进行通知
+	time.Sleep(time.Second * 59)              // 等待大约1分钟后开始查询结果
+	ticker := time.NewTicker(1 * time.Second) // 每秒检查一次
+	times := 1
+	for range ticker.C {
+		if times >= 20 { // 防止用户已经离开，超过 20 秒后还没查到就结束进程
+			goto STOP
+		}
+		times++
+		if TradeOrderInfo.IsDemo == "1" { // 如果是 demo 订单，就走demo表查询
+			var TradingOrderVirtual models.TradingOrderVirtual
+			mysql.DB.Debug().Model(models.TradingOrderVirtual{}).
+				Where("app_user_id", TradeOrderInfo.AppUserId).
+				Where("assets_code", TradeOrderInfo.AssetsCode).
+				Where("trade_begin_timestamp", TradeOrderInfo.TradeBeginTimestamp).
+				Where("begin_assets_price", TradeOrderInfo.BeginAssetsPrice).
+				Where("up_down_type", TradeOrderInfo.UpDownType).
+				Where("amounts", TradeOrderInfo.Amounts).
+				Find(&TradingOrderVirtual)
+			if TradingOrderVirtual.QuizResult == -1 {
+				// 未出结果跳过
+				continue
+			}
+			// 结束值
+			if TradingOrderVirtual.EndAssetsPrice > 0 {
+				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
+				marshal, err := json.Marshal(gin.H{
+					"id":   "04",
+					"data": TradeOrderInfo,
+				})
+				if err != nil {
+					logger.Error(err)
+					continue
+				}
+				// 推送消息通知前端开奖结果
+				_ = ws.Conn.WriteMessage(messageType, marshal)
+				goto STOP
+			}
+		} else {
+			var TradingOrder models.TradingOrder
+			mysql.DB.Debug().Model(models.TradingOrder{}).
+				Where("app_user_id", TradeOrderInfo.AppUserId).
+				Where("assets_code", TradeOrderInfo.AssetsCode).
+				Where("trade_begin_timestamp", TradeOrderInfo.TradeBeginTimestamp).
+				Where("begin_assets_price", TradeOrderInfo.BeginAssetsPrice).
+				Where("up_down_type", TradeOrderInfo.UpDownType).
+				Where("amounts", TradeOrderInfo.Amounts).
+				Find(&TradingOrder)
+			if TradingOrder.QuizResult == -1 {
+				// 未出结果跳过
+				continue
+			}
+			// 结束值
+			if TradingOrder.EndAssetsPrice > 0 {
+				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
+				marshal, err := json.Marshal(gin.H{
+					"id":   "04",
+					"data": TradeOrderInfo,
+				})
+				if err != nil {
+					logger.Error(err)
+					continue
+				}
+				// 推送消息通知前端开奖结果
+				_ = ws.Conn.WriteMessage(messageType, marshal)
+				goto STOP
+			}
+		}
+	}
+STOP:
+	logger.Error(errors.New("交割结果通知结束，关闭定时器"))
+	ticker.Stop()
 }
 
 // 推送Rate socket消息
