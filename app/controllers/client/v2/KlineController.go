@@ -90,6 +90,11 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				logger.Info(fmt.Sprintf("当前心跳时间：%v", currentTime))
 			}
 			break
+		case strings.EqualFold(SubStruct.Id, "04"): // 下单开奖通知
+			{
+				// 开启协诚处理 下单开奖通知
+			}
+			break
 		default:
 			{
 				// 开启协诚处理推送消息
@@ -97,6 +102,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			}
 			break
 		}
+		time.Sleep(time.Millisecond * 10) // 在接受的white循环里面停顿10毫秒
 	}
 END:
 	wss.WsClose(ws)
@@ -499,6 +505,8 @@ STOP:
 END:
 	logger.Info("PushRate已经跳出协诚的循环推送")
 }
+
+// 查询用户系信息
 
 func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
 	logger.RequestId = socketId

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-contrib/pprof"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
@@ -45,6 +46,7 @@ func main() {
 	// 初始化路由绑定
 	logger.Info("加载路由")
 	router := bootstrap.SetupRoute()
+	pprof.Register(router) // 开启 pprof
 	// 启动路由
 	logger.Info("启动路由")
 	logger.Info("当前环境：" + conf.GetString("app.port"))
