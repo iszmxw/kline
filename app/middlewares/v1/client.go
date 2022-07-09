@@ -21,9 +21,9 @@ func AddressLimit() gin.HandlerFunc {
 		logger.Info(c.ClientIP())
 		// 正式环境检测
 		if config.GetBool("app.address_limit") && address.LimitAddress(c.ClientIP()) {
-			echo.Error(c, "COUNTRY_LIMIT_USE", "")
-			c.Abort()
-			return
+			//echo.Error(c, "COUNTRY_LIMIT_USE", "")
+			//c.Abort()
+			//return
 		} else {
 			c.Next()
 		}

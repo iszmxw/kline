@@ -50,6 +50,13 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				// 删除kline_log表数据，维护数据表过大问题
 				trade.Any("/maintenanceTableData.json", ClientV2Group.KlineController.MaintenanceTableData)
 			}
+
+			// 通知
+			notice := V2Route.Group("/notice")
+			{
+				// 站内信通知
+				notice.Any("/siteLetterNotification.json", ClientV2Group.NoticeController.StationLetterHandler)
+			}
 		}
 
 		{ // V3 版本
