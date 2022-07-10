@@ -9,6 +9,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/kline"
+	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	mail_notice "goapi/pkg/notice/mail"
@@ -468,6 +469,10 @@ func (ws *WebSocketOp) TickerReboot() {
 				status := source.CheckStatus(config.KlineSource, ws.ContractCode)
 				if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
 					logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
+					goto STOP
+				}
+				if otc.QxbrokerCheckOTC() && !strings.Contains(ws.Symbol, "_otc") {
+					logger.Info(KeyStatus + "当前数据进入otc时间" + ws.Symbol)
 					goto STOP
 				}
 				if ws.isClose {

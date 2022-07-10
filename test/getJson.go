@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"goapi/config"
+	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
-	"math"
 	"time"
 )
 
@@ -23,5 +23,9 @@ func main() {
 	////res := xjson.GetConfig("./service/kline-olymptrade/olymptrade/config/source_time/Adidas.json")
 	////fmt.Println(res)
 	//fmt.Println(data)
-	fmt.Println(math.Floor(58.99999))
+	ticker := time.NewTicker(1 * time.Second) // 每隔 num 秒检查一次
+	for range ticker.C {
+		isOtc := otc.QxbrokerCheckOTC()
+		fmt.Println(isOtc)
+	}
 }
