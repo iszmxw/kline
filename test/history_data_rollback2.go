@@ -43,10 +43,12 @@ func main() {
 SELECT
 	IFNULL( '?', 0 ) AS Everyday,
 	IFNULL( t3.oldUserRecharged, 0 ) AS oldUserRecharged,
+	IFNULL( t3.newRegisteredRechargTimes, 0 ) AS newRegisteredRechargTimes,
 	IFNULL( t3.oldUserRechargeTimes, 0 ) AS oldUserRechargeTimes,
 	IFNULL( t8.oldUserLoss, 0 ) AS oldUserLoss,
 	IFNULL( t3.oldUserRecharged / t3.rechargeUserNumber, 0 ) AS oldUserRechargedRate,
 	IFNULL( t3.oldUserRechargeTimes / t3.tradeNumber, 0 ) AS oldUserRechargeTimesRate,
+    IFNULL( t9.newUserLoss ,0 ) AS newUserLoss,
 	IFNULL( t8.oldUserLoss / t6.userLoss, 0 ) AS oldUserLossRate 
 FROM
 	(
@@ -70,6 +72,7 @@ FROM
 			IFNULL( SUM( tro.regist_date_recharge ), 0 ) AS registRecharge,
 			IFNULL( COUNT( DISTINCT tro.app_user_id, IF ( tro.is_first_rechage = 1, 1, NULL )), 0 ) AS newRechargeNumber,
 			IFNULL( COUNT( DISTINCT tro.app_user_id, IF ( tro.is_first_rechage = 0, 1, NULL )), 0 ) AS oldUserRecharged,
+			IFNULL( COUNT( IF ( tro.is_first_rechage = 1, 1, NULL )), 0 ) AS newRegisteredRechargTimes,
 			IFNULL( COUNT( IF ( tro.is_first_rechage = 0, 1, NULL )), 0 ) AS oldUserRechargeTimes,
 			IFNULL( SUM( IF ( tro.is_first_rechage = 1, tro.amount, 0 )), 0 ) AS newRechargeAmount,
 			DATE_FORMAT( tro.create_date, '%Y-%m-%d' ) AS rechargeCreateDate 
@@ -147,7 +150,20 @@ FROM
 			tau.is_new = 0 
 			AND DATE_FORMAT( tto.create_date, '%Y-%m-%d' ) > date_sub( DATE_FORMAT( '?', '%Y-%m-%d' ), INTERVAL 1 DAY ) 
 			AND DATE_FORMAT( tto.create_date, '%Y-%m-%d' ) <= DATE_FORMAT( '?', '%Y-%m-%d' ) 
-		) t8 ON t8.tradingCreateDate = DATE_FORMAT( '?', '%Y-%m-%d' ) 
+		) t8 ON t8.tradingCreateDate = DATE_FORMAT( '?', '%Y-%m-%d' )
+		LEFT JOIN (
+        SELECT
+			IFNULL( SUM( IF ( tto.amount_type = 1, tto.user_gain_amounts, 0 )), 0 ) AS newUserLoss,
+			DATE_FORMAT( tto.create_date, '%Y-%m-%d' ) AS tradingCreateDate 
+		FROM
+			t_trading_order tto
+			LEFT JOIN t_app_user tau ON tto.app_user_id = tau.app_user_id 
+		WHERE
+			tau.is_new = 1 
+			AND DATE_FORMAT( tto.create_date, '%Y-%m-%d' ) > date_sub( DATE_FORMAT( '?', '%Y-%m-%d' ), INTERVAL 1 DAY ) 
+			AND DATE_FORMAT( tto.create_date, '%Y-%m-%d' ) <= DATE_FORMAT( '?', '%Y-%m-%d' ) 
+		) t9 ON t9.tradingCreateDate = DATE_FORMAT( '?', '%Y-%m-%d' ) 
+
 	)
 `
 
@@ -177,10 +193,12 @@ FROM
 func Update(id int64, result map[string]interface{}) {
 	err := mysql.DB.Debug().Model(models.DailyActiveData{}).Where("id", id).
 		Updates(map[string]interface{}{
+			"new_registered_recharg_times": result["newRegisteredRechargTimes"],
 			"old_user_recharged":           result["oldUserRecharged"],
 			"old_user_recharged_rate":      result["oldUserRechargedRate"],
 			"old_user_recharge_times":      result["oldUserRechargeTimes"],
 			"old_user_recharge_times_rate": result["oldUserRechargeTimesRate"],
+			"new_user_loss":                result["newUserLoss"],
 			"old_user_loss":                result["oldUserLoss"],
 			"old_user_loss_rate":           result["oldUserLossRate"],
 		}).
