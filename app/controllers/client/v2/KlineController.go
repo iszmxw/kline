@@ -98,10 +98,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		default:
 			{
-				// 检测该次连接是否已经订阅过该资产，如果订阅过，则不处理
-				{
-
-				}
 				// 开启协诚处理推送消息
 				go PushMessage(socketId, mt, ws, SubStruct)
 			}
@@ -364,6 +360,12 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
 	HeartBeatingKey := fmt.Sprintf("WsIndexHeartBeatingKey:%v", socketId)
 	SubKey := fmt.Sprintf("socket_request:%v", socketId)
+	SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
+	if SubAssetsCode == AssetsCode {             // 当前订阅的资产已存
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","data":"please no repeat sub"}`))
+		logger.Error(errors.New(fmt.Sprintf("当前订阅的资产{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", AssetsCode, socketId)))
+		return
+	}
 	IsSubKey := fmt.Sprintf("socket_request:%v:%v", socketId, AssetsCode)
 	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4)   // 当前请求正在订阅的资产，4小时失效
 	_, _ = redis.Client.Add(IsSubKey, AssetsCode, 60*60*4) // 4小时失效
@@ -372,9 +374,9 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		if wss_heart_beating.IsDie(HeartBeatingKey) {
 			goto STOP
 		}
-		SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
-		if len(SubAssetsCode) > 0 {
-			if SubAssetsCode != AssetsCode { // 关闭释放掉历史的订阅
+		HisSubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
+		if len(HisSubAssetsCode) > 0 {
+			if HisSubAssetsCode != AssetsCode { // 关闭释放掉历史的订阅
 				logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", AssetsCode, SubAssetsCode, socketId)))
 				goto END
 			}
