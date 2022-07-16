@@ -9,6 +9,7 @@ type SubHistory struct {
 	Symbol    string `json:"symbol"`
 	BeginDate string `json:"beginDate"`
 	EndDate   string `json:"endDate"`
+	Limit     string `json:"limit"`
 }
 
 type SubUserInfo struct {

@@ -230,8 +230,8 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		return
 	}
 	var (
-		SubHistory requests.SubHistory // {"symbol":"BTC-USD","beginDate":"","endDate":""}
-		Count      = int64(3000)       // 查询总条数
+		SubHistory requests.SubHistory // {"symbol":"BTC-USD","beginDate":"","endDate":"","Limit":"3000"}
+		Count      = int64(3000)       // 查询总条数默认获取3000条
 	)
 	err := json.Unmarshal([]byte(SubStruct.Sub), &SubHistory)
 	if err != nil {
@@ -241,6 +241,9 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	symbol := SubHistory.Symbol
 	beginDate := SubHistory.BeginDate
 	endDate := SubHistory.EndDate
+	if helpers.StringToInt64(SubHistory.Limit) > 0 { // 查询数量
+		Count = helpers.StringToInt64(SubHistory.Limit)
+	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
 		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10402","data":"beginDate 起始交易日期必填"}`))
@@ -284,15 +287,15 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	var data []response.KlineLog
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), "1min")
 	DB := mysql.DB.Debug()
-	// 一次取出历史记录最新三百条
+	// 一次取出历史记录最新三千条
 	KlineDB := DB.Model(models.KlineLog{}).
 		Where("ch", ch).
 		Where("ts >= ?", beginDate).
 		Where("ts <= ?", endDate).
 		Order("ts desc")
 	KlineDB.Count(&Count)
-	if Count > 3000 {
-		Count = 3000
+	if Count > 10000 {
+		Count = 10000
 	}
 	err = KlineDB.Limit(int(Count)).Find(&data).Error
 	if err != nil {
@@ -843,12 +846,12 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		return
 	}
 	searchResult, err := esClient.Search().
-		Index("kline_log").      // 设置索引名
-		Query(boolQuery).        // 设置查询条件
-		Sort("ts", false).       // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
-		From(0).                 // 设置分页参数 - 起始偏移量，从第0行记录开始
-		Size(Count).             // 设置分页参数 - 每页大小
-		Pretty(true).            // 查询结果返回可读性较好的JSON格式
+		Index("kline_log"). // 设置索引名
+		Query(boolQuery). // 设置查询条件
+		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
+		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
+		Size(Count). // 设置分页参数 - 每页大小
+		Pretty(true). // 查询结果返回可读性较好的JSON格式
 		Do(context.Background()) // 执行请求
 	if err != nil {
 		logger.Error(err)
