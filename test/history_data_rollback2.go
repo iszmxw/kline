@@ -181,7 +181,7 @@ FROM
 	for _, val := range ListHistory { // 遍历所有重新计算查询并且更新
 		var result Result
 		data := cmap.New().Items()
-		timeStr := Parse2(val.Everyday).Add(24 * time.Hour).Format("2006-01-02")
+		timeStr := Parse2(val.Everyday).Format("2006-01-02")
 		logger.Info(fmt.Sprint(val.Everyday, "   ", timeStr))
 		mysql.DB.Debug().Raw(strings.ReplaceAll(sql, "?", timeStr)).Scan(&data)
 		logger.Info(fmt.Sprint(val.Id, "  ", result, "  ", "ok"))

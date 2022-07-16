@@ -98,6 +98,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		default:
 			{
+				// 检测该次连接是否已经订阅过该资产，如果订阅过，则不处理
+				{
+
+				}
 				// 开启协诚处理推送消息
 				go PushMessage(socketId, mt, ws, SubStruct)
 			}

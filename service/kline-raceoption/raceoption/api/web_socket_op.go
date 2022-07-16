@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	mail_notice "goapi/pkg/notice/mail"
 	kline_common "goapi/service/kline-common"
@@ -100,6 +101,10 @@ func (ws *WebSocketOp) TickerReboot() {
 			status := source.CheckStatus(config.KlineSource, ws.Info.ContractCode)
 			if status == "4" { // 延迟过高关闭重启
 				logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
+				goto STOP
+			}
+			if otc.RaceOptionCheckOTC() && !strings.Contains(ws.Symbol, ".W") {
+				logger.Info(KeyStatus + "当前数据进入otc时间" + ws.Symbol)
 				goto STOP
 			}
 			if ws.isClose {
