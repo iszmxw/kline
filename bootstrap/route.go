@@ -21,8 +21,6 @@ func SetupRoute() *gin.Engine {
 		//	context.String(200, fmt.Sprintf("Method：\t%v  URL：\t%v  \t\t\tHandler: \t%v \n", v.Method, v.Path, v.Handler))
 		//}
 	})
-	// 历史过度 v1 版本 路由
-	routes.RegisterApiRoutes(router.Group("/v1"))
 	// 二元 client 接口
 	routes.RegisterClientRoutes(router.Group("/"))
 	// 二元 web 接口

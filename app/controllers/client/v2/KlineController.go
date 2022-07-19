@@ -270,8 +270,9 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		return
 	}
 	tips := fmt.Sprintf(
-		"当前系统时间为【%v】 查询范围从【%v】，到【%v】",
+		"当前系统时间为【%v】 查询资产【%v】范围从【%v】，到【%v】",
 		time.Now().Format("2006-01-02 15:04:05"),
+		symbol,
 		time.Unix(0, helpers.StringToInt64(beginDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
 		time.Unix(0, helpers.StringToInt64(endDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
 	)
@@ -846,12 +847,12 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		return
 	}
 	searchResult, err := esClient.Search().
-		Index("kline_log"). // 设置索引名
-		Query(boolQuery). // 设置查询条件
-		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
-		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
-		Size(Count). // 设置分页参数 - 每页大小
-		Pretty(true). // 查询结果返回可读性较好的JSON格式
+		Index("kline_log").      // 设置索引名
+		Query(boolQuery).        // 设置查询条件
+		Sort("ts", false).       // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
+		From(0).                 // 设置分页参数 - 起始偏移量，从第0行记录开始
+		Size(Count).             // 设置分页参数 - 每页大小
+		Pretty(true).            // 查询结果返回可读性较好的JSON格式
 		Do(context.Background()) // 执行请求
 	if err != nil {
 		logger.Error(err)
