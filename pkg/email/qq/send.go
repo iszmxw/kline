@@ -2,7 +2,7 @@ package qq
 
 import (
 	"bytes"
-	sendEmail "github.com/jordan-wright/email"
+	JwEmail "github.com/jordan-wright/email"
 	"goapi/pkg/config"
 	"html/template"
 	"net/smtp"
@@ -10,7 +10,7 @@ import (
 
 // SendEmail 使用第三方库发送邮件
 func SendEmail(Info map[string]interface{}, toUser ...string) error {
-	e := sendEmail.NewEmail()
+	e := JwEmail.NewEmail()
 
 	e.From = config.GetString("email.qq.user")
 	e.To = toUser
