@@ -27,3 +27,18 @@ func SetupRoute() *gin.Engine {
 	routes.RegisterWebRoutes(router.Group("/"))
 	return router
 }
+
+// SetupRouteEmail 路由初始化
+func SetupRouteEmail() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
+	router.Use(v1.TraceLogger()) // 日志追踪
+	router.Use(v1.Cors())        // 跨域
+	router.GET("/", func(context *gin.Context) {
+		requestId, _ := context.Get("Tracking-Id")
+		context.String(200, "Hello Email!："+requestId.(string)+"\n\n\n")
+	})
+	// 二元 Email 接口
+	routes.RegisterEmailRoutes(router.Group("/"))
+	return router
+}

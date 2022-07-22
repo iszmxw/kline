@@ -34,7 +34,7 @@ func main() {
 	defer bootstrap.RedisClose()
 	// 初始化路由绑定
 	logger.Info("加载路由")
-	router := bootstrap.SetupRoute()
+	router := bootstrap.SetupRouteEmail()
 	pprof.Register(router) // 开启 pprof
 	// 启动路由
 	logger.Info("启动路由")
