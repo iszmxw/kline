@@ -16,10 +16,10 @@ import (
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/pprof"
 	"goapi/pkg/redis"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-common/heartbeat"
 	kconfig "goapi/service/kline-huobi/huobi/config"
 	"time"
@@ -43,7 +43,7 @@ func main() {
 	pprof.Debug(":6060")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	CodeData := kline_common.GetData(kconfig.KlineSource)
+	CodeData := KlineCommon.GetData(kconfig.KlineSource)
 	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
 	go heartbeat.Start(30, kconfig.KlineSource, CodeData)
 	go kline.TickerCheckTodaySleep(true) // 定时每隔一分钟检查一次市场资产状态
@@ -65,7 +65,7 @@ func main() {
 
 // 链接火币网
 
-func SocketHuoBi(info kline_common.Info) {
+func SocketHuoBi(info KlineCommon.Info) {
 	callback := make(chan struct{}, 1)
 	var host string
 	// 本地环境打包走测试地址
@@ -77,7 +77,7 @@ func SocketHuoBi(info kline_common.Info) {
 	wsClient.SubIndexKLine(info.Symbol, "1min", func(resp *response.SubIndexKLineResponse) {
 		defer func() {
 			if r := recover(); r != nil {
-				mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
+				NoticeMail.Notice("msgServiceAnomaly", map[string]interface{}{
 					"name": kconfig.KlineSource,
 					"r":    r,
 				})
@@ -182,7 +182,7 @@ func SocketHuoBi(info kline_common.Info) {
 	select {
 	case <-callback:
 		// 重启服务
-		kline_common.RebootSocketLog(kconfig.KlineSource, info)
+		KlineCommon.RebootSocketLog(kconfig.KlineSource, info)
 		go SocketHuoBi(info)
 	}
 }

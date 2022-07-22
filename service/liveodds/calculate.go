@@ -13,7 +13,7 @@ import (
 	"goapi/pkg/esdk"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/service/liveodds/utils"
 	"reflect"
 	"strings"
@@ -174,7 +174,7 @@ func explainData(line []float64, LogData utils.LogData) {
 		LogData.Result = 2 // 定义为波动小，这样的斜线认为是可预测的波动
 		// todo 进行邮件通知
 		logger.Info(fmt.Sprint("本次为斜线上涨或者斜线下跌，斜线上涨的比例为=", LogData.UpRate, "斜线下跌的比例为=", LogData.DownRate))
-		mail_notice.Notice("msgLiveOdds", LogData)
+		NoticeMail.Notice("msgLiveOdds", LogData)
 	} else {
 		// 1、根据方差大小定义赔率，方差越大，波动越大，波动越大赔率越大
 		// 2 方差多大为大，方差多小为小

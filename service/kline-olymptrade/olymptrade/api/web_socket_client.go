@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 	"goapi/pkg/helpers"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/wsdata"
 	"net/url"
@@ -24,7 +24,7 @@ func (wsIx *WSPriceClient) Init(host, session string, proxy *url.URL, callback c
 
 type OnSubPriceKLineResponse func(*wsdata.SubPriceKLineResponse)
 
-func (wsIx *WSPriceClient) SubPriceKLine(info kline_common.Info, callbackFun OnSubPriceKLineResponse, id string) {
+func (wsIx *WSPriceClient) SubPriceKLine(info KlineCommon.Info, callbackFun OnSubPriceKLineResponse, id string) {
 	if id == "" {
 		id = config.DefaultId
 	}

@@ -1,7 +1,7 @@
 package code
 
 import (
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	kconfig "goapi/service/kline-raceoption/raceoption/config"
 )
 
@@ -13,9 +13,9 @@ func SubSymbol() []string {
 
 // 转换
 
-func Convert(Symbol string) kline_common.Info {
-	Info := kline_common.Info{}
-	Codes := kline_common.GetData(kconfig.KlineSource)
+func Convert(Symbol string) KlineCommon.Info {
+	Info := KlineCommon.Info{}
+	Codes := KlineCommon.GetData(kconfig.KlineSource)
 	subSymbol := SubSymbol()
 	for i := 0; i < len(subSymbol); i++ {
 		switch Symbol {

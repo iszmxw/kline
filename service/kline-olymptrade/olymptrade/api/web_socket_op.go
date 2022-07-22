@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
-	mail_notice "goapi/pkg/notice/mail"
-	kline_common "goapi/service/kline-common"
+	"goapi/pkg/notice/mail"
+	"goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/utils/zip"
 	"net/http"
@@ -71,7 +71,7 @@ func (ws *WebSocketOp) connServer() bool {
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		mail_notice.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
+		NoticeMail.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
 			"name":  config.KlineSource + "==>" + ws.Symbol,
 			"proxy": ws.proxy,
 		})
@@ -173,7 +173,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 }
 
 func (ws *WebSocketOp) SendMsg(data []byte) bool {
-	defer kline_common.KlineRecover("SendMsg", config.KlineSource, ws.Symbol)
+	defer KlineCommon.KlineRecover("SendMsg", config.KlineSource, ws.Symbol)
 	if ws.isClose {
 		logger.Info("send on closed channel")
 		return false

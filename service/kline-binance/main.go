@@ -7,7 +7,7 @@ import (
 	"goapi/pkg/pprof"
 	"goapi/service/kline-binance/binance"
 	kconfig "goapi/service/kline-binance/binance/config"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-common/heartbeat"
 	"time"
 )
@@ -28,7 +28,7 @@ func main() {
 	pprof.Debug(":6065")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	CodeData := kline_common.GetData(kconfig.KlineSource)
+	CodeData := KlineCommon.GetData(kconfig.KlineSource)
 	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
 	go heartbeat.Start(30, kconfig.KlineSource, CodeData)
 	start := "ok"

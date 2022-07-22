@@ -18,7 +18,7 @@ import (
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
@@ -315,7 +315,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	}
 	// 侦测到数据小于 150 条的时候，发送邮件预警
 	if len(data) <= 150 {
-		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
+		NoticeMail.Notice("msgDataAbnormal", map[string]interface{}{
 			"c":    c,
 			"tips": tips,
 		})

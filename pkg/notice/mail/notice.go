@@ -1,4 +1,4 @@
-package mail_notice
+package NoticeMail
 
 import (
 	"encoding/json"

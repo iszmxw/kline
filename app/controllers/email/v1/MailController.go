@@ -10,7 +10,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"strings"
 	"time"
@@ -89,7 +89,7 @@ func (h *MailController) SendEmail(c *gin.Context) {
 	}
 	// 侦测到数据小于 150 条的时候，发送邮件预警
 	if len(data) <= 150 {
-		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
+		NoticeMail.Notice("msgDataAbnormal", map[string]interface{}{
 			"c":    c,
 			"tips": tips,
 		})

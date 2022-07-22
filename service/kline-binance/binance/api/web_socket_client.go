@@ -3,7 +3,7 @@ package api
 import (
 	"goapi/service/kline-binance/binance/config"
 	"goapi/service/kline-binance/binance/wsdata"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"net/url"
 	"reflect"
 )
@@ -22,7 +22,7 @@ func (wsIx *WSPriceClient) Init(host, streamName string, proxy *url.URL, callbac
 
 type OnSubPriceKLineResponse func(*wsdata.SubPriceKLineResponse)
 
-func (wsIx *WSPriceClient) SubPriceKLine(info kline_common.Info, callbackFun OnSubPriceKLineResponse, id string) {
+func (wsIx *WSPriceClient) SubPriceKLine(info KlineCommon.Info, callbackFun OnSubPriceKLineResponse, id string) {
 	if id == "" {
 		id = config.DefaultId
 	}

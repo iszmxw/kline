@@ -9,26 +9,26 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-binance/binance/api"
 	"goapi/service/kline-binance/binance/config"
 	"goapi/service/kline-binance/binance/wsdata"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"strings"
 	"time"
 )
 
-func SocketBinance(info kline_common.Info) {
+func SocketBinance(info KlineCommon.Info) {
 	callback := make(chan struct{}, 1)
 	// 开始订阅
 	{
 		streamName := fmt.Sprintf("%s@indexPriceKline_%v", strings.ToLower(info.Symbol), "1m")
-		wsmkClient := new(api.WSPriceClient).Init("dstream.binance.com", streamName, kline_common.GetProxy(config.KlineSource), callback)
+		wsmkClient := new(api.WSPriceClient).Init("dstream.binance.com", streamName, KlineCommon.GetProxy(config.KlineSource), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
-					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
+					NoticeMail.Notice("msgServiceAnomaly", map[string]interface{}{
 						"name": config.KlineSource,
 						"r":    r,
 					})
@@ -139,7 +139,7 @@ func SocketBinance(info kline_common.Info) {
 	select {
 	case <-callback:
 		// 重启服务
-		kline_common.RebootSocketLog(config.KlineSource, info)
+		KlineCommon.RebootSocketLog(config.KlineSource, info)
 		go SocketBinance(info)
 	}
 }

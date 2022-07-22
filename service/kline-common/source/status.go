@@ -7,7 +7,7 @@ import (
 	"goapi/app/response"
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"time"
 )
@@ -58,7 +58,7 @@ func CheckStatus(Source, ContractCode string) string {
 		}
 		// 最终结果
 		if status == "4" {
-			mail_notice.Notice("msgHeartbeatAnomaly", map[string]interface{}{
+			NoticeMail.Notice("msgHeartbeatAnomaly", map[string]interface{}{
 				"name": Source,
 				"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
 			})

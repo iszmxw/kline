@@ -5,7 +5,7 @@ import (
 	"goapi/config"
 	"goapi/pkg/logger"
 	"goapi/pkg/pprof"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-mql5/mql5"
 	kconfig "goapi/service/kline-mql5/mql5/config"
 	"time"
@@ -27,7 +27,7 @@ func main() {
 	pprof.Debug(":6061")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	CodeData := kline_common.GetData(kconfig.KlineSource)
+	CodeData := KlineCommon.GetData(kconfig.KlineSource)
 	start := "ok"
 	//rate := true
 	for {

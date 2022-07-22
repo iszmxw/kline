@@ -8,9 +8,9 @@ import (
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-qxbroker/qxbroker/api"
 	"goapi/service/kline-qxbroker/qxbroker/config"
 	"goapi/service/kline-qxbroker/qxbroker/wsdata"
@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-func SocketQxbroker(info kline_common.Info) {
+func SocketQxbroker(info KlineCommon.Info) {
 	//  3 定时检测数据健康状况，不健康通知外部
 	//  2 上游直接断开了，通知外部已断开
 	callback := make(chan int, 1)
@@ -29,14 +29,14 @@ func SocketQxbroker(info kline_common.Info) {
 	// 开始订阅
 	{
 		logger.Info(info)
-		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)
+		wsClient := new(api.WSPriceClient).Init("", KlineCommon.GetProxy(config.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli()                                   // 系統生成的Ts
 			logger.RequestId = fmt.Sprintf("%v@%v", SystemTs, info.ContractCode) // RequestId 定义为 Ts 时间戳
 			resp.Symbol = info.ContractCode
 			defer func() {
 				if r := recover(); r != nil {
-					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
+					NoticeMail.Notice("msgServiceAnomaly", map[string]interface{}{
 						"name": config.KlineSource,
 						"r":    r,
 					})
@@ -57,7 +57,7 @@ func SocketQxbroker(info kline_common.Info) {
 			UpstreamTs := int64(resp.TimeId * 1000) // 上游的ts
 			//TimeDiff := SystemTs - UpstreamTs
 			//logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
-			//logger.Info(kline_common.TimeDiffTips(config.KlineSource, UpstreamTs))
+			//logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
 			data := RedisData(SystemTs, UpstreamTs, resp)
 			//logger.Info(data)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
@@ -103,7 +103,7 @@ func SocketQxbroker(info kline_common.Info) {
 			//	logger.Info("elastic-success")
 			//}
 			// 计算一次存储数据消耗的时间
-			//logger.Info(kline_common.ConsumeTime(SystemTs, time.Now().UnixMilli()))
+			//logger.Info(KlineCommon.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		}, "")
 	}
 	select {
@@ -114,7 +114,7 @@ func SocketQxbroker(info kline_common.Info) {
 		}
 		logger.Info(msg)
 		// 重启服务
-		kline_common.RebootSocketLog(config.KlineSource, info)
+		KlineCommon.RebootSocketLog(config.KlineSource, info)
 		go SocketQxbroker(info)
 	}
 }

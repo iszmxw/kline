@@ -1,7 +1,7 @@
 package api
 
 import (
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-qxbroker/qxbroker/config"
 	"goapi/service/kline-qxbroker/qxbroker/wsdata"
 	"net/url"
@@ -22,7 +22,7 @@ func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanC
 
 type OnSubPriceKLineResponse func(*wsdata.SubPriceKLineResponse)
 
-func (wsIx *WSPriceClient) SubPriceKLine(info kline_common.Info, callbackFun OnSubPriceKLineResponse, id string) {
+func (wsIx *WSPriceClient) SubPriceKLine(info KlineCommon.Info, callbackFun OnSubPriceKLineResponse, id string) {
 	if id == "" {
 		id = config.DefaultId
 	}

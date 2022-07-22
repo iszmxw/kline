@@ -6,7 +6,7 @@ import (
 	"goapi/app/models"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/xtime"
 	tradeSleepHsb "goapi/service/kline-hsb/hsb/config/trade_sleep"
 	tradeSleepOlymptrade "goapi/service/kline-olymptrade/olymptrade/config/trade_sleep"
@@ -69,7 +69,7 @@ func TickerCheckTodaySleep(isTicker bool) {
 				result := xtime.CheckTodaySleep(WeekdayTimeDetail)
 				if result {
 					if data.AssetsStatus == 1 {
-						go mail_notice.Notice("msgAssetSleep", map[string]interface{}{
+						go NoticeMail.Notice("msgAssetSleep", map[string]interface{}{
 							"assets_code": data.AssetsCode,
 							"msg":         fmt.Sprintf("%v,结束交易准备开始休市", data.AssetsCode),
 						})
@@ -78,7 +78,7 @@ func TickerCheckTodaySleep(isTicker bool) {
 					logger.Info(data.AssetsCode + "休市中")
 				} else {
 					if data.AssetsStatus == 2 {
-						go mail_notice.Notice("msgAssetSleep", map[string]interface{}{
+						go NoticeMail.Notice("msgAssetSleep", map[string]interface{}{
 							"assets_code": data.AssetsCode,
 							"msg":         fmt.Sprintf("%v,休市完毕，准备开市交易", data.AssetsCode),
 						})

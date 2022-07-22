@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"goapi/pkg/logger"
 	"goapi/service/kline-binance/binance"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-hsb/hsb"
 	"goapi/service/kline-olymptrade/olymptrade"
@@ -15,7 +15,7 @@ import (
 
 // 心跳 heartbeat 健康
 
-func Start(num time.Duration, Source string, CodeData []kline_common.Info) {
+func Start(num time.Duration, Source string, CodeData []KlineCommon.Info) {
 	time.Sleep(time.Minute * 5)                 //等待当前数据订阅5分钟后开始心跳检测
 	ticker := time.NewTicker(num * time.Second) // 每隔 num 秒检查一次
 	for range ticker.C {
@@ -31,7 +31,7 @@ func Start(num time.Duration, Source string, CodeData []kline_common.Info) {
 }
 
 // 心跳检测到异常了，重启协诚
-func reboot(Source string, info kline_common.Info) {
+func reboot(Source string, info KlineCommon.Info) {
 	switch Source {
 	case "raceoption":
 		go raceoption.SocketRaceOption(info)

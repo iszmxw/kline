@@ -8,8 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
-	mail_notice "goapi/pkg/notice/mail"
-	kline_common "goapi/service/kline-common"
+	"goapi/pkg/notice/mail"
+	"goapi/service/kline-common"
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/zip"
@@ -45,7 +45,7 @@ type WebSocketOp struct {
 	authConnect       int                      // 自动重连次数
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStars       list.List
-	Info              kline_common.Info // 订阅的币种
+	Info              KlineCommon.Info // 订阅的币种
 	Symbol            string            // 订阅的币种
 	Description       string            // 描述
 }
@@ -237,7 +237,7 @@ func (ws *WebSocketOp) Close() {
 			close(ws.writeChan)
 			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
-			go mail_notice.Notice("msgSocketClose", map[string]interface{}{
+			go NoticeMail.Notice("msgSocketClose", map[string]interface{}{
 				"name":        config.KlineSource + "==>" + ws.Symbol,
 				"description": ws.Description,
 			})
@@ -276,7 +276,7 @@ func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFun
 }
 
 // 通用订阅
-func (ws *WebSocketOp) sub(subReq []byte, info kline_common.Info, fun interface{}, param reflect.Type) bool {
+func (ws *WebSocketOp) sub(subReq []byte, info KlineCommon.Info, fun interface{}, param reflect.Type) bool {
 	ch := info.Symbol
 	ws.Symbol = ch
 	ws.Info = info

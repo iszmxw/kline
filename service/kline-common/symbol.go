@@ -1,4 +1,4 @@
-package kline_common
+package KlineCommon
 
 type Info struct {
 	ID           int    `json:"id"`

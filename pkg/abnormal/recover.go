@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"goapi/pkg/logger"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"net"
 	"os"
 	"runtime/debug"
@@ -25,7 +25,7 @@ func Stack(description string, c *gin.Context) {
 
 		if c != nil && brokenPipe { // <--如果连接已经中断，我们只需要简单的记录并中断处理
 			logger.Error(errors.New("网络连接中断"))
-			mail_notice.Notice("msgNetworkAnomaly", map[string]interface{}{
+			NoticeMail.Notice("msgNetworkAnomaly", map[string]interface{}{
 				"title":       "网络连接中断",
 				"c":           c,
 				"r":           r,
@@ -41,7 +41,7 @@ func Stack(description string, c *gin.Context) {
 		logger.Error(errors.New(fmt.Sprintf(`详细堆栈错误信息: %v`, errInfo)))
 		// 网络连接中断就不发送了
 		if brokenPipe == false {
-			mail_notice.Notice("msgNetworkAnomaly", map[string]interface{}{
+			NoticeMail.Notice("msgNetworkAnomaly", map[string]interface{}{
 				"title":       "接口内部异常",
 				"c":           c,
 				"r":           r,

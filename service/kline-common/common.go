@@ -1,10 +1,10 @@
-package kline_common
+package KlineCommon
 
 import (
 	"fmt"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/notice/telegram"
 	"goapi/pkg/redis"
 	"runtime/debug"
@@ -69,7 +69,7 @@ func RebootSocketLog(Source string, info Info) {
 	num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", Source, info.Symbol))
 	_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
 	logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
-	go mail_notice.Notice("msgRebootSocket", map[string]interface{}{
+	go NoticeMail.Notice("msgRebootSocket", map[string]interface{}{
 		"service":     Source,
 		"symbol":      info.Symbol,
 		"num":         num,

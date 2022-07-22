@@ -8,7 +8,7 @@ import (
 	api2captcha "goapi/pkg/recaptcha"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"net/http"
 	"strings"
@@ -104,7 +104,7 @@ func login() string {
 		"origin":            {"https://olymptrade.com"},
 		"referer":           {"https://olymptrade.com/"},
 		"User-Agent":        {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"},
-	}, string(str), kline_common.GetProxy(config.KlineSource))
+	}, string(str), KlineCommon.GetProxy(config.KlineSource))
 	if err != nil {
 		logger.Error(err)
 	}

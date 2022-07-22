@@ -1,4 +1,4 @@
-package mail_notice
+package NoticeMail
 
 const (
 	InitNum   = 1                  // 初始次数

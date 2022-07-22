@@ -17,7 +17,7 @@ import (
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
@@ -359,7 +359,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", klineSource, symbol)
 		_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
 		time.Sleep(time.Second * 5) // 休息5秒
-		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
+		NoticeMail.Notice("msgDataAbnormal", map[string]interface{}{
 			"c":    c,
 			"tips": tips,
 		})

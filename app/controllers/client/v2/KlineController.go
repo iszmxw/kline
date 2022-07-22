@@ -19,7 +19,7 @@ import (
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
@@ -312,7 +312,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", klineSource, symbol)
 		_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
 		time.Sleep(time.Second * 5) // 休息5秒
-		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
+		NoticeMail.Notice("msgDataAbnormal", map[string]interface{}{
 			"c":    c,
 			"tips": tips,
 		})
@@ -780,7 +780,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", klineSource, symbol)
 		_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
 		time.Sleep(time.Second * 5) // 休息5秒
-		mail_notice.Notice("msgDataAbnormal", map[string]interface{}{
+		NoticeMail.Notice("msgDataAbnormal", map[string]interface{}{
 			"c":    c,
 			"tips": tips,
 		})
@@ -847,12 +847,12 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		return
 	}
 	searchResult, err := esClient.Search().
-		Index("kline_log").      // 设置索引名
-		Query(boolQuery).        // 设置查询条件
-		Sort("ts", false).       // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
-		From(0).                 // 设置分页参数 - 起始偏移量，从第0行记录开始
-		Size(Count).             // 设置分页参数 - 每页大小
-		Pretty(true).            // 查询结果返回可读性较好的JSON格式
+		Index("kline_log"). // 设置索引名
+		Query(boolQuery). // 设置查询条件
+		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
+		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
+		Size(Count). // 设置分页参数 - 每页大小
+		Pretty(true). // 查询结果返回可读性较好的JSON格式
 		Do(context.Background()) // 执行请求
 	if err != nil {
 		logger.Error(err)

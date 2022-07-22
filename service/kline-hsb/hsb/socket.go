@@ -9,9 +9,9 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
-	kline_common "goapi/service/kline-common"
+	"goapi/service/kline-common"
 	"goapi/service/kline-hsb/hsb/api"
 	"goapi/service/kline-hsb/hsb/config"
 	"goapi/service/kline-hsb/hsb/config/trade_sleep"
@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-func SocketHsb(info kline_common.Info) {
+func SocketHsb(info KlineCommon.Info) {
 	callback := make(chan struct{}, 1)
 	var StartSub = true
 	// 资产休市状态
@@ -33,11 +33,11 @@ func SocketHsb(info kline_common.Info) {
 	}
 	// 开始订阅
 	if StartSub {
-		wsClient := new(api.WSPriceClient).Init("", kline_common.GetProxy(config.KlineSource), callback)
+		wsClient := new(api.WSPriceClient).Init("", KlineCommon.GetProxy(config.KlineSource), callback)
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
-					mail_notice.Notice("msgServiceAnomaly", map[string]interface{}{
+					NoticeMail.Notice("msgServiceAnomaly", map[string]interface{}{
 						"name": config.KlineSource,
 						"r":    r,
 					})
@@ -66,7 +66,7 @@ func SocketHsb(info kline_common.Info) {
 			TimeDiff := SystemTs - UpstreamTs
 			logger.Info(data)
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
-			//logger.Info(kline_common.TimeDiffTips(config.KlineSource, SystemTs))
+			//logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, SystemTs))
 			redisData, MarshalJSONErr := json.Marshal(data) //转换成JSON返回的是byte[]
 			if MarshalJSONErr != nil {
 				logger.Error(MarshalJSONErr)
@@ -110,14 +110,14 @@ func SocketHsb(info kline_common.Info) {
 			//	logger.Info("elastic-success")
 			//}
 			// 计算一次存储数据消耗的时间
-			logger.Info(kline_common.ConsumeTime(SystemTs, time.Now().UnixMilli()))
+			logger.Info(KlineCommon.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		}, "")
 
 	}
 	select {
 	case <-callback:
 		// 重启服务
-		kline_common.RebootSocketLog(config.KlineSource, info)
+		KlineCommon.RebootSocketLog(config.KlineSource, info)
 		go SocketHsb(info)
 	}
 }
@@ -149,7 +149,7 @@ func RedisData(SystemTs int64, resp *wsdata.SubPriceKLineResponse) response.SubI
 	var data response.SubIndexKLineResponse
 	wsData := *resp
 	rData := wsData.Pb.Tick // {"p":"USDJPY","t":1650526129,"q":0,"open":127.944,"low":127.944,"high":127.944,"close":127.944}
-	ContractCode := kline_common.GetSymbolById(helpers.StringToInt(fmt.Sprintf("%v", rData.Id)))
+	ContractCode := KlineCommon.GetSymbolById(helpers.StringToInt(fmt.Sprintf("%v", rData.Id)))
 	data.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)
 	data.Ts = SystemTs                                                                             // 系統生成的Ts
 	data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts

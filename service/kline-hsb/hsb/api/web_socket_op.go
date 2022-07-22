@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
-	mail_notice "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/mail"
 	"goapi/service/kline-hsb/hsb/config"
 	"goapi/service/kline-hsb/hsb/utils/zip"
 	"net/http"
@@ -260,7 +260,7 @@ func (ws *WebSocketOp) Close() {
 			close(ws.readChan)
 			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
-			go mail_notice.Notice("msgSocketClose", map[string]interface{}{
+			go NoticeMail.Notice("msgSocketClose", map[string]interface{}{
 				"name":        config.KlineSource + "==>" + ws.Symbol,
 				"description": ws.Description,
 			})

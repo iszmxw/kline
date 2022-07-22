@@ -1,4 +1,4 @@
-package kline_common
+package KlineCommon
 
 import (
 	"errors"
