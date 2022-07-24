@@ -15,7 +15,7 @@ func RegisterEmailRoutes(router *gin.RouterGroup) {
 	{
 		{ // V1 版本
 			EmailV1Group := new(clientV1.GroupMail)
-			V1Route := EmailRoute.Group("/v1")
+			V1Route := EmailRoute.Group("/")
 			{
 				// 【U01】 发送邮件【POST】
 				V1Route.POST("/SendEmail.json", EmailV1Group.MailController.SendEmail)

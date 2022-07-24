@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"goapi/app/middlewares/v1"
 	"goapi/routes"
+	"net/http"
 )
 
 // SetupRoute 路由初始化
@@ -12,6 +13,7 @@ func SetupRoute() *gin.Engine {
 	router := gin.Default()
 	router.Use(v1.TraceLogger()) // 日志追踪
 	router.Use(v1.Cors())        // 跨域
+	router.NoRoute(NoResponse)
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
 		context.String(200, "Hello World!："+requestId.(string)+"\n\n\n")
@@ -34,6 +36,7 @@ func SetupRouteEmail() *gin.Engine {
 	router := gin.Default()
 	router.Use(v1.TraceLogger()) // 日志追踪
 	router.Use(v1.Cors())        // 跨域
+	router.NoRoute(NoResponse)
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
 		context.String(200, "Hello Email!："+requestId.(string)+"\n\n\n")
@@ -41,4 +44,12 @@ func SetupRouteEmail() *gin.Engine {
 	// 二元 Email 接口
 	routes.RegisterEmailRoutes(router.Group("/"))
 	return router
+}
+
+func NoResponse(c *gin.Context) {
+	//返回404状态码
+	c.JSON(http.StatusNotFound, gin.H{
+		"status": 404,
+		"error":  "404, page not exists!",
+	})
 }
