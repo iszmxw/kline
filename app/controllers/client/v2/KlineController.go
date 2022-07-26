@@ -607,6 +607,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		DB := mysql.DB
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", "IQO").
+			Where("is_show", 1).
 			Where("nation", SubNationInfo.Nation).
 			Find(&PushRateData).Error
 		if err != nil {
