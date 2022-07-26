@@ -581,8 +581,15 @@ STOP:
 
 // 推送Rate socket消息
 
-func PushRate(socketId string, messageType int, ws *wss.WsConn, assetsCode string) {
+func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
 	logger.RequestId = socketId
+	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia"}
+	err := json.Unmarshal([]byte(subInfo), &SubNationInfo)
+	if err != nil {
+		logger.Error(err)
+		wss.WsClose(ws)
+		return
+	}
 	HeartBeatingKey := fmt.Sprintf("WsReturnRateHeartBeatingKey:%v", socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
@@ -590,15 +597,17 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, assetsCode strin
 			goto STOP
 		}
 		// 空消息跳过
-		if len(assetsCode) <= 0 {
+		if len(subInfo) <= 0 {
 			goto END
+		}
+		if len(SubNationInfo.Nation) <= 0 {
+			SubNationInfo.Nation = "Indonesia"
 		}
 		var PushRateData []response.PushRateData
 		DB := mysql.DB
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", "IQO").
-			Where("is_valid", 1).
-			//Where("is_show", 1).
+			Where("nation", SubNationInfo.Nation).
 			Find(&PushRateData).Error
 		if err != nil {
 			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))

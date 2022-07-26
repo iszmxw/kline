@@ -16,6 +16,10 @@ type SubUserInfo struct {
 	AppUserId string `json:"appUserId"`
 }
 
+type SubNationInfo struct {
+	Nation string `json:"nation"`
+}
+
 type TradeOrderInfo struct {
 	AppUserId           string `json:"appUserId"`
 	AssetsCode          string `json:"assetsCode"`
