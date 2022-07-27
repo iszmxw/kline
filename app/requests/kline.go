@@ -21,7 +21,7 @@ type SubNationInfo struct {
 }
 
 type TradeOrderInfo struct {
-	TradeOrderId        string `json:"trade_order_id"` //交易表主键自增ID
+	TradeOrderId        string `json:"tradeOrderId"` //交易表主键自增ID
 	AppUserId           string `json:"appUserId"`
 	AssetsCode          string `json:"assetsCode"`
 	TradeBeginTimestamp string `json:"tradeBeginTimestamp"`
