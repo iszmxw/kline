@@ -8,6 +8,8 @@ import (
 // RegisterTaskRoutes 注册定时任务路由
 
 func RegisterTaskRoutes(crontab *cron.Cron) {
+	// 4、【定时任务】重置邮箱剩余条数 执行时间/周期：- 每天的凌晨12:02分
+	_, _ = crontab.AddFunc("*/3 * * * * ?", task_plan.ActivityInvitationGiftBonus)
 	// 【活动】1、每日8点整开始执行，赠送Bonus入账
 	_, _ = crontab.AddFunc("*/3 * * * * ?", task_plan.ActivityInvitationGiftBonus)
 	// 【活动】2、每天0点1分开始执行，汇总交易亏损数据

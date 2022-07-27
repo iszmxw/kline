@@ -17,14 +17,52 @@ type MailController struct {
  * .发送邮件【POST】
  */
 // MailController
-// 历史行情 mysql 查询
 
-func (h *MailController) SendEmail(c *gin.Context) {
-	var params requests.SendEmailParams
+func (h *MailController) QueryMargin(c *gin.Context) {
+	var params requests.QueryMargin
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	echo.Success(c, nil, "")
+}
+
+/**接口编号:【U01】
+ * .发送邮件【POST】
+ */
+// MailController
+
+func (h *MailController) SendOneEmail(c *gin.Context) {
+	var params requests.SendOneEmail
+	_ = c.Bind(&params)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	echo.Success(c, nil, "")
+}
+
+/**接口编号:【U01】
+ * .发送邮件【POST】
+ */
+// MailController
+
+func (h *MailController) SendBatchEmail(c *gin.Context) {
+	var params requests.SendBatchEmail
+	_ = c.Bind(&params)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	echo.Success(c, nil, "")
+}
+
+/**接口编号:【U01】
+ * .发送邮件【POST】
+ */
+// MailController
+
+func (h *MailController) ResetMargin(c *gin.Context) {
 	echo.Success(c, nil, "")
 }

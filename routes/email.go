@@ -17,8 +17,21 @@ func RegisterEmailRoutes(router *gin.RouterGroup) {
 			EmailV1Group := new(clientV1.GroupMail)
 			V1Route := EmailRoute.Group("/")
 			{
-				// 【U01】 发送邮件【POST】
-				V1Route.POST("/SendEmail.json", EmailV1Group.MailController.SendEmail)
+				// 139.com
+				// qq.com
+				// gmail.com
+				// 169.com
+
+				// 1、【API】查询剩余发送条数接口
+				V1Route.POST("/QueryMargin.json", EmailV1Group.MailController.QueryMargin)
+				// 2、【API】单发邮件接口
+				V1Route.POST("/SendOneEmail.json", EmailV1Group.MailController.SendOneEmail)
+				// 3、【API】群发邮件接口 批量
+				V1Route.POST("/SendBatchEmail.json", EmailV1Group.MailController.SendBatchEmail)
+				// 4、【定时任务】重置邮箱剩余条数：
+				// 执行时间/周期：
+				//    - 每天的凌晨12:02分
+				V1Route.POST("/ResetMargin.json", EmailV1Group.MailController.ResetMargin)
 			}
 		}
 

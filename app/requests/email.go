@@ -1,10 +1,23 @@
 package requests
 
-type SendEmailParams struct {
-	ItemCode               string `json:"itemCode" validate:"required"`   // 项目编码
-	Account                string `json:"account" validate:"required"`    // 接收邮件邮箱
-	ContentMsg             string `json:"contentMsg" validate:"required"` // 邮件内容
-	EmailSendParamsJsonStr string `json:"emailSendParamsJsonStr"`         // 邮箱配置JSON字符串
-	MainTitle              string `json:"mainTitle"`
-	UserName               string `json:"userName"`
+type QueryMargin struct {
+	ItemCode   string `json:"itemCode"`   // 项目编码
+	SenderName string `json:"senderName"` // 发件人名称
+}
+
+type SendOneEmail struct {
+	ItemCode string `json:"itemCode"` // 项目编码
+	CommonParams
+}
+
+type SendBatchEmail struct {
+	ItemCode string         `json:"itemCode"`
+	Params   []CommonParams `json:"params"`
+}
+type CommonParams struct {
+	SenderName     string `json:"senderName"`     // 发件人名称
+	MailAccount    string `json:"mailAccount"`    // 发邮件邮箱
+	ReceiveEmail   string `json:"receiveEmail"`   // 收件邮箱
+	MainTitle      string `json:"mainTitle"`      // 邮件标题
+	MessageContent string `json:"messageContent"` // 邮件内容
 }
