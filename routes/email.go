@@ -20,7 +20,7 @@ func RegisterEmailRoutes(router *gin.RouterGroup) {
 				// 139.com
 				// qq.com
 				// gmail.com
-				// 169.com
+				// 163.com
 
 				// 1、【API】查询剩余发送条数接口
 				V1Route.POST("/QueryMargin.json", EmailV1Group.MailController.QueryMargin)
