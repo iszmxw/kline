@@ -505,8 +505,23 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 		logger.Error(errors.New("err sub,IsDemo not right"))
 		return
 	}
+	// 获取交易资产的小数点位数
+	var TradingAssets models.TradingAssets
+	mysql.DB.Debug().Model(models.TradingAssets{}).
+		Where("item_code", "IQO").
+		Where("assets_code", TradeOrderInfo.AssetsCode).
+		Find(&TradingAssets)
+	if TradingAssets.Id <= 0 {
+		logger.Error(errors.New("查询错误"))
+		return
+	}
+	beginAssetsPrice, err := helpers.FormatFloat(helpers.StrToFloat64(TradeOrderInfo.BeginAssetsPrice), TradingAssets.PointNumber)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
 	// 开启定时器，60 秒后查询结果进行通知
-	time.Sleep(time.Second * 59)              // 等待大约1分钟后开始查询结果
+	time.Sleep(time.Second * 10)              // 等待大约1分钟后开始查询结果
 	ticker := time.NewTicker(1 * time.Second) // 每秒检查一次
 	times := 1
 	for range ticker.C {
@@ -520,7 +535,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 				Where("app_user_id", TradeOrderInfo.AppUserId).
 				Where("assets_code", TradeOrderInfo.AssetsCode).
 				Where("trade_begin_timestamp", TradeOrderInfo.TradeBeginTimestamp).
-				Where("begin_assets_price", TradeOrderInfo.BeginAssetsPrice).
+				Where("begin_assets_price", beginAssetsPrice).
 				Where("up_down_type", TradeOrderInfo.UpDownType).
 				Where("amounts", TradeOrderInfo.Amounts).
 				Find(&TradingOrderVirtual)
@@ -550,7 +565,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 				Where("app_user_id", TradeOrderInfo.AppUserId).
 				Where("assets_code", TradeOrderInfo.AssetsCode).
 				Where("trade_begin_timestamp", TradeOrderInfo.TradeBeginTimestamp).
-				Where("begin_assets_price", TradeOrderInfo.BeginAssetsPrice).
+				Where("begin_assets_price", beginAssetsPrice).
 				Where("up_down_type", TradeOrderInfo.UpDownType).
 				Where("amounts", TradeOrderInfo.Amounts).
 				Find(&TradingOrder)
