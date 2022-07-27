@@ -7,9 +7,9 @@ import (
 
 func main() {
 	// 保留位数
-	keepNum := fmt.Sprintf("%v", 4)
-	result := fmt.Sprintf("%."+keepNum+"f", 21069.11145455)
-	float, err := helpers.FormatFloat(21069.11145455, 4)
+	keepNum := fmt.Sprintf("%v", 2)
+	result := fmt.Sprintf("%."+keepNum+"f", 18.781000)
+	float, err := helpers.FormatFloat(18.781000, 2)
 	if err != nil {
 		return
 	}

@@ -545,7 +545,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 		return
 	}
 	// 开启定时器，60 秒后查询结果进行通知
-	time.Sleep(time.Second * 10)              // 等待大约1分钟后开始查询结果
+	time.Sleep(time.Second * 59)              // 等待大约1分钟后开始查询结果
 	ticker := time.NewTicker(1 * time.Second) // 每秒检查一次
 	times := 1
 	for range ticker.C {
