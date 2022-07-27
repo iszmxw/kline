@@ -26,7 +26,7 @@ func RegisterEmailRoutes(router *gin.RouterGroup) {
 				V1Route.POST("/QueryMargin.json", EmailV1Group.MailController.QueryMargin)
 				// 2、【API】单发邮件接口
 				V1Route.POST("/SendOneEmail.json", EmailV1Group.MailController.SendOneEmail)
-				// 3、【API】群发邮件接口 批量
+				// 3、【API】群发邮件接口
 				V1Route.POST("/SendBatchEmail.json", EmailV1Group.MailController.SendBatchEmail)
 				// 4、【定时任务】重置邮箱剩余条数：
 				// 执行时间/周期：
