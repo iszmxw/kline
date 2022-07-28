@@ -1,9 +1,11 @@
 package main
 
 import (
+	"goapi/bootstrap"
 	"goapi/config"
 	"goapi/pkg/email"
 	"goapi/pkg/logger"
+	"goapi/service/binary-email/queue"
 	"time"
 )
 
@@ -18,13 +20,17 @@ func init() {
 }
 
 func main() {
+	bootstrap.SetupRedis(0)
+	defer bootstrap.RedisClose()
 	// 139.com
 	// qq.com
 	// gmail.com
 	// 163.com
 
+	queue.Lpush()
+
 	//m139()
-	mqq()
+	//mqq()
 	//mgmail()
 	//m163()
 }

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
@@ -14,6 +15,7 @@ import (
 	"goapi/pkg/mysql"
 	"goapi/pkg/validate"
 	"goapi/service/binary-email/config"
+	"goapi/service/binary-email/queue"
 	"time"
 )
 
@@ -143,7 +145,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 
 func (h *MailController) SendBatchEmail(c *gin.Context) {
 	var params requests.SendBatchEmail
-	var sendData email.Params
+	var sendData []string
 	var SystemEmailSendLog models.SystemEmailSendLog
 	var SendTotal response.SendTotal
 	_ = c.Bind(&params)
@@ -190,18 +192,30 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 		echo.Error(c, "FAILD", fmt.Sprintf("%v 每日最多使用 %v 条，您当前已使用：%v", params.MailAccount, SystemEmailRoutingNode.MaxNumber, SendTotal.Total))
 		return
 	}
-	sendData.From = params.MailAccount
-	sendData.Tos = params.ReceiveEmail
-	sendData.Subject = params.MainTitle
-	sendData.Body = params.MessageContent
-	sendData.Host = SystemEmailRoutingNode.ChannelHost
-	sendData.Port = SystemEmailRoutingNode.ChannelPort
-	sendData.Username = SystemEmailRoutingNode.ChannelUsername
-	sendData.Password = SystemEmailRoutingNode.ChannelPassword
-	err = email.SendBatchEmail(sendData)
-	if err != nil {
-		echo.Error(c, "FAILD", err.Error())
-		return
+	// 创建消息队列，将要发送的消息进行入队
+	for _, item := range params.ReceiveEmail {
+		marshal, err := json.Marshal(email.Params{
+			From:     params.MailAccount,
+			To:       item,
+			Subject:  params.MainTitle,
+			Body:     params.MessageContent,
+			Host:     SystemEmailRoutingNode.ChannelHost,
+			Port:     SystemEmailRoutingNode.ChannelPort,
+			Username: SystemEmailRoutingNode.ChannelUsername,
+			Password: SystemEmailRoutingNode.ChannelPassword,
+		})
+		if err != nil {
+			echo.Error(c, "FAILD", err.Error())
+			return
+		}
+		sendData = append(sendData, string(marshal))
+	}
+	if len(sendData) > 0 {
+		err = queue.Produce(sendData)
+		if err != nil {
+			echo.Error(c, "FAILD", err.Error())
+			return
+		}
 	}
 	// 剩余可用条数
 	AvailableNumber := SystemEmailRoutingNode.AvailableNumber - len(params.ReceiveEmail)

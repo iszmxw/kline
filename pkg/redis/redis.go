@@ -97,6 +97,15 @@ func (rdb *Redis) RPop(key string) string {
 	return rdb.Client.RPop(Set(key)).Val()
 }
 
+func (rdb *Redis) LLen(key string) (int64, error) {
+	count, err := rdb.Client.LLen(Set(key)).Result()
+	if err != nil {
+		fmt.Println("LLen 失败")
+		return 0, err
+	}
+	return count, nil
+}
+
 func (rdb *Redis) Delete(key string) bool {
 	err := rdb.Client.Del(Set(key)).Err()
 	if err != nil {
