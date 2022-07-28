@@ -1,10 +1,20 @@
 package v1
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/mapstructure"
+	cmap "github.com/orcaman/concurrent-map"
+	"goapi/app/models"
 	"goapi/app/requests"
+	"goapi/app/response"
 	"goapi/pkg/echo"
+	"goapi/pkg/email"
+	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	"goapi/pkg/validate"
+	"goapi/service/binary-email/config"
+	"time"
 )
 
 // k线图服务
@@ -20,12 +30,18 @@ type MailController struct {
 
 func (h *MailController) QueryMargin(c *gin.Context) {
 	var params requests.QueryMargin
+	var result response.SystemEmailRoutingNode
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, nil, "")
+	mysql.DB.Model(models.SystemEmailRoutingNode{}).Where(map[string]interface{}{
+		"valid":  1,
+		"nation": params.Nation,
+		"email":  params.SenderName,
+	}).Find(&result)
+	echo.Success(c, gin.H{"available_number": result.AvailableNumber}, "")
 }
 
 /**接口编号:【U01】
@@ -35,12 +51,81 @@ func (h *MailController) QueryMargin(c *gin.Context) {
 
 func (h *MailController) SendOneEmail(c *gin.Context) {
 	var params requests.SendOneEmail
+	var sendData email.Params
+	var SystemEmailSendLog models.SystemEmailSendLog
+	var SendTotal response.SendTotal
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, nil, "")
+	if len(params.MailAccount) == 0 {
+		echo.Error(c, "PARAMS_ERROR", "发件人邮箱不能为空")
+		return
+	}
+	// 获取邮箱路由节点
+	err, SystemEmailRoutingNode := config.GetOne(params.Nation, params.MailAccount)
+	if err != nil {
+		echo.Error(c, "PARAMS_ERROR", err.Error())
+		return
+	}
+	if SystemEmailRoutingNode.AvailableNumber <= 0 {
+		echo.Error(c, "FAILD", fmt.Sprintf("%v 剩余可用条数为 %v", params.MailAccount, SystemEmailRoutingNode.AvailableNumber))
+		return
+	}
+	sendTotalResult := cmap.New().Items()
+	err = mysql.DB.Model(models.SystemEmailSendLog{}).Where(map[string]interface{}{
+		"sending_mailbox": params.MailAccount,
+	}).Select("sum(send_total) AS sendTotal").
+		Find(&sendTotalResult).Error
+	if err != nil {
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	// map转struct
+	err = mapstructure.Decode(sendTotalResult, &SendTotal)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	if (SendTotal.Total + len(params.ReceiveEmail)) >= SystemEmailRoutingNode.MaxNumber {
+		echo.Error(c, "FAILD", fmt.Sprintf("%v 每日最多使用 %v 条，您当前已使用：%v", params.MailAccount, SystemEmailRoutingNode.MaxNumber, SendTotal.Total))
+		return
+	}
+	sendData.From = params.MailAccount
+	sendData.To = params.ReceiveEmail
+	sendData.Subject = params.MainTitle
+	sendData.Body = params.MessageContent
+	sendData.Host = SystemEmailRoutingNode.ChannelHost
+	sendData.Port = SystemEmailRoutingNode.ChannelPort
+	sendData.Username = SystemEmailRoutingNode.ChannelUsername
+	sendData.Password = SystemEmailRoutingNode.ChannelPassword
+	err = email.SendOneEmail(sendData)
+	if err != nil {
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	// 剩余可用条数
+	AvailableNumber := SystemEmailRoutingNode.AvailableNumber - 1
+	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("id", SystemEmailRoutingNode.Id).Update("available_number", AvailableNumber).Error
+	if err != nil {
+		logger.Error(err)
+	}
+	// 添加操作记录
+	SystemEmailSendLog.SendingMailbox = params.MailAccount
+	SystemEmailSendLog.SendTotal = 1
+	SystemEmailSendLog.AvailableNumber = AvailableNumber // 剩余可用条数
+	SystemEmailSendLog.CreatDate = time.Now()
+	SystemEmailSendLog.UpdateDate = time.Now()
+	SystemEmailSendLog.Creator = "GoMail"
+	SystemEmailSendLog.Updater = "GoMail"
+	SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
+	err = mysql.DB.Model(models.SystemEmailSendLog{}).Create(&SystemEmailSendLog).Error
+	if err != nil {
+		logger.Error(err)
+	}
+	echo.Success(c, nil, "SUCCESS")
 }
 
 /**接口编号:【U01】
@@ -50,12 +135,86 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 
 func (h *MailController) SendBatchEmail(c *gin.Context) {
 	var params requests.SendBatchEmail
+	var sendData email.Params
+	var SystemEmailSendLog models.SystemEmailSendLog
+	var SendTotal response.SendTotal
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, nil, "")
+	_ = c.Bind(&params)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	if len(params.MailAccount) == 0 {
+		echo.Error(c, "PARAMS_ERROR", "发件人邮箱不能为空")
+		return
+	}
+	// 获取邮箱路由节点
+	err, SystemEmailRoutingNode := config.GetOne(params.Nation, params.MailAccount)
+	if err != nil {
+		echo.Error(c, "PARAMS_ERROR", err.Error())
+		return
+	}
+	if SystemEmailRoutingNode.AvailableNumber <= 0 {
+		echo.Error(c, "FAILD", fmt.Sprintf("%v 剩余可用条数为 %v", params.MailAccount, SystemEmailRoutingNode.AvailableNumber))
+		return
+	}
+	sendTotalResult := cmap.New().Items()
+	err = mysql.DB.Model(models.SystemEmailSendLog{}).Where(map[string]interface{}{
+		"sending_mailbox": params.MailAccount,
+	}).Select("sum(send_total) AS sendTotal").
+		Find(&sendTotalResult).Error
+	if err != nil {
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	// map转struct
+	err = mapstructure.Decode(sendTotalResult, &SendTotal)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	if (SendTotal.Total + len(params.ReceiveEmail)) >= SystemEmailRoutingNode.MaxNumber {
+		echo.Error(c, "FAILD", fmt.Sprintf("%v 每日最多使用 %v 条，您当前已使用：%v", params.MailAccount, SystemEmailRoutingNode.MaxNumber, SendTotal.Total))
+		return
+	}
+	sendData.From = params.MailAccount
+	sendData.Tos = params.ReceiveEmail
+	sendData.Subject = params.MainTitle
+	sendData.Body = params.MessageContent
+	sendData.Host = SystemEmailRoutingNode.ChannelHost
+	sendData.Port = SystemEmailRoutingNode.ChannelPort
+	sendData.Username = SystemEmailRoutingNode.ChannelUsername
+	sendData.Password = SystemEmailRoutingNode.ChannelPassword
+	err = email.SendBatchEmail(sendData)
+	if err != nil {
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	// 剩余可用条数
+	AvailableNumber := SystemEmailRoutingNode.AvailableNumber - len(params.ReceiveEmail)
+	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("id", SystemEmailRoutingNode.Id).Update("available_number", AvailableNumber).Error
+	if err != nil {
+		logger.Error(err)
+	}
+	// 添加操作记录
+	SystemEmailSendLog.SendingMailbox = params.MailAccount
+	SystemEmailSendLog.SendTotal = len(params.ReceiveEmail)
+	SystemEmailSendLog.AvailableNumber = AvailableNumber // 剩余可用条数
+	SystemEmailSendLog.CreatDate = time.Now()
+	SystemEmailSendLog.UpdateDate = time.Now()
+	SystemEmailSendLog.Creator = "GoMail"
+	SystemEmailSendLog.Updater = "GoMail"
+	SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
+	err = mysql.DB.Model(models.SystemEmailSendLog{}).Create(&SystemEmailSendLog).Error
+	if err != nil {
+		logger.Error(err)
+	}
+	echo.Success(c, nil, "SUCCESS")
 }
 
 /**接口编号:【U01】
@@ -64,5 +223,26 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 // MailController
 
 func (h *MailController) ResetMargin(c *gin.Context) {
-	echo.Success(c, nil, "")
+	err := mysql.DB.Model(models.SystemEmailPartnerConfigSet{}).Updates(map[string]interface{}{
+		"max_number":  300,
+		"valid":       1,
+		"update_date": time.Now(),
+		"updater":     "GoMail",
+	}).Error
+	if err != nil {
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Updates(map[string]interface{}{
+		"available_number": 300,
+		"max_number":       300,
+		"valid":            1,
+		"update_date":      time.Now(),
+		"updater":          "GoMail",
+	}).Error
+	if err != nil {
+		echo.Error(c, "FAILD", err.Error())
+		return
+	}
+	echo.Success(c, nil, "SUCCESS")
 }

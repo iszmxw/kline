@@ -23,10 +23,10 @@ func main() {
 	// gmail.com
 	// 163.com
 
-	m139()
+	//m139()
 	mqq()
-	mgmail()
-	m163()
+	//mgmail()
+	//m163()
 }
 
 func m139() {

@@ -4,9 +4,11 @@ import "time"
 
 type SystemEmailRoutingNode struct {
 	Id              int64     `json:"id" gorm:"column:id; PRIMARY_KEY"` //邮箱路由节点配置表ID
-	Email           string    `json:"email"`                            //邮箱账号
+	Email           string    `json:"email"`                            //发信人邮箱
 	Channel         string    `json:"channel"`                          //三方渠道
+	ChannelUsername string    `json:"channel_username"`                 //渠道用户名
 	ChannelPassword string    `json:"channel_password"`                 //渠道密码
+	ChannelHost     string    `json:"channel_host"`                     //渠道服务器
 	ChannelPort     string    `json:"channel_port"`                     //渠道端口号
 	AvailableNumber int       `json:"available_number"`                 //剩余可用条数
 	MaxNumber       uint      `json:"max_number"`                       //每日最多使用条数

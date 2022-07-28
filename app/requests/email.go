@@ -1,23 +1,26 @@
 package requests
 
 type QueryMargin struct {
-	ItemCode   string `json:"itemCode"`   // 项目编码
-	SenderName string `json:"senderName"` // 发件人名称
+	Nation     string `json:"nation" validate:"required"`     // 国家编码
+	SenderName string `json:"senderName" validate:"required"` // 发件人名称
 }
 
 type SendOneEmail struct {
-	ItemCode string `json:"itemCode"` // 项目编码
-	CommonParams
+	ItemCode       string `json:"itemCode" validate:"required"`       // 项目编码
+	Nation         string `json:"nation" validate:"required"`         // 国家编码
+	SenderName     string `json:"senderName" validate:"required"`     // 发件人名称
+	MailAccount    string `json:"mailAccount" validate:"required"`    // 发邮件邮箱
+	ReceiveEmail   string `json:"receiveEmail" validate:"required"`   // 收件邮箱
+	MainTitle      string `json:"mainTitle" validate:"required"`      // 邮件标题
+	MessageContent string `json:"messageContent" validate:"required"` // 邮件内容
 }
 
 type SendBatchEmail struct {
-	ItemCode string         `json:"itemCode"`
-	Params   []CommonParams `json:"params"`
-}
-type CommonParams struct {
-	SenderName     string `json:"senderName"`     // 发件人名称
-	MailAccount    string `json:"mailAccount"`    // 发邮件邮箱
-	ReceiveEmail   string `json:"receiveEmail"`   // 收件邮箱
-	MainTitle      string `json:"mainTitle"`      // 邮件标题
-	MessageContent string `json:"messageContent"` // 邮件内容
+	ItemCode       string   `json:"itemCode" validate:"required"`
+	Nation         string   `json:"nation" validate:"required"`         // 国家编码
+	SenderName     string   `json:"senderName" validate:"required"`     // 发件人名称
+	MailAccount    string   `json:"mailAccount" validate:"required"`    // 发邮件邮箱
+	ReceiveEmail   []string `json:"receiveEmail" validate:"required"`   // 收件邮箱
+	MainTitle      string   `json:"mainTitle" validate:"required"`      // 邮件标题
+	MessageContent string   `json:"messageContent" validate:"required"` // 邮件内容
 }
