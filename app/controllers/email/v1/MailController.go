@@ -41,6 +41,10 @@ func (h *MailController) QueryMargin(c *gin.Context) {
 		"nation": params.Nation,
 		"email":  params.SenderName,
 	}).Find(&result)
+	if result.Id == 0 {
+		echo.Error(c, "FAILD", fmt.Sprintf("，国家：%v 不存在发信人 %v ", params.Nation, params.SenderName))
+		return
+	}
 	echo.Success(c, gin.H{"available_number": result.AvailableNumber}, "")
 }
 
@@ -120,7 +124,11 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	SystemEmailSendLog.UpdateDate = time.Now()
 	SystemEmailSendLog.Creator = "GoMail"
 	SystemEmailSendLog.Updater = "GoMail"
-	SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
+	if len(params.MessageContent) >= 150 {
+		SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
+	} else {
+		SystemEmailSendLog.Remarks = params.MessageContent
+	}
 	err = mysql.DB.Model(models.SystemEmailSendLog{}).Create(&SystemEmailSendLog).Error
 	if err != nil {
 		logger.Error(err)
@@ -209,7 +217,11 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 	SystemEmailSendLog.UpdateDate = time.Now()
 	SystemEmailSendLog.Creator = "GoMail"
 	SystemEmailSendLog.Updater = "GoMail"
-	SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
+	if len(params.MessageContent) >= 150 {
+		SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
+	} else {
+		SystemEmailSendLog.Remarks = params.MessageContent
+	}
 	err = mysql.DB.Model(models.SystemEmailSendLog{}).Create(&SystemEmailSendLog).Error
 	if err != nil {
 		logger.Error(err)
@@ -223,7 +235,7 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 // MailController
 
 func (h *MailController) ResetMargin(c *gin.Context) {
-	err := mysql.DB.Model(models.SystemEmailPartnerConfigSet{}).Updates(map[string]interface{}{
+	err := mysql.DB.Model(models.SystemEmailPartnerConfigSet{}).Where("1=1").Updates(map[string]interface{}{
 		"max_number":  300,
 		"valid":       1,
 		"update_date": time.Now(),
@@ -233,7 +245,7 @@ func (h *MailController) ResetMargin(c *gin.Context) {
 		echo.Error(c, "FAILD", err.Error())
 		return
 	}
-	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Updates(map[string]interface{}{
+	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("1=1").Updates(map[string]interface{}{
 		"available_number": 300,
 		"max_number":       300,
 		"valid":            1,

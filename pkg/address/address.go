@@ -94,11 +94,14 @@ func LimitAddress(ip string) bool {
 		logger.Error(errors.New("未读取到ip"))
 		return false
 	}
-	data := dataBase()
-	if helpers.InArray(ip,data["whitelist"].([]string)) {
+	if ip == "127.0.0.1" {
 		return false
 	}
-	if helpers.InArray(IpDomainByIp(ip, 2),data["whitelist"].([]string)) {
+	data := dataBase()
+	if helpers.InArray(ip, data["whitelist"].([]string)) {
+		return false
+	}
+	if helpers.InArray(IpDomainByIp(ip, 2), data["whitelist"].([]string)) {
 		return false
 	}
 	ok, _ := redis.Client.SelectDbGet(config.GetInt("redis.db"), fmt.Sprintf("LimitAddress:ip:%v", ip))
