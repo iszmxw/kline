@@ -591,6 +591,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 				ws.Mux.Lock()
 				_ = ws.Conn.WriteMessage(messageType, marshal)
 				ws.Mux.Unlock()
+				logger.Info(string(marshal))
 				goto STOP
 			}
 		} else {
@@ -623,6 +624,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 				ws.Mux.Lock()
 				_ = ws.Conn.WriteMessage(messageType, marshal)
 				ws.Mux.Unlock()
+				logger.Info(string(marshal))
 				goto STOP
 			}
 		}
