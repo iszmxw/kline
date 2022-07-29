@@ -359,7 +359,15 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		return
 	}
 	// 订阅的 ETH-USD，没有值
-	AssetsCode := strings.Split(SubStruct.Sub, ".")[1]
+	Sub := strings.Split(SubStruct.Sub, ".")
+	if len(Sub) < 2 {
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"sub error"}`))
+		ws.Mux.Unlock()
+		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
+		return
+	}
+	AssetsCode := Sub[1]
 	if len(AssetsCode) == 0 {
 		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
