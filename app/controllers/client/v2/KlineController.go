@@ -45,7 +45,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
-	HeartBeatingKey := fmt.Sprintf("WsIndexHeartBeatingKey:%v", socketId)
+	HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
 	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
@@ -140,7 +140,6 @@ func (h *KlineController) MaintenanceTableData(c *gin.Context) {
 // WsReturnRateHandler socket 负责转发数据库的 rate
 // ws://127.0.0.1:8080/v1/api/kline/ws_return_rate {"sub":"market.ETH-USD.index.1min"}
 func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
-	RequestId := logger.RequestId
 	ws, err := wss.GetSocket(c)
 	if err != nil {
 		logger.Error(err)
@@ -148,7 +147,7 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 	}
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
-	HeartBeatingKey := fmt.Sprintf("WsReturnRateHeartBeatingKey:%v", socketId)
+	HeartBeatingKey := fmt.Sprintf("ws_return_rate:%v:heart_beating_key", socketId)
 	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
@@ -177,7 +176,7 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		case strings.EqualFold(SubStruct.Id, "01"):
 			{
 				// 2 小时内一个长连接禁止重复订阅相同的 topic
-				checkMsg := fmt.Sprintf("rate:socket_request:%v:%v", RequestId, SubStruct.Id)
+				checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:%v", logger.RequestId, SubStruct.Id)
 				if redis.Client.CheckExist(checkMsg) {
 					logger.Info("该订阅已存在，请勿重新订阅")
 					continue
@@ -192,8 +191,21 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "02"):
-			// 开启协诚处理推送余额
-			go PushUserInfo(socketId, mt, ws, subInfo)
+			{
+				// 2 小时内一个长连接禁止重复订阅相同的 topic
+				checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:%v", logger.RequestId, SubStruct.Id)
+				if redis.Client.CheckExist(checkMsg) {
+					logger.Info("该订阅已存在，请勿重新订阅")
+					continue
+				}
+				_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
+				if redisAddErr != nil {
+					logger.Error(redisAddErr)
+					break
+				}
+				// 开启协诚处理推送余额
+				go PushUserInfo(socketId, mt, ws, subInfo)
+			}
 			break
 		case strings.EqualFold(SubStruct.Id, "03"):
 			{
@@ -376,8 +388,8 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		return
 	}
 	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
-	HeartBeatingKey := fmt.Sprintf("WsIndexHeartBeatingKey:%v", socketId)
-	SubKey := fmt.Sprintf("socket_request:%v", socketId)
+	HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
+	SubKey := fmt.Sprintf("ws_index:%v:socket_request", socketId)
 	SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 	if SubAssetsCode == AssetsCode {             // 当前订阅的资产已存
 		ws.Mux.Lock()
@@ -386,9 +398,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		logger.Error(errors.New(fmt.Sprintf("当前订阅的资产{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", AssetsCode, socketId)))
 		return
 	}
-	IsSubKey := fmt.Sprintf("socket_request:%v:%v", socketId, AssetsCode)
-	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4)   // 当前请求正在订阅的资产，4小时失效
-	_, _ = redis.Client.Add(IsSubKey, AssetsCode, 60*60*4) // 4小时失效
+	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4) // 当前请求正在订阅的资产，4小时失效
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		if wss_heart_beating.IsDie(HeartBeatingKey) {
@@ -645,7 +655,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		wss.WsClose(ws)
 		return
 	}
-	HeartBeatingKey := fmt.Sprintf("WsReturnRateHeartBeatingKey:%v", socketId)
+	HeartBeatingKey := fmt.Sprintf("ws_return_rate:%v:heart_beating_key", socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		if wss_heart_beating.IsDie(HeartBeatingKey) {
