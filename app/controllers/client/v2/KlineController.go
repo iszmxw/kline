@@ -175,34 +175,12 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 		switch true {
 		case strings.EqualFold(SubStruct.Id, "01"):
 			{
-				// 2 小时内一个长连接禁止重复订阅相同的 topic
-				checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:%v", logger.RequestId, SubStruct.Id)
-				if redis.Client.CheckExist(checkMsg) {
-					logger.Info("该订阅已存在，请勿重新订阅")
-					continue
-				}
-				_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
-				if redisAddErr != nil {
-					logger.Error(redisAddErr)
-					break
-				}
 				// 开启协诚处理推送费率
 				go PushRate(socketId, mt, ws, subInfo)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "02"):
 			{
-				// 2 小时内一个长连接禁止重复订阅相同的 topic
-				checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:%v", logger.RequestId, SubStruct.Id)
-				if redis.Client.CheckExist(checkMsg) {
-					logger.Info("该订阅已存在，请勿重新订阅")
-					continue
-				}
-				_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
-				if redisAddErr != nil {
-					logger.Error(redisAddErr)
-					break
-				}
 				// 开启协诚处理推送余额
 				go PushUserInfo(socketId, mt, ws, subInfo)
 			}
@@ -647,7 +625,17 @@ STOP:
 // 推送Rate socket消息
 
 func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
-	logger.RequestId = socketId
+	// 2 小时内一个长连接禁止重复订阅相同的 topic
+	checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:01", socketId)
+	if redis.Client.CheckExist(checkMsg) {
+		logger.Info("该订阅已存在，请勿重新订阅")
+		return
+	}
+	_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
+	if redisAddErr != nil {
+		logger.Error(redisAddErr)
+		return
+	}
 	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia"}
 	err := json.Unmarshal([]byte(subInfo), &SubNationInfo)
 	if err != nil {
@@ -723,7 +711,17 @@ END:
 // 查询用户系信息
 
 func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
-	logger.RequestId = socketId
+	// 2 小时内一个长连接禁止重复订阅相同的 topic
+	checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:02", socketId)
+	if redis.Client.CheckExist(checkMsg) {
+		logger.Info("该订阅已存在，请勿重新订阅")
+		return
+	}
+	_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
+	if redisAddErr != nil {
+		logger.Error(redisAddErr)
+		return
+	}
 	var SubUserInfo requests.SubUserInfo // {"appUserId":"123456"}
 	err := json.Unmarshal([]byte(subInfo), &SubUserInfo)
 	if err != nil {
