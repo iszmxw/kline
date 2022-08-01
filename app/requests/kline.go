@@ -25,6 +25,7 @@ type TradeOrderInfo struct {
 	AppUserId           string `json:"appUserId"`
 	AssetsCode          string `json:"assetsCode"`
 	TradeBeginTimestamp string `json:"tradeBeginTimestamp"`
+	TradeEndTimestamp   string `json:"tradeEndTimestamp"`
 	BeginAssetsPrice    string `json:"beginAssetsPrice"`
 	EndAssetsPrice      string `json:"endAssetsPrice"`
 	UpDownType          string `json:"upDownType"`

@@ -567,6 +567,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 			if TradingOrderVirtual.EndAssetsPrice > 0 {
 				TradeOrderInfo.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
 				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
+				TradeOrderInfo.TradeEndTimestamp = TradingOrderVirtual.TradeEndTimestamp
 				marshal, err := json.Marshal(gin.H{
 					"id":   "04",
 					"data": TradeOrderInfo,
@@ -600,6 +601,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 			if TradingOrder.EndAssetsPrice > 0 {
 				TradeOrderInfo.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
 				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
+				TradeOrderInfo.TradeEndTimestamp = TradingOrder.TradeEndTimestamp
 				marshal, err := json.Marshal(gin.H{
 					"id":   "04",
 					"data": TradeOrderInfo,
