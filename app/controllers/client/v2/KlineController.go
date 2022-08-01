@@ -298,6 +298,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		ws.Mux.Unlock()
 		return
 	}
+	logger.Info(data)
 	// 侦测到数据小于 150 条的时候，发送邮件预警
 	if len(data) <= 150 {
 		// 警告，延迟过高
@@ -714,17 +715,9 @@ END:
 
 func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
 	// 2 小时内一个长连接禁止重复订阅相同的 topic
-	checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:02", socketId)
-	if redis.Client.CheckExist(checkMsg) {
-		logger.Info("该订阅已存在，请勿重新订阅")
-		return
-	}
-	_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
-	if redisAddErr != nil {
-		logger.Error(redisAddErr)
-		return
-	}
-	var SubUserInfo requests.SubUserInfo // {"appUserId":"123456"}
+	onceRequest := fmt.Sprintf("ws_return_rate:%v:socket_request:02", socketId)
+	nums := redis.Client.Incr(onceRequest) // 不允许重复请求
+	var SubUserInfo requests.SubUserInfo   // {"appUserId":"123456"}
 	err := json.Unmarshal([]byte(subInfo), &SubUserInfo)
 	if err != nil {
 		logger.Error(err)
@@ -797,6 +790,11 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		// 3秒推送一次消息
 		time.Sleep(time.Second * 3)
 		// 返回数据给用户
+		if nums > 1 {
+			nums = redis.Client.Decr(onceRequest) // 不允许重复请求
+			logger.Info("该订阅已存在，重复执行一次后销毁")
+			goto END
+		}
 	}
 END:
 	logger.Info("已经跳出协诚的循环推送")

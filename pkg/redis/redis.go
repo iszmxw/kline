@@ -84,6 +84,14 @@ func (rdb *Redis) Incr(key string) int64 {
 	return rdb.Client.Incr(Set(key)).Val()
 }
 
+func (rdb *Redis) Decr(key string) int64 {
+	return rdb.Client.Decr(Set(key)).Val()
+}
+
+func (rdb *Redis) Expire(key string, exTime int) *redis.BoolCmd {
+	return rdb.Client.Expire(Set(key), time.Duration(exTime)*time.Second)
+}
+
 func (rdb *Redis) Lpush(key string, values ...interface{}) (bool, error) {
 	_, err := rdb.Client.LPush(Set(key), values...).Result()
 	if err != nil {
