@@ -39,7 +39,7 @@ func main() {
 	router := bootstrap.SetupRouteEmail()
 	pprof.Register(router) // 开启 pprof
 	// 启动路由
-	logger.Info("启动路由")
+	logger.Info("启动 Email 路由")
 	logger.Info("当前环境：" + conf.GetString("app.port"))
 	_ = router.Run(fmt.Sprintf(":%s", conf.GetString("app.port")))
 }
