@@ -12,6 +12,7 @@ import (
 // 设置websocket
 // CheckOrigin防止跨站点的请求伪造
 var upGrader = websocket.Upgrader{
+	EnableCompression: true,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},

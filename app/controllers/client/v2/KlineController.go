@@ -87,7 +87,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(WriteMessageErr)
 					wss.WsClose(ws)
 				}
-				logger.Info(fmt.Sprintf("当前心跳时间：%v", currentTime))
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "04"): // 下单开奖通知
@@ -197,7 +196,6 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 					logger.Error(WriteMessageErr)
 					wss.WsClose(ws)
 				}
-				logger.Info(fmt.Sprintf("当前心跳时间：%v", currentTime))
 			}
 			break
 		default:
@@ -298,7 +296,9 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		ws.Mux.Unlock()
 		return
 	}
-	logger.Info(data)
+	if len(data) > 0 {
+		logger.Info(data[0])
+	}
 	// 侦测到数据小于 150 条的时候，发送邮件预警
 	if len(data) <= 150 {
 		// 警告，延迟过高
@@ -330,6 +330,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		logger.Error(err)
 		return
 	}
+	logger.Info(len(marshal))
 	ws.Mux.Lock()
 	err = ws.Conn.WriteMessage(messageType, marshal)
 	ws.Mux.Unlock()
