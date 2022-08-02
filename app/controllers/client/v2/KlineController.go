@@ -210,6 +210,7 @@ END:
 // 推送socket消息
 
 func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
+	timeStart := time.Now().UnixMilli()
 	logger.RequestId = socketId
 	// 订阅 历史消息
 	if len(SubStruct.Sub) == 0 {
@@ -313,7 +314,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	// 3 分钟内检测一次资产市场状态
 	if !redis.Client.CheckExist("TickerCheckTodaySleep") {
 		_, _ = redis.Client.Add("TickerCheckTodaySleep", ch, 3*60) // 3 分钟内不允许重复检测
-		kline.TickerCheckTodaySleep(false)                         // 检测一次资产市场状态
+		go kline.TickerCheckTodaySleep(false)                      // 检测一次资产市场状态
 	}
 	marshal, err := json.Marshal(gin.H{
 		"id": "02",
@@ -330,7 +331,6 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		logger.Error(err)
 		return
 	}
-	logger.Info(len(marshal))
 	ws.Mux.Lock()
 	err = ws.Conn.WriteMessage(messageType, marshal)
 	ws.Mux.Unlock()
@@ -338,6 +338,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		logger.Error(err)
 		return
 	}
+	logger.Info(fmt.Sprintf("历史记录查询耗时：%v ms", time.Now().UnixMilli()-timeStart))
 }
 
 func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub) {
