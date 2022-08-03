@@ -109,9 +109,13 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	sendData.Password = SystemEmailRoutingNode.ChannelPassword
 	err = email.SendOneEmail(sendData)
 	if err != nil {
+		// 统计失败率
+		go queue.StatisticsEmail(params.MailAccount, "fail")
 		echo.Error(c, "FAILD", err.Error())
 		return
 	}
+	// 统计成功率
+	go queue.StatisticsEmail(params.MailAccount, "success")
 	// 剩余可用条数
 	AvailableNumber := SystemEmailRoutingNode.AvailableNumber - 1
 	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("id", SystemEmailRoutingNode.Id).Update("available_number", AvailableNumber).Error

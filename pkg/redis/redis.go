@@ -88,6 +88,10 @@ func (rdb *Redis) Decr(key string) int64 {
 	return rdb.Client.Decr(Set(key)).Val()
 }
 
+func (rdb *Redis) ZAdd(key string, members ...redis.Z) int64 {
+	return rdb.Client.ZAdd(Set(key), members...).Val()
+}
+
 func (rdb *Redis) Expire(key string, exTime int) *redis.BoolCmd {
 	return rdb.Client.Expire(Set(key), time.Duration(exTime)*time.Second)
 }
@@ -108,7 +112,6 @@ func (rdb *Redis) RPop(key string) string {
 func (rdb *Redis) LLen(key string) (int64, error) {
 	count, err := rdb.Client.LLen(Set(key)).Result()
 	if err != nil {
-		fmt.Println("LLen 失败")
 		return 0, err
 	}
 	return count, nil
