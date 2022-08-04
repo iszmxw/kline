@@ -5,11 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
-	"github.com/mitchellh/mapstructure"
-	"github.com/olivere/elastic"
-	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
@@ -19,15 +14,20 @@ import (
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	"goapi/pkg/notice/mail"
+	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
-	"goapi/pkg/validate"
-	"goapi/pkg/websocket"
+	wss "goapi/pkg/websocket"
 	wss_heart_beating "goapi/pkg/wss-heart-beating"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
+	"github.com/olivere/elastic"
+	cmap "github.com/orcaman/concurrent-map"
 )
 
 // k线图服务
@@ -107,33 +107,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 END:
 	wss.WsClose(ws)
 	logger.Info("socket被关闭，本次链接结束")
-}
-
-// MaintenanceTableData  删除kline_log表数据，维护数据表过大问
-func (h *KlineController) MaintenanceTableData(c *gin.Context) {
-	var (
-		SearchKlineLog []models.KlineLog
-		params         requests.DayTime
-		total          int64
-		limit          int64
-	)
-	_ = c.Bind(&params)
-	// 数据验证
-	if validate.ParamsError(c, params) {
-		return
-	}
-	Num := helpers.StringToInt(params.Num)
-	TsDate := time.Now().AddDate(0, 0, -Num).Format("2006-01-02 15:04:05")
-	DB := mysql.DB.Debug()
-	DB = DB.Model(models.KlineLog{}).Where("ts_date < ?", TsDate)
-	DB.Count(&total)
-	limit = 100000
-	num := total / limit
-	if (total % limit) > 0 {
-		num = num + 1
-	}
-	DB.Limit(int(limit)).Delete(&SearchKlineLog)
-	output.Rjson(c, gin.H{"total": total, "num": num}, "success", 1)
 }
 
 // WsReturnRateHandler socket 负责转发数据库的 rate
@@ -934,12 +907,12 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		return
 	}
 	searchResult, err := esClient.Search().
-		Index("kline_log"). // 设置索引名
-		Query(boolQuery). // 设置查询条件
-		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
-		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
-		Size(Count). // 设置分页参数 - 每页大小
-		Pretty(true). // 查询结果返回可读性较好的JSON格式
+		Index("kline_log").      // 设置索引名
+		Query(boolQuery).        // 设置查询条件
+		Sort("ts", false).       // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
+		From(0).                 // 设置分页参数 - 起始偏移量，从第0行记录开始
+		Size(Count).             // 设置分页参数 - 每页大小
+		Pretty(true).            // 查询结果返回可读性较好的JSON格式
 		Do(context.Background()) // 执行请求
 	if err != nil {
 		logger.Error(err)

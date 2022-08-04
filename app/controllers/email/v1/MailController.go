@@ -3,9 +3,6 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
-	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
@@ -17,6 +14,10 @@ import (
 	"goapi/service/binary-email/config"
 	"goapi/service/binary-email/queue"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/mapstructure"
+	cmap "github.com/orcaman/concurrent-map"
 )
 
 // k线图服务
@@ -152,11 +153,6 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 	var sendData []string
 	var SystemEmailSendLog models.SystemEmailSendLog
 	var SendTotal response.SendTotal
-	_ = c.Bind(&params)
-	// 数据验证
-	if validate.ParamsError(c, params) {
-		return
-	}
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {

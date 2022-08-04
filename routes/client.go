@@ -1,10 +1,11 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
 	clientV1 "goapi/app/controllers/client/v1"
 	clientV2 "goapi/app/controllers/client/v2"
 	middlewares "goapi/app/middlewares/v1"
+
+	"github.com/gin-gonic/gin"
 )
 
 // RegisterClientRoutes 注册Client路由
@@ -47,8 +48,6 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				trade.Any("/wsIndex.json", ClientV2Group.KlineController.WsIndexHandler)
 				// 【C10】 wsReturnRate.json
 				trade.Any("/wsReturnRate.json", ClientV2Group.KlineController.WsReturnRateHandler)
-				// 删除kline_log表数据，维护数据表过大问题
-				trade.Any("/maintenanceTableData.json", ClientV2Group.KlineController.MaintenanceTableData)
 			}
 
 			// 通知
