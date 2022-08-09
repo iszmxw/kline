@@ -1,9 +1,11 @@
 package v1
 
 import (
-	"github.com/gin-gonic/gin"
 	"goapi/pkg/abnormal"
+	"goapi/pkg/config"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Cors 跨域请求 自定义的
@@ -22,7 +24,9 @@ func Cors() gin.HandlerFunc {
 		if method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
 		}
-		defer abnormal.Stack("进入中间件",c)
+		if config.GetString("app.env") == "local" {
+			defer abnormal.Stack("进入中间件", c)
+		}
 		c.Next()
 	}
 }

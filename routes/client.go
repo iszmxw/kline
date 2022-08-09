@@ -32,6 +32,29 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				// 删除kline_log表数据，维护数据表过大问题
 				trade.Any("/maintenanceTableData.json", ClientV1Group.KlineController.MaintenanceTableData)
 			}
+
+			// 【A】默认模块
+			{
+				// 【A01】获取域名池【POST】
+				AppRoute.Group("/v1/config").POST("/getActiveHost.json", ClientV1Group.ConfigController.GetActiveHostHandler)
+				// 【A02】获取系统多语言包【POST】
+				AppRoute.Group("/v1/config").POST("/getLanguagePage.json", ClientV1Group.ConfigController.GetLanguagePageHandler)
+				// 【A03】校验app版本【POST】
+				AppRoute.Group("/config/v1").POST("/checkAppVersion.json", ClientV1Group.ConfigController.CheckAppVersionHandler)
+				// 【A04】获取引导教程【POST】
+				AppRoute.Group("/v1/config").POST("/getTutorialByType.json", ClientV1Group.ConfigController.GetTutorialByTypeHandler)
+				// 【A05】获取测试账号发送验证码【POST】
+				AppRoute.Group("/v1/config").POST("/getLoginCodeByTest.json", ClientV1Group.ConfigController.GetLoginCodeByTestHandler)
+				// 【A06】清除测试账号【POST】
+				AppRoute.Group("/v1/config").POST("/clearTestAccount.json", ClientV1Group.ConfigController.ClearTestAccountHandler)
+				// 【A09】获取国家信息【POST】
+				AppRoute.Group("/v1/config").POST("/getExistingCountry.json", ClientV1Group.ConfigController.GetExistingCountryHandler)
+				// 【A10】获取系统多语言包V2【POST】
+				AppRoute.Group("/v1/config").POST("/getLanguagePageV2.json", ClientV1Group.ConfigController.GetLanguagePageV2Handler)
+				// 【A11】获取系统展示图片【POST】
+				AppRoute.Group("/v1/config").POST("/getImages.json", ClientV1Group.ConfigController.GetImagesHandler)
+			}
+
 		}
 
 		{ // V2 版本

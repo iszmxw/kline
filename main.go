@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-contrib/pprof"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
 	"time"
+
+	"github.com/gin-contrib/pprof"
 )
 
 func init() {
@@ -44,7 +45,7 @@ func main() {
 	bootstrap.SetupRedis(db)
 	defer bootstrap.RedisClose()
 	// 初始化路由绑定
-	logger.Info("加载路由")
+	logger.Info("加载 client 路由")
 	router := bootstrap.SetupRoute()
 	pprof.Register(router) // 开启 pprof
 	// 启动路由
