@@ -1,10 +1,11 @@
 package bootstrap
 
 import (
-	"github.com/gin-gonic/gin"
-	"goapi/app/middlewares/v1"
+	v1 "goapi/app/middlewares/v1"
 	"goapi/routes"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // SetupRoute 路由初始化
@@ -25,6 +26,20 @@ func SetupRoute() *gin.Engine {
 	})
 	// 二元 client 接口
 	routes.RegisterClientRoutes(router.Group("/"))
+	return router
+}
+
+// SetupRouteWeb 路由初始化
+func SetupRouteWeb() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
+	router.Use(v1.TraceLogger()) // 日志追踪
+	router.Use(v1.Cors())        // 跨域
+	router.NoRoute(NoResponse)
+	router.GET("/", func(context *gin.Context) {
+		requestId, _ := context.Get("Tracking-Id")
+		context.String(200, "Hello Web!："+requestId.(string)+"\n\n\n")
+	})
 	// 二元 web 接口
 	routes.RegisterWebRoutes(router.Group("/"))
 	return router

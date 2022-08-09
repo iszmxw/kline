@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"goapi/bootstrap"
 	"goapi/config"
@@ -17,7 +18,7 @@ func init() {
 	// 初始化配置信息
 	config.Initialize()
 	// 定义日志目录
-	logger.Init("apiService")
+	logger.Init("binary-client")
 }
 
 // @title 用户端接口服务
@@ -35,6 +36,8 @@ func init() {
 // @host 127.0.0.1
 // @BasePath
 func main() {
+	APP_PORT := flag.Int64("APP_PORT", conf.GetInt64("app.port"), "服务端口")
+	flag.Parse()
 	// 初始化 SQL
 	// 定义日志目录
 	logger.Info("初始化 SQL")
@@ -50,6 +53,6 @@ func main() {
 	pprof.Register(router) // 开启 pprof
 	// 启动路由
 	logger.Info("启动路由")
-	logger.Info("当前环境：" + conf.GetString("app.port"))
-	_ = router.Run(fmt.Sprintf(":%s", conf.GetString("app.port")))
+	logger.Info(fmt.Sprintf("当前环境:%v", *APP_PORT))
+	_ = router.Run(fmt.Sprintf(":%v", *APP_PORT))
 }
