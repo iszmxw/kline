@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/olivere/elastic"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
@@ -17,14 +15,17 @@ import (
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	"goapi/pkg/notice/mail"
+	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
-	"goapi/pkg/websocket"
+	wss "goapi/pkg/websocket"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/olivere/elastic"
 )
 
 // k线图服务
@@ -426,12 +427,12 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		return
 	}
 	searchResult, err := esClient.Search().
-		Index("kline_log"). // 设置索引名
-		Query(boolQuery). // 设置查询条件
-		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
-		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
-		Size(Count). // 设置分页参数 - 每页大小
-		Pretty(true). // 查询结果返回可读性较好的JSON格式
+		Index("kline_log").      // 设置索引名
+		Query(boolQuery).        // 设置查询条件
+		Sort("ts", false).       // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
+		From(0).                 // 设置分页参数 - 起始偏移量，从第0行记录开始
+		Size(Count).             // 设置分页参数 - 每页大小
+		Pretty(true).            // 查询结果返回可读性较好的JSON格式
 		Do(context.Background()) // 执行请求
 	if err != nil {
 		logger.Error(err)

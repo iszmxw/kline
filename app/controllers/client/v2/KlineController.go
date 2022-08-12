@@ -17,6 +17,7 @@ import (
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
+	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
 	wss_heart_beating "goapi/pkg/wss-heart-beating"
 	"reflect"
@@ -73,6 +74,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			{
 				// 开启协诚处理推送历史记录
 				go PushHistory(socketId, mt, ws, SubStruct, c)
+			}
+			break
+		case strings.EqualFold(SubStruct.Id, "05"):
+			{
+				// 开启协诚处理推送历史记录
+				go PushZipHistory(socketId, mt, ws, SubStruct, c)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "03"):
@@ -256,13 +263,12 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	KlineDB := DB.Model(models.KlineLog{}).
 		Where("ch", ch).
 		Where("ts >= ?", beginDate).
-		Where("ts <= ?", endDate).
-		Order("ts desc")
+		Where("ts <= ?", endDate)
 	KlineDB.Count(&Count)
 	if Count > 10000 {
 		Count = 10000
 	}
-	err = KlineDB.Limit(int(Count)).Find(&data).Error
+	err = KlineDB.Order("ts desc").Limit(int(Count)).Select("log_id,contract_code,ch,ts,mrid,c_open,c_close,high,low,amount,vol,c_count,ts_date,create_date,kline_source").Find(&data).Error
 	if err != nil {
 		logger.Error(err)
 		ws.Mux.Lock()
@@ -289,10 +295,212 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		_, _ = redis.Client.Add("TickerCheckTodaySleep", ch, 3*60) // 3 分钟内不允许重复检测
 		go kline.TickerCheckTodaySleep(false)                      // 检测一次资产市场状态
 	}
-	marshal, err := json.Marshal(gin.H{
-		"id": "02",
+	var result []byte
+	if strings.EqualFold(SubHistory.Gzip, "1") {
+		marshal, err := json.Marshal(data)
+		if err != nil {
+			logger.Error(err)
+			ws.Mux.Lock()
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			ws.Mux.Unlock()
+			return
+		}
+		Zipresult, err := utils.Zip(marshal)
+		if err != nil {
+			logger.Error(err)
+			ws.Mux.Lock()
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			ws.Mux.Unlock()
+			return
+		}
+		result, err = json.Marshal(gin.H{
+			"id": "02",
+			"data": gin.H{
+				"gzip":          "1",
+				"HistKlineLogs": Zipresult,
+				"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
+				"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
+				"klineSource":   klineSource,
+				"totals":        Count,
+				"contractCode":  symbol,
+			},
+		})
+		if err != nil {
+			logger.Error(err)
+			ws.Mux.Lock()
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			ws.Mux.Unlock()
+			return
+		}
+	} else {
+		result, err = json.Marshal(gin.H{
+			"id": "02",
+			"data": gin.H{
+				"gzip":          "0",
+				"HistKlineLogs": data,
+				"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
+				"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
+				"klineSource":   klineSource,
+				"totals":        Count,
+				"contractCode":  symbol,
+			},
+		})
+		if err != nil {
+			logger.Error(err)
+			ws.Mux.Lock()
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			ws.Mux.Unlock()
+			return
+		}
+	}
+	ws.Mux.Lock()
+	err = ws.Conn.WriteMessage(messageType, result)
+	ws.Mux.Unlock()
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	logger.Info(fmt.Sprintf("历史记录查询耗时：%v ms", time.Now().UnixMilli()-timeStart))
+}
+
+// 推送 zipSocket 消息
+func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
+	timeStart := time.Now().UnixMilli()
+	logger.RequestId = socketId
+	// 订阅 历史消息
+	if len(SubStruct.Sub) == 0 {
+		logger.Error(errors.New("订阅历史消息条件参数缺失"))
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10401","data":"订阅历史消息条件参数缺失"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	var (
+		SubHistory requests.SubHistory // {"symbol":"BTC-USD","beginDate":"","endDate":"","Limit":"3000"}
+		Count      = int64(3000)       // 查询总条数默认获取3000条
+	)
+	err := json.Unmarshal([]byte(SubStruct.Sub), &SubHistory)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	symbol := SubHistory.Symbol
+	beginDate := SubHistory.BeginDate
+	endDate := SubHistory.EndDate
+	if helpers.StringToInt64(SubHistory.Limit) > 0 { // 查询数量
+		Count = helpers.StringToInt64(SubHistory.Limit)
+	}
+	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10402","data":"beginDate 起始交易日期必填"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
+		logger.Error(errors.New("越界查询"))
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10403","data":"越界查询 beginDate error"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10404","data":"endDate 截止交易日期必填"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	if len(symbol) <= 0 {
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10405","data":"symbol 不能为空"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	tips := fmt.Sprintf(
+		"当前系统时间为【%v】 查询资产【%v】范围从【%v】，到【%v】",
+		time.Now().Format("2006-01-02 15:04:05"),
+		symbol,
+		time.Unix(0, helpers.StringToInt64(beginDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
+		time.Unix(0, helpers.StringToInt64(endDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
+	)
+	klineSource := response.KlineSource(symbol)
+	// 没有读取到 klineSource
+	if len(klineSource) == 0 {
+		logger.Error(errors.New("没有读取到 klineSource"))
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10406","data":"没有读取到 klineSource"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	var data []response.KlineLogSimple
+	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), "1min")
+	DB := mysql.DB.Debug()
+	// 一次取出历史记录最新三千条
+	KlineDB := DB.Model(models.KlineLog{}).
+		Where("ch", ch).
+		Where("ts >= ?", beginDate).
+		Where("ts <= ?", endDate)
+	KlineDB.Count(&Count)
+	if Count > 10000 {
+		Count = 10000
+	}
+	err = KlineDB.Order("ts desc").Limit(int(Count)).Select("ts,c_open,c_close,high,low").Find(&data).Error
+	if err != nil {
+		logger.Error(err)
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	if len(data) > 0 {
+		logger.Info(data[0])
+	}
+	// 侦测到数据小于 150 条的时候，发送邮件预警
+	if len(data) <= 150 {
+		// 警告，延迟过高
+		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", klineSource, symbol)
+		_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
+		time.Sleep(time.Second * 5) // 休息5秒
+		NoticeMail.Notice("msgDataAbnormal", map[string]interface{}{
+			"c":    c,
+			"tips": tips,
+		})
+	}
+	// 3 分钟内检测一次资产市场状态
+	if !redis.Client.CheckExist("TickerCheckTodaySleep") {
+		_, _ = redis.Client.Add("TickerCheckTodaySleep", ch, 3*60) // 3 分钟内不允许重复检测
+		go kline.TickerCheckTodaySleep(false)                      // 检测一次资产市场状态
+	}
+	var temp [5]float64
+	var tempArr [][5]float64
+	var result []byte
+	for _, val := range data {
+		temp[0] = float64(val.Ts)
+		temp[1] = float64(val.COpen)
+		temp[2] = float64(val.CClose)
+		temp[3] = float64(val.High)
+		temp[4] = float64(val.Low)
+		tempArr = append(tempArr, temp)
+	}
+	marshal, err := json.Marshal(tempArr)
+	if err != nil {
+		logger.Error(err)
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	Zipresult, err := utils.Zip(marshal)
+	if err != nil {
+		logger.Error(err)
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		ws.Mux.Unlock()
+		return
+	}
+	result, err = json.Marshal(gin.H{
+		"id": "05",
 		"data": gin.H{
-			"HistKlineLogs": data,
+			"HistKlineLogs": Zipresult,
 			"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
 			"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
 			"klineSource":   klineSource,
@@ -302,10 +510,13 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	})
 	if err != nil {
 		logger.Error(err)
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		ws.Mux.Unlock()
 		return
 	}
 	ws.Mux.Lock()
-	err = ws.Conn.WriteMessage(messageType, marshal)
+	err = ws.Conn.WriteMessage(messageType, result)
 	ws.Mux.Unlock()
 	if err != nil {
 		logger.Error(err)

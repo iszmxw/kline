@@ -10,6 +10,7 @@ type SubHistory struct {
 	BeginDate string `json:"beginDate"`
 	EndDate   string `json:"endDate"`
 	Limit     string `json:"limit"`
+	Gzip      string `json:"gzip"`
 }
 
 type SubUserInfo struct {

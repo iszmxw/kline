@@ -1,10 +1,11 @@
 package response
 
 import (
-	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 	"goapi/app/models"
 	"goapi/pkg/helpers"
 	"time"
+
+	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 )
 
 // KlineLog  K线数据表
@@ -25,6 +26,14 @@ type KlineLog struct {
 	TsDate       helpers.TimeNormal `json:"ts_date"`       //  kline返回日期
 	CreateDate   helpers.TimeNormal `json:"create_date"`   //  创建日期
 	KlineSource  string             `json:"kline_source"`  //  k线来源 huobi
+}
+
+type KlineLogSimple struct {
+	Ts     int64   `json:"ts"`      //  kilne返回日期时间戳
+	COpen  float64 `json:"c_open"`  //  起始峰值
+	CClose float64 `json:"c_close"` //  结束峰值
+	High   float64 `json:"high"`    //  最高峰值
+	Low    float64 `json:"low"`     //  最低峰值
 }
 
 type WsIndex struct {
