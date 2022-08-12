@@ -7,7 +7,6 @@ import (
 	"goapi/config"
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
-	"goapi/service/binary-email/queue"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -35,9 +34,7 @@ func main() {
 	logger.Info("初始化 Redis")
 	db := conf.GetInt("redis.db")
 	bootstrap.SetupRedis(db)
-
 	defer bootstrap.RedisClose()
-	go queue.Consume()
 	// 初始化路由绑定
 	logger.Info("加载路由")
 	router := bootstrap.SetupRouteWeb()
