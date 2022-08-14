@@ -2,17 +2,18 @@ package wss
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
 	"net/http"
 	"sync"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 // 设置websocket
 // CheckOrigin防止跨站点的请求伪造
 var upGrader = websocket.Upgrader{
-	EnableCompression: true,
+	EnableCompression: false, // 苹果某些旧版本的ios不兼容该压缩功能，所以苹果机型直接禁用掉就好了，或者找出相关兼容的机型进行白名单
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
