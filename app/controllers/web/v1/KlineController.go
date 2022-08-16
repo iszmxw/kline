@@ -18,6 +18,7 @@ import (
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/output"
 	"goapi/pkg/redis"
+	"goapi/pkg/utils"
 	"goapi/pkg/validate"
 	wss "goapi/pkg/websocket"
 	"reflect"
@@ -257,6 +258,7 @@ END:
 // 历史行情 mysql 查询
 func (h *KlineController) HistoryHandler(c *gin.Context) {
 	//beginDate := time.Now().Format("2006-01-02 15:04:05")
+	gzip := c.Query("gzip")
 	symbol := c.Query("symbol")
 	period := c.Query("period")
 	beginDate := c.Query("beginDate")
@@ -321,15 +323,35 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 			"tips": tips,
 		})
 	}
+	var result interface{}
+	if gzip == "1" {
+		marshal, err := json.Marshal(data)
+		if err != nil {
+			logger.Error(err)
+			echo.Error(c, "FAILD", err.Error())
+			return
+		}
+		Zipresult, err := utils.Zip(marshal)
+		if err != nil {
+			logger.Error(err)
+			echo.Error(c, "FAILD", err.Error())
+			return
+		}
+		result = Zipresult
+	} else {
+		gzip = "0"
+		result = data
+	}
 	// 监控K线数据时间段的数据波动，实时调整赔率
 	output.Rjson(c, gin.H{
-		"HistKlineLogs": data,
+		"gzip":          gzip,
+		"HistKlineLogs": result,
 		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
 		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
 		"klineSource":   klineSource,
 		"totals":        Count,
 		"contractCode":  symbol,
-	}, "", 0)
+	}, "success", 1)
 }
 
 // HistoryEsHandler
