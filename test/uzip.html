@@ -50,7 +50,7 @@
             });
             const binData = new Uint8Array(charData);
             const array = pako.inflate(binData);
-            var res = '';
+            var res = ''
             var chunk = 8 * 1024;
             var i;
             for (i = 0; i < array.length / chunk; i++) {
