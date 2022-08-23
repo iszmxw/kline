@@ -536,7 +536,7 @@ func (h *KlineController) AllowKlineSource(c *gin.Context) {
 // 获取当前币种可以设置的数据源
 
 func (h *KlineController) KlineSourceList(c *gin.Context) {
-	//user, _ := c.Get("user")
+	user, _ := c.Get("user")
 	var (
 		params   requests.KlineSourceList
 		pageList models.PageList // 返回数据
@@ -558,6 +558,7 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 	} else {
 		table = table.Where(models.Prefix("$_trading_assets_source.is_valid"), "1")
 	}
+	table = table.Where("item_code", user.(response.WebLoginUser).ItemCode).Where("nation", user.(response.WebLoginUser).Nation)
 	table.Count(&pageList.Total)
 	// 设置分页参数
 	pageList.CurrentPage = params.PageNum

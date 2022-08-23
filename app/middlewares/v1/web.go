@@ -3,12 +3,13 @@ package v1
 import (
 	"encoding/json"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"goapi/app/response"
 	"goapi/pkg/echo"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Web 定义中间件
@@ -64,6 +65,8 @@ func CheckWebLogin(c *gin.Context) {
 	// 保存用户到 上下文
 	c.Set("user", user)
 	c.Set("systemUserId", user.SystemUserId)
+	c.Set("itemCode", user.ItemCode)
+	c.Set("nation", user.Nation)
 	// 再次确认设置语言
 	SetWebLang(c, "zh")
 	// 继续往下面执行
