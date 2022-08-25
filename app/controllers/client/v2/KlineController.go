@@ -712,10 +712,13 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 		logger.Error(errors.New("err sub,IsDemo not right"))
 		return
 	}
+	if len(TradeOrderInfo.ItemCode) == 0 {
+		TradeOrderInfo.ItemCode = "SMO"
+	}
 	// 获取交易资产的小数点位数
 	var TradingAssets models.TradingAssets
 	mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("item_code", "IQO").
+		Where("item_code", TradeOrderInfo.ItemCode).
 		Where("assets_code", TradeOrderInfo.AssetsCode).
 		Find(&TradingAssets)
 	if TradingAssets.Id <= 0 {

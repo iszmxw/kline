@@ -26,6 +26,7 @@ type TradeOrderInfo struct {
 	TradeOrderId        string `json:"tradeOrderId"` //交易表主键自增ID
 	AppUserId           string `json:"appUserId"`
 	AssetsCode          string `json:"assetsCode"`
+	ItemCode            string `json:"itemCode"`
 	TradeBeginTimestamp string `json:"tradeBeginTimestamp"`
 	TradeEndTimestamp   string `json:"tradeEndTimestamp"`
 	BeginAssetsPrice    string `json:"beginAssetsPrice"`

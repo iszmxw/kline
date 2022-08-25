@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/kline"
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	"goapi/pkg/notice/mail"
+	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
-	"goapi/service/kline-common"
+	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-qxbroker/qxbroker/config"
 	"io/ioutil"
@@ -25,6 +24,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type closeChanCallback chan int
@@ -298,53 +299,56 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 	defer KlineCommon.KlineRecover("UpdateRate", config.KlineSource, ws.Symbol)
 	// 修改费率
-	var TradingAssets response.TradingAssets
+	var list []response.TradingAssets
 	err := mysql.DB.Model(models.TradingAssets{}).
 		Where("assets_code", ContractCode).
 		Where("is_valid", 1).
 		Where("is_show", 1).
-		Find(&TradingAssets).Error
+		Find(&list).Error
 	if err != nil {
 		logger.Error(err)
 		return
 	}
-	if TradingAssets.Id == 0 {
-		return
-	}
-	tips := fmt.Sprintf("%v=>系统历史赔率：%v，该时间段的最终赔率：%v", TradingAssets.AssetsCode, TradingAssets.ReturnRate, returnRate)
-	logger.Info(tips)
-	// 当前资产赔率和此次预测一样，无需修改
-	if TradingAssets.ReturnRate == returnRate {
-		logger.Info(fmt.Sprintf("%v：当前资产赔率和历史赔率一样，无需修改", TradingAssets.AssetsCode))
-	} else {
-		// 赔率变动通知
-		//NoticeMail.Notice("msgRateChange", map[string]interface{}{
-		//	"service": config.KlineSource,
-		//	"tips":    tips,
-		//})
-		DB := mysql.DB
-		err = DB.Model(models.TradingAssets{}).
-			Where("assets_code", ContractCode).
-			Where("is_valid", 1).
-			Where("is_show", 1).
-			Updates(map[string]interface{}{"update_date": time.Now(), "updater": "kline-system", "return_rate": returnRate}).Error
-		if err != nil {
-			logger.Error(err)
+	for _, TradingAssets := range list {
+		if TradingAssets.Id == 0 {
 			return
 		}
-		// 记录修改历史记录
-		var TradingAssetsLog models.TradingAssetsLog
-		TradingAssetsLog.ItemCode = TradingAssets.ItemCode
-		TradingAssetsLog.AssetsCode = ContractCode
-		TradingAssetsLog.CreateDate = time.Now()
-		TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate
-		TradingAssetsLog.ReturnRateNow = returnRate
-		TradingAssetsLog.KlineSource = config.KlineSource
-		err = DB.Model(TradingAssetsLog).Create(&TradingAssetsLog).Error
-		if err != nil {
-			logger.Error(err)
-			return
+		tips := fmt.Sprintf("%v=>系统历史赔率：%v，该时间段的最终赔率：%v", TradingAssets.AssetsCode, TradingAssets.ReturnRate, returnRate)
+		logger.Info(tips)
+		// 当前资产赔率和此次预测一样，无需修改
+		if TradingAssets.ReturnRate == returnRate {
+			logger.Info(fmt.Sprintf("%v：当前资产赔率和历史赔率一样，无需修改", TradingAssets.AssetsCode))
+		} else {
+			// 赔率变动通知
+			//NoticeMail.Notice("msgRateChange", map[string]interface{}{
+			//	"service": config.KlineSource,
+			//	"tips":    tips,
+			//})
+			DB := mysql.DB
+			err = DB.Model(models.TradingAssets{}).
+				Where("assets_code", ContractCode).
+				Where("is_valid", 1).
+				Where("is_show", 1).
+				Updates(map[string]interface{}{"update_date": time.Now(), "updater": "kline-system", "return_rate": returnRate}).Error
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+			// 记录修改历史记录
+			var TradingAssetsLog models.TradingAssetsLog
+			TradingAssetsLog.ItemCode = TradingAssets.ItemCode
+			TradingAssetsLog.AssetsCode = ContractCode
+			TradingAssetsLog.CreateDate = time.Now()
+			TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate
+			TradingAssetsLog.ReturnRateNow = returnRate
+			TradingAssetsLog.KlineSource = config.KlineSource
+			err = DB.Model(TradingAssetsLog).Create(&TradingAssetsLog).Error
+			if err != nil {
+				logger.Error(err)
+				return
+			}
 		}
+
 	}
 }
 
