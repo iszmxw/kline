@@ -825,7 +825,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		logger.Error(redisAddErr)
 		return
 	}
-	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia"}
+	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia","itemCode":"SMO"}
 	err := json.Unmarshal([]byte(subInfo), &SubNationInfo)
 	if err != nil {
 		logger.Error(err)
@@ -842,13 +842,16 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		if len(subInfo) <= 0 {
 			goto END
 		}
+		if len(SubNationInfo.ItemCode) <= 0 {
+			SubNationInfo.ItemCode = "IQO"
+		}
 		if len(SubNationInfo.Nation) <= 0 {
 			SubNationInfo.Nation = "Indonesia"
 		}
 		var PushRateData []response.PushRateData
 		DB := mysql.DB
 		err := DB.Model(models.TradingAssets{}).
-			Where("item_code", "IQO").
+			Where("item_code", SubNationInfo.ItemCode).
 			Where("is_show", 1).
 			Where("nation", SubNationInfo.Nation).
 			Find(&PushRateData).Error

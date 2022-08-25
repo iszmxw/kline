@@ -18,7 +18,8 @@ type SubUserInfo struct {
 }
 
 type SubNationInfo struct {
-	Nation string `json:"nation"`
+	ItemCode string `json:"itemCode"`
+	Nation   string `json:"nation"`
 }
 
 type TradeOrderInfo struct {
