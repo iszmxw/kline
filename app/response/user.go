@@ -9,6 +9,7 @@ type AppUser struct {
 	Token             string  `json:"token"`                      //登录凭证
 	LastToken         string  `json:"last_token"`                 //最后的登录凭证
 	IsNew             int64   `json:"is_new"`                     //是否新用户 1是 0否 首充后变成0
+	Nation            string  `json:"nation"`                     //是否新用户 1是 0否 首充后变成0
 	HisTradingCount   int64   `gorm:"-" json:"hisTradingCount"`   //历史交易次数
 	HisTradingAmounts float64 `gorm:"-" json:"hisTradingAmounts"` //历史交易金额
 }

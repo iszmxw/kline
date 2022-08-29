@@ -960,6 +960,33 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		}
 		AppUser.HisTradingCount = HistoryTrading.HisTradingCount     // 历史交易次数
 		AppUser.HisTradingAmounts = HistoryTrading.HisTradingAmounts // 历史交易金额
+		// 虚拟余额不足时重置用户虚拟余额
+		if strings.EqualFold(AppUser.Nation, "Indonesia") && AppUser.VirtualBalance <= 10000 {
+			// 重置用户余额 一百万
+			err = DB.Model(models.AppUser{}).Where("app_user_id", SubUserInfo.AppUserId).Update("virtual_balance", 1000000).Error
+			if err != nil {
+				ws.Mux.Lock()
+				_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+				ws.Mux.Unlock()
+				logger.Error(err)
+				return
+			}
+			AppUser.VirtualBalance = 1000000
+		}
+
+		if strings.EqualFold(AppUser.Nation, "India") && AppUser.VirtualBalance <= 20 {
+			// 重置用户余额 一万
+			err = DB.Model(models.AppUser{}).Where("app_user_id", SubUserInfo.AppUserId).Update("virtual_balance", 10000).Error
+			if err != nil {
+				ws.Mux.Lock()
+				_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+				ws.Mux.Unlock()
+				logger.Error(err)
+				return
+			}
+			AppUser.VirtualBalance = 10000
+
+		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "02",
 			"data": AppUser,
