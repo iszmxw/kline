@@ -113,6 +113,7 @@ func UpdateRate(info KlineCommon.Info, returnRate float64) {
 		Where("assets_code", info.ContractCode).
 		Where("is_valid", 1).
 		Where("is_show", 1).
+		Where("is_whitelist", 0).
 		Find(&list).Error
 	if err != nil {
 		logger.Error(err)

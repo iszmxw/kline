@@ -304,6 +304,7 @@ func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 		Where("assets_code", ContractCode).
 		Where("is_valid", 1).
 		Where("is_show", 1).
+		Where("is_whitelist", 0).
 		Find(&list).Error
 	if err != nil {
 		logger.Error(err)
