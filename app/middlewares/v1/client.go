@@ -3,15 +3,14 @@ package v1
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"goapi/app/response"
 	"goapi/pkg/address"
 	"goapi/pkg/config"
 	"goapi/pkg/echo"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
-	"strconv"
 )
 
 // AddressLimit 地区限制
@@ -72,7 +71,7 @@ func CheckLogin(c *gin.Context) {
 		return
 	}
 	// json字符串数组,转换成切片
-	var user map[string]interface{}
+	var user response.ClientUserBeans
 	multiErr := json.Unmarshal([]byte(strInfo), &user)
 	if multiErr != nil {
 		logger.Error(errors.New("转换出错"))
@@ -80,16 +79,8 @@ func CheckLogin(c *gin.Context) {
 		return
 	}
 	logger.Info(user)
-	// id 转换为整型
-	userId, strErr := strconv.Atoi(fmt.Sprintf("%.0f", user["id"].(float64)))
-	if strErr != nil {
-		logger.Error(err)
-	}
-	user["id"] = userId
 	// 保存用户到 上下文
 	c.Set("user", user)
-	c.Set("language", user["language"])
-	c.Set("user_id", userId)
 	// 再次确认设置语言
 	SetLang(c, "en")
 	// 继续往下面执行

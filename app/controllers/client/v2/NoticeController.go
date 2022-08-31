@@ -4,15 +4,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
+	cmap "github.com/orcaman/concurrent-map"
+	"goapi/app/models"
 	"goapi/app/requests"
+	"goapi/app/response"
 	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 	wss "goapi/pkg/websocket"
 	wss_heart_beating "goapi/pkg/wss-heart-beating"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 // 通知公告服务
@@ -42,7 +48,7 @@ func (h *NoticeController) StationLetterHandler(c *gin.Context) {
 		}
 		//对数据进行切割，读取参数
 		//如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
-		var SubStruct requests.Sub
+		var SubStruct requests.SubStationLetter
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
@@ -86,17 +92,11 @@ END:
 
 // 小红点消息通知
 
-func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
+func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.WsConn, SubToken requests.SubToken) {
 	logger.RequestId = socketId
 	HeartBeatingKey := fmt.Sprintf("NoticeHeartBeatingKey:%v", socketId)
-	var SubUserInfo requests.SubUserInfo // {"appUserId":"123456"}
-	err := json.Unmarshal([]byte(subInfo), &SubUserInfo)
-	if err != nil {
-		logger.Error(err)
-		wss.WsClose(ws)
-		return
-	}
-	if len(SubUserInfo.AppUserId) == 0 {
+	// {"token":"123456","decive_brand":"apple"}
+	if len(SubToken.Token) == 0 {
 		wss.WsClose(ws)
 		return
 	}
@@ -105,9 +105,48 @@ func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.
 		if wss_heart_beating.IsDie(HeartBeatingKey) {
 			goto STOP
 		}
+		strInfo, err := redis.Client.DefaultGet(SubToken.Token)
+		if err != nil {
+			logger.Error(err)
+			goto STOP
+		}
+		// json字符串数组,转换成切片
+		var user response.ClientUserBeans
+		var NoticeInfo response.NoticeInfo
+		multiErr := json.Unmarshal([]byte(strInfo), &user)
+		if multiErr != nil {
+			logger.Error(errors.New("转换出错"))
+			logger.Error(multiErr)
+			goto STOP
+		}
+		logger.Info(user)
+		result := cmap.New().Items()
+		// 查询用户未读消息，展示小红点
+		err = mysql.DB.Debug().Model(models.OffMailSendLog{}).Where(
+			map[string]interface{}{
+				"item_code":    "SMO",
+				"nation":       user.Nation,
+				"decive_brand": SubToken.DeciveBrand,
+			}).Where("app_user_id = 'ALL' OR app_user_id = ?", user.AppUserId).
+			Select("count(1) AS total").
+			Find(&result).Error
+		if err != nil {
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		// map转struct
+		err = mapstructure.Decode(result, &NoticeInfo)
+		if err != nil {
+			ws.Mux.Lock()
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			ws.Mux.Unlock()
+			logger.Error(err)
+			return
+		}
 		marshal, err := json.Marshal(gin.H{
-			"id":   "01",
-			"data": "小红点通知",
+			"id":   "02",
+			"data": NoticeInfo,
 		})
 		if err != nil {
 			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
