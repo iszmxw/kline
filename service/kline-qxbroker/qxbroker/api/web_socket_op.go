@@ -85,12 +85,11 @@ func (ws *WebSocketOp) connServer() bool {
 		Proxy: http.ProxyURL(ws.proxy),
 	}
 	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
-		"Origin":                   {config.Origin},
-		"Pragma":                   {"no-cache"},
-		"Cache-Control":            {"no-cache"},
-		"Accept-Encoding":          {"gzip, deflate, br"},
-		"Accept-Language":          {"zh-CN,zh;q=0.9,en;q=0.8"},
-		"Sec-WebSocket-Extensions": {"permessage-deflate; client_max_window_bits"},
+		"Origin":          {config.Origin},
+		"Pragma":          {"no-cache"},
+		"Cache-Control":   {"no-cache"},
+		"Accept-Encoding": {"gzip, deflate, br"},
+		"Accept-Language": {"zh-CN,zh;q=0.9,en;q=0.8"},
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))

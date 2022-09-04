@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
-	"goapi/pkg/notice/mail"
-	"goapi/service/kline-common"
+	NoticeMail "goapi/pkg/notice/mail"
+	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-raceoption/raceoption/config"
 	"goapi/service/kline-raceoption/raceoption/utils/zip"
@@ -19,6 +18,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type closeChanCallback chan struct{}
@@ -46,8 +47,8 @@ type WebSocketOp struct {
 	closeChanCallback chan struct{}            // 关闭通知外部
 	allSubStars       list.List
 	Info              KlineCommon.Info // 订阅的币种
-	Symbol            string            // 订阅的币种
-	Description       string            // 描述
+	Symbol            string           // 订阅的币种
+	Description       string           // 描述
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {

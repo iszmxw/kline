@@ -70,7 +70,7 @@ func ProxyRaceOption(proxy *url.URL) *url.URL {
 	if conf.GetString("app.env") == "company_pro" {
 		proxy = &url.URL{
 			Scheme: "http",
-			Host:   "13.57.227.200:18888", // 亚马逊
+			Host:   "38.55.214.188:40001", // 香港代理
 			//Host: "209.209.114.15:18888", // justhost.ru
 			//Host: "43.154.141.242:10802", // 淘宝购买的香港ip
 			//User: url.UserPassword("2533", "2113"),
