@@ -558,7 +558,7 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 	} else {
 		table = table.Where(models.Prefix("$_trading_assets_source.is_valid"), "1")
 	}
-	table = table.Where(models.Prefix("$_trading_assets_source.item_code"), user.(response.WebLoginUser).ItemCode).Where(models.Prefix("$_trading_assets_source.nation"), user.(response.WebLoginUser).Nation)
+	table = table.Where(models.Prefix("$_trading_assets_source.item_code"), user.(response.WebLoginUser).ItemCode)
 	table.Count(&pageList.Total)
 	// 设置分页参数
 	pageList.CurrentPage = params.PageNum
