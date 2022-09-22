@@ -21,3 +21,8 @@ type TradingAssets struct {
 	Updater       string             `json:"updater"`         //更新人
 	ReturnRate    float64            `json:"return_rate"`     //收益率
 }
+
+type AssetsCodeArray struct {
+	AssetsCode  string `json:"assets_code"`  //资产编码
+	IsWhitelist string `json:"is_whitelist"` //是否白名单1是 0否，白名单的资产不跟随自动变化赔率
+}

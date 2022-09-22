@@ -31,4 +31,9 @@
 
 
 
-curl --location --request GET 'https://qxbroker.com/zh/sign-up/fast/'
+curl --location --request POST 'https://api.adjust.com/public/v1/apps/yxs12pfewq/trackers'\
+--header 'Authorization: Token token={API_TOKEN}' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "name": "Adroll"
+}'

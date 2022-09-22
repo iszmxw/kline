@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"goapi/bootstrap"
 	"goapi/config"
+	conf "goapi/pkg/config"
+	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"time"
 )
@@ -18,8 +21,21 @@ func init() {
 }
 
 func main() {
-	bootstrap.SetupRedis(0)
+	// 初始化 SQL
+	// 定义日志目录
+	logger.Info("初始化 SQL")
+	bootstrap.SetupDB()
+	// 初始化 Redis
+	logger.Info("初始化 Redis")
+	db := conf.GetInt("redis.db")
+	bootstrap.SetupRedis(db)
 	defer bootstrap.RedisClose()
+
+	if kline.AutoRateWhitelistCheck("SILVER") {
+		fmt.Printf("123456")
+	}
+
+	time.Sleep(60 * time.Second)
 	// 139.com
 	// qq.com
 	// gmail.com
@@ -32,6 +48,7 @@ func main() {
 	//mgmail()
 	//m163()
 }
+
 //
 //func m139() {
 //	var params email.Params
