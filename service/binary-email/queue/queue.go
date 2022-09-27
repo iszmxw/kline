@@ -11,6 +11,7 @@ import (
 	"goapi/pkg/redis"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const SystemEmailQueue = "system_email_queue"
@@ -70,6 +71,7 @@ func Consume() {
 				go StatisticsEmail(params.From, "success")
 			}()
 		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
