@@ -19,6 +19,5 @@ type SystemEmailRoutingNode struct {
 	Creator         string    `json:"creator"`          //创建人
 	Updater         string    `json:"updater"`          //修改人
 	Remarks         string    `json:"remarks"`          //备注
-	Nation          string    `json:"nation"`           //绑定国家
 	ItemCode        string    `json:"item_code"`        //应用编码
 }

@@ -7,7 +7,6 @@ type QueryMargin struct {
 
 type SendOneEmail struct {
 	ItemCode       string `json:"itemCode" validate:"required"`       // 项目编码
-	Nation         string `json:"nation" validate:"required"`         // 国家编码
 	MailAccount    string `json:"mailAccount" validate:"required"`    // 发邮件邮箱
 	ReceiveEmail   string `json:"receiveEmail" validate:"required"`   // 收件邮箱
 	MainTitle      string `json:"mainTitle" validate:"required"`      // 邮件标题
@@ -16,7 +15,6 @@ type SendOneEmail struct {
 
 type SendBatchEmail struct {
 	ItemCode       string   `json:"itemCode" validate:"required"`
-	Nation         string   `json:"nation" validate:"required"`         // 国家编码
 	MailAccount    string   `json:"mailAccount" validate:"required"`    // 发邮件邮箱
 	ReceiveEmail   []string `json:"receiveEmail" validate:"required"`   // 收件邮箱
 	MainTitle      string   `json:"mainTitle" validate:"required"`      // 邮件标题

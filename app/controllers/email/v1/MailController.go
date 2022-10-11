@@ -71,7 +71,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 		return
 	}
 	// 获取邮箱路由节点
-	err, SystemEmailRoutingNode := config.GetOne(params.Nation, params.MailAccount)
+	err, SystemEmailRoutingNode := config.GetOne(params.MailAccount)
 	if err != nil {
 		echo.Error(c, "PARAMS_ERROR", err.Error())
 		return
@@ -163,7 +163,7 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 		return
 	}
 	// 获取邮箱路由节点
-	err, SystemEmailRoutingNode := config.GetOne(params.Nation, params.MailAccount)
+	err, SystemEmailRoutingNode := config.GetOne(params.MailAccount)
 	if err != nil {
 		echo.Error(c, "PARAMS_ERROR", err.Error())
 		return

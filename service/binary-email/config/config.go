@@ -11,7 +11,7 @@ const SystemEmailRoutingNode = "system_email_routing_node"
 
 // 读取一条配置信息
 
-func GetOne(nation, email string) (error, response.SystemEmailRoutingNode) {
+func GetOne(email string) (error, response.SystemEmailRoutingNode) {
 	var result response.SystemEmailRoutingNode
 	//key := fmt.Sprintf("%v:%v:%v", SystemEmailRoutingNode, nation, channel)
 	//// 1、先从缓存读取配置信息
@@ -26,7 +26,6 @@ func GetOne(nation, email string) (error, response.SystemEmailRoutingNode) {
 	// 2、缓存没有直接读取数据库
 	mysql.DB.Debug().Model(models.SystemEmailRoutingNode{}).Where(map[string]interface{}{
 		"valid":  1,
-		"nation": nation,
 		"email":  email,
 	}).Find(&result)
 	if result.Id == 0 {
