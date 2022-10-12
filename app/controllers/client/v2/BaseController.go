@@ -7,4 +7,5 @@ type Group struct {
 	BaseController
 	KlineController
 	NoticeController
+	AgentController
 }

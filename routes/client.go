@@ -79,6 +79,15 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				// 站内信通知
 				notice.Any("/siteLetterNotification.json", ClientV2Group.NoticeController.StationLetterHandler)
 			}
+
+			// 代理落地页接口
+			agent := V2Route.Group("/agent")
+			{
+				// 落地页app注册模块
+				agent.Any("/register.json", ClientV2Group.AgentController.RegisterHandler)
+				// 博眼球，数据造假，时时推送假数据
+				agent.Any("/statistics.json", ClientV2Group.AgentController.StatisticsHandler)
+			}
 		}
 
 		{ // V3 版本
