@@ -92,9 +92,10 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	CreateAppUser.UserName = "user"
 	CreateAppUser.IsLogout = 0
 	CreateAppUser.DeciveBrand = "HTML5" // 设置设备品牌 多个用,号隔开 当前为最后一个
-	CreateAppUser.DeviceModel = ""      // 设置设备型号
-	DB := mysql.DB
-	DB.Begin()
+	CreateAppUser.InvitDate = nil
+	CreateAppUser.LastLoginDate = nil
+	CreateAppUser.PullBlackDate = nil
+	DB := mysql.DB.Begin()
 	err := DB.Debug().Model(models.AppUser{}).Create(CreateAppUser).Error
 	if err != nil {
 		DB.Rollback()
@@ -116,6 +117,12 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	AppUserCredit.MobileCredit = 0
 	AppUserCredit.BankCredit = 0
 	AppUserCredit.ErrorCreditStatus = 0
+	AppUserCredit.FinishCreditDate = nil
+	AppUserCredit.MobileCreditDate = nil
+	AppUserCredit.EmailCreditDate = nil
+	AppUserCredit.IdentityCreditDate = nil
+	AppUserCredit.BankCreditDate = nil
+	AppUserCredit.UpdateDate = nil
 	err = DB.Debug().Model(models.AppUserCredit{}).Create(AppUserCredit).Error
 	if err != nil {
 		DB.Rollback()
