@@ -225,22 +225,57 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 		result := cmap.New().Items()
 		timeIncr := (time.Now().Unix() - initTime) / 20
 		result["endCostumer"] = costumer + timeIncr // 最终客户数
+		// 读取 redis 缓存
+		IndiaKeyTradeAmount := fmt.Sprintf("%s:India:tradeAmount", time.Now().Format("2006-01-02"))
+		IndonesiaKeyTradeAmount := fmt.Sprintf("%s:Indonesia:tradeAmount", time.Now().Format("2006-01-02"))
+		var tradeAmount int64
+		var min int
+		var max int
 		rand.Seed(time.Now().UnixNano())
 		if strings.EqualFold(SubBody.Nation, "Indonesia") {
-			min := 4000
-			max := 7000
-			tradeAmount := (time.Now().Unix() - startTime) * int64(rand.Intn(max-min)+min)
-			result["tradeAmount"] = tradeAmount // 最终客户数
+			min = 4000
+			max = 7000
+			randTradeAmount := int64(rand.Intn(max-min) + min)
+			num, err := redis.Client.Get(IndonesiaKeyTradeAmount)
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+			if len(num) == 0 {
+				tradeAmount = randTradeAmount
+			} else {
+				tradeAmount = randTradeAmount + helpers.StringToInt64(num)
+			}
+			_, err = redis.Client.Add(IndonesiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
+			if err != nil {
+				logger.Error(err)
+				return
+			}
 		}
 		if strings.EqualFold(SubBody.Nation, "India") {
-			min := 500
-			max := 8000
-			tradeAmount := (time.Now().Unix() - startTime) * int64(rand.Intn(max-min)+min)
-			result["tradeAmount"] = tradeAmount // 最终客户数
+			min = 500
+			max = 8000
+			randTradeAmount := int64(rand.Intn(max-min) + min)
+			num, err := redis.Client.Get(IndiaKeyTradeAmount)
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+			if len(num) == 0 {
+				tradeAmount = randTradeAmount
+			} else {
+				tradeAmount = randTradeAmount + helpers.StringToInt64(num)
+			}
+			_, err = redis.Client.Add(IndiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
+			if err != nil {
+				logger.Error(err)
+				return
+			}
 		}
+		result["tradeAmount"] = tradeAmount // 最终交易数量
 		// 查询用户未读消息，展示小红点
 		marshal, err := json.Marshal(gin.H{
-			"id":   "02",
+			"id":   "01",
 			"data": result,
 		})
 		if err != nil {
@@ -257,7 +292,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 			goto END
 		}
 		// 2秒推送一次消息
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 1)
 		// 返回数据给用户
 	}
 STOP:

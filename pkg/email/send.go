@@ -1,7 +1,6 @@
 package email
 
 import (
-	"fmt"
 	"goapi/pkg/config"
 	"goapi/pkg/email/google"
 	"goapi/pkg/email/qq"
@@ -34,7 +33,8 @@ func SendOneEmail(params Params) error {
 		params.ContentType = "text/plain"
 	}
 	m := gomail.NewMessage()
-	m.SetHeader("From", fmt.Sprintf("%s<%s>", params.Subject, params.From)) // 发件人
+	m.SetHeader("From", params.From)                                        // 发件人
+	//m.SetHeader("From", fmt.Sprintf("%s<%s>", params.Subject, params.From)) // 发件人
 	m.SetHeader("To", params.To)                                            // 收件人
 	m.SetHeader("Subject", params.Subject)                                  // 标题
 	m.SetBody(params.ContentType, params.Body)                              // 内容
