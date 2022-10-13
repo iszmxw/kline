@@ -42,7 +42,17 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	// 检测该用户是否存在系统中
 	var queryAppUser response.AppUser
 	var CreateAppUser models.AppUser
+	var queryAgentUser models.AgentUser
 	var AppUserCredit models.AppUserCredit
+	// 查询代理
+	mysql.DB.Debug().Model(models.AgentUser{}).Where(map[string]interface{}{
+		"item_code":     "SMO",
+		"referral_code": params.Pid,
+	}).Find(&queryAgentUser)
+	if len(queryAgentUser.AgentUserId) == 0 {
+		echo.Error(c, "FAILD", "：代理不存在")
+		return
+	}
 	mysql.DB.Debug().Model(models.AppUser{}).Where(map[string]interface{}{
 		"item_code": "SMO",
 		"email":     params.Email,
@@ -52,9 +62,11 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 		return
 	}
 	CreateAppUser.ItemCode = "SMO"
-	CreateAppUser.Nation = params.Nation // 国家
-	CreateAppUser.City = res.City        // 城市
+	CreateAppUser.Nation = queryAgentUser.Nation // 国家
+	CreateAppUser.RegistNation = res.Country     // 注册时候国家
+	CreateAppUser.City = res.City                // 城市
 	CreateAppUser.AppUserId = helpers.GetUUID11()
+	CreateAppUser.AgentUserId = queryAgentUser.AgentUserId
 	CreateAppUser.Mobile = ""
 	CreateAppUser.Email = params.Email
 	CreateAppUser.Password = params.Password
@@ -63,11 +75,11 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	CreateAppUser.BlackList = 0
 	CreateAppUser.Balance = 0
 	CreateAppUser.BonusBalance = 0
-	if strings.EqualFold(params.Nation, "Indonesia") {
+	if strings.EqualFold(queryAgentUser.Nation, "Indonesia") {
 		CreateAppUser.VirtualBalance = 1000000.00
 		CreateAppUser.CurrencyType = "IDR"
 	}
-	if strings.EqualFold(params.Nation, "India") {
+	if strings.EqualFold(queryAgentUser.Nation, "India") {
 		CreateAppUser.VirtualBalance = 10000.00
 		CreateAppUser.CurrencyType = "INR"
 	}
@@ -113,7 +125,6 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	}
 	DB.Commit()
 	echo.Success(c, nil, "SUCCESS")
-
 }
 
 func (h *AgentController) StatisticsHandler(c *gin.Context) {

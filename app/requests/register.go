@@ -1,7 +1,7 @@
 package requests
 
 type RegisterParams struct {
-	Nation   string `json:"nation" validate:"required"`
+	Pid      string `json:"pid" validate:"required"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }

@@ -4,6 +4,7 @@ import "time"
 
 type AppUser struct {
 	AppUserId            string    `json:"app_user_id"`           //app用户表
+	AgentUserId          string    `json:"agent_user_id"`         //归属代理
 	Mobile               string    `json:"mobile"`                //手机号
 	Email                string    `json:"email"`                 //邮箱
 	Password             string    `json:"password"`              //密码
@@ -19,7 +20,7 @@ type AppUser struct {
 	IsNew                int       `json:"is_new"`                //是否新用户 1是 0否 首充后变成0
 	Avatar               string    `json:"avatar"`                //头像链接
 	ReferralCode         string    `json:"referral_code"`         //邀请码
-	Gender               int       `json:"gender"`                //性别
+	Gender               int       `json:"gender"`                //性别0女 1男
 	CreditEmail          string    `json:"credit_email"`          //认证邮箱
 	IdBackUrl            string    `json:"id_back_url"`           //证件反面链接
 	UserName             string    `json:"user_name"`             //用户姓名
@@ -54,4 +55,7 @@ type AppUser struct {
 	FlowBindId           string    `json:"flow_bind_id"`          //整合流量方公司绑定ID
 	Campaign             string    `json:"campaign"`              //投放渠道活动名称
 	UserSource           string    `json:"user_source"`           //用户来源，关联表t_app_channel
+	RegistNation         string    `json:"regist_nation"`         //注册时国家
+	RejectReason         string    `json:"reject_reason"`         //拒绝原因
+	FlowJson             string    `json:"flow_json"`             //整合流量方公司的参数json
 }
