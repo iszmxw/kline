@@ -39,6 +39,12 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	if validate.ParamsError(c, params) {
 		return
 	}
+	// 检查验证码
+	code, _ := redis.Client.Get(fmt.Sprintf(":Agent:Sms:%s", params.Email))
+	if !strings.EqualFold(params.Code, code) {
+		echo.Error(c, "FAILD", "：验证码不正确")
+		return
+	}
 	// 检测该用户是否存在系统中
 	var queryAppUser response.AppUser
 	var CreateAppUser models.AppUser
