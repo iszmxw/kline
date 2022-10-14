@@ -41,14 +41,14 @@ func CheckWebLogin(c *gin.Context) {
 	tokenString := request.GetParam(c, "token")
 	if len(tokenString) <= 0 || tokenString == "<nil>" {
 		logger.Error(errors.New("未检测到token"))
-		echo.Error(c, "LOGIN_INVALID", "")
+		echo.Error(c, "LoginInvalid", "")
 		c.Abort()
 		return
 	}
 	strInfo, err = redis.Client.WebGet("web-" + tokenString)
 	if err != nil {
 		logger.Error(err)
-		echo.Error(c, "LOGIN_INVALID", err.Error())
+		echo.Error(c, "LoginInvalid", err.Error())
 		c.Abort()
 		return
 	}

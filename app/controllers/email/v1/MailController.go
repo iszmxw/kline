@@ -45,7 +45,7 @@ func (h *MailController) QueryMargin(c *gin.Context) {
 		"email":  params.SenderName,
 	}).Find(&result)
 	if result.Id == 0 {
-		echo.Error(c, "FAILD", fmt.Sprintf("，国家：%v 不存在发信人 %v ", params.Nation, params.SenderName))
+		echo.Error(c, "Failed", fmt.Sprintf("，国家：%v 不存在发信人 %v ", params.Nation, params.SenderName))
 		return
 	}
 	echo.Success(c, gin.H{"available_number": result.AvailableNumber}, "")
@@ -67,17 +67,17 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 		return
 	}
 	if len(params.MailAccount) == 0 {
-		echo.Error(c, "PARAMS_ERROR", "发件人邮箱不能为空")
+		echo.Error(c, "ParamsError", "发件人邮箱不能为空")
 		return
 	}
 	// 获取邮箱路由节点
 	err, SystemEmailRoutingNode := config.GetOne(params.MailAccount)
 	if err != nil {
-		echo.Error(c, "PARAMS_ERROR", err.Error())
+		echo.Error(c, "ParamsError", err.Error())
 		return
 	}
 	if SystemEmailRoutingNode.AvailableNumber <= 0 {
-		echo.Error(c, "FAILD", fmt.Sprintf("%v 剩余可用条数为 %v", params.MailAccount, SystemEmailRoutingNode.AvailableNumber))
+		echo.Error(c, "Failed", fmt.Sprintf("%v 剩余可用条数为 %v", params.MailAccount, SystemEmailRoutingNode.AvailableNumber))
 		return
 	}
 	sendTotalResult := cmap.New().Items()
@@ -86,18 +86,18 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	}).Select("sum(send_total) AS sendTotal").
 		Find(&sendTotalResult).Error
 	if err != nil {
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	// map转struct
 	err = mapstructure.Decode(sendTotalResult, &SendTotal)
 	if err != nil {
 		logger.Error(err)
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	if (SendTotal.Total + len(params.ReceiveEmail)) >= SystemEmailRoutingNode.MaxNumber {
-		echo.Error(c, "FAILD", fmt.Sprintf("%v 每日最多使用 %v 条，您当前已使用：%v", params.MailAccount, SystemEmailRoutingNode.MaxNumber, SendTotal.Total))
+		echo.Error(c, "Failed", fmt.Sprintf("%v 每日最多使用 %v 条，您当前已使用：%v", params.MailAccount, SystemEmailRoutingNode.MaxNumber, SendTotal.Total))
 		return
 	}
 	sendData.From = params.MailAccount
@@ -112,7 +112,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	if err != nil {
 		// 统计失败率
 		go queue.StatisticsEmail(params.MailAccount, "fail")
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	// 统计成功率
@@ -159,17 +159,17 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 		return
 	}
 	if len(params.MailAccount) == 0 {
-		echo.Error(c, "PARAMS_ERROR", "发件人邮箱不能为空")
+		echo.Error(c, "ParamsError", "发件人邮箱不能为空")
 		return
 	}
 	// 获取邮箱路由节点
 	err, SystemEmailRoutingNode := config.GetOne(params.MailAccount)
 	if err != nil {
-		echo.Error(c, "PARAMS_ERROR", err.Error())
+		echo.Error(c, "ParamsError", err.Error())
 		return
 	}
 	if SystemEmailRoutingNode.AvailableNumber <= 0 {
-		echo.Error(c, "FAILD", fmt.Sprintf("%v 剩余可用条数为 %v", params.MailAccount, SystemEmailRoutingNode.AvailableNumber))
+		echo.Error(c, "Failed", fmt.Sprintf("%v 剩余可用条数为 %v", params.MailAccount, SystemEmailRoutingNode.AvailableNumber))
 		return
 	}
 	sendTotalResult := cmap.New().Items()
@@ -178,18 +178,18 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 	}).Select("sum(send_total) AS sendTotal").
 		Find(&sendTotalResult).Error
 	if err != nil {
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	// map转struct
 	err = mapstructure.Decode(sendTotalResult, &SendTotal)
 	if err != nil {
 		logger.Error(err)
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	if (SendTotal.Total + len(params.ReceiveEmail)) >= SystemEmailRoutingNode.MaxNumber {
-		echo.Error(c, "FAILD", fmt.Sprintf("%v 每日最多使用 %v 条，您当前已使用：%v", params.MailAccount, SystemEmailRoutingNode.MaxNumber, SendTotal.Total))
+		echo.Error(c, "Failed", fmt.Sprintf("%v 每日最多使用 %v 条，您当前已使用：%v", params.MailAccount, SystemEmailRoutingNode.MaxNumber, SendTotal.Total))
 		return
 	}
 	// 创建消息队列，将要发送的消息进行入队
@@ -205,7 +205,7 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 			Password: SystemEmailRoutingNode.ChannelPassword,
 		})
 		if err != nil {
-			echo.Error(c, "FAILD", err.Error())
+			echo.Error(c, "Failed", err.Error())
 			return
 		}
 		sendData = append(sendData, string(marshal))
@@ -213,7 +213,7 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 	if len(sendData) > 0 {
 		err = queue.Produce(sendData)
 		if err != nil {
-			echo.Error(c, "FAILD", err.Error())
+			echo.Error(c, "Failed", err.Error())
 			return
 		}
 	}
@@ -256,7 +256,7 @@ func (h *MailController) ResetMargin(c *gin.Context) {
 		"updater":     "GoMail",
 	}).Error
 	if err != nil {
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("1=1").Updates(map[string]interface{}{
@@ -267,7 +267,7 @@ func (h *MailController) ResetMargin(c *gin.Context) {
 		"updater":          "GoMail",
 	}).Error
 	if err != nil {
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	echo.Success(c, nil, "SUCCESS")

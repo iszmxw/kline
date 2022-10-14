@@ -10,8 +10,12 @@ import (
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
 	zhTranslations "github.com/go-playground/validator/v10/translations/zh"
 	cmap "github.com/orcaman/concurrent-map"
+	"goapi/pkg/echo/code/en"
+	"goapi/pkg/echo/code/insa"
+	"goapi/pkg/echo/code/zh"
 	"goapi/pkg/logger"
 	"reflect"
+	"strings"
 )
 
 type ValidateLang struct {
@@ -22,20 +26,22 @@ type ValidateLang struct {
 	Validate   *validator.Validate
 }
 
-// 中文
-
-type Code struct {
-	SUCCESS           string `code:"1" msg:"操作成功"`
-	FAILD             string `code:"0" msg:"操作失败"`
-	LOGIN_INVALID     string `code:"204" msg:"未登录或者登录失效"`
-	PARAMS_LOST       string `code:"104" msg:"参数必传"`
-	PARAMS_ERROR      string `code:"104" msg:"检查参数"`
-	SYSTEM_ERROR      string `code:"944" msg:"系统异常"`
-	COUNTRY_LIMIT_USE string `code:"1006" msg:"Pembatasan daerah Anda"` // 国家限制使用
-}
-
-func GetCode(code string) (string, string) {
-	t := reflect.TypeOf(&Code{}).Elem()
+func GetCode(code, Language string) (string, string) {
+	var t reflect.Type
+	switch strings.ToLower(Language) {
+	case "zh":
+		t = reflect.TypeOf(&zh.Code{}).Elem()
+		break
+	case "en":
+		t = reflect.TypeOf(&en.Code{}).Elem()
+		break
+	case "insa":
+		t = reflect.TypeOf(&insa.Code{}).Elem()
+		break
+	default: // 默认中文
+		t = reflect.TypeOf(&zh.Code{}).Elem()
+		break
+	}
 	field, ok := t.FieldByName(code)
 	if !ok {
 		return "0", "unknown mistake"

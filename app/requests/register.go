@@ -1,10 +1,11 @@
 package requests
 
 type RegisterParams struct {
-	Pid      string `json:"pid" validate:"required"`
-	Email    string `json:"email" validate:"required,email"`
-	Code     string `json:"code" validate:"required"`
-	Password string `json:"password" validate:"required"`
+	LanguageCode string `json:"languageCode" validate:"required"`
+	Pid          string `json:"pid" validate:"required"`
+	Email        string `json:"email" validate:"required,email"`
+	Code         string `json:"code" validate:"required"`
+	Password     string `json:"password" validate:"required"`
 }
 
 type SubStatistics struct {

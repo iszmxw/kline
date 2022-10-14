@@ -9,12 +9,14 @@ import (
 // 校验参数
 
 func ParamsError(c *gin.Context, params interface{}) bool {
+	var locale = "en"
 	ValidateLang := new(echo.ValidateLang)
 	ValidateLang.Validate = validator.New()
-	vErr := ValidateLang.SetLang("zh").Validate.Struct(params)
+	c.Request.Header.Set("Language", locale)
+	vErr := ValidateLang.SetLang(locale).Validate.Struct(params)
 	if vErr != nil {
 		msg := ValidateLang.Translate(vErr, params)
-		echo.Error(c, "PARAMS_ERROR", "："+msg)
+		echo.Error(c, "ParamsError", "："+msg)
 		return true
 	}
 	return false

@@ -39,10 +39,11 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	if validate.ParamsError(c, params) {
 		return
 	}
+	c.Request.Header.Set("Language", params.LanguageCode)
 	// 检查验证码
 	code, _ := redis.Client.Get(fmt.Sprintf(":Agent:Sms:%s", params.Email))
 	if !strings.EqualFold(params.Code, code) {
-		echo.Error(c, "FAILD", "：验证码不正确")
+		echo.Error(c, "VerificationCodeErr", "")
 		return
 	}
 	// 检测该用户是否存在系统中
@@ -56,7 +57,7 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 		"referral_code": params.Pid,
 	}).Find(&queryAgentUser)
 	if len(queryAgentUser.AgentUserId) == 0 {
-		echo.Error(c, "FAILD", "：代理不存在")
+		echo.Error(c, "SystemError", "")
 		return
 	}
 	mysql.DB.Debug().Model(models.AppUser{}).Where(map[string]interface{}{
@@ -64,7 +65,7 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 		"email":     params.Email,
 	}).Find(&queryAppUser)
 	if len(queryAppUser.AppUserId) > 0 {
-		echo.Error(c, "FAILD", "：用户已存在")
+		echo.Error(c, "UserAlreadyExists", "")
 		return
 	}
 	CreateAppUser.ItemCode = "SMO"
@@ -106,7 +107,7 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	if err != nil {
 		DB.Rollback()
 		logger.Error(err)
-		echo.Error(c, "FAILD", "：注册失败请稍后再试")
+		echo.Error(c, "RegistrationFailed", "")
 		return
 	}
 	// 创建关联认证记录
@@ -133,7 +134,7 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	if err != nil {
 		DB.Rollback()
 		logger.Error(err)
-		echo.Error(c, "FAILD", "：注册失败请稍后再试")
+		echo.Error(c, "RegistrationFailed", "")
 		return
 	}
 	DB.Commit()
@@ -229,7 +230,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 			goto STOP
 		}
 		result := cmap.New().Items()
-		timeIncr := (time.Now().Unix() - initTime) / 20
+		timeIncr := (time.Now().Unix() - initTime) / 10
 		result["endCostumer"] = costumer + timeIncr // 最终客户数
 		// 读取 redis 缓存
 		IndiaKeyTradeAmount := fmt.Sprintf("%s:India:tradeAmount", time.Now().Format("2006-01-02"))
@@ -262,17 +263,13 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 			min = 500
 			max = 8000
 			randTradeAmount := int64(rand.Intn(max-min) + min)
-			num, err := redis.Client.Get(IndiaKeyTradeAmount)
-			if err != nil {
-				logger.Error(err)
-				return
-			}
+			num, _ := redis.Client.Get(IndiaKeyTradeAmount)
 			if len(num) == 0 {
 				tradeAmount = randTradeAmount
 			} else {
 				tradeAmount = randTradeAmount + helpers.StringToInt64(num)
 			}
-			_, err = redis.Client.Add(IndiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
+			_, err := redis.Client.Add(IndiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
 			if err != nil {
 				logger.Error(err)
 				return

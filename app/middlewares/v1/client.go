@@ -20,7 +20,7 @@ func AddressLimit() gin.HandlerFunc {
 		logger.Info(c.ClientIP())
 		// 正式环境检测
 		if config.GetBool("app.address_limit") && address.LimitAddress(c.ClientIP()) {
-			echo.Error(c, "COUNTRY_LIMIT_USE", "")
+			echo.Error(c, "CountryLimitUse", "")
 			c.Abort()
 			return
 		} else {
@@ -60,13 +60,13 @@ func CheckLogin(c *gin.Context) {
 	tokenString := request.GetParam(c, "token")
 	if len(tokenString) <= 0 || tokenString == "<nil>" {
 		logger.Error(errors.New("未检测到token"))
-		echo.Error(c, "LOGIN_INVALID", "")
+		echo.Error(c, "LoginInvalid", "")
 		c.Abort()
 		return
 	}
 	strInfo, err = redis.Client.Get(tokenString)
 	if err != nil {
-		echo.Error(c, "LOGIN_INVALID", "")
+		echo.Error(c, "LoginInvalid", "")
 		c.Abort()
 		return
 	}

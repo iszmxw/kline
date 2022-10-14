@@ -33,8 +33,8 @@ func Error(c *gin.Context, code string, lastMsg string) {
 	if len(logger.RequestId) > 0 {
 		logInfo = append(logInfo, zap.Any("RequestId", logger.RequestId))
 	}
-	code, firstMsg := GetCode(code) // 最终code
-	fullMsg := firstMsg + lastMsg   // 最终msg
+	code, firstMsg := GetCode(code, c.Request.Header.Get("Language")) // 最终code
+	fullMsg := firstMsg + lastMsg                                     // 最终msg
 	logInfo = append(logInfo, zap.Any(code, fullMsg))
 	logger.Logger.WithOptions(zap.AddCallerSkip(1)).Info("返回错误", logInfo...)
 	Rjson(c, nil, fullMsg, helpers.StringToInt(code))

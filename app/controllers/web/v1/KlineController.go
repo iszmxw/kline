@@ -264,16 +264,16 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	beginDate := c.Query("beginDate")
 	endDate := c.Query("endDate")
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
-		echo.Error(c, "FAILD", "：beginDate 起始交易日期必填")
+		echo.Error(c, "Failed", "：beginDate 起始交易日期必填")
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Error(errors.New("越界查询"))
-		echo.Error(c, "FAILD", "：beginDate error 越界查询")
+		echo.Error(c, "Failed", "：beginDate error 越界查询")
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
-		echo.Error(c, "FAILD", "：endDate 截止交易日期必填")
+		echo.Error(c, "Failed", "：endDate 截止交易日期必填")
 		return
 	}
 	tips := fmt.Sprintf(
@@ -313,7 +313,7 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 	err := KlineDB.Limit(int(Count)).Find(&data).Error
 	if err != nil {
 		logger.Error(err)
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	// 侦测到数据小于 150 条的时候，发送邮件预警
@@ -328,13 +328,13 @@ func (h *KlineController) HistoryHandler(c *gin.Context) {
 		marshal, err := json.Marshal(data)
 		if err != nil {
 			logger.Error(err)
-			echo.Error(c, "FAILD", err.Error())
+			echo.Error(c, "Failed", err.Error())
 			return
 		}
 		Zipresult, err := utils.Zip(marshal)
 		if err != nil {
 			logger.Error(err)
-			echo.Error(c, "FAILD", err.Error())
+			echo.Error(c, "Failed", err.Error())
 			return
 		}
 		result = Zipresult
@@ -436,11 +436,11 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		return
 	}
 	if response.KlineSource(params.AssetsCode) == "unknown" {
-		echo.Error(c, "PARAMS_ERROR", "：AssetsCode 不在范围内")
+		echo.Error(c, "ParamsError", "：AssetsCode 不在范围内")
 		return
 	}
 	if !helpers.InArray(params.KlineSource, response.GetSource()) {
-		echo.Error(c, "PARAMS_ERROR", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(response.GetSource(), "，")))
+		echo.Error(c, "ParamsError", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(response.GetSource(), "，")))
 		return
 	}
 	// 获取允许读取的数据源
@@ -448,11 +448,11 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 	data, ok := AllowKlineSource[params.AssetsCode]
 	if ok {
 		if !helpers.InArray(params.KlineSource, data.([]string)) {
-			echo.Error(c, "PARAMS_ERROR", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(data.([]string), "，")))
+			echo.Error(c, "ParamsError", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(data.([]string), "，")))
 			return
 		}
 	} else {
-		echo.Error(c, "PARAMS_ERROR", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(data.([]string), "，")))
+		echo.Error(c, "ParamsError", fmt.Sprintf("：KlineSource=%v 不在【%v】范围内", params.KlineSource, strings.Join(data.([]string), "，")))
 		return
 	}
 	info, _ := c.Get("user")
@@ -469,7 +469,7 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		Error
 	if err != nil {
 		DB.Rollback()
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	// 设置当前资产走的数据源
@@ -482,7 +482,7 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 		Error
 	if err != nil {
 		DB.Rollback()
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	// 记录操作日志
@@ -498,14 +498,14 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 	}).Error
 	if err != nil {
 		DB.Rollback()
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	key := fmt.Sprintf("kline_source:%v", params.AssetsCode)
 	_, err = redis.Client.Add(key, params.KlineSource, 0)
 	if err != nil {
 		DB.Rollback()
-		echo.Error(c, "FAILD", err.Error())
+		echo.Error(c, "Failed", err.Error())
 		return
 	}
 	DB.Commit()
@@ -616,7 +616,7 @@ func (h *KlineController) GetRedisKeyHandler(c *gin.Context) {
 	keys := c.Query("keys")
 	arr, cursor, err := redis.Client.GetKeys(15, keys)
 	if err != nil {
-		echo.Error(c, "FAILD", "")
+		echo.Error(c, "Failed", "")
 	} else {
 		result := cmap.New().Items()
 		for _, item := range arr {
