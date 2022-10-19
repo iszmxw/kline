@@ -102,6 +102,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	}
 	sendData.From = params.MailAccount
 	sendData.To = params.ReceiveEmail
+	sendData.ContentType = params.ContentType
 	sendData.Subject = params.MainTitle
 	sendData.Body = params.MessageContent
 	sendData.Host = SystemEmailRoutingNode.ChannelHost
