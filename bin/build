@@ -32,6 +32,9 @@ GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-binance service
 # 9、打包 kline-qxbroker K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-qxbroker service/kline-qxbroker/main.go
 
+# 10、打包 kline-fxcm K线图socket采集服务
+GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-fxcm service/kline-fxcm/main.go
+
 
 ## 3、打包 新浪 K线图采集服务
 #GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-sinaService service/kline-sina/main.go

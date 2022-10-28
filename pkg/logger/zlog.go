@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -44,7 +45,7 @@ func Init(Service string) {
 			zapcore.AddSync(&lumberjack.Logger{
 				Filename:   filename, // 日志文件存放目录
 				MaxSize:    5,        // 文件大小限制,单位MB
-				MaxBackups: 100,       // 最大保留日志文件数量
+				MaxBackups: 100,      // 最大保留日志文件数量
 				MaxAge:     30,       // 日志文件保留天数
 				Compress:   false,    // 是否压缩处理
 			}),
@@ -97,10 +98,27 @@ func Error(err error) {
 }
 
 // Info 记录日志
-func Info(info interface{}) {
+func Info(info ...interface{}) {
 	if len(RequestId) > 0 {
-		Logger.WithOptions(zap.AddCallerSkip(1)).Info("调试日志", zap.String("RequestId", RequestId), zap.Any("详细内容", info))
+		Logger.WithOptions(zap.AddCallerSkip(1)).Info(
+			"调试日志",
+			zap.String("RequestId", RequestId),
+			zap.Any("详细内容", fmt.Sprint(info...)),
+		)
 	} else {
-		Logger.WithOptions(zap.AddCallerSkip(1)).Info("调试日志", zap.Any("详细内容", info))
+		Logger.WithOptions(zap.AddCallerSkip(1)).Info(
+			"调试日志",
+			zap.Any("详细内容", fmt.Sprint(info...)),
+		)
+	}
+}
+
+// Printf 记录日志
+
+func Printf(format string, v ...interface{}) {
+	if len(RequestId) > 0 {
+		Logger.WithOptions(zap.AddCallerSkip(1)).Info("调试日志", zap.String("RequestId", RequestId), zap.Any("详细内容", fmt.Sprintf(format, v...)))
+	} else {
+		Logger.WithOptions(zap.AddCallerSkip(1)).Info("调试日志", zap.Any("详细内容", fmt.Sprintf(format, v...)))
 	}
 }
