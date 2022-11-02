@@ -37,6 +37,9 @@ func GetData(service string) []Info {
 	case "fxcm":
 		CodeData = Fxcm()
 		break
+	case "iqoption":
+		CodeData = Iqoption()
+		break
 	default:
 		break
 	}
@@ -184,6 +187,18 @@ func Fxcm() []Info {
 		Info{Symbol: "AUD/CHF", Desc: "澳大利亚元/瑞士法郎", ContractCode: "AUD-CHF"},
 		Info{Symbol: "AUD/JPY", Desc: "澳大利亚元/日元", ContractCode: "AUD-JPY"},
 		Info{Symbol: "GBP/AUD", Desc: "英镑/澳大利亚元", ContractCode: "GBP-AUD"},
+	)
+	return CodeData
+}
+
+func Iqoption() []Info {
+	var CodeData []Info
+	CodeData = append(CodeData,
+		// OTC 标识符
+		//Info{ID: 76, Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		//Info{ID: 81, Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		// 非 OTC
+		Info{ID: 1, Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
 	)
 	return CodeData
 }

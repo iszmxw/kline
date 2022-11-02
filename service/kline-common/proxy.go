@@ -12,17 +12,17 @@ import (
 // GetProxy 获取代理配置 curl -x "2533:2113@43.154.141.242:10802" -v "trading.raceoption.com"
 func GetProxy(service string) *url.URL {
 	if conf.GetString("app.env") == "local" { // 测试环境不需要走代理，走本地的代理
-		return &url.URL{
-			Scheme: "http",
-			//Host:   "127.0.0.1:10809", // 本地
-			//Host: "209.209.114.15:18888", // justhost.ru
-			Host: "13.57.227.200:18888", // 亚马逊
-			// Host: "107.151.203.54:18888", // 迅驰网络-香港
-			//Host: "38.55.214.188:40001", // 迅驰网络2-香港
-			// Host: "124.156.209.213:18888", // 腾讯云-香港
-			//Host: "43.154.141.242:10802", // 淘宝购买的香港ip
-			//User: url.UserPassword("2533", "2113"),
-		}
+		//return &url.URL{
+		//	Scheme: "http",
+		//	Host:   "127.0.0.1:1080", // 本地
+		//	//Host: "209.209.114.15:18888", // justhost.ru
+		//	//Host: "13.57.227.200:18888", // 亚马逊
+		//	// Host: "107.151.203.54:18888", // 迅驰网络-香港
+		//	//Host: "38.55.214.188:40001", // 迅驰网络2-香港
+		//	// Host: "124.156.209.213:18888", // 腾讯云-香港
+		//	//Host: "43.154.141.242:10802", // 淘宝购买的香港ip
+		//	//User: url.UserPassword("2533", "2113"),
+		//}
 	}
 	proxyKey := fmt.Sprintf("%v:proxy:%v", conf.GetString("app.env"), service)
 	rawURL, _ := redis.Client.SelectDbGet(conf.GetInt("redis.db"), proxyKey)
