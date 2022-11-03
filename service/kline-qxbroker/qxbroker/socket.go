@@ -61,13 +61,13 @@ func SocketQxbroker(info KlineCommon.Info) {
 			// ZADD "INRRank:2022-10-27" 17918.75 "https://fileserver.iqoptionproo.com/file/download/0a3d5de4-2eb2-4001-93ea-f7c051ec3e5e.png=INR=3ED16C397B5"
 			minute := time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04")
 			// 最大最小
-			MaxAndMin := fmt.Sprintf("MaxAndMin:%v", minute)
+			MaxAndMin := fmt.Sprintf("MaxAndMin:%v:%v", info.ContractCode, minute)
 			redis.Client.ZAdd(MaxAndMin, goRedis.Z{
 				Score:  resp.Close,
 				Member: SystemTs,
 			})
 			// 开始结束
-			OpenAndClose := fmt.Sprintf("OpenAndClose:%v", minute)
+			OpenAndClose := fmt.Sprintf("OpenAndClose:%v:%v", info.ContractCode, minute)
 			redis.Client.ZAdd(OpenAndClose, goRedis.Z{
 				Score:  float64(SystemTs),
 				Member: resp.Close,
