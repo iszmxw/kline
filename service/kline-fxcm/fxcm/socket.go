@@ -66,7 +66,7 @@ func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
 			data := RedisData(SystemTs, stream)
-			logger.Info(data)
+			data.Ch = fmt.Sprintf("market.%v.index.1min", info.ContractCode)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)
@@ -145,7 +145,6 @@ func LogData(stream wsdata.DataStream, SystemTs int64) models.KlineLog {
 // RedisData 缓存进redis的数据
 func RedisData(SystemTs int64, stream wsdata.DataStream) response.SubIndexKLineResponse {
 	var data response.SubIndexKLineResponse
-	data.Ch = fmt.Sprintf("market.%v.index.1min", stream.Symbol)
 	data.Ts = SystemTs                                                                             // 系統生成的Ts
 	data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts
 	data.Source = config.KlineSource
