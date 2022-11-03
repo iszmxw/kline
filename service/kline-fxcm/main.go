@@ -6,6 +6,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/pprof"
 	"goapi/service/kline-common"
+	"goapi/service/kline-common/heartbeat"
 	"goapi/service/kline-fxcm/fxcm"
 	"goapi/service/kline-fxcm/fxcm/api"
 	kconfig "goapi/service/kline-fxcm/fxcm/config"
@@ -32,7 +33,7 @@ func main() {
 	// 费率采集处理
 	//go api.GetRate(10) // 每隔10秒收集一次赔率
 	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
-	//go heartbeat.Start(30, kconfig.KlineSource, CodeData)
+	go heartbeat.Start(30, kconfig.KlineSource, CodeData)
 	start := "ok"
 	wsClient := new(api.FXCM)
 	if err := wsClient.Start(); err != nil {
