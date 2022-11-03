@@ -13,7 +13,6 @@ GOOS=linux GOARCH=amd64 go build -o $appBuildDir/web/binary-go-web service/binar
 # 1、打包 email 接口
 GOOS=linux GOARCH=amd64 go build -o $appBuildDir/email/binary-go-email service/binary-email/main.go
 
-
 # 2、打包 火币网 K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-huobi service/kline-huobi/main.go
 
@@ -35,6 +34,8 @@ GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-qxbroker servic
 # 10、打包 kline-fxcm K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-fxcm service/kline-fxcm/main.go
 
+# 11、打包 kline-iqoption K线图socket采集服务
+GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-iqoption service/kline-iqoption/main.go
 
 ## 3、打包 新浪 K线图采集服务
 #GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-sinaService service/kline-sina/main.go
