@@ -3,6 +3,7 @@ package qxbroker
 import (
 	"encoding/json"
 	"fmt"
+	goRedis "github.com/go-redis/redis"
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/kline/otc"
@@ -55,6 +56,25 @@ func SocketQxbroker(info KlineCommon.Info) {
 				return
 			}
 			UpstreamTs := int64(resp.TimeId * 1000) // 上游的ts
+			// TODO::实时计算
+			// 一分钟、五分钟、十分钟、十五分钟
+			// ZADD "INRRank:2022-10-27" 17918.75 "https://fileserver.iqoptionproo.com/file/download/0a3d5de4-2eb2-4001-93ea-f7c051ec3e5e.png=INR=3ED16C397B5"
+			minute := time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04")
+			// 最大最小
+			MaxAndMin := fmt.Sprintf("MaxAndMin:%v", minute)
+			redis.Client.ZAdd(MaxAndMin, goRedis.Z{
+				Score:  resp.Close,
+				Member: SystemTs,
+			})
+			// 开始结束
+			OpenAndClose := fmt.Sprintf("OpenAndClose:%v", minute)
+			redis.Client.ZAdd(OpenAndClose, goRedis.Z{
+				Score:  float64(SystemTs),
+				Member: resp.Close,
+			})
+			redis.Client.Expire(MaxAndMin, 180)
+			redis.Client.Expire(OpenAndClose, 180)
+			// TODO::实时计算
 			//TimeDiff := SystemTs - UpstreamTs
 			//logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			//logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
