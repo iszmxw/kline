@@ -104,32 +104,32 @@ func AllowKlineSource() map[string]interface{} {
 	data := cmap.New().Items()
 	data["ETH-USD"] = []string{"huobi", "binance"}
 	data["BTC-USD"] = []string{"huobi", "binance"}
-	data["EUR-USD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
-	data["GBP-USD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
-	data["AUD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker"}
-	data["USD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
-	data["GOLD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
-	data["SILVER"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["EUR-USD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm", "iqoption"}
+	data["GBP-USD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm", "iqoption"}
+	data["AUD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker", "fxcm", "iqoption"}
+	data["USD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm", "iqoption"}
+	data["GOLD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm", "iqoption"}
+	data["SILVER"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm"}
 	data["Netflix"] = []string{"qxbroker"}
 	data["Microsoft"] = []string{"olymptrade", "qxbroker"}
 	data["Intel"] = []string{"qxbroker"}
 	data["Apple"] = []string{"olymptrade"}
 	data["Tesla"] = []string{"olymptrade"}
-	data["CAD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker"}
-	data["EUR-AUD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
-	data["USD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["CAD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker", "fxcm"}
+	data["EUR-AUD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm", "iqoption"}
+	data["USD-CAD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm", "iqoption"}
 	data["Adidas"] = []string{"olymptrade"}
 	data["NGAS"] = []string{"olymptrade"}
 	data["BRENT"] = []string{"olymptrade"}
 	data["Amazon"] = []string{"olymptrade"}
-	data["AUD-CHF"] = []string{"raceoption", "olymptrade", "qxbroker"}
-	data["AUD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
-	data["GBP-AUD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb"}
+	data["AUD-CHF"] = []string{"raceoption", "olymptrade", "qxbroker", "fxcm"}
+	data["AUD-JPY"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm"}
+	data["GBP-AUD"] = []string{"raceoption", "olymptrade", "qxbroker", "hsb", "fxcm"}
 	return data
 }
 
 // 所有的数据源
 
 func GetSource() []string {
-	return []string{"binance", "huobi", "hsb", "olymptrade", "qxbroker", "raceoption"}
+	return []string{"binance", "huobi", "hsb", "olymptrade", "qxbroker", "raceoption", "fxcm", "iqoption"}
 }
