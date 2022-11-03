@@ -199,6 +199,14 @@ func Iqoption() []Info {
 		//Info{ID: 81, Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
 		// 非 OTC
 		Info{ID: 1, Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{ID: 108, Symbol: "EUR/AUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
+		Info{ID: 100, Symbol: "USD/CAD", Desc: "欧元/澳大利亚元", ContractCode: "USD-CAD"},
+		Info{ID: 5, Symbol: "GBP/USD", Desc: "欧元/澳大利亚元", ContractCode: "GBP-USD"},
+		Info{ID: 6, Symbol: "USD/JPY", Desc: "欧元/澳大利亚元", ContractCode: "USD-JPY"},
+		Info{ID: 7, Symbol: "AUD/CAD", Desc: "欧元/澳大利亚元", ContractCode: "AUD-CAD"},
+		Info{ID: 943, Symbol: "AUD/CHF", Desc: "欧元/澳大利亚元", ContractCode: "AUD-CHF"},
+		Info{ID: 74, Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
+		//Info{ID: 6, Symbol: "AUD/JPY", Desc: "欧元/澳大利亚元", ContractCode: "AUD-JPY"}, // todo
 	)
 	return CodeData
 }

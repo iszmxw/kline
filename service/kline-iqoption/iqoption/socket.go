@@ -129,10 +129,10 @@ func RedisData(SystemTs, UpstreamTs int64, resp *wsdata.SubPriceKLineResponse) r
 	data.Tick.Id = UpstreamTs
 	data.Tick.Vol = ""
 	data.Tick.Count = 0
-	data.Tick.Open = "0"
+	data.Tick.Open = fmt.Sprintf("%v", resp.Open)
 	data.Tick.Close = fmt.Sprintf("%v", resp.Close)
-	data.Tick.Low = ""
-	data.Tick.High = ""
+	data.Tick.Low = fmt.Sprintf("%v", resp.Min)
+	data.Tick.High = fmt.Sprintf("%v", resp.Max)
 	data.Tick.Amount = "0"
 	return data
 }
