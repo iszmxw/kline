@@ -1,15 +1,19 @@
 package api
 
 import (
+	"container/list"
 	"goapi/service/kline-common"
 	"goapi/service/kline-qxbroker/qxbroker/config"
 	"goapi/service/kline-qxbroker/qxbroker/wsdata"
 	"net/url"
 	"reflect"
+	"sync"
 )
 
 type WSPriceClient struct {
 	WebSocketOp
+	AllSubStars list.List
+	OpenOnce    sync.Once
 }
 
 func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {

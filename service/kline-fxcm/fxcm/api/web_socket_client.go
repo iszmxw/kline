@@ -32,11 +32,13 @@ type Config struct {
 }
 
 type FXCM struct {
-	config Config
-	event  chan EventType
-	Socket *socketio.Client
-	mutex  sync.Mutex
-	sid    string
+	config            Config
+	event             chan EventType
+	Socket            *socketio.Client
+	mutex             sync.Mutex
+	sid               string
+	OnceReboot        sync.Once   // Reboot动作锁
+	CloseChanCallback chan string // 关闭通知外部
 }
 
 func (p *FXCM) triggerEvent(event EventType) {

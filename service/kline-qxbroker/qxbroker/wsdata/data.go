@@ -6,3 +6,8 @@ type SubPriceKLineResponse struct {
 	Close  float64 `json:"close"`
 	Ping   float64 `json:"ping"`
 }
+
+type OpenAndClose struct {
+	Time  int64
+	Value float64
+}

@@ -8,7 +8,6 @@ import (
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/kline"
-	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	NoticeMail "goapi/pkg/notice/mail"
@@ -298,18 +297,18 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
 	defer KlineCommon.KlineRecover("UpdateRate", config.KlineSource, ws.Symbol)
 	// 修改费率
-	var list []response.TradingAssets
+	var assetsList []response.TradingAssets
 	err := mysql.DB.Model(models.TradingAssets{}).
 		Where("assets_code", ContractCode).
 		Where("is_valid", 1).
 		Where("is_show", 1).
 		Where("is_whitelist", 0).
-		Find(&list).Error
+		Find(&assetsList).Error
 	if err != nil {
 		logger.Error(err)
 		return
 	}
-	for _, TradingAssets := range list {
+	for _, TradingAssets := range assetsList {
 		if TradingAssets.Id == 0 {
 			return
 		}
@@ -465,7 +464,7 @@ func (ws *WebSocketOp) TickerReboot() {
 		ws.IsReboot = true
 		ws.onceReboot.Do(func() {
 			defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, ws.Symbol)
-			ticker := time.NewTicker(10 * time.Second) // 每隔 10 秒检查一次
+			ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
 			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
 			for range ticker.C {
 				//status, _ := redis.Client.SelectDbGet(15, KeyStatus)
@@ -473,10 +472,6 @@ func (ws *WebSocketOp) TickerReboot() {
 				status := source.CheckStatus(config.KlineSource, ws.ContractCode)
 				if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
 					logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
-					goto STOP
-				}
-				if otc.QxbrokerCheckOTC() && !strings.Contains(ws.Symbol, "_otc") {
-					logger.Info(KeyStatus + "当前数据进入otc时间" + ws.Symbol)
 					goto STOP
 				}
 				if ws.isClose {

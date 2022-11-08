@@ -298,17 +298,11 @@ func (ws *WebSocketOp) TickerReboot() {
 			ticker := time.NewTicker(10 * time.Second) // 每隔 10 秒检查一次
 			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
 			for range ticker.C {
-				//status, _ := redis.Client.SelectDbGet(15, KeyStatus)
-				//logger.Info(KeyStatus + "当前数据健康状况：" + status)
 				status := source.CheckStatus(config.KlineSource, ws.ContractCode)
 				if status == "4" { // 延迟过高关闭重启 status:iqoption:market.Microsoft.index.1min
 					logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
 					goto STOP
 				}
-				//if otc.iqoptionCheckOTC() && !strings.Contains(ws.Symbol, "_otc") {
-				//	logger.Info(KeyStatus + "当前数据进入otc时间" + ws.Symbol)
-				//	goto STOP
-				//}
 				if ws.isClose {
 					logger.Info(KeyStatus + "当前数据已关闭握手" + ws.Symbol)
 					goto STOP

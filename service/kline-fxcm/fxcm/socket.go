@@ -6,12 +6,12 @@ import (
 	socketio "github.com/graarh/golang-socketio"
 	"goapi/app/models"
 	"goapi/app/response"
-	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-common"
+	"goapi/service/kline-common/source"
 	"goapi/service/kline-fxcm/fxcm/api"
 	"goapi/service/kline-fxcm/fxcm/config"
 	"goapi/service/kline-fxcm/fxcm/wsdata"
@@ -20,21 +20,26 @@ import (
 )
 
 func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
-	callback := make(chan struct{}, 1)
-	// OTC 数据源读取时间段
-	if otc.RaceOptionCheckOTC() {
-		time.Sleep(time.Second) // 休息1秒
-		// 休市切换 OTC 数据源读取时间段
-		if !strings.Contains(info.Symbol, ".W") {
-			info.Symbol = info.Symbol + ".W"
+	// 开启定时器30秒检测一次数据活跃状态
+	wsClient.OnceReboot.Do(func() {
+		defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, info.Symbol)
+		ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
+		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, info.ContractCode)
+		for range ticker.C {
+			//status, _ := redis.Client.SelectDbGet(15, KeyStatus)
+			//logger.Info(KeyStatus + "当前数据健康状况：" + status)
+			status := source.CheckStatus(config.KlineSource, info.ContractCode)
+			if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
+				logger.Info(KeyStatus + "当前数据不健康正在重启中" + info.Symbol)
+				goto STOP
+			}
 		}
-		logger.Info("OTC时间")
-	} else {
-		if strings.Contains(info.Symbol, ".W") {
-			info.Symbol = strings.ReplaceAll(info.Symbol, ".W", "") // 去除掉
-		}
-		logger.Info("正常时间")
-	}
+	STOP:
+		// 关闭
+		ticker.Stop()
+		wsClient.CloseChanCallback <- info.Symbol
+	})
+
 	// 开始订阅
 	{
 		wsClient.GetTicker(strings.ReplaceAll(info.Symbol, "/", "%2F"))
@@ -44,6 +49,7 @@ func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
 			err := json.Unmarshal([]byte(args.(string)), &stream)
 			if err != nil {
 				logger.Error(err)
+				wsClient.CloseChanCallback <- info.Symbol
 				return
 			}
 			logger.Info(stream)
@@ -57,7 +63,7 @@ func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
 						"r":    r,
 					})
 					// 关闭
-					callback <- struct{}{}
+					wsClient.CloseChanCallback <- info.Symbol
 				}
 			}()
 
@@ -70,6 +76,7 @@ func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)
+				wsClient.CloseChanCallback <- info.Symbol
 				return
 			}
 			// 收集数据缓存到redis
@@ -77,6 +84,7 @@ func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
 			_, redisErr := redis.Client.Add(key, redisData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
+				wsClient.CloseChanCallback <- info.Symbol
 				return
 			}
 			// 当前数据源匹配就入库
@@ -113,10 +121,14 @@ func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
 		})
 	}
 	select {
-	case <-callback:
-		// 重启服务
-		KlineCommon.RebootSocketLog(config.KlineSource, info)
-		go SocketFxcm(wsClient, info)
+	case Symbol, ok := <-wsClient.CloseChanCallback:
+		if ok {
+			// 重启服务
+			KlineCommon.RebootSocketLog(config.KlineSource, info)
+			wsClient.GetTicker(strings.ReplaceAll(Symbol, "/", "%2F"))
+		} else {
+			logger.Info("!ok", "重启服务失败")
+		}
 	}
 }
 

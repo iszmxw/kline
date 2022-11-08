@@ -1,16 +1,17 @@
 package qxbroker
 
 import (
+	"container/list"
 	"encoding/json"
 	"fmt"
 	goRedis "github.com/go-redis/redis"
 	"goapi/app/models"
 	"goapi/app/response"
-	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
+	"goapi/pkg/xtime"
 	"goapi/service/kline-common"
 	"goapi/service/kline-qxbroker/qxbroker/api"
 	"goapi/service/kline-qxbroker/qxbroker/config"
@@ -23,14 +24,11 @@ func SocketQxbroker(info KlineCommon.Info) {
 	//  3 定时检测数据健康状况，不健康通知外部
 	//  2 上游直接断开了，通知外部已断开
 	callback := make(chan int, 1)
-	// OTC 数据源读取时间段
-	if otc.QxbrokerCheckOTC() && !strings.Contains(info.Symbol, "_otc") {
-		info.Symbol = info.Symbol + "_otc"
-	}
 	// 开始订阅
 	{
 		logger.Info(info)
 		wsClient := new(api.WSPriceClient).Init("", KlineCommon.GetProxy(config.KlineSource), callback)
+		wsClient.AllSubStars = list.List{}
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli()                                   // 系統生成的Ts
 			logger.RequestId = fmt.Sprintf("%v@%v", SystemTs, info.ContractCode) // RequestId 定义为 Ts 时间戳
@@ -74,6 +72,17 @@ func SocketQxbroker(info KlineCommon.Info) {
 			})
 			redis.Client.Expire(MaxAndMin, 180)
 			redis.Client.Expire(OpenAndClose, 180)
+			start := xtime.Parse(fmt.Sprintf("%v:00", minute)).UnixMilli()
+			end := start + 60*1000
+			if SystemTs >= start && SystemTs <= end {
+				//redis.Client
+				//wsClient.OpenOnce.Do(func() {
+				//	wsClient.AllSubStars.PushBack(wsdata.OpenAndClose{
+				//		Time:  SystemTs,
+				//		Value: resp.Close,
+				//	})
+				//})
+			}
 			// TODO::实时计算
 			//TimeDiff := SystemTs - UpstreamTs
 			//logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示

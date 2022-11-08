@@ -42,6 +42,7 @@ func main() {
 	}
 	for {
 		if start == "ok" {
+			wsClient.CloseChanCallback = make(chan string, 20)
 			for _, obj := range CodeData {
 				go fxcm.SocketFxcm(wsClient, obj)
 			}

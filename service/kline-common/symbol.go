@@ -97,16 +97,32 @@ func QxBroker() []Info {
 		Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
 		// 周六周日启动OTC模式
 		//Info{Symbol: "NFLX_otc", Desc: "网飞", ContractCode: "Netflix"},
-		Info{Symbol: "MSFT_otc", Desc: "微软", ContractCode: "Microsoft"},
-		Info{Symbol: "INTC_otc", Desc: "英特尔", ContractCode: "Intel"},
+		Info{Symbol: "MSFT", Desc: "微软", ContractCode: "Microsoft"},
+		Info{Symbol: "INTC", Desc: "英特尔", ContractCode: "Intel"},
 		// 2022年6月2号添加
-		Info{Symbol: "CADJPY_otc", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
+		Info{Symbol: "CADJPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
 		Info{Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
 		Info{Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
 		//// 2022年6月20日添加
 		Info{Symbol: "AUDCHF", Desc: "澳大利亚元/瑞士法郎", ContractCode: "AUD-CHF"},
 		Info{Symbol: "AUDJPY", Desc: "澳大利亚元/日元", ContractCode: "AUD-JPY"},
 		Info{Symbol: "GBPAUD", Desc: "英镑/澳大利亚元", ContractCode: "GBP-AUD"},
+		// TODO::otc数据订阅
+		Info{Symbol: "EURUSD_otc", Desc: "欧元/美元", ContractCode: "EUR-USD-OTC"},
+		Info{Symbol: "GBPUSD_otc", Desc: "英镑/美元", ContractCode: "GBP-USD-OTC"},
+		Info{Symbol: "AUDCAD_otc", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD-OTC"},
+		Info{Symbol: "USDJPY_otc", Desc: "美元/日元", ContractCode: "USD-JPY-OTC"},
+		Info{Symbol: "XAUUSD_otc", Desc: "伦敦金", ContractCode: "GOLD-OTC"},
+		Info{Symbol: "XAGUSD_otc", Desc: "伦敦银", ContractCode: "SILVER-OTC"},
+		//Info{Symbol: "NFLX_otc", Desc: "网飞", ContractCode: "Netflix-OTC"},
+		Info{Symbol: "MSFT_otc", Desc: "微软", ContractCode: "Microsoft-OTC"},
+		Info{Symbol: "INTC_otc", Desc: "英特尔", ContractCode: "Intel-OTC"},
+		Info{Symbol: "CADJPY_otc", Desc: "加拿大元/日元", ContractCode: "CAD-JPY-OTC"},
+		Info{Symbol: "EURAUD_otc", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD-OTC"},
+		Info{Symbol: "USDCAD_otc", Desc: "美元/加拿大元", ContractCode: "USD-CAD-OTC"},
+		Info{Symbol: "AUDCHF_otc", Desc: "澳大利亚元/瑞士法郎", ContractCode: "AUD-CHF-OTC"},
+		Info{Symbol: "AUDJPY_otc", Desc: "澳大利亚元/日元", ContractCode: "AUD-JPY-OTC"},
+		Info{Symbol: "GBPAUD_otc", Desc: "英镑/澳大利亚元", ContractCode: "GBP-AUD-OTC"},
 	)
 	return CodeData
 }
