@@ -97,8 +97,8 @@ func QxBroker() []Info {
 		Info{Symbol: "XAGUSD", Desc: "伦敦银", ContractCode: "SILVER"},
 		// 周六周日启动OTC模式
 		//Info{Symbol: "NFLX_otc", Desc: "网飞", ContractCode: "Netflix"},
-		Info{Symbol: "MSFT", Desc: "微软", ContractCode: "Microsoft"},
-		Info{Symbol: "INTC", Desc: "英特尔", ContractCode: "Intel"},
+		Info{Symbol: "MSFT_otc", Desc: "微软", ContractCode: "Microsoft"},
+		Info{Symbol: "INTC_otc", Desc: "英特尔", ContractCode: "Intel"},
 		// 2022年6月2号添加
 		Info{Symbol: "CADJPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
 		Info{Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
