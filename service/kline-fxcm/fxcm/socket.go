@@ -19,15 +19,20 @@ import (
 	"time"
 )
 
-func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
+func SocketFxcm(info KlineCommon.Info) {
+	wsClient := new(api.FXCM)
+	wsClient.CloseChanCallback = make(chan string, 20)
+	if err := wsClient.Start(); err != nil {
+		logger.Info(err)
+		wsClient.CloseChanCallback <- info.Symbol
+		return
+	}
 	// 开启定时器30秒检测一次数据活跃状态
 	wsClient.OnceReboot.Do(func() {
 		defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, info.Symbol)
 		ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
 		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, info.ContractCode)
 		for range ticker.C {
-			//status, _ := redis.Client.SelectDbGet(15, KeyStatus)
-			//logger.Info(KeyStatus + "当前数据健康状况：" + status)
 			status := source.CheckStatus(config.KlineSource, info.ContractCode)
 			if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
 				logger.Info(KeyStatus + "当前数据不健康正在重启中" + info.Symbol)
@@ -124,8 +129,9 @@ func SocketFxcm(wsClient *api.FXCM, info KlineCommon.Info) {
 	case Symbol, ok := <-wsClient.CloseChanCallback:
 		if ok {
 			// 重启服务
+			logger.Info("重启", Symbol)
 			KlineCommon.RebootSocketLog(config.KlineSource, info)
-			wsClient.GetTicker(strings.ReplaceAll(Symbol, "/", "%2F"))
+			go SocketFxcm(info)
 		} else {
 			logger.Info("!ok", "重启服务失败")
 		}
