@@ -7,14 +7,11 @@ import (
 	"fmt"
 	"goapi/pkg/logger"
 	NoticeMail "goapi/pkg/notice/mail"
-	"goapi/pkg/redis"
 	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-iqoption/iqoption/config"
 	"goapi/service/kline-iqoption/iqoption/wsdata"
-	"io/ioutil"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"reflect"
 	"strings"
@@ -163,8 +160,6 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		{
 			if len(string(message)) > 0 {
 				fmt.Println(string(message))
-				// 定时检测数据源健康斌决定是否关闭重连
-				//go ws.TickerReboot()
 			}
 		}
 		break
@@ -202,6 +197,8 @@ func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata interf
 		logger.Error(errors.New(fmt.Sprintf("no callback function to handle: %s", jdata)))
 		return
 	}
+	// 定时检测数据源健康斌决定是否关闭重连
+	go ws.TickerReboot()
 	ws.runFunction(mi, data)
 }
 
@@ -295,7 +292,7 @@ func (ws *WebSocketOp) TickerReboot() {
 		ws.IsReboot = true
 		ws.onceReboot.Do(func() {
 			defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, ws.Symbol)
-			ticker := time.NewTicker(10 * time.Second) // 每隔 10 秒检查一次
+			ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
 			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
 			for range ticker.C {
 				status := source.CheckStatus(config.KlineSource, ws.ContractCode)
@@ -372,80 +369,4 @@ func (ws *WebSocketOp) sub(info KlineCommon.Info, fun interface{}, param reflect
 	ws.allSubStars.PushBack(info.ID)
 	ws.Symbol = info.Symbol
 	ws.ContractCode = info.ContractCode
-}
-
-// 获取登录token
-
-func (ws *WebSocketOp) GetToken(refresh bool) (error, string) {
-	defer KlineCommon.KlineRecover("GetToken", config.KlineSource, ws.Symbol)
-	// 读取 session，如果未配置session进行邮件提醒
-	redisLoginKey := "kline:token:iqoption:login"
-	// 刷新token
-	token, _ := redis.Client.Get(config.RedisKey)
-	// token失效，或者强制刷新token,就重新登录获取token
-	if (len(token) == 0) || true == refresh {
-		isLogin, _ := redis.Client.Get(redisLoginKey)
-		// 一分钟之内登录过
-		if len(isLogin) > 0 {
-			logger.Error(errors.New("35秒之内已经进行登录操作，请稍后再试"))
-			return errors.New("35秒之内已经进行登录操作，请稍后再试"), ""
-		}
-		// 登录
-		_, _ = redis.Client.Add(redisLoginKey, "true", 35) // 60秒之内只能登录一次
-		// 异步登录获取 token
-		go ws.login()
-	}
-	// 返回 token
-	return nil, token
-}
-
-// demo登录
-
-func (ws *WebSocketOp) login() {
-	defer KlineCommon.KlineRecover("login", config.KlineSource, ws.Symbol)
-	var token string
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		logger.Error(err)
-		ws.Close(9)
-		return
-	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%v/zh/sign-up/fast/", config.Domain), nil)
-	if err != nil {
-		logger.Error(err)
-		ws.Close(9)
-		return
-	}
-	c := http.Client{
-		Transport: &http.Transport{
-			// 设置代理
-			Proxy: http.ProxyURL(ws.proxy),
-		},
-		Jar: jar,
-	}
-	do, err := c.Do(req)
-	if err != nil {
-		logger.Error(err)
-		ws.Close(9)
-		return
-	}
-	if do.StatusCode == 200 {
-		body, err := ioutil.ReadAll(do.Body)
-		if err != nil {
-			logger.Error(err)
-			ws.Close(9)
-			return
-		}
-		html := string(body)
-		if len(html) > 0 {
-			js := html[strings.Index(html, `"token"`):]
-			js = js[:strings.Index(js, `",`)]
-			token = strings.ReplaceAll(js, `"token":"`, "")
-			_, err = redis.Client.Add(config.RedisKey, token, 60*60*2) // 两个小时过期一下
-			if err != nil {
-				logger.Error(err)
-				ws.Close(9)
-			}
-		}
-	}
 }

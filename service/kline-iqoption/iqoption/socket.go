@@ -20,10 +20,6 @@ func SocketIqoption(info KlineCommon.Info) {
 	//  3 定时检测数据健康状况，不健康通知外部
 	//  2 上游直接断开了，通知外部已断开
 	callback := make(chan int, 1)
-	//// OTC 数据源读取时间段
-	//if otc.iqoptionCheckOTC() && !strings.Contains(info.Symbol, "_otc") {
-	//	info.Symbol = info.Symbol + "_otc"
-	//}
 	// 开始订阅
 	{
 		logger.Info(info)
@@ -92,9 +88,9 @@ func SocketIqoption(info KlineCommon.Info) {
 			return
 		}
 		logger.Info(msg)
-		//// 重启服务
-		//KlineCommon.RebootSocketLog(config.KlineSource, info)
-		//go SocketIqoption(info)
+		// 重启服务
+		KlineCommon.RebootSocketLog(config.KlineSource, info)
+		go SocketIqoption(info)
 	}
 }
 
