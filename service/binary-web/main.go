@@ -7,6 +7,7 @@ import (
 	"goapi/config"
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
+	"goapi/service/binary-web/rate"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -35,6 +36,7 @@ func main() {
 	db := conf.GetInt("redis.db")
 	bootstrap.SetupRedis(db)
 	defer bootstrap.RedisClose()
+	go rate.CollectionRateOfExchange()
 	// 初始化路由绑定
 	logger.Info("加载路由")
 	router := bootstrap.SetupRouteWeb()

@@ -93,7 +93,7 @@ func (ws *WebSocketOp) connServer() bool {
 	}
 	logger.Info(ws.Symbol + "WebSocket connected")
 	ws.RequestId = 1
-	go ws.sendLogin("1df7cc60046bf08a782e05e8e71afaf9")
+	go ws.sendLogin("4f25a5faaf82ab0add73788e6f06e708")
 	go ws.readLoop()
 	go ws.DoHand()
 	return true

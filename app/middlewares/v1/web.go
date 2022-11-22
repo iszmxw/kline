@@ -45,7 +45,7 @@ func CheckWebLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	strInfo, err = redis.Client.WebGet("web-" + tokenString)
+	strInfo, err = redis.Client.WebGet("IQOptionPro:Web:Token:" + tokenString)
 	if err != nil {
 		logger.Error(err)
 		echo.Error(c, "LoginInvalid", err.Error())
