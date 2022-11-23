@@ -36,7 +36,7 @@ func init() {
 // @host 127.0.0.1
 // @BasePath
 func main() {
-	APP_PORT := flag.Int64("APP_PORT", conf.GetInt64("app.port"), "服务端口")
+	AppPort := flag.Int64("APP_PORT", conf.GetInt64("app.port"), "服务端口")
 	flag.Parse()
 	// 初始化 SQL
 	// 定义日志目录
@@ -53,6 +53,6 @@ func main() {
 	pprof.Register(router) // 开启 pprof
 	// 启动路由
 	logger.Info("启动路由")
-	logger.Info(fmt.Sprintf("当前环境:%v", *APP_PORT))
-	_ = router.Run(fmt.Sprintf(":%v", *APP_PORT))
+	logger.Info(fmt.Sprintf("当前环境:%v", *AppPort))
+	_ = router.Run(fmt.Sprintf(":%v", *AppPort))
 }
