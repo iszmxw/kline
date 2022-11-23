@@ -39,6 +39,7 @@ type KlineController struct {
 
 // WsIndexHandler socket 负责转发redis缓存的socket数据
 func (h *KlineController) WsIndexHandler(c *gin.Context) {
+	var AppUserId string
 	ws, err := wss.GetSocket(c)
 	if err != nil {
 		logger.Error(err)
@@ -48,6 +49,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	logger.RequestId = socketId
 	HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
 	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
+	AppUserId = c.Query("userId")
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -100,6 +102,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			{
 				// 开启协诚处理 下单开奖通知
 				go PushNotice(socketId, mt, ws, SubStruct.Sub)
+			}
+			break
+		case strings.EqualFold(SubStruct.Id, "06"): // 弹窗通知
+			{
+				// 开启协诚处理 下单开奖通知
+				go PushPopup(socketId, mt, ws, AppUserId)
 			}
 			break
 		default:
@@ -812,6 +820,43 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 STOP:
 	logger.Error(errors.New("交割结果通知结束，关闭定时器"))
 	ticker.Stop()
+}
+
+// 弹窗通知
+
+func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId string) {
+	logger.RequestId = socketId
+	if len(AppUserId) == 0 {
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"PushPopup no sub"}`))
+		ws.Mux.Unlock()
+		logger.Error(errors.New("用户ID为空"))
+		return
+	}
+	key := fmt.Sprintf("Client:Popup:%v", AppUserId)
+	push := redis.Client.RPop(key)
+	if len(push) == 0 {
+		logger.Info(key)
+		return
+	}
+	var popData response.PopupMsg
+	PopErr := json.Unmarshal([]byte(push), &popData)
+	if PopErr != nil {
+		return
+	}
+	marshal, err := json.Marshal(gin.H{
+		"id":   "06",
+		"data": popData,
+	})
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	// 推送消息通知前端开奖结果
+	ws.Mux.Lock()
+	_ = ws.Conn.WriteMessage(messageType, marshal)
+	ws.Mux.Unlock()
+	logger.Info(string(marshal))
 }
 
 // 推送Rate socket消息
