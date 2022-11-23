@@ -47,7 +47,7 @@ func SocketFxcm(info KlineCommon.Info) {
 
 	// 开始订阅
 	{
-		wsClient.GetTicker(strings.ReplaceAll(info.Symbol, "/", "%2F"))
+		wsClient.GetTicker(info.Symbol)
 		// 接收数据
 		_ = wsClient.Socket.On(info.Symbol, func(c *socketio.Channel, args interface{}) {
 			var stream wsdata.DataStream

@@ -39,6 +39,7 @@ type FXCM struct {
 	sid               string
 	OnceReboot        sync.Once   // Reboot动作锁
 	CloseChanCallback chan string // 关闭通知外部
+	IsClose           bool
 }
 
 func (p *FXCM) triggerEvent(event EventType) {
@@ -192,8 +193,9 @@ func (p *FXCM) GetTicker(pair string) *wsdata.TickerValue {
 	time.Sleep(time.Second * 3)
 	logger.Info("开始订阅")
 	if err, response := p.marketRequest("POST", "/subscribe", map[string]string{
-		"pairs": pair,
+		"pairs": strings.ReplaceAll(pair, "/", "%2F"),
 	}); err != nil {
+		p.CloseChanCallback <- pair
 		logger.Info(fmt.Sprintf("Fail to get ticker:%v", err))
 		return nil
 	} else {
