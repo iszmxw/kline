@@ -837,14 +837,15 @@ func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId strin
 	for !ws.IsClose {
 		time.Sleep(2 * time.Second)
 		push := redis.Client.RPop(key)
+		logger.Info(key)
 		if len(push) == 0 {
-			logger.Info(key)
-			return
+			continue
 		}
 		var popData response.PopupMsg
 		PopErr := json.Unmarshal([]byte(push), &popData)
 		if PopErr != nil {
-			return
+			logger.Error(PopErr)
+			continue
 		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "06",
@@ -852,14 +853,21 @@ func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId strin
 		})
 		if err != nil {
 			logger.Error(err)
-			return
+			continue
 		}
 		// 推送消息通知前端开奖结果
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, marshal)
+		err = ws.Conn.WriteMessage(messageType, marshal)
 		ws.Mux.Unlock()
+		if err != nil {
+			logger.Error(err)
+			goto STOP
+		}
 		logger.Info(string(marshal))
 	}
+STOP:
+	logger.Error(errors.New("PushPopup关闭Socket"))
+	wss.WsClose(ws)
 }
 
 // 推送Rate socket消息
