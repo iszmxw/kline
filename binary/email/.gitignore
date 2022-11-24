@@ -1,4 +1,1 @@
-!.gitignore
 binary-go-*
-!restart-app.sh
-!update-app.sh
