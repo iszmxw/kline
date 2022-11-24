@@ -1,0 +1,123 @@
+1、【API】查询剩余发送条数接口：
+参数：
+{
+     "itemCode":"IQO",
+     "senderName":"发件人名称"
+}
+出参：
+{
+    "available_number":"剩余发送条数",
+    "itemCode":"IQO",
+    "code":"发送状态",
+    "message":"发送描述"
+}
+
+涉及表：
+t_system_email_routing_node
+
+2、【API】单发邮件接口：
+参数：
+{
+     "itemCode":"IQO",
+     "senderName":"发件人名称",
+     "mailAccount":"发邮件邮箱",
+     "receiveEmail":"收件邮箱",
+     "mainTitle":"邮件标题",
+     "messageContent":"邮件内容"
+}
+出参：
+{
+    "code":"发送状态",
+    "message":"发送描述"
+}
+
+涉及表：
+t_system_email_routing_node
+t_system_email_send_log
+
+3、【API】群发邮件接口：
+参数：
+{
+     "itemCode":"IQO",
+     "senderName":"发件人名称",
+     "mailAccount":"发邮件邮箱",
+     "receiveEmail":["123@qq.com","456@qq.com"],
+     "mainTitle":"邮件标题",
+     "messageContent":"邮件内容"
+}
+出参：
+{
+    "code":"发送状态",
+    "message":"发送描述"
+}
+涉及表：
+t_system_email_routing_node
+t_system_email_send_log
+
+4、【定时任务】重置邮箱剩余条数：
+执行时间/周期：
+    - 每天的凌晨12:02分
+涉及表：
+t_system_email_routing_node
+t_system_email_partner_config_set
+
+业务表：
+# 邮箱路由节点配置表 `t_system_email_routing_node` 
+CREATE TABLE `t_system_email_routing_node` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '邮箱路由节点配置表ID',
+  `email` varchar(30) DEFAULT NULL COMMENT '发信人邮箱',
+  `channel` varchar(64) DEFAULT '' COMMENT '三方渠道',
+  `channel_username` varchar(30) DEFAULT NULL COMMENT '渠道用户名',
+  `channel_password` varchar(64) DEFAULT NULL COMMENT '渠道密码',
+  `channel_host` varchar(30) DEFAULT NULL COMMENT '渠道服务器',
+  `channel_port` varchar(64) DEFAULT '' COMMENT '渠道端口号',
+  `available_number` int(6) DEFAULT '300' COMMENT '渠道剩余可用条数',
+  `max_number` int(6) unsigned DEFAULT '300' COMMENT '每日最多使用条数',
+  `sort` int(5) unsigned DEFAULT '1' COMMENT '优先排序',
+  `valid` int(3) unsigned DEFAULT '1' COMMENT '有效状态 1有效 0失效',
+  `creat_date` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_date` datetime DEFAULT NULL COMMENT '修改时间',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建人',
+  `updater` varchar(64) DEFAULT '' COMMENT '修改人',
+  `remarks` text COMMENT '备注',
+  `nation` varchar(128) DEFAULT '' COMMENT '绑定国家',
+  `item_code` varchar(64) DEFAULT '' COMMENT '应用编码',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+# 邮箱发送记录表 `t_system_email_send_log` 
+CREATE TABLE `t_system_email_send_log` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '邮箱发送记录表ID',
+  `sending_mailbox` VARCHAR(64) DEFAULT '' COMMENT '发件邮箱账号',
+  `send_total` INT(6) DEFAULT '' COMMENT '发送数量',
+  `available_number` INT(6) DEFAULT '300' COMMENT '剩余可用条数',
+  `creat_date` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_date` DATETIME DEFAULT NULL COMMENT '修改时间',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建人',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '修改人',
+  `remarks` VARCHAR(255) DEFAULT '' COMMENT '备注',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 ;
+
+# 三方邮箱默认配置表 `t_system_email_partner_config_set`
+
+CREATE TABLE `t_system_email_partner_config_set` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '三方邮箱默认配置表ID',
+  `channel` varchar(64) DEFAULT '' COMMENT '三方渠道',
+  `channel_host` varchar(30) DEFAULT NULL COMMENT '渠道服务器',
+  `channel_port` varchar(64) DEFAULT '' COMMENT '渠道端口号',
+  `channel_username` varchar(30) DEFAULT NULL COMMENT '渠道用户名',
+  `channel_password` varchar(64) DEFAULT NULL COMMENT '渠道密码',
+  `email` varchar(30) DEFAULT NULL COMMENT '发信人邮箱',
+  `max_number` int(6) unsigned DEFAULT '300' COMMENT '每日最多使用条数',
+  `valid` int(3) unsigned DEFAULT '1' COMMENT '有效状态 1有效 0失效',
+  `creat_date` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_date` datetime DEFAULT NULL COMMENT '修改时间',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建人',
+  `updater` varchar(64) DEFAULT '' COMMENT '修改人',
+  `remarks` varchar(255) DEFAULT '' COMMENT '备注',
+  `nation` varchar(128) DEFAULT '' COMMENT '绑定国家',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
+
+

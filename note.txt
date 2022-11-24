@@ -1,0 +1,320 @@
+修订app提示文案
+排查vpn打不开测试环境socket问题，更换服务端口解决
+邮件成功率、失败率统计
+
+
+中国   印尼     印度
+00:00  08:00   06:00
+
+       10:00   08:00
+
+
+
+
+
+
+
+UPDATE `t_achievement_check_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.108s
+
+
+UPDATE `t_achievement_check_set` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.093s
+
+
+UPDATE `t_app_active_host` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.098s
+
+
+UPDATE `t_app_banner` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.102s
+
+
+UPDATE `t_app_bonus_activity` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.104s
+
+
+UPDATE `t_app_bonus_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.149s
+
+
+UPDATE `t_app_bonus_wait_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.115s
+
+
+UPDATE `t_app_broadcast_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.108s
+
+
+-- UPDATE `t_app_item_version` SET `nation` = 'Indonesia' where ISNULL(nation) or nation='';
+UPDATE `t_app_news` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.104s
+
+
+UPDATE `t_app_push_user_connect` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 33541
+> 时间: 0.637s
+
+
+UPDATE `t_app_push_user_connect_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 34515
+> 时间: 0.629s
+
+
+UPDATE `t_app_select_enum` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.111s
+
+
+UPDATE `t_app_show_image` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.108s
+
+
+UPDATE `t_app_signin` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.1s
+
+
+UPDATE `t_app_tutorial` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.095s
+
+
+UPDATE `t_app_user` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 1793
+> 时间: 0.218s
+
+
+UPDATE `t_app_user_balance_change_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.109s
+
+
+UPDATE `t_app_user_bank` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 208
+> 时间: 0.124s
+
+
+UPDATE `t_app_user_bank_check_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 298
+> 时间: 0.125s
+
+
+UPDATE `t_app_user_credit` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 7757
+> 时间: 0.302s
+
+
+UPDATE `t_app_user_credit_faster_reject_reason` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.088s
+
+
+UPDATE `t_app_user_credit_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.089s
+
+
+UPDATE `t_app_user_ocr_record` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 147
+> 时间: 0.097s
+
+
+UPDATE `t_app_user_opinions` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.101s
+
+
+UPDATE `t_app_user_opinions_type` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.111s
+
+
+UPDATE `t_app_verification_code` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 9566
+> 时间: 0.287s
+
+
+UPDATE `t_collaborator_params` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.101s
+
+
+UPDATE `t_config_bank_info` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.088s
+
+
+UPDATE `t_daily_active_data` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 29
+> 时间: 0.085s
+
+
+UPDATE `t_off_mail` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.085s
+
+
+UPDATE `t_off_mail_send_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.093s
+
+
+UPDATE `t_off_message` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 5
+> 时间: 0.102s
+
+
+UPDATE `t_recharge_channel` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.108s
+
+
+UPDATE `t_recharge_fast_amount` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.113s
+
+
+UPDATE `t_recharge_order` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 8348
+> 时间: 0.312s
+
+
+UPDATE `t_recharge_order_notify` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 1270
+> 时间: 0.151s
+
+
+UPDATE `t_recharge_type` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.101s
+
+
+UPDATE `t_send_sms_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 8818
+> 时间: 0.333s
+
+
+UPDATE `t_system_api_rule` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.112s
+
+
+UPDATE `t_system_menu` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.111s
+
+
+UPDATE `t_system_operators_number_segment` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 1
+> 时间: 0.104s
+
+
+UPDATE `t_system_operators_smspartner` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.096s
+
+
+UPDATE `t_system_paid_turnover_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 138
+> 时间: 0.094s
+
+
+UPDATE `t_system_partner` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.092s
+
+
+UPDATE `t_system_role` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.101s
+
+
+UPDATE `t_system_user` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.108s
+
+
+UPDATE `t_tipartite_configuration` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.112s
+
+
+UPDATE `t_tmm_inport_mobile` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.113s
+
+
+UPDATE `t_tmm_inport_mobile_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.111s
+
+
+UPDATE `t_tmm_inport_mobile_temp` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.11s
+
+
+UPDATE `t_trading_assets` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.103s
+
+
+UPDATE `t_trading_assets_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.152s
+
+
+UPDATE `t_trading_assets_source` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.103s
+
+
+UPDATE `t_trading_assets_type` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.111s
+
+
+UPDATE `t_trading_order` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.213s
+
+
+UPDATE `t_trading_order_virtual` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 671876
+> 时间: 19.09s
+
+
+UPDATE `t_user_list_import_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 4
+> 时间: 0.103s
+
+
+UPDATE `t_user_operation_rules` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.106s
+
+
+UPDATE `t_withdraw_order` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 222
+> 时间: 0.116s
+
+
+UPDATE `t_withdraw_order_log` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 0
+> 时间: 0.109s
+
+
+UPDATE `t_withdraw_order_notify` SET `nation` = 'Indonesia' where ISNULL(nation) or nation=''
+> Affected rows: 3
+> 时间: 0.11s

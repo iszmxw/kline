@@ -1,0 +1,257 @@
+package utils
+
+import (
+	"errors"
+	"fmt"
+	"github.com/axgle/mahonia"
+	cmap "github.com/orcaman/concurrent-map"
+	"goapi/app/models"
+	"goapi/pkg/helpers"
+	"goapi/pkg/logger"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+)
+
+func UrlGet(Symbol string) string {
+	contractCode := strings.ReplaceAll(strings.ToLower(Symbol), "-", "")
+	var url string
+	// 黃金、白银
+	if strings.ToUpper(Symbol) == "XAU" || strings.ToUpper(Symbol) == "XAG" {
+		url = fmt.Sprintf(
+			"https://hq.sinajs.cn/?_=%v/&list=hf_%v",
+			time.Now().Unix(),             // 时间戳
+			strings.ToUpper(contractCode), // 大写
+		)
+	} else {
+		url = fmt.Sprintf(
+			"https://hq.sinajs.cn/rn=%vlist=fx_s%v",
+			time.Now().Unix(),             // 时间戳
+			strings.ToLower(contractCode), // 小写
+		)
+	}
+	return url
+}
+
+func HttpGet(url, Referer string) string {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		logger.Error(err)
+		return ""
+	}
+	req.Header.Set(
+		"User-Agent",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36",
+	)
+	req.Header.Set("Referer", Referer)
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return ""
+	}
+	if response.StatusCode != http.StatusOK {
+		logger.Error(errors.New(fmt.Sprintf("Response failed with status code: %d and\n", response.StatusCode)))
+		return ""
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(response.Body)
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		logger.Error(err)
+		return ""
+	}
+	return mahonia.NewDecoder("gbk").ConvertString(string(body))
+}
+
+// GetTs 格式化时间戳
+func GetTs(a, b string) int64 {
+	if len(a) <= 0 || len(b) <= 0 {
+		return 0
+	}
+	// 时间 to 时间戳
+	loc, _ := time.LoadLocation("Asia/Shanghai")                         // 设置时区
+	tt, err := time.ParseInLocation("2006-01-02 15:04:05", a+" "+b, loc) // 2006-01-02 15:04:05是转换的格式如php的"Y-m-d H:i:s"
+	if err != nil {
+		return 0
+	}
+	return tt.UnixMilli()
+}
+
+func CutStr(str string, a, b int) string {
+	s := regexp.MustCompile(`/([^\x00-\xff])/g`).ReplaceAllString(str, "\\x00$1")
+	if len(s) < b {
+		return str
+	} else {
+		return regexp.MustCompile(`/\x00/g`).ReplaceAllString(s[a:b-3], "") + "..."
+	}
+}
+
+func GetPercent(a, b float64, t string) string {
+	if t == "percent" {
+		if a > 0.00 || a < 0.00 {
+			return fmt.Sprintf("%v", Decimal(Decimal(10000*(a-b)/b)/100)) + "%"
+		} else {
+			return "0.00%"
+		}
+	}
+	if t == "updown" {
+		if a > b {
+			return "up"
+		}
+		if a < b {
+			return "down"
+		}
+	}
+	return ""
+}
+
+func GetPercent2(a, b float64) string {
+	if a > 0.00 || a < 0.00 {
+		return fmt.Sprintf("%v", Decimal(Decimal(10000*a/b)/100)) + "%"
+	} else {
+		return "0.00%"
+	}
+}
+
+func Decimal(value float64) float64 {
+	value, _ = strconv.ParseFloat(fmt.Sprintf("%.4f", value), 64)
+	return value
+}
+
+// 外汇数据组装
+
+func ForeignExchange(str, Symbol string) models.KlineLog {
+	//fmt.Println(str)
+	result := strings.Replace(str, fmt.Sprintf("var hq_str_fx_s%v=\"", strings.ReplaceAll(strings.ToLower(Symbol), "-", "")), "", -1)
+	//fmt.Println(result)
+	result = strings.Replace(result, "\";", "", -1)
+	//fmt.Println(result)
+	result = strings.Replace(result, "\n", "", -1)
+	//fmt.Println(result)
+	resArr := strings.Split(result, ",")
+	//logger.Info(resArr)
+	//fmt.Println(resArr)
+	//sinaTest(resArr, Symbol)
+	// 对应数据
+	var response models.KlineLog
+	response.ContractCode = strings.ToUpper(Symbol)                                // 合约代码 BTC-USD
+	response.Ch = fmt.Sprintf("market.%v.index.1min", strings.ToUpper(Symbol))     // kilne返回日期时间戳
+	response.Ts = time.Now().UnixMilli()                                           // 自己生成的ts
+	response.UpstreamTs = GetTs(resArr[17], resArr[0])                             // 上游的ts
+	response.ID = GetTs(resArr[17], resArr[0]) / 1000                              // 自己生成的ts/1000
+	response.Mrid = 0.00                                                           // ID
+	response.COpen = helpers.StrToFloat64(resArr[5])                               // 起始峰值
+	response.CClose = helpers.StrToFloat64(resArr[8])                              // 结束峰值
+	response.High = helpers.StrToFloat64(resArr[6])                                // 最高峰值
+	response.Low = helpers.StrToFloat64(resArr[7])                                 // 最低峰值
+	response.Amount = 0                                                            // 成交金额 TODO
+	response.Vol = 0                                                               // 成交手 TODO
+	response.CCount = 0                                                            // 交易笔数 TODO
+	response.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond)) // Kline返回日期
+	response.CreateDate = time.Now()                                               // 创建日期
+	response.KlineSource = "sina"                                                  // K线来源新浪
+	return response
+}
+
+// 金属数据组装
+
+func Metal(str, Symbol string) models.KlineLog {
+	var statusVal string
+	var response models.KlineLog
+	//fmt.Println(str)
+	result := strings.Replace(str, fmt.Sprintf("var hq_str_hf_%v=\"", strings.ReplaceAll(Symbol, "-", "")), "", -1)
+	result = strings.Replace(result, "\";", "", -1)
+	//fmt.Println(result)
+	result = strings.Replace(result, "\n", "", -1)
+	//fmt.Println(result)
+	resArr := strings.Split(result, ",")
+	resArr = append([]string{"hf_" + Symbol}, resArr...)
+	logger.Info(resArr)
+	var _curPrice float64
+	if helpers.StrToFloat64(resArr[1]) > 0 {
+		_curPrice = helpers.StrToFloat64(resArr[1])
+	} else {
+		_curPrice = helpers.StrToFloat64(resArr[8])
+	}
+
+	MetalData := cmap.New().Items()
+	MetalData["price"] = _curPrice
+	if helpers.StrToFloat64(resArr[8]) > 0 {
+		statusVal = fmt.Sprintf("%v", (_curPrice-helpers.StrToFloat64(resArr[8]))/helpers.StrToFloat64(resArr[8])*100)
+	} else {
+		statusVal = "0"
+	}
+	MetalData["cls"] = GetStatus(helpers.StrToFloat64(statusVal), 0)
+	MetalData["time"] = resArr[13] + " " + resArr[7]
+	MetalData["open-price"] = resArr[9]
+	MetalData["max-price"] = resArr[5]
+	MetalData["min-price"] = resArr[6]
+	MetalData["close-price"] = resArr[6]
+	MetalData["yestoday-price"] = resArr[8]
+	MetalData["amount"] = resArr[10]
+	MetalData["volume"] = "--"
+	MetalData["buy"] = resArr[3]
+	MetalData["sell"] = resArr[4]
+	MetalData["buy-amount"] = helpers.StrToFloat64(resArr[11])
+	MetalData["sell-amount"] = helpers.StrToFloat64(resArr[12])
+	MetalData["amt"] = statusVal + "%"
+	MetalData["amt-value"] = _curPrice - helpers.StrToFloat64(resArr[8])
+	logger.Info(MetalData)
+
+	// 金属
+	// 对应数据
+	response.ContractCode = getCode(Symbol)                                        // 合约代码 BTC-USD
+	response.Ch = fmt.Sprintf("market.%v.index.1min", getCode(Symbol))             // kilne返回日期时间戳
+	response.Ts = time.Now().UnixMilli()                                           // 自己生成的ts
+	response.UpstreamTs = GetTs(resArr[13], resArr[7])                             // 上游的ts
+	response.ID = GetTs(resArr[13], resArr[7]) / 1000                              // 上游的ts/1000
+	response.Mrid = 0.00                                                           // ID
+	response.COpen = helpers.StrToFloat64(resArr[9])                               // 起始峰值
+	response.CClose = _curPrice                                                    // 结束峰值
+	response.High = helpers.StrToFloat64(resArr[5])                                // 最高峰值
+	response.Low = helpers.StrToFloat64(resArr[6])                                 // 最低峰值
+	response.Amount = 0                                                            // 成交金额 TODO
+	response.Vol = 0                                                               // 成交手 TODO
+	response.CCount = 0                                                            // 交易笔数 TODO
+	response.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond)) // Kline返回日期
+	response.CreateDate = time.Now()                                               // 创建日期
+	response.KlineSource = "sina"                                                  // K线来源新浪
+	return response
+}
+
+func getCode(Symbol string) string {
+	switch Symbol {
+	case "XAU":
+		Symbol = "GOLD"
+		break
+	case "XAG":
+		Symbol = "SILVER"
+		break
+	default:
+		break
+	}
+	return Symbol
+}
+
+// GetStatus 比较数值
+// ['gray', 'red', 'green']
+func GetStatus(amt, base float64) string {
+	if amt == base {
+		return "gray" // 0
+	} else if amt > base {
+		return "red" // 1
+	} else {
+		return "green" // 2
+	}
+}
