@@ -209,7 +209,8 @@ func (p *FXCM) GetTicker(pair string) *wsdata.TickerValue {
 
 		if values["response"] != nil && values["response"].(map[string]interface{})["executed"].(bool) != true {
 			logger.Info(fmt.Sprintf("Fail to get ticker:%v", err))
-			return p.GetTicker(pair)
+			p.CloseChanCallback <- pair
+			return nil
 		}
 		pairs := values["pairs"].([]interface{})
 		if pairs != nil && len(pairs) > 0 {
