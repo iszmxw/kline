@@ -8,6 +8,7 @@ import (
 	"github.com/graarh/golang-socketio/transport"
 	"goapi/pkg/logger"
 	"goapi/pkg/xtime"
+	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-fxcm/fxcm/config"
 	"goapi/service/kline-fxcm/fxcm/wsdata"
 	"golang.org/x/net/proxy"
@@ -37,8 +38,8 @@ type FXCM struct {
 	Socket            *socketio.Client
 	mutex             sync.Mutex
 	sid               string
-	OnceReboot        sync.Once   // Reboot动作锁
-	CloseChanCallback chan string // 关闭通知外部
+	OnceReboot        sync.Once             // Reboot动作锁
+	CloseChanCallback chan KlineCommon.Info // 关闭通知外部
 	IsClose           bool
 }
 
@@ -189,13 +190,14 @@ func (p *FXCM) marketRequest(method, path string, params map[string]string) (err
 	return nil, body
 }
 
-func (p *FXCM) GetTicker(pair string) *wsdata.TickerValue {
+func (p *FXCM) GetTicker(info KlineCommon.Info) *wsdata.TickerValue {
+	pair := info.Symbol
 	time.Sleep(time.Second * 3)
 	logger.Info("开始订阅")
 	if err, response := p.marketRequest("POST", "/subscribe", map[string]string{
 		"pairs": strings.ReplaceAll(pair, "/", "%2F"),
 	}); err != nil {
-		p.CloseChanCallback <- pair
+		p.CloseChanCallback <- info
 		logger.Info(fmt.Sprintf("Fail to get ticker:%v", err))
 		return nil
 	} else {
@@ -209,7 +211,7 @@ func (p *FXCM) GetTicker(pair string) *wsdata.TickerValue {
 
 		if values["response"] != nil && values["response"].(map[string]interface{})["executed"].(bool) != true {
 			logger.Info(fmt.Sprintf("Fail to get ticker:%v", err))
-			p.CloseChanCallback <- pair
+			p.CloseChanCallback <- info
 			return nil
 		}
 		pairs := values["pairs"].([]interface{})

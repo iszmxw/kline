@@ -16,7 +16,8 @@ import (
 // 心跳 heartbeat 健康
 
 func Start(num time.Duration, Source string, CodeData []KlineCommon.Info) {
-	time.Sleep(time.Minute * 5)                 //等待当前数据订阅5分钟后开始心跳检测
+	logger.Info("等待当前数据订阅5分钟后开始心跳检测")
+	time.Sleep(time.Minute * 5)
 	ticker := time.NewTicker(num * time.Second) // 每隔 num 秒检查一次
 	for range ticker.C {
 		for _, info := range CodeData {

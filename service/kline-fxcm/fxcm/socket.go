@@ -21,10 +21,10 @@ import (
 
 func SocketFxcm(info KlineCommon.Info) {
 	wsClient := new(api.FXCM)
-	wsClient.CloseChanCallback = make(chan string, 20)
+	wsClient.CloseChanCallback = make(chan KlineCommon.Info, 20)
 	if err := wsClient.Start(); err != nil {
 		logger.Info(err)
-		wsClient.CloseChanCallback <- info.Symbol
+		wsClient.CloseChanCallback <- info
 		return
 	}
 	// 开启定时器30秒检测一次数据活跃状态
@@ -42,19 +42,19 @@ func SocketFxcm(info KlineCommon.Info) {
 	STOP:
 		// 关闭
 		ticker.Stop()
-		wsClient.CloseChanCallback <- info.Symbol
+		wsClient.CloseChanCallback <- info
 	})
 
 	// 开始订阅
 	{
-		wsClient.GetTicker(info.Symbol)
+		wsClient.GetTicker(info)
 		// 接收数据
 		_ = wsClient.Socket.On(info.Symbol, func(c *socketio.Channel, args interface{}) {
 			var stream wsdata.DataStream
 			err := json.Unmarshal([]byte(args.(string)), &stream)
 			if err != nil {
 				logger.Error(err)
-				wsClient.CloseChanCallback <- info.Symbol
+				wsClient.CloseChanCallback <- info
 				return
 			}
 			logger.Info(stream)
@@ -68,7 +68,7 @@ func SocketFxcm(info KlineCommon.Info) {
 						"r":    r,
 					})
 					// 关闭
-					wsClient.CloseChanCallback <- info.Symbol
+					wsClient.CloseChanCallback <- info
 				}
 			}()
 
@@ -81,7 +81,7 @@ func SocketFxcm(info KlineCommon.Info) {
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)
-				wsClient.CloseChanCallback <- info.Symbol
+				wsClient.CloseChanCallback <- info
 				return
 			}
 			// 收集数据缓存到redis
@@ -89,7 +89,7 @@ func SocketFxcm(info KlineCommon.Info) {
 			_, redisErr := redis.Client.Add(key, redisData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
-				wsClient.CloseChanCallback <- info.Symbol
+				wsClient.CloseChanCallback <- info
 				return
 			}
 			// 当前数据源匹配就入库
@@ -130,8 +130,8 @@ func SocketFxcm(info KlineCommon.Info) {
 		if ok {
 			// 重启服务
 			logger.Info("重启", Symbol)
-			KlineCommon.RebootSocketLog(config.KlineSource, info)
-			go SocketFxcm(info)
+			KlineCommon.RebootSocketLog(config.KlineSource, Symbol)
+			go SocketFxcm(Symbol)
 		} else {
 			logger.Info("!ok", "重启服务失败")
 		}
