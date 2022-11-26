@@ -7,6 +7,7 @@ import (
 	"goapi/app/models"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/redis"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -23,8 +24,13 @@ func CollectionRateOfExchange() {
 
 func Get() {
 	req, _ := http.NewRequest("GET", "https://www.xe.com/api/protected/midmarket-converter/", nil)
+	Key, err := redis.Client.Get("System:Rate:Key")
+	if err != nil {
+		logger.Error(err)
+		return
+	}
 	// 权限
-	sEnc := base64.StdEncoding.EncodeToString([]byte("lodestar:5RTkubKoMT34MOytElLnZ90srV0VmcFM"))
+	sEnc := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("lodestar:%s", Key)))
 	fmt.Println(sEnc)
 	logger.Info(sEnc)
 	req.Header.Set("authorization", fmt.Sprintf("Basic %s", sEnc))
