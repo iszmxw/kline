@@ -79,26 +79,25 @@ func (p *FXCM) Start() error {
 	logger.Info("Start websocket")
 	p.event = make(chan EventType, 1)
 	token := p.config.Custom["token"].(string)
-	socket, err := socketio.Dial(config.WssFXCMUrl+"/socket.io/?EIO=3&transport=websocket&access_token="+token,
+	var err error
+	p.Socket, err = socketio.Dial(config.WssFXCMUrl+"/socket.io/?EIO=3&transport=websocket&access_token="+token,
 		transport.GetDefaultWebsocketTransport())
 	if err != nil {
 		return err
 	}
 
-	_ = socket.On(socketio.OnConnection, func(c *socketio.Channel, args interface{}) {
+	_ = p.Socket.On(socketio.OnConnection, func(c *socketio.Channel, args interface{}) {
 		logger.Printf("Socket Connected[%s]", c.Id())
-		p.Socket = socket
 		p.sid = c.Id()
 		go p.triggerEvent(0) // EventConnected
 	})
 
-	_ = socket.On(socketio.OnDisconnection, func(c *socketio.Channel, args interface{}) {
+	_ = p.Socket.On(socketio.OnDisconnection, func(c *socketio.Channel, args interface{}) {
 		logger.Printf("Socket Disconnected:%v", args)
-		p.Socket = nil
 		go p.triggerEvent(1) // EventLostConnection
 	})
 
-	_ = socket.On(socketio.OnError, func(c *socketio.Channel) {
+	_ = p.Socket.On(socketio.OnError, func(c *socketio.Channel) {
 		logger.Printf("Error occurs")
 		go p.triggerEvent(2) // EventLostConnection
 	})

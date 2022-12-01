@@ -49,6 +49,10 @@ func SocketFxcm(info KlineCommon.Info) {
 	{
 		wsClient.GetTicker(info)
 		// 接收数据
+		if wsClient.Socket == nil {
+			go SocketFxcm(info)
+			return
+		}
 		_ = wsClient.Socket.On(info.Symbol, func(c *socketio.Channel, args interface{}) {
 			var stream wsdata.DataStream
 			err := json.Unmarshal([]byte(args.(string)), &stream)
