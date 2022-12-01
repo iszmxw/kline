@@ -1,83 +1,60 @@
 package rate
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
+	"github.com/opesun/goquery"
 	"goapi/app/models"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	"goapi/pkg/redis"
-	"io"
-	"io/ioutil"
-	"net/http"
+	"strings"
 	"time"
 )
 
 func CollectionRateOfExchange() {
 	logger.Info("采集汇率")
 	for true {
-		Get()
+		var list []models.AppCurrencyRate
+		mysql.DB.Debug().Model(models.AppCurrencyRate{}).Where(map[string]interface{}{
+			"is_valid": 1,
+		}).Find(&list)
+		// 查询系统所有币种，抓取汇率
+		for index, item := range list {
+			go updateRate(item.CurrencyB)
+			time.Sleep(time.Duration(index) * time.Second)
+		}
 		time.Sleep(60 * time.Second)
 	}
 }
 
-func Get() {
-	req, _ := http.NewRequest("GET", "https://www.xe.com/api/protected/midmarket-converter/", nil)
-	Key, err := redis.Client.Get("System:Rate:Key")
+func Get(currency string) float64 {
+	var rate float64
+	x, err := goquery.ParseUrl(fmt.Sprintf("https://www.xe.com/zh-CN/currencyconverter/convert/?Amount=1&From=USD&To=%s", currency))
 	if err != nil {
 		logger.Error(err)
-		return
+		return 0
 	}
-	// 权限
-	sEnc := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("lodestar:%s", Key)))
-	fmt.Println(sEnc)
-	logger.Info(sEnc)
-	req.Header.Set("authorization", fmt.Sprintf("Basic %s", sEnc))
-	resp, err := (&http.Client{}).Do(req)
-	if err != nil {
-		logger.Error(err)
-	}
-	defer func(Body io.ReadCloser) {
-		err = Body.Close()
-		if err != nil {
-			logger.Error(err)
-			return
+	result := x.Find(".result__BigRate-sc-1bsijpp-1.iGrAod").Text()
+	if len(result) > 0 {
+		arr := strings.Split(result, " ")
+		if len(arr[0]) == 0 {
+			// 未抓取到
+			return 0
 		}
-	}(resp.Body)
-	respByte, _ := ioutil.ReadAll(resp.Body)
-	var data ReteData
-	err = json.Unmarshal(respByte, &data)
-	if err != nil {
-		logger.Error(err)
-		return
+		rate = helpers.StrToFloat64(arr[0])
 	}
-	logger.Info(data)
-	if data.Rates.IDR > 0 {
-		mysql.DB.Model(models.AppCurrencyRate{}).Where(map[string]interface{}{
-			"currency_a": "USDT",
-			"currency_b": "IDR",
-		}).Updates(map[string]interface{}{
-			"b_num":       data.Rates.IDR,
-			"update_date": time.Now(),
-		})
-	}
-	if data.Rates.INR > 0 {
-		mysql.DB.Model(models.AppCurrencyRate{}).Where(map[string]interface{}{
-			"currency_a": "USDT",
-			"currency_b": "INR",
-		}).Updates(map[string]interface{}{
-			"b_num":       data.Rates.INR,
-			"update_date": time.Now(),
-		})
-	}
-
+	return rate
 }
 
-type ReteData struct {
-	Timestamp int64 `json:"timestamp"`
-	Rates     struct {
-		IDR float64 `json:"IDR"`
-		INR float64 `json:"INR"`
-	} `json:"rates"`
+func updateRate(currency string) {
+	num := Get(currency)
+	if num > 0 {
+		mysql.DB.Model(models.AppCurrencyRate{}).Where(map[string]interface{}{
+			"currency_a": "USDT",
+			"currency_b": currency,
+		}).Updates(map[string]interface{}{
+			"b_num":       num,
+			"update_date": time.Now(),
+		})
+	}
 }
