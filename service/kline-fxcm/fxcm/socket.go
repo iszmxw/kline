@@ -24,7 +24,7 @@ func SocketFxcm(info KlineCommon.Info) {
 	wsClient.CloseChanCallback = make(chan KlineCommon.Info, 20)
 	if err := wsClient.Start(); err != nil {
 		logger.Info(err)
-		wsClient.CloseChanCallback <- info
+		go SocketFxcm(info)
 		return
 	}
 	// 开启定时器30秒检测一次数据活跃状态
