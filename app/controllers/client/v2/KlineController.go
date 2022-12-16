@@ -835,7 +835,6 @@ func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId strin
 	}
 	key := fmt.Sprintf("Client:Popup:%v", AppUserId)
 	for !ws.IsClose {
-		time.Sleep(2 * time.Second)
 		push := redis.Client.RPop(key)
 		logger.Info(key)
 		if len(push) == 0 {
@@ -864,6 +863,7 @@ func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId strin
 			goto STOP
 		}
 		logger.Info(string(marshal))
+		time.Sleep(35 * time.Second) // 每隔35秒来一次推送
 	}
 STOP:
 	logger.Error(errors.New("PushPopup关闭Socket"))
@@ -1027,7 +1027,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 			logger.Error(err)
 			return
 		}
-		for _, item := range ListAppItem{
+		for _, item := range ListAppItem {
 			// 虚拟余额不足时重置用户虚拟余额
 			if strings.EqualFold(AppUser.Nation, item.ItemNationalName) {
 				// 重置用户余额
@@ -1230,12 +1230,12 @@ func (h *KlineController) HistoryEsHandler(c *gin.Context) {
 		return
 	}
 	searchResult, err := esClient.Search().
-		Index("kline_log"). // 设置索引名
-		Query(boolQuery). // 设置查询条件
-		Sort("ts", false). // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
-		From(0). // 设置分页参数 - 起始偏移量，从第0行记录开始
-		Size(Count). // 设置分页参数 - 每页大小
-		Pretty(true). // 查询结果返回可读性较好的JSON格式
+		Index("kline_log").      // 设置索引名
+		Query(boolQuery).        // 设置查询条件
+		Sort("ts", false).       // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
+		From(0).                 // 设置分页参数 - 起始偏移量，从第0行记录开始
+		Size(Count).             // 设置分页参数 - 每页大小
+		Pretty(true).            // 查询结果返回可读性较好的JSON格式
 		Do(context.Background()) // 执行请求
 	if err != nil {
 		logger.Error(err)
