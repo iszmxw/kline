@@ -106,7 +106,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		case strings.EqualFold(SubStruct.Id, "06"): // 弹窗通知
 			{
-				// 开启协诚处理 下单开奖通知
+				// 开启协诚处理 弹窗通知
 				go PushPopup(socketId, mt, ws, AppUserId)
 			}
 			break
@@ -838,12 +838,14 @@ func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId strin
 		push := redis.Client.RPop(key)
 		logger.Info(key)
 		if len(push) == 0 {
+			time.Sleep(2 * time.Second)
 			continue
 		}
 		var popData response.PopupMsg
 		PopErr := json.Unmarshal([]byte(push), &popData)
 		if PopErr != nil {
 			logger.Error(PopErr)
+			time.Sleep(2 * time.Second)
 			continue
 		}
 		marshal, err := json.Marshal(gin.H{
@@ -852,6 +854,7 @@ func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId strin
 		})
 		if err != nil {
 			logger.Error(err)
+			time.Sleep(2 * time.Second)
 			continue
 		}
 		// 推送消息通知前端开奖结果
