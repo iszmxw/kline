@@ -1021,6 +1021,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		AppUser.HisTradingAmounts = HistoryTrading.HisTradingAmounts // 历史交易金额
 		var ListAppItem []models.AppItem
 		err = DB.Model(models.AppItem{}).
+			Where("item_code", "SMO").
 			Where("is_start", "1").
 			Find(&ListAppItem).Error
 		if err != nil {
@@ -1033,30 +1034,17 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		for _, item := range ListAppItem {
 			// 虚拟余额不足时重置用户虚拟余额
 			if strings.EqualFold(AppUser.Nation, item.ItemNationalName) {
+				var UserOperationRules models.UserOperationRules
+				err = DB.Model(models.UserOperationRules{}).Where("item_code", item.ItemCode).
+					Where("nation", item.ItemNationalName).
+					Where("rule_code", "minTradingAmounts").
+					Find(&UserOperationRules).Error
+				if err != nil {
+					logger.Error(err)
+					return
+				}
 				// 重置用户余额
-				if strings.EqualFold(AppUser.Nation, "Indonesia") && AppUser.VirtualBalance <= 1000 {
-					err = DB.Model(models.AppUser{}).Where("app_user_id", SubUserInfo.AppUserId).Update("virtual_balance", item.DemoBalance).Error
-					if err != nil {
-						ws.Mux.Lock()
-						_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
-						ws.Mux.Unlock()
-						logger.Error(err)
-						return
-					}
-					AppUser.VirtualBalance = item.DemoBalance
-				}
-				if strings.EqualFold(AppUser.Nation, "India") && AppUser.VirtualBalance <= 10 {
-					err = DB.Model(models.AppUser{}).Where("app_user_id", SubUserInfo.AppUserId).Update("virtual_balance", item.DemoBalance).Error
-					if err != nil {
-						ws.Mux.Lock()
-						_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
-						ws.Mux.Unlock()
-						logger.Error(err)
-						return
-					}
-					AppUser.VirtualBalance = item.DemoBalance
-				}
-				if strings.EqualFold(AppUser.Nation, "Mexico") && AppUser.VirtualBalance <= 1000 {
+				if AppUser.VirtualBalance <= UserOperationRules.Value {
 					err = DB.Model(models.AppUser{}).Where("app_user_id", SubUserInfo.AppUserId).Update("virtual_balance", item.DemoBalance).Error
 					if err != nil {
 						ws.Mux.Lock()
