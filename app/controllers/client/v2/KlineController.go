@@ -999,6 +999,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		result := cmap.New().Items()
 		err = DB.Model(models.TradingOrder{}).
 			Where("app_user_id", SubUserInfo.AppUserId).
+			Where("amount_type", 1).
 			Select("count(1) AS hisTradingCount,sum(amounts) AS hisTradingAmounts").
 			Find(&result).Error
 		if err != nil {
