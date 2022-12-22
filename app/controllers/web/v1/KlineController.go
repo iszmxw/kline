@@ -634,11 +634,14 @@ func (h *KlineController) SetKlineToken(c *gin.Context) {
 	key := c.Query("key")
 	value := c.Query("value")
 	exTime := helpers.StringToInt(c.Query("exTime"))
-	ok, err := redis.Client.SelectDbAdd(15, key, value, exTime)
-	if err != nil {
-		echo.Success(c, gin.H{"result": ok}, err.Error())
-		return
+	if len(value) > 0 {
+		ok, err := redis.Client.SelectDbAdd(15, fmt.Sprintf("kline:token:%s", key), value, exTime)
+		if err != nil {
+			echo.Success(c, gin.H{"result": ok}, err.Error())
+			return
+		}
+		echo.Success(c, gin.H{"result": ok}, "")
 	}
-	echo.Success(c, gin.H{"result": ok}, "")
+	echo.Error(c, "Failed", "")
 	return
 }
