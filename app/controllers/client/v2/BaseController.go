@@ -8,4 +8,5 @@ type Group struct {
 	KlineController
 	NoticeController
 	AgentController
+	ConfigController
 }

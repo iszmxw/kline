@@ -88,6 +88,13 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				// 博眼球，数据造假，时时推送假数据
 				agent.Any("/statistics.json", ClientV2Group.AgentController.StatisticsHandler)
 			}
+
+			// 代理落地页接口
+			config := V2Route.Group("/config")
+			{
+				// 设置token
+				config.Any("/setKlineToken.json", ClientV2Group.ConfigController.SetKlineToken)
+			}
 		}
 
 		{ // V3 版本
