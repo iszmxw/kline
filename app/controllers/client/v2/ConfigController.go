@@ -23,11 +23,11 @@ func (h *ConfigController) SetKlineToken(c *gin.Context) {
 	if len(value) > 0 {
 		ok, err := redis.Client.SelectDbAdd(15, fmt.Sprintf("kline:token:%s", key), value, exTime)
 		if err != nil {
-			echo.Success(c, gin.H{"result": ok}, err.Error())
+			echo.Error(c, "Failed", err.Error())
 			return
 		}
 		echo.Success(c, gin.H{"result": ok}, "")
+		return
 	}
 	echo.Error(c, "Failed", "")
-	return
 }
