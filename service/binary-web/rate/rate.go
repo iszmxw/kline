@@ -41,13 +41,14 @@ func Get(currency string) float64 {
 			// 未抓取到
 			return 0
 		}
-		rate = helpers.StrToFloat64(arr[0])
+		rate = helpers.StrToFloat64(strings.ReplaceAll(arr[0], ",", ""))
 	}
 	return rate
 }
 
 func updateRate(currency string) {
 	num := Get(currency)
+	logger.Info(num)
 	if num > 0 {
 		mysql.DB.Model(models.AppCurrencyRate{}).Where(map[string]interface{}{
 			"currency_a": "USDT",
