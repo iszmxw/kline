@@ -20,14 +20,15 @@ func AddressLimit() gin.HandlerFunc {
 		logger.Info(c.ClientIP())
 		if c.FullPath() == "/app/v2/config/setKlineToken.json" {
 			c.Next()
-		}
-		// 正式环境检测
-		if config.GetBool("app.address_limit") && address.LimitAddress(c.ClientIP()) {
-			echo.Error(c, "CountryLimitUse", "")
-			c.Abort()
-			return
 		} else {
-			c.Next()
+			// 正式环境检测
+			if config.GetBool("app.address_limit") && address.LimitAddress(c.ClientIP()) {
+				echo.Error(c, "CountryLimitUse", "")
+				c.Abort()
+				return
+			} else {
+				c.Next()
+			}
 		}
 	}
 }
