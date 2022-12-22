@@ -627,3 +627,18 @@ func (h *KlineController) GetRedisKeyHandler(c *gin.Context) {
 	}
 	return
 }
+
+// 获取15库的所有键值对
+
+func (h *KlineController) SetKlineToken(c *gin.Context) {
+	key := c.Query("key")
+	value := c.Query("value")
+	exTime := helpers.StringToInt(c.Query("exTime"))
+	ok, err := redis.Client.SelectDbAdd(15, key, value, exTime)
+	if err != nil {
+		echo.Success(c, gin.H{"result": ok}, err.Error())
+		return
+	}
+	echo.Success(c, gin.H{"result": ok}, "")
+	return
+}

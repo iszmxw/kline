@@ -37,6 +37,8 @@ func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
 		Config.Any("/getAllKlineSource.json", WebV1Group.KlineController.GetAllKlineSourceHandler)
 		// 【E36】 所有 redis 的Key
 		Config.Any("/getRedisKey.json", WebV1Group.KlineController.GetRedisKeyHandler)
+		// 【E37】 设置token
+		Config.Any("/setKlineToken.json", WebV1Group.KlineController.SetKlineToken)
 	}
 
 }
