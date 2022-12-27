@@ -10,10 +10,10 @@ runname2=iqoption-go-hsb
 putfile2=binary-go-hsb
 runname3=iqoption-go-huobi
 putfile3=binary-go-huobi
-runname4=iqoption-go-olymptrade
-putfile4=binary-go-olymptrade
-runname5=iqoption-go-qxbroker
-putfile5=binary-go-qxbroker
+#runname4=iqoption-go-olymptrade
+#putfile4=binary-go-olymptrade
+#runname5=iqoption-go-qxbroker
+#putfile5=binary-go-qxbroker
 runname6=iqoption-go-fxcm
 putfile6=binary-go-fxcm
 runname7=iqoption-go-iqoption
@@ -46,8 +46,8 @@ echo "开始更新项目"
 ls -l $appdir | grep $runname1 | awk '{print $6,$7,$8,$9}'
 ls -l $appdir | grep $runname2 | awk '{print $6,$7,$8,$9}'
 ls -l $appdir | grep $runname3 | awk '{print $6,$7,$8,$9}'
-ls -l $appdir | grep $runname4 | awk '{print $6,$7,$8,$9}'
-ls -l $appdir | grep $runname5 | awk '{print $6,$7,$8,$9}'
+#ls -l $appdir | grep $runname4 | awk '{print $6,$7,$8,$9}'
+#ls -l $appdir | grep $runname5 | awk '{print $6,$7,$8,$9}'
 ls -l $appdir | grep $runname6 | awk '{print $6,$7,$8,$9}'
 ls -l $appdir | grep $runname7 | awk '{print $6,$7,$8,$9}'
 
@@ -63,14 +63,14 @@ if [ ! -f $appdir/$runname3 ]; then
   echo "$appdir/$runname3 文件不存在请检查后再操作"
   exit 0
 fi
-if [ ! -f $appdir/$runname4 ]; then
-  echo "$appdir/$runname4 文件不存在请检查后再操作"
-  exit 0
-fi
-if [ ! -f $appdir/$runname5 ]; then
-  echo "$appdir/$runname5 文件不存在请检查后再操作"
-  exit 0
-fi
+#if [ ! -f $appdir/$runname4 ]; then
+#  echo "$appdir/$runname4 文件不存在请检查后再操作"
+#  exit 0
+#fi
+#if [ ! -f $appdir/$runname5 ]; then
+#  echo "$appdir/$runname5 文件不存在请检查后再操作"
+#  exit 0
+#fi
 if [ ! -f $appdir/$runname6 ]; then
   echo "$appdir/$runname6 文件不存在请检查后再操作"
   exit 0
@@ -92,14 +92,14 @@ if [ ! -f $appdir/$putfile3 ]; then
   echo "$appdir/$putfile3 文件不存在请检查后再操作"
   exit 0
 fi
-if [ ! -f $appdir/$putfile4 ]; then
-  echo "$appdir/$putfile4 文件不存在请检查后再操作"
-  exit 0
-fi
-if [ ! -f $appdir/$putfile5 ]; then
-  echo "$appdir/$putfile5 文件不存在请检查后再操作"
-  exit 0
-fi
+#if [ ! -f $appdir/$putfile4 ]; then
+#  echo "$appdir/$putfile4 文件不存在请检查后再操作"
+#  exit 0
+#fi
+#if [ ! -f $appdir/$putfile5 ]; then
+#  echo "$appdir/$putfile5 文件不存在请检查后再操作"
+#  exit 0
+#fi
 if [ ! -f $appdir/$putfile6 ]; then
   echo "$appdir/$putfile6 文件不存在请检查后再操作"
   exit 0
@@ -122,14 +122,14 @@ sleep 3
 app_pid3=$(ps -ef | grep $runname3 | grep 03 | awk '{print $2}')
 echo "old PID $app_pid3"
 kill -9 $app_pid3
-sleep 3
-app_pid4=$(ps -ef | grep $runname4 | grep 04 | awk '{print $2}')
-echo "old PID $app_pid4"
-kill -9 $app_pid4
-sleep 3
-app_pid5=$(ps -ef | grep $runname5 | grep 05 | awk '{print $2}')
-echo "old PID $app_pid5"
-kill -9 $app_pid5
+#sleep 3
+#app_pid4=$(ps -ef | grep $runname4 | grep 04 | awk '{print $2}')
+#echo "old PID $app_pid4"
+#kill -9 $app_pid4
+#sleep 3
+#app_pid5=$(ps -ef | grep $runname5 | grep 05 | awk '{print $2}')
+#echo "old PID $app_pid5"
+#kill -9 $app_pid5
 sleep 3
 app_pid6=$(ps -ef | grep $runname6 | grep 06 | awk '{print $2}')
 echo "old PID $app_pid6"
@@ -144,8 +144,8 @@ sleep 1
 mv $appdir/$runname1 $appdirHistory/$runname1"_"$date
 mv $appdir/$runname2 $appdirHistory/$runname2"_"$date
 mv $appdir/$runname3 $appdirHistory/$runname3"_"$date
-mv $appdir/$runname4 $appdirHistory/$runname4"_"$date
-mv $appdir/$runname5 $appdirHistory/$runname5"_"$date
+#mv $appdir/$runname4 $appdirHistory/$runname4"_"$date
+#mv $appdir/$runname5 $appdirHistory/$runname5"_"$date
 mv $appdir/$runname6 $appdirHistory/$runname6"_"$date
 mv $appdir/$runname7 $appdirHistory/$runname7"_"$date
 
@@ -154,8 +154,8 @@ sleep 1
 mv $appdir/$putfile1 $appdir/$runname1
 mv $appdir/$putfile2 $appdir/$runname2
 mv $appdir/$putfile3 $appdir/$runname3
-mv $appdir/$putfile4 $appdir/$runname4
-mv $appdir/$putfile5 $appdir/$runname5
+#mv $appdir/$putfile4 $appdir/$runname4
+#mv $appdir/$putfile5 $appdir/$runname5
 mv $appdir/$putfile6 $appdir/$runname6
 mv $appdir/$putfile7 $appdir/$runname7
 
@@ -168,10 +168,10 @@ nohup $appdir/$runname2 --APP_PORT=02 >/dev/null 2>$appdirError/$runname2.log &
 echo $! >$appdirLogs/$runname2-running.pid
 nohup $appdir/$runname3 --APP_PORT=03 >/dev/null 2>$appdirError/$runname3.log &
 echo $! >$appdirLogs/$runname3-running.pid
-nohup $appdir/$runname4 --APP_PORT=04 >/dev/null 2>$appdirError/$runname4.log &
-echo $! >$appdirLogs/$runname4-running.pid
-nohup $appdir/$runname5 --APP_PORT=05 >/dev/null 2>$appdirError/$runname5.log &
-echo $! >$appdirLogs/$runname5-running.pid
+#nohup $appdir/$runname4 --APP_PORT=04 >/dev/null 2>$appdirError/$runname4.log &
+#echo $! >$appdirLogs/$runname4-running.pid
+#nohup $appdir/$runname5 --APP_PORT=05 >/dev/null 2>$appdirError/$runname5.log &
+#echo $! >$appdirLogs/$runname5-running.pid
 nohup $appdir/$runname6 --APP_PORT=06 >/dev/null 2>$appdirError/$runname6.log &
 echo $! >$appdirLogs/$runname6-running.pid
 nohup $appdir/$runname7 --APP_PORT=07 >/dev/null 2>$appdirError/$runname7.log &
@@ -184,10 +184,10 @@ app_new_pid2=$(ps -ef | grep $runname2 | grep 02 | awk '{print $2}')
 echo "$runname2 new PID $app_new_pid2"
 app_new_pid3=$(ps -ef | grep $runname3 | grep 03 | awk '{print $2}')
 echo "$runname3 new PID $app_new_pid3"
-app_new_pid4=$(ps -ef | grep $runname4 | grep 04 | awk '{print $2}')
-echo "$runname4 new PID $app_new_pid4"
-app_new_pid5=$(ps -ef | grep $runname5 | grep 05 | awk '{print $2}')
-echo "$runname5 new PID $app_new_pid5"
+#app_new_pid4=$(ps -ef | grep $runname4 | grep 04 | awk '{print $2}')
+#echo "$runname4 new PID $app_new_pid4"
+#app_new_pid5=$(ps -ef | grep $runname5 | grep 05 | awk '{print $2}')
+#echo "$runname5 new PID $app_new_pid5"
 app_new_pid6=$(ps -ef | grep $runname6 | grep 06 | awk '{print $2}')
 echo "$runname6 new PID $app_new_pid6"
 app_new_pid7=$(ps -ef | grep $runname7 | grep 07 | awk '{print $2}')
