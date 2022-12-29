@@ -211,8 +211,11 @@ func Iqoption() []Info {
 	var CodeData []Info
 	CodeData = append(CodeData,
 		// OTC 标识符
-		//Info{ID: 76, Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
-		//Info{ID: 81, Symbol: "GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		Info{ID: 81, Symbol: "GBP/USD(OTC)", Desc: "英镑/美元", ContractCode: "GBP-USD-OTC"},
+		Info{ID: 76, Symbol: "EUR/USD(OTC)", Desc: "欧元/美元", ContractCode: "EUR-USD-OTC"},
+		Info{ID: 76, Symbol: "AUD/CAD(OTC)", Desc: "澳元/加拿大元", ContractCode: "AUD-CAD-OTC"},
+		Info{ID: 76, Symbol: "EUR/JPY(OTC)", Desc: "欧元/日元", ContractCode: "EUR/JPY-OTC"},
+		Info{ID: 76, Symbol: "USD/CHF(OTC)", Desc: "美元/法郎", ContractCode: "USD-CHF-OTC"},
 		// 非 OTC
 		Info{ID: 1, Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
 		Info{ID: 108, Symbol: "EUR/AUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
