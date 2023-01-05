@@ -214,8 +214,9 @@ func Iqoption() []Info {
 		Info{ID: 81, Symbol: "GBP/USD(OTC)", Desc: "英镑/美元", ContractCode: "GBP-USD-OTC"},
 		Info{ID: 76, Symbol: "EUR/USD(OTC)", Desc: "欧元/美元", ContractCode: "EUR-USD-OTC"},
 		Info{ID: 80, Symbol: "AUD/CAD(OTC)", Desc: "澳元/加拿大元", ContractCode: "AUD-CAD-OTC"},
-		Info{ID: 79, Symbol: "EUR/JPY(OTC)", Desc: "欧元/日元", ContractCode: "EUR/JPY-OTC"},
+		Info{ID: 79, Symbol: "EUR/JPY(OTC)", Desc: "欧元/日元", ContractCode: "EUR-JPY-OTC"},
 		Info{ID: 78, Symbol: "USD/CHF(OTC)", Desc: "美元/法郎", ContractCode: "USD-CHF-OTC"},
+		Info{ID: 2, Symbol: "EUR/GBP(OTC)", Desc: "澳大利亚元/美元", ContractCode: "EUR-GBP-OTC"},
 		// 非 OTC
 		Info{ID: 1, Symbol: "EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
 		Info{ID: 108, Symbol: "EUR/AUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
@@ -225,6 +226,16 @@ func Iqoption() []Info {
 		Info{ID: 7, Symbol: "AUD/CAD", Desc: "欧元/澳大利亚元", ContractCode: "AUD-CAD"},
 		Info{ID: 943, Symbol: "AUD/CHF", Desc: "欧元/澳大利亚元", ContractCode: "AUD-CHF"},
 		Info{ID: 74, Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
+
+		Info{ID: 99, Symbol: "AUD/USD", Desc: "澳大利亚元/美元", ContractCode: "AUD-USD"},
+		Info{ID: 107, Symbol: "CAD/CHF", Desc: "澳大利亚元/美元", ContractCode: "CAD-CHF"},
+		Info{ID: 1486, Symbol: "COPPER", Desc: "澳大利亚元/美元", ContractCode: "COPPER"},
+		Info{ID: 2, Symbol: "EUR/GBP", Desc: "澳大利亚元/美元", ContractCode: "EUR-GBP"},
+		Info{ID: 4, Symbol: "EUR/JPY", Desc: "澳大利亚元/美元", ContractCode: "EUR-JPY"},
+		Info{ID: 3, Symbol: "GBP/JPY", Desc: "澳大利亚元/美元", ContractCode: "GBP-JPY"},
+		Info{ID: 569, Symbol: "Netflix", Desc: "澳大利亚元/美元", ContractCode: "Netflix"},
+		Info{ID: 8, Symbol: "NZD/USD", Desc: "澳大利亚元/美元", ContractCode: "NZD-USD"},
+		Info{ID: 1483, Symbol: "wheat", Desc: "小麦", ContractCode: "wheat"},
 		//Info{ID: 6, Symbol: "AUD/JPY", Desc: "欧元/澳大利亚元", ContractCode: "AUD-JPY"}, // todo
 	)
 	return CodeData
