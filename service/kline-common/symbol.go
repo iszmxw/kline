@@ -236,7 +236,6 @@ func Iqoption() []Info {
 		Info{ID: 569, Symbol: "Netflix", Desc: "澳大利亚元/美元", ContractCode: "Netflix"},
 		Info{ID: 8, Symbol: "NZD/USD", Desc: "澳大利亚元/美元", ContractCode: "NZD-USD"},
 		Info{ID: 1483, Symbol: "wheat", Desc: "小麦", ContractCode: "wheat"},
-		//Info{ID: 6, Symbol: "AUD/JPY", Desc: "欧元/澳大利亚元", ContractCode: "AUD-JPY"}, // todo
 	)
 	return CodeData
 }
