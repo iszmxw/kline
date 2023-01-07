@@ -149,6 +149,12 @@ func AllowKlineSource() map[string]interface{} {
 	data["GBP-JPY"] = []string{"iqoption"}
 	data["NZD-USD"] = []string{"iqoption"}
 	data["wheat"] = []string{"iqoption"}
+	data["GBP-USD-OTC"] = []string{"iqoption"}
+	data["EUR-USD-OTC"] = []string{"iqoption"}
+	data["AUD-CAD-OTC"] = []string{"iqoption"}
+	data["EUR-JPY-OTC"] = []string{"iqoption"}
+	data["USD-CHF-OTC"] = []string{"iqoption"}
+	data["EUR-GBP-OTC"] = []string{"iqoption"}
 	return data
 }
 
