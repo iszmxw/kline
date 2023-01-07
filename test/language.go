@@ -101,12 +101,9 @@ func newsPageInfoFunc(vm *otto.Otto, name string) {
 	common := obj.Object()
 	languageCodes := common.Keys()
 	for _, languageCode := range languageCodes {
-		if languageCode == "EN" {
-			fmt.Println(languageCode)
-			result := getSubObj(name, common, languageCode)
-			for key, val := range result {
-				insertData(languageCode, key, val.(string))
-			}
+		result := getSubObj(name, common, languageCode)
+		for key, val := range result {
+			insertData(languageCode, key, val.(string))
 		}
 	}
 }
@@ -116,12 +113,9 @@ func bonusActivitiesFunc(vm *otto.Otto, name string) {
 	common := obj.Object()
 	languageCodes := common.Keys()
 	for _, languageCode := range languageCodes {
-		if languageCode == "EN" {
-			fmt.Println(languageCode)
-			result := getSubObj(name, common, languageCode)
-			for key, val := range result {
-				insertData(languageCode, key, val.(string))
-			}
+		result := getSubObj(name, common, languageCode)
+		for key, val := range result {
+			insertData(languageCode, key, val.(string))
 		}
 	}
 }
