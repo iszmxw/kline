@@ -23,6 +23,16 @@ var common = {
         requestErr1: 'Network anomalies, please try again later.',
         requestErr2: 'System exception.',
     },
+    CH: {
+        productName: 'SmartOption',
+        copy: 'Copy',
+        currencySymbol: '₹', //货币符号
+        noData: 'No data',
+        copySuccess: 'Copy success',
+        requestErr0: 'The server generated an internal error, please contact the customer service.',
+        requestErr1: 'Network anomalies, please try again later.',
+        requestErr2: 'System exception.',
+    },
     MX: {
         productName: 'SmartOption',
         copy: 'Copy',
@@ -619,7 +629,7 @@ var lossReturn = {
         contentTipsText1: '(*actual loss = total loss of the day - total profit of the day)',
         contentTipsText2: 'Bonus payment time : 8:00 a.m of the next day',
     }
-}
+};
 // 付款方式说明
 var paymentInfo = {
     INSA: {
@@ -1554,7 +1564,7 @@ var paymentInfo = {
             '8. La transferencia está completa.',
         ],
     }
-}
+};
 // 充值信息
 var rechargeInfo = {
     INSA: {
@@ -1578,7 +1588,7 @@ var rechargeInfo = {
         regTitle2: 'Payment method',
         regTitle3: 'Merchant order number',
     }
-}
+};
 // 疑难解答
 var troubleshoot = {
     INSA: {
@@ -1671,7 +1681,7 @@ var troubleshoot = {
         contentWithdrawArr4Title: '5. Are there any withdrawal fees?',
         contentWithdrawArr4Text: 'Yes, but we do not charge any service fees, all fees are collected by the payment company.',
     }
-}
+};
 // 服务条款
 var termsOfService = {
     INSA: {
@@ -3002,7 +3012,7 @@ var termsOfService = {
             },
         ]
     }
-}
+};
 // 隐私协议
 var userAgreement = {
     INSA: {
@@ -3737,4 +3747,187 @@ var userAgreement = {
             }
         ],
     },
-}
+};
+// 交易页面数据
+var tradePage = {
+    INSA: {
+        realAccount: 'Nyata',
+        bonus: 'Bonus',
+        virAccount: 'Demo',
+        buyDown: 'Beli turun',
+        buyUp: 'Beli naik',
+        deposit: 'Deposit',
+        oneMinuteProfit: 'Dapatkan untung {rate}% setelah 1 menit',
+        OneClickTransaction: 'Trading Sekali Klik',
+        buyPointPrice: 'Beli indeks',
+        buyAmounts: 'Saldo beli',
+        tradingGain: 'Keuntungan',
+        sureAmounts: 'Konfirmasi Saldo',
+        beginTime: 'Waktu Mulai',
+        endTime: 'Akhir waktu',
+        tradingResult: 'Hasil Trading',
+        startIndex: 'Harga Mulai',
+        endTradingTime: 'Waktu Akhir',
+        endPointPrice: 'Harga Akhir',
+        determine: 'Konfirmasi',
+        selectAssets: 'Pilih aset',
+        assets: 'Asset',
+        profitRate: 'Untung',
+        all: 'Jumlah',
+        low: 'Minimal',
+        languageSet_tips: {
+            title: 'Judul',
+            refresh: 'Segarkan',
+            confirm: 'Konfirmasi',
+            Data_Exception: 'Dapatkan data abnormal, silakan coba lagi nanti.',
+            Asset_DataException: 'Data aset abnormal sekarang, silakan pilih aset yang lain.',
+            Insufficient_balance: 'Saldo Anda tidak cukup untuk membayar transaksi ini.',
+            Insufficient_balance1: 'Saldo tidak cukup',
+            Network_exception: 'Internet tidak normal, silakan cek internet saat ini.',
+            Loading_Delay: 'Kelambatan pemuatan data, silakan coba lagi nanti.',
+            Amount_maxtrade_new: 'Jumlah transaksi user baru tidak boleh lebih tinggi dari',
+            Amount_maxtrade: 'Maksimum jumlah transaksi tunggal  ',
+            Amount_mintrade: 'Maksimum jumlah transaksi tunggal ',
+            trade_max_tips: 'Total transaksi anda hari ini melebihi ',
+            Deposit: 'Deposit',
+            buDown1: 'Earn ',
+            buDown2: ' % profit after 1min',
+            singleTransactionLimit: 'Jumlah transaksi maksimum santuan {currencySymbol} {money}',
+        },
+    },
+    EN: {
+        realAccount: 'Real',
+        bonus: 'Bonus',
+        virAccount: 'Demo',
+        buyDown: 'LOWER',
+        buyUp: 'HIGHER',
+        deposit: 'Deposit',
+        oneMinuteProfit: 'Earn {rate}% profit after 1min',
+        OneClickTransaction: 'One Click',
+        buyPointPrice: 'Buy index',
+        buyAmounts: 'Amount',
+        tradingGain: 'Profit',
+        sureAmounts: 'Confirm',
+        beginTime: 'Opening Time',
+        endTime: 'End Time',
+        tradingResult: 'Trading Result',
+        startIndex: 'Opening Price',
+        endTradingTime: 'Closing Time',
+        endPointPrice: 'Closing Price',
+        determine: 'Confirm',
+        selectAssets: 'Choose asset',
+        assets: 'Asset',
+        profitRate: 'Profit',
+        all: 'Total',
+        low: 'Minimal',
+        languageSet_tips: {
+            title: 'Title',
+            refresh: 'Refresh',
+            confirm: 'Confirm',
+            Data_Exception: 'Data error, please try again later.',
+            Asset_DataException: 'The asset is abnormal, please select other asset.',
+            Insufficient_balance: 'Balance is not enough to do the transaction.',
+            Insufficient_balance1: 'Balance is not enough',
+            Network_exception: 'The network is abnormal, please check the current network.',
+            Loading_Delay: 'Data loading delay, please try again.',
+            Amount_maxtrade_new: 'The first transaction amount cannot be higher than ',
+            Amount_maxtrade: 'Maximum Trading Amount ',
+            Amount_mintrade: 'Minimum Trading Amount ',
+            trade_max_tips: 'You have exceeded the limit of transactions today ',
+            Deposit: 'Deposit',
+            buDown1: 'Dapatkan untung ',
+            buDown2: ' % setelah 1 menit',
+            singleTransactionLimit: 'Maximun trading amount a time: {currencySymbol} {money}',
+        },
+    },
+    MX: {
+        realAccount: 'Real',
+        bonus: 'Bonus',
+        virAccount: 'Demo',
+        buyDown: 'LOWER',
+        buyUp: 'HIGHER',
+        deposit: 'Deposit',
+        oneMinuteProfit: 'Earn {rate}% profit after 1min',
+        OneClickTransaction: 'One Click',
+        buyPointPrice: 'Buy index',
+        buyAmounts: 'Amount',
+        tradingGain: 'Profit',
+        sureAmounts: 'Confirm',
+        beginTime: 'Opening Time',
+        endTime: 'End Time',
+        tradingResult: 'Trading Result',
+        startIndex: 'Opening Price',
+        endTradingTime: 'Closing Time',
+        endPointPrice: 'Closing Price',
+        determine: 'Confirm',
+        selectAssets: 'Choose asset',
+        assets: 'Asset',
+        profitRate: 'Profit',
+        all: 'Total',
+        low: 'Minimal',
+        languageSet_tips: {
+            title: 'Title',
+            refresh: 'Refresh',
+            confirm: 'Confirm',
+            Data_Exception: 'Data error, please try again later.',
+            Asset_DataException: 'The asset is abnormal, please select other asset.',
+            Insufficient_balance: 'Balance is not enough to do the transaction.',
+            Insufficient_balance1: 'Balance is not enough',
+            Network_exception: 'The network is abnormal, please check the current network.',
+            Loading_Delay: 'Data loading delay, please try again.',
+            Amount_maxtrade_new: 'The first transaction amount cannot be higher than ',
+            Amount_maxtrade: 'Maximum Trading Amount ',
+            Amount_mintrade: 'Minimum Trading Amount ',
+            trade_max_tips: 'You have exceeded the limit of transactions today ',
+            Deposit: 'Deposit',
+            buDown1: 'Dapatkan untung ',
+            buDown2: ' % setelah 1 menit',
+            singleTransactionLimit: 'Maximun trading amount a time: {currencySymbol} {money}',
+        },
+    },
+    CH: {
+        realAccount: 'Real',
+        bonus: 'Bonus',
+        virAccount: 'Demo',
+        buyDown: 'LOWER',
+        buyUp: 'HIGHER',
+        deposit: 'Deposit',
+        oneMinuteProfit: 'Earn {rate}% profit after 1min',
+        OneClickTransaction: 'One Click',
+        buyPointPrice: 'Buy index',
+        buyAmounts: 'Amount',
+        tradingGain: 'Profit',
+        sureAmounts: 'Confirm',
+        beginTime: 'Opening Time',
+        endTime: 'End Time',
+        tradingResult: 'Trading Result',
+        startIndex: 'Opening Price',
+        endTradingTime: 'Closing Time',
+        endPointPrice: 'Closing Price',
+        determine: 'Confirm',
+        selectAssets: 'Choose asset',
+        assets: 'Asset',
+        profitRate: 'Profit',
+        all: 'Total',
+        low: 'Minimal',
+        languageSet_tips: {
+            title: 'Title',
+            refresh: 'Refresh',
+            confirm: 'Confirm',
+            Data_Exception: 'Data error, please try again later.',
+            Asset_DataException: 'The asset is abnormal, please select other asset.',
+            Insufficient_balance: 'Balance is not enough to do the transaction.',
+            Insufficient_balance1: 'Balance is not enough',
+            Network_exception: 'The network is abnormal, please check the current network.',
+            Loading_Delay: 'Data loading delay, please try again.',
+            Amount_maxtrade_new: 'The first transaction amount cannot be higher than ',
+            Amount_maxtrade: 'Maximum Trading Amount ',
+            Amount_mintrade: 'Minimum Trading Amount ',
+            trade_max_tips: 'You have exceeded the limit of transactions today ',
+            Deposit: 'Deposit',
+            buDown1: 'Dapatkan untung ',
+            buDown2: ' % setelah 1 menit',
+            singleTransactionLimit: 'Maximun trading amount a time: {currencySymbol} {money}',
+        },
+    },
+};

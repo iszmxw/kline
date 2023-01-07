@@ -47,7 +47,7 @@ func main() {
 	}(file)
 	jsByte, err := ioutil.ReadAll(file)
 	vm.Run(string(jsByte))
-	//commonFunc(vm, "common")
+	commonFunc(vm, "common")
 	newsPageFunc(vm, "newsPage")
 	newsPageInfoFunc(vm, "newsPageInfo")
 	bonusActivitiesFunc(vm, "bonusActivities")
@@ -59,6 +59,7 @@ func main() {
 	paymentInfoFunc(vm, "troubleshoot")
 	termsOfServiceFunc(vm, "termsOfService")
 	paymentInfoFunc(vm, "userAgreement")
+	paymentInfoFunc(vm, "tradePage")
 }
 
 func commonFunc(vm *otto.Otto, name string) {
