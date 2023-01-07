@@ -8,7 +8,9 @@ import (
 	"goapi/pkg/mysql"
 	"goapi/pkg/notice/mail"
 	"goapi/pkg/xtime"
+	tradeSleepFxcm "goapi/service/kline-fxcm/fxcm/config/trade_sleep"
 	tradeSleepHsb "goapi/service/kline-hsb/hsb/config/trade_sleep"
+	tradeSleepIqoption "goapi/service/kline-iqoption/iqoption/config/trade_sleep"
 	tradeSleepOlymptrade "goapi/service/kline-olymptrade/olymptrade/config/trade_sleep"
 	tradeSleepRaceoption "goapi/service/kline-raceoption/raceoption/config/trade_sleep"
 	"time"
@@ -21,6 +23,12 @@ func CheckSourceSleep(KlineSource string, ContractCode string) bool {
 	switch KlineSource {
 	case "hsb":
 		result = tradeSleepHsb.GetTimeIsSleep(ContractCode)
+		break
+	case "fxcm":
+		result = tradeSleepFxcm.GetTimeIsSleep(ContractCode)
+		break
+	case "iqoption":
+		result = tradeSleepIqoption.GetTimeIsSleep(ContractCode)
 		break
 	case "raceoption":
 		result = tradeSleepRaceoption.GetTimeIsSleep(ContractCode)
@@ -40,9 +48,9 @@ func UpdateSleep(Updater, ContractCode, AssetsStatus, IsValid string) {
 	err := mysql.DB.Debug().Model(models.TradingAssets{}).
 		Where("assets_code", ContractCode).
 		Update("assets_status", AssetsStatus). // 资产状态 1正常 2休市 3下架
-		Update("is_valid", IsValid). // 是否有效 1是 0否
-		Update("updater", Updater). // 更新人
-		Update("update_date", time.Now()). // 更新日期
+		Update("is_valid", IsValid).           // 是否有效 1是 0否
+		Update("updater", Updater).            // 更新人
+		Update("update_date", time.Now()).     // 更新日期
 		Error
 	if err != nil {
 		logger.Error(err)
