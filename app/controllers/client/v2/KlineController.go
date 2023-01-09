@@ -915,7 +915,6 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", SubNationInfo.ItemCode).
 			Where("is_show", 1).
-			Where("nation", SubNationInfo.Nation).
 			Find(&PushRateData).Error
 		if err != nil {
 			ws.Mux.Lock()
