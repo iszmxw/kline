@@ -11,7 +11,6 @@ import (
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
-	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	NoticeMail "goapi/pkg/notice/mail"
@@ -922,14 +921,6 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
-		}
-		for index, item := range PushRateData {
-			if otc.RaceOptionCheckOTC() {
-				if !strings.Contains(strings.ToUpper(item.AssetsName), "OTC") {
-					// 不包含otc才加上
-					PushRateData[index].AssetsName = item.AssetsName + "(OTC)"
-				}
-			}
 		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "01",
