@@ -52,6 +52,7 @@ func SocketIqoption(info KlineCommon.Info) {
 			}
 			// 收集数据缓存到redis
 			key := fmt.Sprintf("%v:%v", config.KlineSource, data.Ch)
+			logger.Info("0001"+data.Ch, data)
 			_, redisErr := redis.Client.Add(key, redisData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
@@ -71,6 +72,7 @@ func SocketIqoption(info KlineCommon.Info) {
 				if err != nil {
 					logger.Error(err)
 				}
+				logger.Info("0002"+data.Ch, KlineData)
 				if KlineData.LogId > 0 {
 					return
 				}
@@ -79,6 +81,7 @@ func SocketIqoption(info KlineCommon.Info) {
 					logger.Error(err)
 					return
 				}
+				logger.Info("0003"+data.Ch, lineLogRes)
 			}
 			logger.Info(KlineCommon.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		}, "")
