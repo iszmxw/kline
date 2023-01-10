@@ -64,6 +64,7 @@ func SocketIqoption(info KlineCommon.Info) {
 					Select("log_id").
 					Where("contract_code", info.ContractCode).
 					Where("upstream_ts", UpstreamTs).
+					Where("c_close", data.Tick.Close).
 					Where("kline_source", config.KlineSource).
 					Find(&KlineData).Error
 				if err != nil {

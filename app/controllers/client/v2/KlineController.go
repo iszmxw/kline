@@ -8,6 +8,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
+	"goapi/pkg/config"
 	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
@@ -628,6 +629,10 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		pushData := gin.H{
 			"id":   "01",
 			"data": WsIndex,
+		}
+		// 记录日志
+		if config.GetString("app.env") != "company_pro" {
+			logger.Info(WsIndex)
 		}
 		marshal, err := json.Marshal(pushData)
 		if err != nil {

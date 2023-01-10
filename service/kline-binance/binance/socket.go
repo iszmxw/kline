@@ -99,6 +99,7 @@ func SocketBinance(info KlineCommon.Info) {
 					Select("log_id").
 					Where("contract_code", ContractCode).
 					Where("upstream_ts", UpstreamTs).
+					Where("c_close", data.Tick.Close).
 					Where("kline_source", config.KlineSource).
 					Find(&KlineData).Error
 				if err != nil {

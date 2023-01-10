@@ -90,6 +90,7 @@ func SocketFxcm(info KlineCommon.Info) {
 			}
 			// 收集数据缓存到redis
 			key := fmt.Sprintf("%v:%v", config.KlineSource, data.Ch)
+			logger.Info("0001"+data.Ch, data)
 			_, redisErr := redis.Client.Add(key, redisData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
@@ -99,16 +100,18 @@ func SocketFxcm(info KlineCommon.Info) {
 			// 当前数据源匹配就入库
 			if response.KlineSource(info.ContractCode) == config.KlineSource {
 				var KlineData models.KlineLog
-				err = mysql.DB.
+				err = mysql.DB.Debug().
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", info.ContractCode).
 					Where("upstream_ts", UpstreamTs).
+					Where("c_close", data.Tick.Close).
 					Where("kline_source", config.KlineSource).
 					Find(&KlineData).Error
 				if err != nil {
 					logger.Error(err)
 				}
+				logger.Info("0002"+data.Ch, KlineData)
 				if KlineData.LogId > 0 {
 					return
 				}
@@ -117,6 +120,7 @@ func SocketFxcm(info KlineCommon.Info) {
 					logger.Error(err)
 					return
 				}
+				logger.Info("0003"+data.Ch, lineLogRes)
 			}
 
 			//// 历史存入 elastic todo::暂时不开启
