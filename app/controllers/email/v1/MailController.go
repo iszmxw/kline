@@ -132,7 +132,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	SystemEmailSendLog.UpdateDate = time.Now()
 	SystemEmailSendLog.Creator = "GoMail"
 	SystemEmailSendLog.Updater = "GoMail"
-	if len(params.MessageContent) >= 150 {
+	if len([]rune(params.MessageContent)) >= 150 {
 		SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
 	} else {
 		SystemEmailSendLog.Remarks = params.MessageContent
@@ -232,7 +232,7 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 	SystemEmailSendLog.UpdateDate = time.Now()
 	SystemEmailSendLog.Creator = "GoMail"
 	SystemEmailSendLog.Updater = "GoMail"
-	if len(params.MessageContent) >= 150 {
+	if len([]rune(params.MessageContent)) >= 150 {
 		SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
 	} else {
 		SystemEmailSendLog.Remarks = params.MessageContent
