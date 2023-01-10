@@ -138,17 +138,6 @@ func SocketHuoBi(info KlineCommon.Info) {
 		}
 		// 当前数据源匹配就入库
 		if res.KlineSource(info.ContractCode) == kconfig.KlineSource {
-			// 历史 kline 入库 Format("2006-01-02 15:04:05")
-			AddData := res.KlineLogData(info.ContractCode, resp)
-			DB := mysql.DB.Debug()
-			result := DB.Model(models.KlineLog{}).Create(&AddData)
-			if result.Error != nil {
-				logger.Error(result.Error)
-				return
-			}
-		}
-		// 当前数据源匹配就入库
-		if res.KlineSource(info.ContractCode) == kconfig.KlineSource {
 			var KlineData models.KlineLog
 			err = mysql.DB.
 				Model(models.KlineLog{}).
