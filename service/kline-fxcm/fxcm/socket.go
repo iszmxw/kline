@@ -6,6 +6,7 @@ import (
 	socketio "github.com/graarh/golang-socketio"
 	"goapi/app/models"
 	"goapi/app/response"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	NoticeMail "goapi/pkg/notice/mail"
@@ -157,14 +158,20 @@ func LogData(stream wsdata.DataStream, SystemTs int64) models.KlineLog {
 	klineLog.Mrid = 0.00                                                                 // ID
 	klineLog.COpen = stream.Rates[1]                                                     // 起始峰值
 	klineLog.CClose = (stream.Rates[0] + stream.Rates[1]) / 2                            // 结束峰值
-	klineLog.High = stream.Rates[2]                                                      // 最高峰值
-	klineLog.Low = stream.Rates[3]                                                       // 最低峰值
-	klineLog.Amount = 0                                                                  // 成交金额 TODO
-	klineLog.Vol = stream.Rates[0]                                                       // 成交手 TODO
-	klineLog.CCount = 0                                                                  // 交易笔数 TODO
-	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond))       // Kline返回日期
-	klineLog.CreateDate = time.Now()                                                     // 创建日期
-	klineLog.KlineSource = config.KlineSource                                            // K线来源raceoption
+	Close, err := helpers.FormatFloat(klineLog.CClose, 10)
+	if err != nil {
+		klineLog.CClose = 0.00
+	} else {
+		klineLog.CClose = Close
+	}
+	klineLog.High = stream.Rates[2]                                                // 最高峰值
+	klineLog.Low = stream.Rates[3]                                                 // 最低峰值
+	klineLog.Amount = 0                                                            // 成交金额 TODO
+	klineLog.Vol = stream.Rates[0]                                                 // 成交手 TODO
+	klineLog.CCount = 0                                                            // 交易笔数 TODO
+	klineLog.TsDate = time.Unix(0, time.Now().UnixMilli()*int64(time.Millisecond)) // Kline返回日期
+	klineLog.CreateDate = time.Now()                                               // 创建日期
+	klineLog.KlineSource = config.KlineSource                                      // K线来源raceoption
 	return klineLog
 }
 
@@ -179,6 +186,12 @@ func RedisData(SystemTs int64, stream wsdata.DataStream) response.SubIndexKLineR
 	data.Tick.Count = 0
 	data.Tick.Open = fmt.Sprintf("%v", stream.Rates[1])
 	data.Tick.Close = fmt.Sprintf("%v", (stream.Rates[0]+stream.Rates[1])/2)
+	Close, err := helpers.FormatFloat(helpers.StrToFloat64(data.Tick.Close), 10)
+	if err != nil {
+		data.Tick.Close = "0.00"
+	} else {
+		data.Tick.Close = fmt.Sprintf("%v", Close)
+	}
 	data.Tick.Low = fmt.Sprintf("%v", stream.Rates[3])
 	data.Tick.High = fmt.Sprintf("%v", stream.Rates[2])
 	data.Tick.Amount = "0"

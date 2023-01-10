@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"goapi/app/models"
 	"goapi/app/response"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/notice/mail"
@@ -98,14 +99,20 @@ func SocketIqoption(info KlineCommon.Info) {
 // LogData 存入 kline_log 的数据
 func LogData(resp *wsdata.SubPriceKLineResponse, ContractCode string, SystemTs, UpstreamTs int64) models.KlineLog {
 	var klineLog models.KlineLog
-	klineLog.ContractCode = ContractCode                                           // 合约代码 BTC-USD
-	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode)                // kilne返回日期时间戳
-	klineLog.Ts = SystemTs                                                         // 自己生成的ts
-	klineLog.UpstreamTs = UpstreamTs                                               // 上游的ts
-	klineLog.ID = SystemTs                                                         // 自己生成的ts/1000
-	klineLog.Mrid = 0.00                                                           // ID
-	klineLog.COpen = resp.Open                                                     // 起始峰值
-	klineLog.CClose = resp.Close                                                   // 结束峰值
+	klineLog.ContractCode = ContractCode                            // 合约代码 BTC-USD
+	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", ContractCode) // kilne返回日期时间戳
+	klineLog.Ts = SystemTs                                          // 自己生成的ts
+	klineLog.UpstreamTs = UpstreamTs                                // 上游的ts
+	klineLog.ID = SystemTs                                          // 自己生成的ts/1000
+	klineLog.Mrid = 0.00                                            // ID
+	klineLog.COpen = resp.Open                                      // 起始峰值
+	klineLog.CClose = resp.Close                                    // 结束峰值
+	Close, err := helpers.FormatFloat(helpers.StrToFloat64(fmt.Sprintf("%v", klineLog.CClose)), 10)
+	if err != nil {
+		klineLog.CClose = 0.00
+	} else {
+		klineLog.CClose = Close
+	}
 	klineLog.High = resp.Max                                                       // 最高峰值
 	klineLog.Low = resp.Min                                                        // 最低峰值
 	klineLog.Amount = 0                                                            // 成交金额 TODO
@@ -127,7 +134,12 @@ func RedisData(SystemTs, UpstreamTs int64, resp *wsdata.SubPriceKLineResponse) r
 	data.Tick.Vol = ""
 	data.Tick.Count = 0
 	data.Tick.Open = fmt.Sprintf("%v", resp.Open)
-	data.Tick.Close = fmt.Sprintf("%v", resp.Close)
+	Close, err := helpers.FormatFloat(helpers.StrToFloat64(fmt.Sprintf("%v", resp.Close)), 10)
+	if err != nil {
+		data.Tick.Close = "0.00"
+	} else {
+		data.Tick.Close = fmt.Sprintf("%v", Close)
+	}
 	data.Tick.Low = fmt.Sprintf("%v", resp.Min)
 	data.Tick.High = fmt.Sprintf("%v", resp.Max)
 	data.Tick.Amount = "0"
