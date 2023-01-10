@@ -147,6 +147,31 @@ func SocketHuoBi(info KlineCommon.Info) {
 				return
 			}
 		}
+		// 当前数据源匹配就入库
+		if res.KlineSource(info.ContractCode) == kconfig.KlineSource {
+			var KlineData models.KlineLog
+			err = mysql.DB.
+				Model(models.KlineLog{}).
+				Select("log_id").
+				Where("contract_code", info.ContractCode).
+				Where("upstream_ts", UpstreamTs).
+				Where("c_close", data.Tick.Close).
+				Where("kline_source", kconfig.KlineSource).
+				Find(&KlineData).Error
+			if err != nil {
+				logger.Error(err)
+			}
+			if KlineData.LogId > 0 {
+				return
+			}
+			AddData := res.KlineLogData(info.ContractCode, resp)
+			DB := mysql.DB.Debug()
+			result := DB.Model(models.KlineLog{}).Create(&AddData)
+			if result.Error != nil {
+				logger.Error(result.Error)
+				return
+			}
+		}
 		// 历史 kline 入库
 
 		//// 历史 kline 入队列
