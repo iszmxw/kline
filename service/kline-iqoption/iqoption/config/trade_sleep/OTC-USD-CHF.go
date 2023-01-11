@@ -1,66 +1,66 @@
 package trade_sleep
 
-const GBP_USD = `
+const USD_CHF_OTC = `
 [
   {
     "name": "Monday",
-    "TradingTime": [
+    "TradingTime": [],
+    "SleepTime": [
       {
         "start": "00:00",
         "end": "23:59"
-      }
-    ],
-    "SleepTime": []
+      }]
   },
   {
     "name": "Tuesday",
-    "TradingTime": [
+    "TradingTime": [],
+    "SleepTime": [
       {
         "start": "00:00",
         "end": "23:59"
-      }
-    ],
-    "SleepTime": []
+      }]
   },
   {
     "name": "Wednesday",
-    "TradingTime": [
+    "TradingTime": [],
+    "SleepTime": [
       {
         "start": "00:00",
         "end": "23:59"
-      }
-    ],
-    "SleepTime": []
+      }]
   },
   {
     "name": "Thursday",
-    "TradingTime": [
+    "TradingTime": [],
+    "SleepTime": [
       {
         "start": "00:00",
         "end": "23:59"
-      }
-    ],
-    "SleepTime": []
+      }]
   },
   {
     "name": "Friday",
-    "TradingTime": [
+    "TradingTime": [],
+    "SleepTime": [
       {
         "start": "00:00",
         "end": "23:59"
-      }
-    ],
-    "SleepTime": []
+      }]
   },
   {
     "name": "Saturday",
     "TradingTime": [
       {
-        "start": "00:00",
+        "start": "04:00",
         "end": "23:59"
       }
-    ],
-    "SleepTime": []
+	],
+    "SleepTime": [
+      {
+        "start": "00:00",
+        "end": "04:00"
+      }
+	]
   },
   {
     "name": "Sunday",

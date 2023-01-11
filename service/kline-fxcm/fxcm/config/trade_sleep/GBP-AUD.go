@@ -57,20 +57,25 @@ const GBP_AUD = `
     "TradingTime": [
       {
         "start": "00:00",
+        "end": "04:00"
+      }
+	],
+    "SleepTime": [
+      {
+        "start": "04:00",
         "end": "23:59"
       }
-    ],
-    "SleepTime": []
+	]
   },
   {
     "name": "Sunday",
-    "TradingTime": [
+    "TradingTime": [],
+    "SleepTime": [
       {
         "start": "00:00",
         "end": "23:59"
       }
-    ],
-    "SleepTime": []
+    ]
   }
 ]
 `
