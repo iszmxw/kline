@@ -143,6 +143,7 @@ func SocketHuoBi(info KlineCommon.Info) {
 				Model(models.KlineLog{}).
 				Select("log_id").
 				Where("contract_code", info.ContractCode).
+				Where("ts", SystemTs).
 				Where("upstream_ts", UpstreamTs).
 				Where("c_close", data.Tick.Close).
 				Where("kline_source", kconfig.KlineSource).

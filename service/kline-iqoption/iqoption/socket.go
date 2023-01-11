@@ -61,10 +61,11 @@ func SocketIqoption(info KlineCommon.Info) {
 			// 当前数据源匹配就入库
 			if response.KlineSource(info.ContractCode) == config.KlineSource {
 				var KlineData models.KlineLog
-				err = mysql.DB.
+				err = mysql.DB.Debug().
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", info.ContractCode).
+					Where("ts", SystemTs).
 					Where("upstream_ts", UpstreamTs).
 					Where("c_close", data.Tick.Close).
 					Where("kline_source", config.KlineSource).
@@ -74,6 +75,7 @@ func SocketIqoption(info KlineCommon.Info) {
 				}
 				logger.Info("0002"+data.Ch, KlineData)
 				if KlineData.LogId > 0 {
+					logger.Info("0004", "已存在")
 					return
 				}
 				lineLogRes := LogData(resp, info.ContractCode, SystemTs, UpstreamTs)
