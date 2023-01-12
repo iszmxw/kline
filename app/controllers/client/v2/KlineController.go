@@ -632,7 +632,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		}
 		// 记录日志
 		if config.GetString("app.env") != "company_pro" {
-			logger.Info(WsIndex)
+			//logger.Info(WsIndex)
 		}
 		marshal, err := json.Marshal(pushData)
 		if err != nil {
@@ -840,7 +840,7 @@ func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId strin
 	key := fmt.Sprintf("Client:Popup:%v", AppUserId)
 	for !ws.IsClose {
 		push := redis.Client.RPop(key)
-		logger.Info(key)
+		//logger.Info(key)
 		if len(push) == 0 {
 			time.Sleep(2 * time.Second)
 			continue
