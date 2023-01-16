@@ -221,6 +221,18 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 	currentTime := time.Now()
 	startTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 0, 0, 0, 0, currentTime.Location()).Unix()
 	HeartBeatingKey := fmt.Sprintf("StatisticsHeartBeatingKey:%v", socketId)
+
+	SubKey := fmt.Sprintf("PushStatistics:%v:socket_request", socketId)
+	SubNation, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的国家
+	if SubNation == SubBody.Nation {         // 当前订阅的国家已存在
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","data":"please no repeat sub"}`))
+		ws.Mux.Unlock()
+		logger.Error(errors.New(fmt.Sprintf("当前订阅的国家{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", SubNation, socketId)))
+		return
+	}
+	_, _ = redis.Client.Add(SubKey, SubBody.Nation, 60*60*4) // 当前请求正在订阅的资产，4小时失效
+
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		if wss_heart_beating.IsDie(HeartBeatingKey) {
@@ -239,6 +251,13 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 		var min int
 		var max int
 		rand.Seed(time.Now().UnixNano())
+		HisSubNation, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的国家
+		if len(HisSubNation) > 0 {
+			if HisSubNation != SubBody.Nation { // 关闭释放掉历史的订阅
+				logger.Error(errors.New(fmt.Sprintf("国家【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", HisSubNation, SubBody.Nation, socketId)))
+				goto END
+			}
+		}
 		if strings.EqualFold(SubBody.Nation, "Indonesia") {
 			min = 4000
 			max = 7000
@@ -272,6 +291,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 			}
 		}
 		result["tradeAmount"] = tradeAmount // 最终交易数量
+		result["nation"] = SubBody.Nation   // 国家
 		// 查询用户未读消息，展示小红点
 		marshal, err := json.Marshal(gin.H{
 			"id":   "01",
