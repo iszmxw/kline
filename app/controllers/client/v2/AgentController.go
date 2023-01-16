@@ -243,17 +243,13 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 			min = 4000
 			max = 7000
 			randTradeAmount := int64(rand.Intn(max-min) + min)
-			num, err := redis.Client.Get(IndonesiaKeyTradeAmount)
-			if err != nil {
-				logger.Error(err)
-				return
-			}
+			num, _ := redis.Client.Get(IndonesiaKeyTradeAmount)
 			if len(num) == 0 {
 				tradeAmount = randTradeAmount
 			} else {
 				tradeAmount = randTradeAmount + helpers.StringToInt64(num)
 			}
-			_, err = redis.Client.Add(IndonesiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
+			_, err := redis.Client.Add(IndonesiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
 			if err != nil {
 				logger.Error(err)
 				return
