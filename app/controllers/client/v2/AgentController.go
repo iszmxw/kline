@@ -276,7 +276,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 		}
 		if strings.EqualFold(SubBody.Nation, "India") {
 			min = 500
-			max = 8000
+			max = 800
 			randTradeAmount := int64(rand.Intn(max-min) + min)
 			num, _ := redis.Client.Get(IndiaKeyTradeAmount)
 			if len(num) == 0 {
