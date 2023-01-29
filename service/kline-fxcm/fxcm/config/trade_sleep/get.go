@@ -33,6 +33,9 @@ func GetTimeIsSleep(ContractCode string) bool {
 	case "GBP-AUD":
 		config = GBP_AUD
 		break
+	case "GBP-USD":
+		config = GBP_USD
+		break
 	case "GOLD":
 		config = GOLD
 		break
