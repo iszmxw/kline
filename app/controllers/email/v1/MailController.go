@@ -11,6 +11,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/validate"
+	"goapi/service/binary-email/common"
 	"goapi/service/binary-email/config"
 	"goapi/service/binary-email/queue"
 	"time"
@@ -59,7 +60,6 @@ func (h *MailController) QueryMargin(c *gin.Context) {
 func (h *MailController) SendOneEmail(c *gin.Context) {
 	var params requests.SendOneEmail
 	var sendData email.Params
-	var SystemEmailSendLog models.SystemEmailSendLog
 	var SendTotal response.SendTotal
 	_ = c.Bind(&params)
 	// 数据验证
@@ -112,6 +112,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	err = email.SendOneEmail(sendData)
 	if err != nil {
 		// 统计失败率
+		common.CreateSystemEmailSendLog(params, SystemEmailRoutingNode.AvailableNumber, 0, err.Error())
 		go queue.StatisticsEmail(params.MailAccount, "fail")
 		echo.Error(c, "Failed", err.Error())
 		return
@@ -124,23 +125,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	if err != nil {
 		logger.Error(err)
 	}
-	// 添加操作记录
-	SystemEmailSendLog.SendingMailbox = params.MailAccount
-	SystemEmailSendLog.SendTotal = 1
-	SystemEmailSendLog.AvailableNumber = AvailableNumber // 剩余可用条数
-	SystemEmailSendLog.CreatDate = time.Now()
-	SystemEmailSendLog.UpdateDate = time.Now()
-	SystemEmailSendLog.Creator = "GoMail"
-	SystemEmailSendLog.Updater = "GoMail"
-	if len([]rune(params.MessageContent)) >= 150 {
-		SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
-	} else {
-		SystemEmailSendLog.Remarks = params.MessageContent
-	}
-	err = mysql.DB.Model(models.SystemEmailSendLog{}).Create(&SystemEmailSendLog).Error
-	if err != nil {
-		logger.Error(err)
-	}
+	common.CreateSystemEmailSendLog(params, AvailableNumber, 1, "")
 	echo.Success(c, nil, "SUCCESS")
 }
 
@@ -152,7 +137,6 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 func (h *MailController) SendBatchEmail(c *gin.Context) {
 	var params requests.SendBatchEmail
 	var sendData []string
-	var SystemEmailSendLog models.SystemEmailSendLog
 	var SendTotal response.SendTotal
 	_ = c.Bind(&params)
 	// 数据验证
@@ -217,29 +201,6 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 			echo.Error(c, "Failed", err.Error())
 			return
 		}
-	}
-	// 剩余可用条数
-	AvailableNumber := SystemEmailRoutingNode.AvailableNumber - len(params.ReceiveEmail)
-	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("id", SystemEmailRoutingNode.Id).Update("available_number", AvailableNumber).Error
-	if err != nil {
-		logger.Error(err)
-	}
-	// 添加操作记录
-	SystemEmailSendLog.SendingMailbox = params.MailAccount
-	SystemEmailSendLog.SendTotal = len(params.ReceiveEmail)
-	SystemEmailSendLog.AvailableNumber = AvailableNumber // 剩余可用条数
-	SystemEmailSendLog.CreatDate = time.Now()
-	SystemEmailSendLog.UpdateDate = time.Now()
-	SystemEmailSendLog.Creator = "GoMail"
-	SystemEmailSendLog.Updater = "GoMail"
-	if len([]rune(params.MessageContent)) >= 150 {
-		SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
-	} else {
-		SystemEmailSendLog.Remarks = params.MessageContent
-	}
-	err = mysql.DB.Model(models.SystemEmailSendLog{}).Create(&SystemEmailSendLog).Error
-	if err != nil {
-		logger.Error(err)
 	}
 	echo.Success(c, nil, "SUCCESS")
 }
