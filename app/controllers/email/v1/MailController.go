@@ -3,6 +3,9 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/mapstructure"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
@@ -14,11 +17,6 @@ import (
 	"goapi/service/binary-email/common"
 	"goapi/service/binary-email/config"
 	"goapi/service/binary-email/queue"
-	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
-	cmap "github.com/orcaman/concurrent-map"
 )
 
 // k线图服务
@@ -211,26 +209,10 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 // MailController
 
 func (h *MailController) ResetMargin(c *gin.Context) {
-	err := mysql.DB.Model(models.SystemEmailPartnerConfigSet{}).Where("1=1").Updates(map[string]interface{}{
-		"max_number":  300,
-		"valid":       1,
-		"update_date": time.Now(),
-		"updater":     "GoMail",
-	}).Error
-	if err != nil {
-		echo.Error(c, "Failed", err.Error())
-		return
-	}
-	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("1=1").Updates(map[string]interface{}{
-		"available_number": 300,
-		"max_number":       300,
-		"valid":            1,
-		"update_date":      time.Now(),
-		"updater":          "GoMail",
-	}).Error
-	if err != nil {
-		echo.Error(c, "Failed", err.Error())
-		return
+	var list []response.SystemEmailRoutingNode
+	mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("valid=1").Find(&list)
+	for _, item := range list {
+		go queue.InitStatisticsEmail(item.Email)
 	}
 	echo.Success(c, nil, "SUCCESS")
 }

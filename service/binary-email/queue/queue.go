@@ -7,6 +7,7 @@ import (
 	goRedis "github.com/go-redis/redis"
 	"goapi/app/models"
 	"goapi/app/requests"
+	conf "goapi/pkg/config"
 	"goapi/pkg/email"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -125,15 +126,51 @@ func StatisticsEmail(email string, t string) {
 	// 获取总次数
 	tNum = redis.Client.Incr(fmt.Sprintf("%v:%v:%v", "statistics", SystemEmailTotal, email))
 	// 计算成功率
-	successRate := float64(sNum) / float64(tNum)
+	if sNum > 0 {
+		successRate := float64(sNum) / float64(tNum)
+		mysql.DB.Debug().Model(models.SystemEmailRoutingNode{}).Where(map[string]interface{}{
+			"email": email,
+		}).Update("rate_success", successRate)
+		redis.Client.ZAdd(fmt.Sprintf("%v:%v:%v", "statistics", SystemEmailSuccessRate, email), goRedis.Z{
+			Score:  successRate,
+			Member: email,
+		})
+	}
+	// 计算失败率
+	if fNum > 0 {
+		failRate := float64(fNum) / float64(tNum)
+		mysql.DB.Debug().Model(models.SystemEmailRoutingNode{}).Where(map[string]interface{}{
+			"email": email,
+		}).Update("rate_fail", failRate)
+		redis.Client.ZAdd(fmt.Sprintf("%v:%v:%v", "statistics", SystemEmailFailRate, email), goRedis.Z{
+			Score:  failRate,
+			Member: email,
+		})
+	}
+}
+
+func InitStatisticsEmail(email string) {
+	// 获取成功次数
+	// 记录成功次数
+	_, _ = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("%v:%v:%v", "statistics", SystemEmailSuccess, email), "0", 0)
+	// 记录失败次数
+	_, _ = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("%v:%v:%v", "statistics", SystemEmailFail, email), "0", 0)
+	// 获取总次数
+	_, _ = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("%v:%v:%v", "statistics", SystemEmailTotal, email), "0", 0)
+	// 成功率
+	mysql.DB.Debug().Model(models.SystemEmailRoutingNode{}).Where(map[string]interface{}{
+		"email": email,
+	}).Update("rate_success", 0)
 	redis.Client.ZAdd(fmt.Sprintf("%v:%v:%v", "statistics", SystemEmailSuccessRate, email), goRedis.Z{
-		Score:  successRate,
+		Score:  0,
 		Member: email,
 	})
-	// 计算失败率
-	failRate := float64(fNum) / float64(tNum)
+	// 失败率
+	mysql.DB.Debug().Model(models.SystemEmailRoutingNode{}).Where(map[string]interface{}{
+		"email": email,
+	}).Update("rate_fail", 0)
 	redis.Client.ZAdd(fmt.Sprintf("%v:%v:%v", "statistics", SystemEmailFailRate, email), goRedis.Z{
-		Score:  failRate,
+		Score:  0,
 		Member: email,
 	})
 }

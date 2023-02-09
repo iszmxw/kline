@@ -12,6 +12,8 @@ type SystemEmailRoutingNode struct {
 	ChannelPort     int       `json:"channel_port"`     //渠道端口号
 	AvailableNumber int       `json:"available_number"` //剩余可用条数
 	MaxNumber       int       `json:"max_number"`       //每日最多使用条数
+	RateSuccess     float64   `json:"rate_success"`     //成功率
+	RateFail        float64   `json:"rate_fail"`        //失败率
 	Sort            uint      `json:"sort"`             //优先排序
 	Valid           uint      `json:"valid"`            //有效状态 1有效 0失效
 	CreatDate       time.Time `json:"creat_date"`       //创建时间
