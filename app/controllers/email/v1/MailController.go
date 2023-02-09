@@ -74,6 +74,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 		echo.Error(c, "ParamsError", err.Error())
 		return
 	}
+	params.MailAccount = SystemEmailRoutingNode.Email
 	if SystemEmailRoutingNode.AvailableNumber <= 0 {
 		echo.Error(c, "Failed", fmt.Sprintf("%v 剩余可用条数为 %v", params.MailAccount, SystemEmailRoutingNode.AvailableNumber))
 		return
