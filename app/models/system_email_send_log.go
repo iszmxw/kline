@@ -5,6 +5,7 @@ import "time"
 type SystemEmailSendLog struct {
 	Id              int64     `json:"id"`               //邮箱发送记录表ID
 	SendingMailbox  string    `json:"sending_mailbox"`  //发件邮箱账号
+	ReceiveEmail    string    `json:"receive_email"`    //收件箱账号
 	SendTotal       int       `json:"send_total"`       //发送数量
 	AvailableNumber int       `json:"available_number"` //剩余可用条数
 	Status          int       `json:"status"`           //发送状态：1成功 0失败

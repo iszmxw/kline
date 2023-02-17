@@ -13,6 +13,7 @@ import (
 func CreateSystemEmailSendLog(params requests.SendOneEmail, AvailableNumber int, Status int, ErrMsg string) {
 	var SystemEmailSendLog models.SystemEmailSendLog
 	SystemEmailSendLog.SendingMailbox = params.MailAccount
+	SystemEmailSendLog.ReceiveEmail = params.ReceiveEmail
 	SystemEmailSendLog.SendTotal = 1
 	SystemEmailSendLog.AvailableNumber = AvailableNumber // 剩余可用条数
 	SystemEmailSendLog.CreatDate = time.Now()

@@ -42,6 +42,11 @@ func Error(c *gin.Context, code string, lastMsg string) {
 
 // Success  错误返回封装
 func Success(c *gin.Context, result interface{}, msg string) {
-	logger.Logger.WithOptions(zap.AddCallerSkip(1)).Info("成功返回", zap.Any("返回数据", result))
+	var logInfo []zapcore.Field
+	if len(logger.RequestId) > 0 {
+		logInfo = append(logInfo, zap.Any("RequestId", logger.RequestId))
+	}
+	logInfo = append(logInfo, zap.Any("返回数据", result))
+	logger.Logger.WithOptions(zap.AddCallerSkip(1)).Info("成功返回", logInfo...)
 	Rjson(c, result, msg, 1)
 }
