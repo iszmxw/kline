@@ -45,6 +45,7 @@ func SocketIqoption(info KlineCommon.Info) {
 			logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
 			if TimeDiff >= 30*1000 {
 				// 时差大于30秒直接不存储，认为数据源不健康
+				logger.Info("时差大于30秒直接不存储，认为数据源不健康")
 				return
 			}
 			data := RedisData(SystemTs, UpstreamTs, resp)

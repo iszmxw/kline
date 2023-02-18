@@ -1,7 +1,6 @@
 package kline
 
 import (
-	"encoding/json"
 	"fmt"
 	"goapi/app/models"
 	"goapi/app/response"
@@ -69,15 +68,10 @@ func TickerCheckTodaySleep(isTicker bool) {
 			// 检测是否开始智能启用停止功能，如果开启了才往下执行
 			ok, _ := redis.Client.SelectDbGet(0, "SmartStartStop:"+item.AssetsCode)
 			if !strings.EqualFold("1", ok) {
+				logger.Info("跳过检查", item.AssetsCode)
 				continue
 			}
 			go func(data models.TradingAssets) {
-				var WeekdayTimeDetail []models.WeekdayTimeDetail
-				err := json.Unmarshal([]byte(data.SleepTime), &WeekdayTimeDetail)
-				if err != nil {
-					logger.Error(err)
-					return
-				}
 				// 检查当前数据源健康状况，只查询redis里面的，不健康的就进行置灰休市处理
 				status := GetSourceStatus(response.KlineSource(data.AssetsCode), data.AssetsCode)
 				if 1 != status {
