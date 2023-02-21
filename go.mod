@@ -3,7 +3,7 @@ module goapi
 go 1.17
 
 require (
-	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
+	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d73941
 	github.com/forgoer/openssl v1.4.0
 	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-gonic/gin v1.8.1
@@ -64,7 +64,7 @@ require (
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
