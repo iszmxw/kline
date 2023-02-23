@@ -1,10 +1,11 @@
 package bootstrap
 
 import (
-	v1 "goapi/app/middlewares/v1"
+	"goapi/app/middlewares/common"
 	"goapi/routes"
 	"goapi/routes/client_v1"
 	"goapi/routes/client_v2"
+	"goapi/routes/client_v3"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,8 +15,8 @@ import (
 func SetupRoute() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-	router.Use(v1.TraceLogger()) // 日志追踪
-	router.Use(v1.Cors())        // 跨域
+	router.Use(common.TraceLogger()) // 日志追踪
+	router.Use(common.Cors())        // 跨域
 	router.NoRoute(NoResponse)
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
@@ -29,6 +30,7 @@ func SetupRoute() *gin.Engine {
 	// 二元 client 接口
 	client_v1.RegisterClientRoutes(router.Group("/"))
 	client_v2.RegisterClientRoutes(router.Group("/"))
+	client_v3.RegisterClientRoutes(router.Group("/"))
 	return router
 }
 
@@ -36,8 +38,8 @@ func SetupRoute() *gin.Engine {
 func SetupRouteWeb() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-	router.Use(v1.TraceLogger()) // 日志追踪
-	router.Use(v1.Cors())        // 跨域
+	router.Use(common.TraceLogger()) // 日志追踪
+	router.Use(common.Cors())        // 跨域
 	router.NoRoute(NoResponse)
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
@@ -52,8 +54,8 @@ func SetupRouteWeb() *gin.Engine {
 func SetupRouteEmail() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-	router.Use(v1.TraceLogger()) // 日志追踪
-	router.Use(v1.Cors())        // 跨域
+	router.Use(common.TraceLogger()) // 日志追踪
+	router.Use(common.Cors())        // 跨域
 	router.NoRoute(NoResponse)
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
