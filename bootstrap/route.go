@@ -3,6 +3,8 @@ package bootstrap
 import (
 	v1 "goapi/app/middlewares/v1"
 	"goapi/routes"
+	"goapi/routes/client_v1"
+	"goapi/routes/client_v2"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +27,8 @@ func SetupRoute() *gin.Engine {
 		//}
 	})
 	// 二元 client 接口
-	routes.RegisterClientRoutes(router.Group("/"))
+	client_v1.RegisterClientRoutes(router.Group("/"))
+	client_v2.RegisterClientRoutes(router.Group("/"))
 	return router
 }
 
