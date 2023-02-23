@@ -110,6 +110,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go PushPopup(socketId, mt, ws, AppUserId)
 			}
 			break
+		case strings.EqualFold(SubStruct.Id, "07"): // 下单接口
+			{
+				// 开启协诚处理 弹窗通知
+				go SubmitTrade(socketId, mt, ws, AppUserId)
+			}
+			break
 		default:
 			{
 				// 开启协诚处理推送消息
@@ -829,6 +835,57 @@ STOP:
 // 弹窗通知
 
 func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId string) {
+	logger.RequestId = socketId
+	if len(AppUserId) == 0 {
+		ws.Mux.Lock()
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"PushPopup no sub"}`))
+		ws.Mux.Unlock()
+		logger.Error(errors.New("用户ID为空"))
+		return
+	}
+	key := fmt.Sprintf("Client:Popup:%v", AppUserId)
+	for !ws.IsClose {
+		push := redis.Client.RPop(key)
+		//logger.Info(key)
+		if len(push) == 0 {
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		var popData response.PopupMsg
+		PopErr := json.Unmarshal([]byte(push), &popData)
+		if PopErr != nil {
+			logger.Error(PopErr)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		marshal, err := json.Marshal(gin.H{
+			"id":   "06",
+			"data": popData,
+		})
+		if err != nil {
+			logger.Error(err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		// 推送消息通知前端开奖结果
+		ws.Mux.Lock()
+		err = ws.Conn.WriteMessage(messageType, marshal)
+		ws.Mux.Unlock()
+		if err != nil {
+			logger.Error(err)
+			goto STOP
+		}
+		logger.Info(string(marshal))
+		time.Sleep(35 * time.Second) // 每隔35秒来一次推送
+	}
+STOP:
+	logger.Error(errors.New("PushPopup关闭Socket"))
+	wss.WsClose(ws)
+}
+
+// 提交下单
+
+func SubmitTrade(socketId string, messageType int, ws *wss.WsConn, AppUserId string) {
 	logger.RequestId = socketId
 	if len(AppUserId) == 0 {
 		ws.Mux.Lock()
