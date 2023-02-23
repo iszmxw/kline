@@ -8,3 +8,4 @@ pprof*.gz
 apiService*
 huobiService*
 liveoddsService*
+.DS_Store
