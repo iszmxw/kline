@@ -20,14 +20,8 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			// k线图服务
 			trade := V3Route.Group("/trade")
 			{
-				// 【C07】 历史行情-mysql读取
-				trade.Any("/getHisKlineList.json", ClientV3Group.KlineController.HistoryHandler)
-				// 【C08】 历史行情-es读取
-				trade.Any("/getEsHisKlineList.json", ClientV3Group.KlineController.HistoryEsHandler)
 				// 【C09】 wsIndex.json
 				trade.Any("/wsIndex.json", ClientV3Group.KlineController.WsIndexHandler)
-				// 【C10】 wsReturnRate.json
-				trade.Any("/wsReturnRate.json", ClientV3Group.KlineController.WsReturnRateHandler)
 			}
 
 			// 通知

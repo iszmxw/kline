@@ -1,7 +1,6 @@
 package v2
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,25 +8,21 @@ import (
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/pkg/config"
-	"goapi/pkg/esdk"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	NoticeMail "goapi/pkg/notice/mail"
-	"goapi/pkg/output"
 	"goapi/pkg/redis"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
 	wss_heart_beating "goapi/pkg/wss-heart-beating"
-	"reflect"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
-	"github.com/olivere/elastic"
 	cmap "github.com/orcaman/concurrent-map"
 )
 
@@ -67,6 +62,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			logger.Error(SubErr)
 			goto END
 		}
+		subInfo := SubStruct.Sub
 		switch true {
 		case ws.IsClose:
 			{
@@ -76,12 +72,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			{
 				// 开启协诚处理推送历史记录
 				go PushHistory(socketId, mt, ws, SubStruct, c)
-			}
-			break
-		case strings.EqualFold(SubStruct.Id, "05"):
-			{
-				// 开启协诚处理推送历史记录
-				go PushZipHistory(socketId, mt, ws, SubStruct, c)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "03"):
@@ -104,6 +94,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go PushNotice(socketId, mt, ws, SubStruct.Sub)
 			}
 			break
+		case strings.EqualFold(SubStruct.Id, "05"):
+			{
+				// 开启协诚处理推送历史记录
+				go PushZipHistory(socketId, mt, ws, SubStruct, c)
+			}
+			break
 		case strings.EqualFold(SubStruct.Id, "06"): // 弹窗通知
 			{
 				// 开启协诚处理 弹窗通知
@@ -113,7 +109,19 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(SubStruct.Id, "07"): // 下单接口
 			{
 				// 开启协诚处理 弹窗通知
-				go SubmitTrade(socketId, mt, ws, AppUserId)
+				go SubmitTrade(socketId, mt, ws, subInfo)
+			}
+			break
+		case strings.EqualFold(SubStruct.Id, "08"):
+			{
+				// 开启协诚处理推送余额
+				go PushUserInfo(socketId, mt, ws, subInfo)
+			}
+			break
+		case strings.EqualFold(SubStruct.Id, "09"):
+			{
+				// 开启协诚处理推送费率
+				go PushRate(socketId, mt, ws, subInfo)
 			}
 			break
 		default:
@@ -124,77 +132,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		}
 		time.Sleep(time.Millisecond * 10) // 在接受的white循环里面停顿10毫秒
-	}
-END:
-	wss.WsClose(ws)
-	logger.Info("socket被关闭，本次链接结束")
-}
-
-// WsReturnRateHandler socket 负责转发数据库的 rate
-// ws://127.0.0.1:8080/v1/api/kline/ws_return_rate {"sub":"market.ETH-USD.index.1min"}
-func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
-	ws, err := wss.GetSocket(c)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	socketId := c.GetHeader("Sec-WebSocket-Key")
-	logger.RequestId = socketId
-	HeartBeatingKey := fmt.Sprintf("ws_return_rate:%v:heart_beating_key", socketId)
-	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
-	// 为了释放for死循环的资源
-	for !ws.IsClose {
-		// 读取用户客户端ws中订阅的 topic
-		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
-		if ReadMessageErr != nil {
-			logger.Error(ReadMessageErr)
-			// 跳出for关闭后面的读取
-			goto END
-		}
-		//对数据进行切割，读取参数
-		//如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
-		var SubStruct requests.Sub
-		SubErr := json.Unmarshal(message, &SubStruct)
-		if SubErr != nil {
-			logger.Error(SubErr)
-			goto END
-		}
-		subInfo := SubStruct.Sub
-		// 24 小时内一个长连接禁止重复订阅相同的 topic
-		// 链接已关闭
-		if ws.IsClose {
-			goto END
-		}
-		switch true {
-		case strings.EqualFold(SubStruct.Id, "01"):
-			{
-				// 开启协诚处理推送费率
-				go PushRate(socketId, mt, ws, subInfo)
-			}
-			break
-		case strings.EqualFold(SubStruct.Id, "02"):
-			{
-				// 开启协诚处理推送余额
-				go PushUserInfo(socketId, mt, ws, subInfo)
-			}
-			break
-		case strings.EqualFold(SubStruct.Id, "03"):
-			{
-				// 处理心跳数据
-				currentTime := time.Now().Format("2006-01-02 15:04:05")
-				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
-				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
-				ws.Mux.Unlock()
-				if WriteMessageErr != nil {
-					logger.Error(WriteMessageErr)
-					wss.WsClose(ws)
-				}
-			}
-			break
-		default:
-			break
-		}
 	}
 END:
 	wss.WsClose(ws)
@@ -378,6 +315,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 }
 
 // 推送 zipSocket 消息
+
 func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
 	timeStart := time.Now().UnixMilli()
 	logger.RequestId = socketId
@@ -885,53 +823,16 @@ STOP:
 
 // 提交下单
 
-func SubmitTrade(socketId string, messageType int, ws *wss.WsConn, AppUserId string) {
+func SubmitTrade(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
 	logger.RequestId = socketId
-	if len(AppUserId) == 0 {
-		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"PushPopup no sub"}`))
-		ws.Mux.Unlock()
-		logger.Error(errors.New("用户ID为空"))
+	// 下单参数
+	var SubmitTradeParams requests.SubmitTradeParams
+	err := json.Unmarshal([]byte(subInfo), &SubmitTradeParams)
+	if err != nil {
+		logger.Error(err)
 		return
 	}
-	key := fmt.Sprintf("Client:Popup:%v", AppUserId)
-	for !ws.IsClose {
-		push := redis.Client.RPop(key)
-		//logger.Info(key)
-		if len(push) == 0 {
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		var popData response.PopupMsg
-		PopErr := json.Unmarshal([]byte(push), &popData)
-		if PopErr != nil {
-			logger.Error(PopErr)
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		marshal, err := json.Marshal(gin.H{
-			"id":   "06",
-			"data": popData,
-		})
-		if err != nil {
-			logger.Error(err)
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		// 推送消息通知前端开奖结果
-		ws.Mux.Lock()
-		err = ws.Conn.WriteMessage(messageType, marshal)
-		ws.Mux.Unlock()
-		if err != nil {
-			logger.Error(err)
-			goto STOP
-		}
-		logger.Info(string(marshal))
-		time.Sleep(35 * time.Second) // 每隔35秒来一次推送
-	}
-STOP:
-	logger.Error(errors.New("PushPopup关闭Socket"))
-	wss.WsClose(ws)
+
 }
 
 // 推送Rate socket消息
@@ -1140,171 +1041,4 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 	}
 END:
 	logger.Info("已经跳出协诚的循环推送")
-}
-
-// HistoryHandler
-// 历史行情 mysql 查询
-func (h *KlineController) HistoryHandler(c *gin.Context) {
-	//beginDate := time.Now().Format("2006-01-02 15:04:05")
-	symbol := c.Query("symbol")
-	period := c.Query("period")
-	beginDate := c.Query("beginDate")
-	endDate := c.Query("endDate")
-	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
-		output.Rjson(c, nil, "beginDate 起始交易日期必填", 0)
-		return
-	}
-	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
-		logger.Error(errors.New("越界查询"))
-		output.Rjson(c, nil, "beginDate error", 0)
-		return
-	}
-	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
-		output.Rjson(c, nil, "endDate 截止交易日期必填", 0)
-		return
-	}
-	tips := fmt.Sprintf(
-		"当前系统时间为【%v】 查询范围从【%v】，到【%v】",
-		time.Now().Format("2006-01-02 15:04:05"),
-		time.Unix(0, helpers.StringToInt64(beginDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
-		time.Unix(0, helpers.StringToInt64(endDate)*int64(time.Millisecond)).Format("2006-01-02 15:04:05"),
-	)
-	logger.Info(tips)
-	if len(symbol) <= 0 || len(period) <= 0 {
-		symbol = "BTC-USD"
-		period = "1min"
-	}
-	klineSource := response.KlineSource(symbol)
-	// 没有读取到 klineSource
-	if len(klineSource) == 0 {
-		logger.Error(errors.New("没有读取到 klineSource"))
-		output.Rjson(c, nil, "没有读取到 klineSource", 0)
-		return
-	}
-	var data []response.KlineLog
-	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
-	DB := mysql.DB.Debug()
-	// 一次取出历史记录最新三百条
-	KlineDB := DB.Model(models.KlineLog{}).
-		Where("ch", ch).
-		Where("ts >= ?", beginDate).
-		Where("ts <= ?", endDate).
-		Order("ts desc")
-	var Count int64 // 查询总条数
-	KlineDB.Count(&Count)
-	if Count > 3000 {
-		Count = 3000
-	}
-	err := KlineDB.Limit(int(Count)).Find(&data).Error
-	if err != nil {
-		logger.Error(err)
-		output.Rjson(c, nil, "no data", 0)
-		return
-	}
-	// 侦测到数据小于 150 条的时候，发送邮件预警
-	if len(data) <= 150 {
-		// 警告，延迟过高
-		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", klineSource, symbol)
-		_, _ = redis.Client.SelectDbAdd(15, KeyStatus, 4, 0)
-		time.Sleep(time.Second * 5) // 休息5秒
-		NoticeMail.Notice("msgDataAbnormal", map[string]interface{}{
-			"c":    c,
-			"tips": tips,
-		})
-	}
-
-	// 3 分钟内检测一次资产市场状态
-	if !redis.Client.CheckExist("TickerCheckTodaySleep") {
-		_, _ = redis.Client.Add("TickerCheckTodaySleep", ch, 3*60) // 3 分钟内不允许重复检测
-		kline.TickerCheckTodaySleep(false)                         // 检测一次资产市场状态
-	}
-
-	output.Rjson(c, gin.H{
-		"HistKlineLogs": data,
-		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
-		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
-		"klineSource":   klineSource,
-		"totals":        Count,
-		"contractCode":  symbol,
-	}, "success", 1)
-}
-
-// HistoryEsHandler
-// 历史行情Es查询
-// http://127.0.0.1:8080/v1/api/kline/history_es?symbol=ETH-USD&period=1min&beginDate=1648540103000&endDate=1648541003000
-func (h *KlineController) HistoryEsHandler(c *gin.Context) {
-	var (
-		resp    models.KlineLog   // es数据解析结构体
-		respArr []models.KlineLog // 数组重装
-		Count   = 3000            // 查询总条数
-	)
-	symbol := c.Query("symbol")
-	period := c.Query("period")
-	beginDate := c.Query("beginDate")
-	endDate := c.Query("endDate")
-	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
-		output.Rjson(c, nil, "beginDate 起始交易日期必填", 0)
-		return
-	}
-	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
-		output.Rjson(c, nil, "endDate 截止交易日期必填", 0)
-		return
-	}
-	if len(symbol) <= 0 || len(period) <= 0 {
-		symbol = "BTC-USD"
-		period = "1min"
-	}
-	klineSource := response.KlineSource(symbol)
-	// 没有读取到 klineSource
-	if len(klineSource) == 0 {
-		logger.Error(errors.New("没有读取到 klineSource"))
-		output.Rjson(c, nil, "没有读取到 klineSource", 0)
-		return
-	}
-	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), period)
-	// 组合查询条件
-	boolQuery := elastic.NewBoolQuery()
-	boolQuery.Filter(
-		elastic.NewRangeQuery("ts").Gte(beginDate).Lte(endDate),
-		elastic.NewQueryStringQuery(fmt.Sprintf("*%s*", ch)))
-	esClient, err := esdk.Client()
-	if err != nil {
-		logger.Error(err)
-		output.Rjson(c, nil, "系统错误", 0)
-		return
-	}
-	searchResult, err := esClient.Search().
-		Index("kline_log").      // 设置索引名
-		Query(boolQuery).        // 设置查询条件
-		Sort("ts", false).       // 设置排序字段，根据 ts 字段升序排序，第二个参数false表示逆序
-		From(0).                 // 设置分页参数 - 起始偏移量，从第0行记录开始
-		Size(Count).             // 设置分页参数 - 每页大小
-		Pretty(true).            // 查询结果返回可读性较好的JSON格式
-		Do(context.Background()) // 执行请求
-	if err != nil {
-		logger.Error(err)
-	}
-	logger.Info(fmt.Sprintf("查询消耗时间 %d ms, 结果总数: %d\n", searchResult.TookInMillis, searchResult.TotalHits()))
-	if searchResult.TotalHits() > 0 {
-		Count = int(searchResult.TotalHits())
-		// 查询结果不为空，则遍历结果
-		// 通过Each方法，将es结果的json结构转换成struct对象
-		for _, item := range searchResult.Each(reflect.TypeOf(resp)) {
-			// 转换成Article对象
-			if t, ok := item.(models.KlineLog); ok {
-				respArr = append(respArr, t)
-			}
-		}
-	}
-
-	// 监控K线数据时间段的数据波动，实时调整赔率
-
-	output.Rjson(c, gin.H{
-		"HistKlineLogs": respArr,
-		"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
-		"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
-		"klineSource":   klineSource,
-		"totals":        Count,
-		"contractCode":  symbol,
-	}, "success", 1)
 }
