@@ -43,6 +43,11 @@ func SocketIqoption(info KlineCommon.Info) {
 			TimeDiff := SystemTs - UpstreamTs
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
+			if TimeDiff >= 30*1000 {
+				// 时差大于30秒直接不存储，认为数据源不健康
+				logger.Info("时差大于30秒直接不存储，认为数据源不健康")
+				return
+			}
 			data := RedisData(SystemTs, UpstreamTs, resp)
 			data.Ch = fmt.Sprintf("market.%v.index.1min", info.ContractCode)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]

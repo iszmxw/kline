@@ -3,6 +3,9 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/mapstructure"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
@@ -11,13 +14,9 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/validate"
+	"goapi/service/binary-email/common"
 	"goapi/service/binary-email/config"
 	"goapi/service/binary-email/queue"
-	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
-	cmap "github.com/orcaman/concurrent-map"
 )
 
 // k线图服务
@@ -59,7 +58,6 @@ func (h *MailController) QueryMargin(c *gin.Context) {
 func (h *MailController) SendOneEmail(c *gin.Context) {
 	var params requests.SendOneEmail
 	var sendData email.Params
-	var SystemEmailSendLog models.SystemEmailSendLog
 	var SendTotal response.SendTotal
 	_ = c.Bind(&params)
 	// 数据验证
@@ -76,6 +74,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 		echo.Error(c, "ParamsError", err.Error())
 		return
 	}
+	params.MailAccount = SystemEmailRoutingNode.Email
 	if SystemEmailRoutingNode.AvailableNumber <= 0 {
 		echo.Error(c, "Failed", fmt.Sprintf("%v 剩余可用条数为 %v", params.MailAccount, SystemEmailRoutingNode.AvailableNumber))
 		return
@@ -112,6 +111,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	err = email.SendOneEmail(sendData)
 	if err != nil {
 		// 统计失败率
+		common.CreateSystemEmailSendLog(params, SystemEmailRoutingNode.AvailableNumber, 0, err.Error())
 		go queue.StatisticsEmail(params.MailAccount, "fail")
 		echo.Error(c, "Failed", err.Error())
 		return
@@ -124,23 +124,7 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 	if err != nil {
 		logger.Error(err)
 	}
-	// 添加操作记录
-	SystemEmailSendLog.SendingMailbox = params.MailAccount
-	SystemEmailSendLog.SendTotal = 1
-	SystemEmailSendLog.AvailableNumber = AvailableNumber // 剩余可用条数
-	SystemEmailSendLog.CreatDate = time.Now()
-	SystemEmailSendLog.UpdateDate = time.Now()
-	SystemEmailSendLog.Creator = "GoMail"
-	SystemEmailSendLog.Updater = "GoMail"
-	if len([]rune(params.MessageContent)) >= 150 {
-		SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
-	} else {
-		SystemEmailSendLog.Remarks = params.MessageContent
-	}
-	err = mysql.DB.Model(models.SystemEmailSendLog{}).Create(&SystemEmailSendLog).Error
-	if err != nil {
-		logger.Error(err)
-	}
+	common.CreateSystemEmailSendLog(params, AvailableNumber, 1, "")
 	echo.Success(c, nil, "SUCCESS")
 }
 
@@ -152,7 +136,6 @@ func (h *MailController) SendOneEmail(c *gin.Context) {
 func (h *MailController) SendBatchEmail(c *gin.Context) {
 	var params requests.SendBatchEmail
 	var sendData []string
-	var SystemEmailSendLog models.SystemEmailSendLog
 	var SendTotal response.SendTotal
 	_ = c.Bind(&params)
 	// 数据验证
@@ -218,29 +201,6 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 			return
 		}
 	}
-	// 剩余可用条数
-	AvailableNumber := SystemEmailRoutingNode.AvailableNumber - len(params.ReceiveEmail)
-	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("id", SystemEmailRoutingNode.Id).Update("available_number", AvailableNumber).Error
-	if err != nil {
-		logger.Error(err)
-	}
-	// 添加操作记录
-	SystemEmailSendLog.SendingMailbox = params.MailAccount
-	SystemEmailSendLog.SendTotal = len(params.ReceiveEmail)
-	SystemEmailSendLog.AvailableNumber = AvailableNumber // 剩余可用条数
-	SystemEmailSendLog.CreatDate = time.Now()
-	SystemEmailSendLog.UpdateDate = time.Now()
-	SystemEmailSendLog.Creator = "GoMail"
-	SystemEmailSendLog.Updater = "GoMail"
-	if len([]rune(params.MessageContent)) >= 150 {
-		SystemEmailSendLog.Remarks = string([]rune(params.MessageContent)[:150]) // 截取前面150个字符
-	} else {
-		SystemEmailSendLog.Remarks = params.MessageContent
-	}
-	err = mysql.DB.Model(models.SystemEmailSendLog{}).Create(&SystemEmailSendLog).Error
-	if err != nil {
-		logger.Error(err)
-	}
 	echo.Success(c, nil, "SUCCESS")
 }
 
@@ -250,26 +210,10 @@ func (h *MailController) SendBatchEmail(c *gin.Context) {
 // MailController
 
 func (h *MailController) ResetMargin(c *gin.Context) {
-	err := mysql.DB.Model(models.SystemEmailPartnerConfigSet{}).Where("1=1").Updates(map[string]interface{}{
-		"max_number":  300,
-		"valid":       1,
-		"update_date": time.Now(),
-		"updater":     "GoMail",
-	}).Error
-	if err != nil {
-		echo.Error(c, "Failed", err.Error())
-		return
-	}
-	err = mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("1=1").Updates(map[string]interface{}{
-		"available_number": 300,
-		"max_number":       300,
-		"valid":            1,
-		"update_date":      time.Now(),
-		"updater":          "GoMail",
-	}).Error
-	if err != nil {
-		echo.Error(c, "Failed", err.Error())
-		return
+	var list []response.SystemEmailRoutingNode
+	mysql.DB.Model(models.SystemEmailRoutingNode{}).Where("valid=1").Find(&list)
+	for _, item := range list {
+		go queue.InitStatisticsEmail(item.Email)
 	}
 	echo.Success(c, nil, "SUCCESS")
 }

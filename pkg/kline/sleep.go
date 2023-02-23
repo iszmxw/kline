@@ -1,18 +1,19 @@
 package kline
 
 import (
-	"encoding/json"
 	"fmt"
 	"goapi/app/models"
+	"goapi/app/response"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/notice/mail"
-	"goapi/pkg/xtime"
+	"goapi/pkg/redis"
 	tradeSleepFxcm "goapi/service/kline-fxcm/fxcm/config/trade_sleep"
 	tradeSleepHsb "goapi/service/kline-hsb/hsb/config/trade_sleep"
 	tradeSleepIqoption "goapi/service/kline-iqoption/iqoption/config/trade_sleep"
 	tradeSleepOlymptrade "goapi/service/kline-olymptrade/olymptrade/config/trade_sleep"
 	tradeSleepRaceoption "goapi/service/kline-raceoption/raceoption/config/trade_sleep"
+	"strings"
 	"time"
 )
 
@@ -64,18 +65,16 @@ func TickerCheckTodaySleep(isTicker bool) {
 		var TradingAssets []models.TradingAssets
 		DB.Model(models.TradingAssets{}).Where("assets_status != ?", 3).Find(&TradingAssets)
 		for _, item := range TradingAssets {
-			if len(item.SleepTime) == 0 {
+			// 检测是否开始智能启用停止功能，如果开启了才往下执行
+			ok, _ := redis.Client.SelectDbGet(0, "SmartStartStop:"+item.AssetsCode)
+			if !strings.EqualFold("1", ok) {
+				logger.Info("跳过检查", item.AssetsCode)
 				continue
 			}
 			go func(data models.TradingAssets) {
-				var WeekdayTimeDetail []models.WeekdayTimeDetail
-				err := json.Unmarshal([]byte(data.SleepTime), &WeekdayTimeDetail)
-				if err != nil {
-					logger.Error(err)
-					return
-				}
-				result := xtime.CheckTodaySleep(WeekdayTimeDetail)
-				if result {
+				// 检查当前数据源健康状况，只查询redis里面的，不健康的就进行置灰休市处理
+				status := GetSourceStatus(response.KlineSource(data.AssetsCode), data.AssetsCode)
+				if 1 != status {
 					if data.AssetsStatus == 1 {
 						go NoticeMail.Notice("msgAssetSleep", map[string]interface{}{
 							"assets_code": data.AssetsCode,
