@@ -54,8 +54,8 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			// 跳出for关闭后面的读取
 			goto END
 		}
-		//对数据进行切割，读取参数
-		//如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
+		// 对数据进行切割，读取参数
+		// 如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
 		var SubStruct requests.Sub
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
@@ -67,6 +67,11 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case ws.IsClose:
 			{
 				goto END
+			}
+		case strings.EqualFold(SubStruct.Id, "01"):
+			{
+				// 开启协诚处理推送消息
+				go PushMessage(socketId, mt, ws, SubStruct)
 			}
 		case strings.EqualFold(SubStruct.Id, "02"):
 			{
@@ -108,7 +113,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		case strings.EqualFold(SubStruct.Id, "07"): // 下单接口
 			{
-				// 开启协诚处理 弹窗通知
+				// 开启协诚处理 用户下单
 				go SubmitTrade(socketId, mt, ws, subInfo)
 			}
 			break
@@ -125,10 +130,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			}
 			break
 		default:
-			{
-				// 开启协诚处理推送消息
-				go PushMessage(socketId, mt, ws, SubStruct)
-			}
 			break
 		}
 		time.Sleep(time.Millisecond * 10) // 在接受的white循环里面停顿10毫秒
