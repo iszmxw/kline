@@ -48,10 +48,12 @@ func CheckSourceSleep(KlineSource string, ContractCode string) bool {
 func UpdateSleep(Updater, ContractCode, AssetsStatus, IsValid string) {
 	err := mysql.DB.Debug().Model(models.TradingAssets{}).
 		Where("assets_code", ContractCode).
-		Update("assets_status", AssetsStatus). // 资产状态 1正常 2休市 3下架
-		Update("is_valid", IsValid).           // 是否有效 1是 0否
-		Update("updater", Updater).            // 更新人
-		Update("update_date", time.Now()).     // 更新日期
+		Updates(map[string]interface{}{
+			"assets_status": AssetsStatus,
+			"is_valid":      IsValid,
+			"updater":       Updater,
+			"update_date":   time.Now(),
+		}).
 		Error
 	if err != nil {
 		logger.Error(err)

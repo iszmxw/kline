@@ -463,9 +463,11 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 	// 先撤销之前的配置
 	err := DB.Model(TradingAssetsSource).
 		Where("assets_code", params.AssetsCode).
-		Update("is_valid", 0).
-		Update("updater", User.UserNick).
-		Update("update_date", time.Now()).
+		Updates(map[string]interface{}{
+			"is_valid":    0,
+			"updater":     User.UserNick,
+			"update_date": time.Now(),
+		}).
 		Error
 	if err != nil {
 		DB.Rollback()
@@ -476,9 +478,11 @@ func (h *KlineController) SetKlineSourceHandler(c *gin.Context) {
 	err = DB.Model(TradingAssetsSource).
 		Where("assets_code", params.AssetsCode).
 		Where("kline_source", params.KlineSource).
-		Update("is_valid", 1).
-		Update("updater", User.UserNick).
-		Update("update_date", time.Now()).
+		Updates(map[string]interface{}{
+			"is_valid":    1,
+			"updater":     User.UserNick,
+			"update_date": time.Now(),
+		}).
 		Error
 	if err != nil {
 		DB.Rollback()

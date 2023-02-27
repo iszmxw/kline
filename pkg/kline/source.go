@@ -79,9 +79,11 @@ func CheckSwitchSource(CurrentKlineSource, ContractCode string) {
 		// 先撤销之前的配置
 		err := DB.Model(TradingAssetsSource).
 			Where("assets_code", ContractCode).
-			Update("is_valid", 0).
-			Update("updater", "系统自动切换").
-			Update("update_date", time.Now()).
+			Updates(map[string]interface{}{
+				"is_valid":    0,
+				"updater":     "系统自动切换",
+				"update_date": time.Now(),
+			}).
 			Error
 		if err != nil {
 			DB.Rollback()
@@ -91,9 +93,11 @@ func CheckSwitchSource(CurrentKlineSource, ContractCode string) {
 		err = DB.Model(TradingAssetsSource).
 			Where("assets_code", ContractCode).
 			Where("kline_source", AllowSource).
-			Update("is_valid", 1).
-			Update("updater", "系统自动切换").
-			Update("update_date", time.Now()).
+			Updates(map[string]interface{}{
+				"is_valid":    1,
+				"updater":     "系统自动切换",
+				"update_date": time.Now(),
+			}).
 			Error
 		if err != nil {
 			DB.Rollback()
