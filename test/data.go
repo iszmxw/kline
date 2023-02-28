@@ -1,28 +1,17 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	goadjust "goapi/pkg/adjust"
+	"log"
+	"time"
 )
 
 func main() {
-	var data interface{}
-	err := json.Unmarshal([]byte(`[{"d":[{"p":"_BRN","t":1655200595.681,"q":121.282}],"e":1}]`), &data)
+	client := goadjust.New("tiwyto5q38jk", "")
+	resp, err := client.TrackEvent("event_token", string(goadjust.IDFA), "6ce9c0a255c6aa171a715c6be0dd8bf9", time.Now())
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		log.Fatal(err)
 	}
-	if fmt.Sprintf("%T", data) == "[]interface {}" {
-		dataMap := data.([]interface{})[0]
-		if fmt.Sprintf("%T", dataMap) == "map[string]interface {}" {
-			if fmt.Sprintf("%v", dataMap.(map[string]interface{})["e"]) == "1" {
-				array := dataMap.(map[string]interface{})["d"]
-				arrayMap := array.([]interface{})[0].(map[string]interface{})
-				fmt.Println(fmt.Sprintf("%T",arrayMap["t"]))
-			}
-			//if dataMap.(map[string]interface{})["d"] {
-			//
-			//}
-		}
-	}
+	fmt.Println(resp.TrackerName)
 }

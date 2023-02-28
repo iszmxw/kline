@@ -1,6 +1,7 @@
 package response
 
 type AppUser struct {
+	ItemCode          string  `json:"item_code"`                  //item_code
 	AppUserId         string  `json:"app_user_id"`                //app用户表
 	Balance           float64 `json:"balance"`                    //余额
 	VirtualBalance    float64 `json:"virtual_balance"`            //虚拟余额
