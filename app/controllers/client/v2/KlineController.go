@@ -689,7 +689,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 		logger.Error(errors.New("err sub,AssetsCode not right"))
 		return
 	}
-	if len(TradeOrderInfo.TradeBeginTimestamp) == 0 {
+	if TradeOrderInfo.TradeBeginTimestamp <= 0 {
 		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,TradeBeginTimestamp not right"}`))
 		ws.Mux.Unlock()
