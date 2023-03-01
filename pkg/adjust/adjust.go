@@ -8,11 +8,13 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/pkg/config"
+	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 var (
@@ -20,9 +22,23 @@ var (
 	ErrDeviceNotFound = errors.New("device not found")
 )
 
+type EventTokenStrObj struct {
+	Data struct {
+		Register         string `json:"register"`
+		FirstPurchase    string `json:"firstPurchase"`
+		Purchase         string `json:"purchase"`
+		Trade            string `json:"trade"`
+		Withdraw         string `json:"withdraw"`
+		CompleteTutorial string `json:"completeTutorial"`
+		SkipTutorial     string `json:"skipTutorial"`
+		FirstWithdraw    string `json:"firstWithdraw"`
+	} `json:"eventTokenStrObj"`
+}
+
 // Response represents the response from an track request.
 type Response struct {
 	Status       string `json:"status"`
+	Error        string `json:"error"`
 	TrackerToken string `json:"tracker_token"`
 	TrackerName  string `json:"tracker_name"`
 	Network      string `json:"network"`
@@ -38,6 +54,18 @@ type EventParams struct {
 	Email            string `json:"email"`            // 邮箱
 	FlowJsonString   string `json:"flowJsonString"`   // 第三方参数json
 	DeviceBrand      string `json:"deviceBrand"`      // 用户设备品牌
+}
+
+type AdjustParams struct {
+	AppToken      string `json:"appToken"`
+	Authorization string `json:"authorization"`
+	Url           string `json:"url"`
+}
+
+type FlowJson struct {
+	Adid string `json:"adid"`
+	Idfa string `json:"idfa"`
+	Idfv string `json:"idfv"`
 }
 
 func Get(url, authorization string) (resp *Response, err error) {
@@ -76,8 +104,11 @@ func Get(url, authorization string) (resp *Response, err error) {
 
 // 提交 adjust 事件
 
-func submitEvent(eventParams EventParams, nation, partnerCode string) {
+func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
 	params := cmap.New().Items()
+	params["event_name"] = eventParams.EventName
+	params["app_user_id"] = eventParams.AppUserId
+	params["email"] = eventParams.Email
 	if checkSendLog(params) {
 		return
 	}
@@ -94,31 +125,109 @@ func submitEvent(eventParams EventParams, nation, partnerCode string) {
 		"account_code": accountCode,
 		"nation":       nation,
 	}).Find(&collaboratorParams)
-
+	if collaboratorParams.Id <= 0 {
+		logger.Info("参数未配置")
+		return
+	}
+	var systemApiRule models.SystemApiRule
+	mysql.DB.Debug().Model(models.SystemApiRule{}).Where(map[string]interface{}{
+		"is_start":  "1",
+		"rule_code": "SEND_ADJUST_HIDDEN_RULE",
+		"item_code": config.GetString("app.item_code"),
+		"api_code":  accountCode,
+		"nation":    nation,
+	}).Find(&systemApiRule)
+	if systemApiRule.Id <= 0 {
+		logger.Info("参数未配置")
+		return
+	}
+	/**解析adjust配置参数*/
+	var adjustParams AdjustParams
+	err := json.Unmarshal([]byte(collaboratorParams.ParamJson), &adjustParams)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	var ruleJson EventTokenStrObj
+	err = json.Unmarshal([]byte(systemApiRule.RuleJson), &ruleJson)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	eventToken := ruleJson.Data.Trade
 	req := make(url.Values)
-	// Add client fields to request
 	req.Add("s2s", "1")
-	req.Add("app_token", "majbv8e0m8e8")
-	req.Add("event_token", "y0ec7c")
-	req.Add("gps_adid", "482bd535-7fcd-49ea-9678-9b9d15e81737")
-	req.Add("callback_params", "{\"userId\":\"7FF235ACCD4\"}")
-	//req.Add("idfa", "D2CADB5F-410F-4963-AC0C-2A78534BDF1E")
-	u := "https://s2s.adjust.com/event?" + req.Encode()
-	send, err := Get(u, "2dc8c77d0503c9aab03cdeb6ebc5849b")
+	req.Add("app_token", adjustParams.AppToken)
+	req.Add("event_token", eventToken)
+	adid := ""
+	if len(eventParams.EventBindId) == 0 && len(eventParams.FlowJsonString) > 0 {
+		var flowJson FlowJson
+		err = json.Unmarshal([]byte(eventParams.FlowJsonString), &flowJson)
+		if err == nil {
+			if len(flowJson.Adid) > 0 {
+				adid = flowJson.Adid
+				req.Add("adid", flowJson.Adid)
+			}
+			if len(flowJson.Idfa) > 0 {
+				req.Add("idfa", flowJson.Idfa)
+			}
+			if len(flowJson.Idfv) > 0 {
+				req.Add("idfv", flowJson.Idfv)
+			}
+		} else {
+			logger.Error(err)
+		}
+	} else {
+		req.Add("gps_adid", eventParams.EventBindId)
+	}
+	if len(eventParams.AppUserId) > 0 {
+		req.Add("callback_params", fmt.Sprintf(`{"userId":"%s"}`, eventParams.AppUserId))
+	}
+	u := adjustParams.Url + "?" + req.Encode()
+	resp, err := Get(u, adjustParams.Authorization)
 	if err != nil {
 		return
 	}
-	fmt.Println(send)
+	// 保存请求 adjust 结果信息
+	createData := models.AppUserAdjustSendLog{
+		ItemCode:   config.GetString("app.item_code"),
+		AppUserId:  eventParams.AppUserId,
+		EventName:  eventParams.EventName,
+		CreateDate: time.Now(),
+		EventToken: eventToken,
+		AppToken:   adjustParams.AppToken,
+		GpsAdid:    eventParams.EventBindId,
+		Mobile:     eventParams.Mobile,
+		UpdateDate: time.Now(),
+		Email:      eventParams.Email,
+		Adid:       adid,
+		Status:     0,
+	}
+	if len(resp.Status) > 0 {
+		createData.Status = 1
+		createData.ResultMessage = resp.Status
+	} else if len(resp.Error) > 0 {
+		createData.Status = 0
+		createData.ResultMessage = resp.Error
+	}
+	err = mysql.DB.Debug().Model(models.AppUserAdjustSendLog{}).Create(&createData).Error
+	if err != nil {
+		logger.Error(err)
+	}
 }
 
 // 查询用户发送成功记录，有记录返回true
 func checkSendLog(params map[string]interface{}) bool {
 	var count int64
 	where := cmap.New().Items()
-	where["event_name"] = ""
-	where["app_user_id"] = ""
-	where["email"] = ""
-	where["status"] = ""
+	where["event_name"] = params["event_name"]
+	if len(params["app_user_id"].(string)) > 0 {
+		where["app_user_id"] = params["app_user_id"]
+	}
+	if len(params["email"].(string)) > 0 {
+		where["email"] = params["email"]
+	}
+	where["status"] = 1
 	mysql.DB.Debug().Model(models.AppUserAdjustSendLog{}).Where(where).Count(&count)
 	if count > 0 {
 		return true

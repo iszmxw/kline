@@ -22,16 +22,20 @@ type TradingOrder struct {
 	IsValid             int       `json:"is_valid"`                                                 //是否有效 1是 0否
 	CreateDate          time.Time `json:"create_date"`                                              //添加日期
 	UpdateDate          time.Time `json:"update_date"`                                              //更新日期
-	AmountType          int       `json:"amount_type"`                                              //交易金额类型 1余额 2bonus 3虚拟货币
+	CreateTs            int64     `json:"create_ts"`                                                //更新日期
+	UpdateTs            int64     `json:"update_ts"`                                                //更新日期
+	AmountType          int64     `json:"amount_type"`                                              //交易金额类型 1余额 2bonus 3虚拟货币
 	UpDownType          string    `json:"up_down_type"`                                             //买涨买跌类型
 	RealCostAmounts     float64   `json:"real_cost_amounts"`                                        //实际消费金额
-	TradeBeginTimestamp string    `json:"trade_begin_timestamp"`                                    //交易起始日期时间戳
-	TradeEndTimestamp   string    `json:"trade_end_timestamp"`                                      //交易截止日期时间戳
+	TradeBeginTimestamp int64     `json:"trade_begin_timestamp"`                                    //交易起始日期时间戳
+	TradeEndTimestamp   int64     `json:"trade_end_timestamp"`                                      //交易截止日期时间戳
 	UserGainAmounts     float64   `json:"user_gain_amounts"`                                        //用户真实亏损，大于0为客户盈利反之则亏
 	LockingKey          string    `json:"locking_key"`
 	AssetsCode          string    `json:"assets_code"`
-	ReturnRate          float64   `json:"return_rate"`   //收益率
-	CurrencyType        string    `json:"currency_type"` //货币类型 IDR USD CNY
-	Balance             float64   `json:"balance"`       //交易时余额
-	Nation              string    `json:"nation"`        //绑定国家
+	ReturnRate          float64   `json:"return_rate"`          // 收益率
+	CurrencyType        string    `json:"currency_type"`        // 货币类型 IDR USD CNY
+	EqualReturnAmounts  float64   `json:"equal_return_amounts"` // 平返还金额
+	KlineTime           int64     `json:"kline_time"`           // 平返还金额
+	Balance             float64   `json:"balance"`              // 交易时余额
+	Nation              string    `json:"nation"`               // 绑定国家
 }

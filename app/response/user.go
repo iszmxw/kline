@@ -13,6 +13,7 @@ type AppUser struct {
 	Nation            string  `json:"nation"`                     //是否新用户 1是 0否 首充后变成0
 	HisTradingCount   int64   `gorm:"-" json:"hisTradingCount"`   //历史交易次数
 	HisTradingAmounts float64 `gorm:"-" json:"hisTradingAmounts"` //历史交易金额
+	FlowBindId        float64 `json:"flow_bind_id"`               //整合流量方公司绑定ID
 }
 
 type HistoryTrading struct {
