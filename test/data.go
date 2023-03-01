@@ -3,15 +3,22 @@ package main
 import (
 	"fmt"
 	goadjust "goapi/pkg/adjust"
-	"log"
-	"time"
+	"net/url"
 )
 
 func main() {
-	client := goadjust.New("tiwyto5q38jk", "")
-	resp, err := client.TrackEvent("event_token", string(goadjust.IDFA), "6ce9c0a255c6aa171a715c6be0dd8bf9", time.Now())
+	req := make(url.Values)
+	// Add client fields to request
+	req.Add("s2s", "1")
+	req.Add("app_token", "majbv8e0m8e8")
+	req.Add("event_token", "y0ec7c")
+	req.Add("gps_adid", "482bd535-7fcd-49ea-9678-9b9d15e81737")
+	req.Add("callback_params", "{\"userId\":\"7FF235ACCD4\"}")
+	//req.Add("idfa", "D2CADB5F-410F-4963-AC0C-2A78534BDF1E")
+	u := "https://s2s.adjust.com/event?" + req.Encode()
+	send, err := goadjust.Get(u, "2dc8c77d0503c9aab03cdeb6ebc5849b")
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
-	fmt.Println(resp.TrackerName)
+	fmt.Println(send)
 }

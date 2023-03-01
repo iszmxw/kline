@@ -32,10 +32,12 @@ func init() {
 		// IMG URL用于存放图片的路径
 		"img_url": config.Env("IMG_URL", "http://localhost:80"),
 
-
 		"https": config.Env("HTTPS", "0"),
 
 		// IP地区限制
 		"address_limit": config.Env("ADDRESS_LIMIT", false),
+
+		// 项目编码
+		"item_code": config.Env("ITEM_CODE", "SMO"),
 	})
 }

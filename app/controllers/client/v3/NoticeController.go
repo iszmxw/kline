@@ -9,6 +9,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
+	"goapi/pkg/config"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
@@ -124,7 +125,7 @@ func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.
 		// 查询用户未读消息，展示小红点
 		err = mysql.DB.Debug().Model(models.OffMailSendLog{}).Where(
 			map[string]interface{}{
-				"item_code":    "SMO",
+				"item_code":    config.GetString("app.item_code"),
 				"nation":       user.Nation,
 				"decive_brand": SubToken.DeciveBrand,
 			}).Where("app_user_id = 'ALL' OR app_user_id = ?", user.AppUserId).

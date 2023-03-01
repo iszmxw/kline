@@ -10,6 +10,7 @@ import (
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/pkg/address"
+	"goapi/pkg/config"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -53,7 +54,7 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	var AppUserCredit models.AppUserCredit
 	// 查询代理
 	mysql.DB.Debug().Model(models.AgentUser{}).Where(map[string]interface{}{
-		"item_code":     "SMO",
+		"item_code":     config.GetString("app.item_code"),
 		"referral_code": params.Pid,
 	}).Find(&queryAgentUser)
 	if len(queryAgentUser.AgentUserId) == 0 {
@@ -61,14 +62,14 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 		return
 	}
 	mysql.DB.Debug().Model(models.AppUser{}).Where(map[string]interface{}{
-		"item_code": "SMO",
+		"item_code": config.GetString("app.item_code"),
 		"email":     params.Email,
 	}).Find(&queryAppUser)
 	if len(queryAppUser.AppUserId) > 0 {
 		echo.Error(c, "UserAlreadyExists", "")
 		return
 	}
-	CreateAppUser.ItemCode = "SMO"
+	CreateAppUser.ItemCode = config.GetString("app.item_code")
 	CreateAppUser.Nation = queryAgentUser.Nation // 国家
 	CreateAppUser.RegistNation = res.Country     // 注册时候国家
 	CreateAppUser.City = res.City                // 城市
@@ -114,7 +115,7 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	AppUserCredit.AppUserId = CreateAppUser.AppUserId
 	AppUserCredit.CreateDate = time.Now()
 	AppUserCredit.TotalStep = 3
-	AppUserCredit.ItemCode = "SMO"
+	AppUserCredit.ItemCode = config.GetString("app.item_code")
 	AppUserCredit.IsValid = 1
 	AppUserCredit.Nation = CreateAppUser.Nation
 	AppUserCredit.CreditStep = 0

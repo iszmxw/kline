@@ -725,7 +725,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 		return
 	}
 	if len(TradeOrderInfo.ItemCode) == 0 {
-		TradeOrderInfo.ItemCode = "SMO"
+		TradeOrderInfo.ItemCode = config.GetString("app.item_code")
 	}
 	// 获取交易资产的小数点位数
 	var TradingAssets models.TradingAssets
@@ -891,7 +891,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		logger.Error(redisAddErr)
 		return
 	}
-	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia","itemCode":"SMO"}
+	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia","itemCode":""}
 	err := json.Unmarshal([]byte(subInfo), &SubNationInfo)
 	if err != nil {
 		logger.Error(err)
@@ -1017,7 +1017,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		AppUser.HisTradingAmounts = HistoryTrading.HisTradingAmounts // 历史交易金额
 		var ListAppItem []models.AppItem
 		err = DB.Model(models.AppItem{}).
-			Where("item_code", "SMO").
+			Where("item_code", config.GetString("app.item_code")).
 			Where("is_start", "1").
 			Find(&ListAppItem).Error
 		if err != nil {

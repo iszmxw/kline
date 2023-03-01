@@ -7,7 +7,6 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
-	goadjust "goapi/pkg/adjust"
 	"goapi/pkg/config"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
@@ -18,7 +17,6 @@ import (
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
 	wss_heart_beating "goapi/pkg/wss-heart-beating"
-	"log"
 	"strings"
 	"time"
 
@@ -672,7 +670,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 		return
 	}
 	if len(TradeOrderInfo.ItemCode) == 0 {
-		TradeOrderInfo.ItemCode = "SMO"
+		TradeOrderInfo.ItemCode = config.GetString("app.item_code")
 	}
 	// 获取交易资产的小数点位数
 	var TradingAssets models.TradingAssets
@@ -948,15 +946,6 @@ func createTradingOrder(params requests.SubmitTradeParams, appUser response.AppU
 
 }
 
-func submitEvent() {
-	client := goadjust.New("majbv8e0m8e8", "2dc8c77d0503c9aab03cdeb6ebc5849b")
-	_, err := client.TrackEvent("event_token", "123456789", "y0ec7c", time.Now())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-}
-
 // 交易规则判断
 
 func tradeJuedge(appUser response.AppUser, params requests.SubmitTradeParams) (bool, string) {
@@ -1134,7 +1123,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		logger.Error(redisAddErr)
 		return
 	}
-	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia","itemCode":"SMO"}
+	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia","itemCode":""}
 	err := json.Unmarshal([]byte(subInfo), &SubNationInfo)
 	if err != nil {
 		logger.Error(err)
@@ -1260,7 +1249,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		AppUser.HisTradingAmounts = HistoryTrading.HisTradingAmounts // 历史交易金额
 		var ListAppItem []models.AppItem
 		err = DB.Model(models.AppItem{}).
-			Where("item_code", "SMO").
+			Where("item_code", config.GetString("app.item_code")).
 			Where("is_start", "1").
 			Find(&ListAppItem).Error
 		if err != nil {

@@ -2,75 +2,23 @@ package goadjust
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	cmap "github.com/orcaman/concurrent-map"
+	"goapi/app/models"
+	"goapi/pkg/config"
+	"goapi/pkg/mysql"
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
-	"time"
-)
-
-const (
-	timeLayout = "2006-01-02T15:04:05Z-0700"
 )
 
 var (
 	// ErrDeviceNotFound is returned when adjust did not recognise the device
-	ErrDeviceNotFound = errors.New("Device not found")
-
-	// APIURL is the URL for the S2S API
-	APIURL = "https://s2s.adjust.com"
+	ErrDeviceNotFound = errors.New("device not found")
 )
-
-// Environment represents where the data should be stored in Adjust (defaults
-// to "production")
-type Environment string
-
-const (
-	// Production tells Adjust to store the event as a production event
-	Production Environment = "production"
-	// Sandbox tells Adjust to store the event in the sandbox
-	Sandbox = "sandbox"
-)
-
-// DeviceIDType represents which environment the data should be stored for.
-type DeviceIDType string
-
-const (
-	// IDFA is the iOS ID for Advertisers
-	IDFA DeviceIDType = "idfa"
-	// IDFV is the iOS ID for Vendors
-	IDFV = "idfv"
-	// Mac is the MAC address of device (without “:”) (Android only)
-	Mac = "mac"
-	// MacMD5 is the MD5 of MAC (upper case without “:”) (Android only)
-	MacMD5 = "mac_md5"
-	// MacSHA1 is the SHA1 of MAC (upper case with “:”) (Android only)
-	MacSHA1 = "mac_sha1"
-	// AndroidID is an Android ID
-	AndroidID = "android_id"
-	// GPSAdID is the Google Play Advertiser ID
-	GPSAdID = "gps_adid"
-)
-
-// A Client is used to send track requests to Adjust.
-type Client struct {
-	AppToken    string
-	Environment Environment
-
-	HTTPClient *http.Client
-}
-
-// New creates a new Adjust Client.
-func New(appToken string, env Environment) *Client {
-	return &Client{
-		AppToken:    appToken,
-		Environment: env,
-	}
-}
 
 // Response represents the response from an track request.
 type Response struct {
@@ -81,75 +29,37 @@ type Response struct {
 	Country      string `json:"country"`
 }
 
-// TrackEvent tracks a non-revenue event
-func (c *Client) TrackEvent(deviceIDType DeviceIDType, deviceID string, eventToken string, t time.Time) (resp *Response, err error) {
-	return c.send("/event", url.Values{
-		"event_token":        {eventToken},
-		"created_at":         {t.Format(timeLayout)},
-		string(deviceIDType): {deviceID},
-	}, map[string]string{})
+type EventParams struct {
+	EventName        string `json:"eventName"`        // 事件名称 (必传参数)
+	AppUserId        string `json:"appUserId"`        // 用户id (必传参数)
+	IsRepeatedSubmit string `json:"isRepeatedSubmit"` // 是否可重复提交 1是0否 (选传，不传时默认不可重复提交)
+	Mobile           string `json:"mobile"`           // 客户手机号
+	EventBindId      string `json:"eventBindId"`      // 第三方绑定的id，例如：adjust:GpsAdid
+	Email            string `json:"email"`            // 邮箱
+	FlowJsonString   string `json:"flowJsonString"`   // 第三方参数json
+	DeviceBrand      string `json:"deviceBrand"`      // 用户设备品牌
 }
 
-// TrackEventWithParams tracks a non-revenue event with custom parameters. These
-// parameters can be used in callbacks.
-func (c *Client) TrackEventWithParams(deviceIDType DeviceIDType, deviceID string, eventToken string, t time.Time, params map[string]string) (resp *Response, err error) {
-	return c.send("/event", url.Values{
-		"event_token":        {eventToken},
-		"created_at":         {t.Format(timeLayout)},
-		string(deviceIDType): {deviceID},
-	}, params)
-}
-
-// TrackRevenue tracks a revenue event
-func (c *Client) TrackRevenue(deviceIDType DeviceIDType, deviceID string, eventToken string, amount int, t time.Time) (resp *Response, err error) {
-	return c.send("/revenue", url.Values{
-		"event_token":        {eventToken},
-		"amount":             {strconv.FormatInt(int64(amount), 10)},
-		"created_at":         {t.Format(timeLayout)},
-		string(deviceIDType): {deviceID},
-	}, map[string]string{})
-}
-
-// TrackRevenueWithParams tracks a revenue event with custom parameters. These
-// parameters can be used in callbacks.
-func (c *Client) TrackRevenueWithParams(deviceIDType DeviceIDType, deviceID string, eventToken string, amount int64, t time.Time, params map[string]string) (resp *Response, err error) {
-	return c.send("/revenue", url.Values{
-		"event_token":        {eventToken},
-		"amount":             {strconv.FormatInt(int64(amount), 10)},
-		"created_at":         {t.Format(timeLayout)},
-		string(deviceIDType): {deviceID},
-	}, params)
-}
-
-func (c *Client) send(path string, req url.Values, params map[string]string) (resp *Response, err error) {
-	// Add client fields to request
-	req.Add("s2s", "1")
-	req.Add("app_token", c.AppToken)
-	req.Add("gps_adid", "1234567890")
-	b64params, err := base64EncodeMap(map[string]string{"userId": "7fffffffffffff"})
+func Get(url, authorization string) (resp *Response, err error) {
+	client := &http.Client{}
+	//提交请求
+	request, err := http.NewRequest("GET", url, nil)
+	// 增加header选项
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", authorization))
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	req.Add("callback_params", b64params)
-	if c.Environment != "" {
-		req.Add("environment", string(c.Environment))
-	}
-
-	// Send request
-	var httpClient = c.HTTPClient
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-
-	httpResp, err := httpClient.PostForm(APIURL+path, req)
-	if err != nil {
-		return nil, err
-	}
-
+	//处理返回结果
+	response, _ := client.Do(request)
 	buf := &bytes.Buffer{}
-	_, err = io.Copy(buf, httpResp.Body)
-	httpResp.Body.Close()
-
+	_, err = io.Copy(buf, response.Body)
+	defer func(Body io.ReadCloser) {
+		err = Body.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(response.Body)
 	switch {
 	case strings.Contains(buf.String(), "Device not found"):
 		return nil, ErrDeviceNotFound
@@ -157,19 +67,61 @@ func (c *Client) send(path string, req url.Values, params map[string]string) (re
 		msg := strings.TrimSpace(buf.String())
 		return nil, errors.New(msg)
 	}
-
 	// Unmarshal response
 	if err := json.NewDecoder(buf).Decode(&resp); err != nil {
 		return nil, err
 	}
-
 	return resp, nil
 }
 
-func base64EncodeMap(m map[string]string) (string, error) {
-	b, err := json.Marshal(m)
-	if err != nil {
-		return "", err
+// 提交 adjust 事件
+
+func submitEvent(eventParams EventParams, nation, partnerCode string) {
+	params := cmap.New().Items()
+	if checkSendLog(params) {
+		return
 	}
-	return base64.StdEncoding.EncodeToString(b), nil
+	accountCode := ""
+	if len(eventParams.EventBindId) > 0 && strings.Contains(strings.ToLower(eventParams.DeviceBrand), "apple") {
+		accountCode = "apple"
+	} else {
+		accountCode = "android"
+	}
+	var collaboratorParams models.CollaboratorParams
+	mysql.DB.Debug().Model(models.CollaboratorParams{}).Where(map[string]interface{}{
+		"item_code":    config.GetString("app.item_code"),
+		"partner_code": partnerCode,
+		"account_code": accountCode,
+		"nation":       nation,
+	}).Find(&collaboratorParams)
+
+	req := make(url.Values)
+	// Add client fields to request
+	req.Add("s2s", "1")
+	req.Add("app_token", "majbv8e0m8e8")
+	req.Add("event_token", "y0ec7c")
+	req.Add("gps_adid", "482bd535-7fcd-49ea-9678-9b9d15e81737")
+	req.Add("callback_params", "{\"userId\":\"7FF235ACCD4\"}")
+	//req.Add("idfa", "D2CADB5F-410F-4963-AC0C-2A78534BDF1E")
+	u := "https://s2s.adjust.com/event?" + req.Encode()
+	send, err := Get(u, "2dc8c77d0503c9aab03cdeb6ebc5849b")
+	if err != nil {
+		return
+	}
+	fmt.Println(send)
+}
+
+// 查询用户发送成功记录，有记录返回true
+func checkSendLog(params map[string]interface{}) bool {
+	var count int64
+	where := cmap.New().Items()
+	where["event_name"] = ""
+	where["app_user_id"] = ""
+	where["email"] = ""
+	where["status"] = ""
+	mysql.DB.Debug().Model(models.AppUserAdjustSendLog{}).Where(where).Count(&count)
+	if count > 0 {
+		return true
+	}
+	return false
 }

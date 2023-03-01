@@ -39,7 +39,7 @@ func main() {
 	defer bootstrap.RedisClose()
 	// 查询ip
 	var list []models.AppUser
-	mysql.DB.Debug().Model(models.AppUser{}).Where("mobile IS NOT NULL").Where("item_code=?", "SMO").Limit(100000).Find(&list)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("mobile IS NOT NULL").Where("item_code", conf.GetString("app.item_code")).Limit(100000).Find(&list)
 	if len(list) == 0 {
 		return
 	}
