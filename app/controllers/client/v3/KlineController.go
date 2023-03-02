@@ -16,7 +16,6 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
-	wss_heart_beating "goapi/pkg/wss-heart-beating"
 	"strings"
 	"time"
 
@@ -45,6 +44,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
 	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	AppUserId = c.Query("userId")
+	go HeartBeatingWatch(ws, socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -506,7 +506,6 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		return
 	}
 	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
-	HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
 	SubKey := fmt.Sprintf("ws_index:%v:socket_request", socketId)
 	SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 	if SubAssetsCode == AssetsCode {             // 当前订阅的资产已存
@@ -519,9 +518,6 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4) // 当前请求正在订阅的资产，4小时失效
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		if wss_heart_beating.IsDie(HeartBeatingKey) {
-			goto STOP
-		}
 		HisSubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 		if len(HisSubAssetsCode) > 0 {
 			if HisSubAssetsCode != AssetsCode { // 关闭释放掉历史的订阅
@@ -596,9 +592,6 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 			goto END
 		}
 	}
-STOP:
-	logger.Error(errors.New("PushMessage关闭Socket"))
-	wss.WsClose(ws)
 END:
 	logger.Error(errors.New("PushMessage已经跳出协诚的循环推送"))
 }
@@ -843,12 +836,8 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		wss.WsClose(ws)
 		return
 	}
-	HeartBeatingKey := fmt.Sprintf("ws_return_rate:%v:heart_beating_key", socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		if wss_heart_beating.IsDie(HeartBeatingKey) {
-			goto STOP
-		}
 		// 空消息跳过
 		if len(subInfo) <= 0 {
 			goto END
@@ -895,9 +884,6 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		time.Sleep(time.Second * 5)
 		// 返回数据给用户
 	}
-STOP:
-	logger.Error(errors.New("PushRate关闭Socket"))
-	wss.WsClose(ws)
 END:
 	logger.Info("PushRate已经跳出协诚的循环推送")
 }
