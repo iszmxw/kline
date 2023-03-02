@@ -10,7 +10,7 @@ import (
 // RegisterClientRoutes 注册Client路由
 func RegisterClientRoutes(router *gin.RouterGroup) {
 	router.Use(middlewaresV3.AddressLimit()) // 地区限制
-	//router.Use(middlewares.Client())
+	router.Use(middlewaresV3.Client())
 	// 路由分组 客户端 模块
 	AppRoute := router.Group("/app")
 	{
@@ -40,7 +40,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				agent.Any("/statistics.json", ClientV3Group.AgentController.StatisticsHandler)
 			}
 
-			// 代理落地页接口
+			// 设置token接口
 			config := V3Route.Group("/config")
 			{
 				// 设置token

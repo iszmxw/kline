@@ -23,10 +23,15 @@ type Group struct {
 }
 
 // 响应消息
-func socketResp(ws *wss.WsConn, messageType int, msg string) {
+
+func SocketResp(ws *wss.WsConn, messageType int, msg string) {
 	ws.Mux.Lock()
-	_ = ws.Conn.WriteMessage(messageType, []byte(msg))
+	WriteMessageErr := ws.Conn.WriteMessage(messageType, []byte(msg))
 	ws.Mux.Unlock()
+	if WriteMessageErr != nil {
+		logger.Error(WriteMessageErr)
+		wss.WsClose(ws)
+	}
 }
 
 func IsDie(HeartBeatingKey string) bool { // 检测是否死掉
@@ -52,6 +57,7 @@ func IsDie(HeartBeatingKey string) bool { // 检测是否死掉
 // 心跳观测
 
 func HeartBeatingWatch(ws *wss.WsConn, socketId string) {
+	time.Sleep(30 * time.Second)
 	for !ws.IsClose {
 		HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
 		if IsDie(HeartBeatingKey) {

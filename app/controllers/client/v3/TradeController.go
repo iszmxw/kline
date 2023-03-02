@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
@@ -25,64 +26,64 @@ type TradeController struct {
 
 // 提交下单
 
-func (h *TradeController) SubmitTrade(socketId string, messageType int, ws *wss.WsConn, subInfo string) {
+func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, subInfo string) {
 	logger.RequestId = socketId
 	// 下单参数
 	var SubmitTradeParams requests.SubmitTradeParams
 	err1 := json.Unmarshal([]byte(subInfo), &SubmitTradeParams)
 	if err1 != nil {
 		logger.Error(err1)
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if SubmitTradeParams.Amounts <= 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if SubmitTradeParams.AmountType <= 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if len(SubmitTradeParams.AssetsId) == 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if SubmitTradeParams.TradingBeginDate.UnixMilli() <= 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if SubmitTradeParams.TradeEndDate.UnixMilli() <= 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if len(SubmitTradeParams.UpDownType) == 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if SubmitTradeParams.BeginAssetsPrice <= 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if SubmitTradeParams.KlineTime <= 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	sysTime := time.Now()
 	// 请求超时拦截
 	if SubmitTradeParams.TradingBeginDate.UnixMilli() < sysTime.UnixMilli()-10000 && 3 != SubmitTradeParams.AmountType {
-		socketResp(ws, messageType, `{"id":"10409","data":"RequestTimeout"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"RequestTimeout"}`)
 		return
 	}
 	// 时间超前拦截
 	if SubmitTradeParams.TradingBeginDate.UnixMilli() > sysTime.UnixMilli() && 3 != SubmitTradeParams.AmountType {
-		socketResp(ws, messageType, `{"id":"10409","data":"PleaseCheckTheNetworkTime"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"PleaseCheckTheNetworkTime"}`)
 		return
 	}
 	// demo 订单只能同时存在五笔
 	var total int64
 	mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where("quiz_result", -1).Where("app_user_id", SubmitTradeParams.TradeOrderId).Count(&total)
 	if total >= 5 && 3 == SubmitTradeParams.AmountType {
-		socketResp(ws, messageType, `{"id":"10409","data":"DemoLimit"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"DemoLimit"}`)
 		return
 	}
 	// 校验是否存在该交易点数据
@@ -93,18 +94,18 @@ func (h *TradeController) SubmitTrade(socketId string, messageType int, ws *wss.
 		Row().
 		Scan(&size).Error
 	if err != nil {
-		socketResp(ws, messageType, `{"id":"10409","data":"校验是否存在该交易点数据"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"校验是否存在该交易点数据"}`)
 		return
 	}
 	if size == 0 {
-		socketResp(ws, messageType, `{"id":"10409","data":"校验是否存在该交易点数据"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"校验是否存在该交易点数据"}`)
 		return
 	}
 	// 校验资产 资产已经休市，请更换其他资产
 	var asset models.TradingAssets
 	mysql.DB.Debug().Model(models.TradingAssets{}).Where("id", SubmitTradeParams.AssetsId).Find(&asset)
 	if asset.IsValid != 1 {
-		socketResp(ws, messageType, `{"id":"10409","data":"AssetClosed"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"AssetClosed"}`)
 		return
 	}
 	var appUser models.AppUser
@@ -113,7 +114,7 @@ func (h *TradeController) SubmitTrade(socketId string, messageType int, ws *wss.
 	if SubmitTradeParams.AmountType != 3 {
 		ok, msg := tradeJuedge(appUser, SubmitTradeParams)
 		if ok {
-			socketResp(ws, messageType, fmt.Sprintf(`{"id":"10409","data":"%v"}`, msg))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, msg))
 			return
 		}
 	}
@@ -121,7 +122,7 @@ func (h *TradeController) SubmitTrade(socketId string, messageType int, ws *wss.
 	switch SubmitTradeParams.AmountType {
 	case 1:
 		if appUser.Balance < SubmitTradeParams.Amounts {
-			socketResp(ws, messageType, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "余额不足"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "余额不足"))
 			return
 		}
 		ok := createTradingOrder(SubmitTradeParams, appUser, asset)
@@ -136,12 +137,12 @@ func (h *TradeController) SubmitTrade(socketId string, messageType int, ws *wss.
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
-			socketResp(ws, messageType, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
 		}
 		break
 	case 2:
 		if appUser.BonusBalance < SubmitTradeParams.Amounts {
-			socketResp(ws, messageType, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "bonus余额不足"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "bonus余额不足"))
 			return
 		}
 		ok := createTradingOrder(SubmitTradeParams, appUser, asset)
@@ -156,16 +157,16 @@ func (h *TradeController) SubmitTrade(socketId string, messageType int, ws *wss.
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
-			socketResp(ws, messageType, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
 		}
 		break
 	case 3:
 		if appUser.VirtualBalance < SubmitTradeParams.Amounts {
-			socketResp(ws, messageType, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "虚拟余额不足"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "虚拟余额不足"))
 			return
 		}
 		createVirtualTradingOrder(SubmitTradeParams, appUser, asset)
-		socketResp(ws, messageType, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
+		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
 		break
 	default:
 		break

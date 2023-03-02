@@ -3,7 +3,10 @@ package v3
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+	v3 "goapi/app/controllers/client/v3"
 	"goapi/app/response"
 	"goapi/pkg/address"
 	"goapi/pkg/config"
@@ -11,6 +14,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
+	wss "goapi/pkg/websocket"
 )
 
 // AddressLimit 地区限制
@@ -40,9 +44,10 @@ func Client() gin.HandlerFunc {
 		SetLang(c, "en")
 		path := c.FullPath()
 		switch path {
-		// websocket
-		case "/v1/api/kline/ws_index":
-		case "/v1/api/kline/history":
+		case "/app/v3/agent/register.json":
+		case "/app/v3/agent/statistics.json":
+		case "/app/v3/config/setKlineToken.json":
+		case "/app/v3/notice/siteLetterNotification.json":
 			// 继续往下面执行
 			c.Next()
 			break
@@ -68,11 +73,19 @@ func CheckLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	strInfo, err = redis.Client.Get(tokenString)
+	strInfo, err = redis.Client.Get(fmt.Sprintf("Client:Token:%s", tokenString))
 	if err != nil {
-		echo.Error(c, "LoginInvalid", "")
-		c.Abort()
-		return
+		if c.IsWebsocket() {
+			ws, _ := wss.GetSocket(c)
+			go v3.HeartBeatingWatch(ws, c.GetHeader("Sec-WebSocket-Key"))
+			v3.SocketResp(ws, websocket.TextMessage, "Token 无效")
+			c.Abort()
+			return
+		} else {
+			echo.Error(c, "LoginInvalid", "")
+			c.Abort()
+			return
+		}
 	}
 	// json字符串数组,转换成切片
 	var user response.ClientUserBeans
