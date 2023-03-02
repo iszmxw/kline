@@ -37,8 +37,8 @@ type TradeOrderInfo struct {
 	AppUserId           string `json:"appUserId"`
 	AssetsCode          string `json:"assetsCode"`
 	ItemCode            string `json:"itemCode"`
-	TradeBeginTimestamp int64  `json:"tradeBeginTimestamp"`
-	TradeEndTimestamp   int64  `json:"tradeEndTimestamp"`
+	TradeBeginTimestamp string `json:"tradeBeginTimestamp"`
+	TradeEndTimestamp   string `json:"tradeEndTimestamp"`
 	BeginAssetsPrice    string `json:"beginAssetsPrice"`
 	EndAssetsPrice      string `json:"endAssetsPrice"`
 	UpDownType          string `json:"upDownType"`
@@ -48,4 +48,9 @@ type TradeOrderInfo struct {
 
 type DayTime struct {
 	Num string `json:"num" form:"num" validate:"required"`
+}
+
+type SubParams struct {
+	Sub interface{} `json:"sub"`
+	Id  string      `json:"id"`
 }

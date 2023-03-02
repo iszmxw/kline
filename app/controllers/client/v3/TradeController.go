@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -26,63 +25,55 @@ type TradeController struct {
 
 // 提交下单
 
-func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, subInfo string) {
+func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params requests.SubmitTradeParams) {
 	logger.RequestId = socketId
-	// 下单参数
-	var SubmitTradeParams requests.SubmitTradeParams
-	err1 := json.Unmarshal([]byte(subInfo), &SubmitTradeParams)
-	if err1 != nil {
-		logger.Error(err1)
+	if params.Amounts <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
-	if SubmitTradeParams.Amounts <= 0 {
+	if params.AmountType <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
-	if SubmitTradeParams.AmountType <= 0 {
+	if len(params.AssetsId) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
-	if len(SubmitTradeParams.AssetsId) == 0 {
+	if len(params.TradingBeginDate) <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
-	if SubmitTradeParams.TradingBeginDate.UnixMilli() <= 0 {
+	if len(params.TradeEndDate) <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
-	if SubmitTradeParams.TradeEndDate.UnixMilli() <= 0 {
+	if len(params.UpDownType) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
-	if len(SubmitTradeParams.UpDownType) == 0 {
+	if params.BeginAssetsPrice <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
-	if SubmitTradeParams.BeginAssetsPrice <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
-		return
-	}
-	if SubmitTradeParams.KlineTime <= 0 {
+	if params.KlineTime <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
 		return
 	}
 	sysTime := time.Now()
 	// 请求超时拦截
-	if SubmitTradeParams.TradingBeginDate.UnixMilli() < sysTime.UnixMilli()-10000 && 3 != SubmitTradeParams.AmountType {
+	if helpers.StringToInt64(params.TradingBeginDate) < sysTime.UnixMilli()-10000 && 3 != params.AmountType {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"RequestTimeout"}`)
 		return
 	}
 	// 时间超前拦截
-	if SubmitTradeParams.TradingBeginDate.UnixMilli() > sysTime.UnixMilli() && 3 != SubmitTradeParams.AmountType {
+	if helpers.StringToInt64(params.TradingBeginDate) > sysTime.UnixMilli() && 3 != params.AmountType {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"PleaseCheckTheNetworkTime"}`)
 		return
 	}
 	// demo 订单只能同时存在五笔
 	var total int64
-	mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where("quiz_result", -1).Where("app_user_id", SubmitTradeParams.TradeOrderId).Count(&total)
-	if total >= 5 && 3 == SubmitTradeParams.AmountType {
+	mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where("quiz_result", -1).Where("app_user_id", params.TradeOrderId).Count(&total)
+	if total >= 5 && 3 == params.AmountType {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"DemoLimit"}`)
 		return
 	}
@@ -90,7 +81,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, subInfo s
 	var size int64
 	err := mysql.DB.Debug().
 		Raw(`SELECT COUNT(tkl.c_close) FROM t_kline_log tkl,t_trading_assets tta WHERE tkl.contract_code = tta.assets_code AND tkl.ts = ? AND tta.id = ? AND tkl.c_close = ?`,
-			SubmitTradeParams.KlineTime, SubmitTradeParams.AssetsId, SubmitTradeParams.BeginAssetsPrice).
+			params.KlineTime, params.AssetsId, params.BeginAssetsPrice).
 		Row().
 		Scan(&size).Error
 	if err != nil {
@@ -103,29 +94,29 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, subInfo s
 	}
 	// 校验资产 资产已经休市，请更换其他资产
 	var asset models.TradingAssets
-	mysql.DB.Debug().Model(models.TradingAssets{}).Where("id", SubmitTradeParams.AssetsId).Find(&asset)
+	mysql.DB.Debug().Model(models.TradingAssets{}).Where("id", params.AssetsId).Find(&asset)
 	if asset.IsValid != 1 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"AssetClosed"}`)
 		return
 	}
 	var appUser models.AppUser
-	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", SubmitTradeParams.AssetsId).Find(&appUser)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AssetsId).Find(&appUser)
 	// 进行交易规则校验，虚拟交易不进行校验
-	if SubmitTradeParams.AmountType != 3 {
-		ok, msg := tradeJuedge(appUser, SubmitTradeParams)
+	if params.AmountType != 3 {
+		ok, msg := tradeJuedge(appUser, params)
 		if ok {
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, msg))
 			return
 		}
 	}
 	// 交易金额类型 1 余额 2 bonus 3 虚拟货币
-	switch SubmitTradeParams.AmountType {
+	switch params.AmountType {
 	case 1:
-		if appUser.Balance < SubmitTradeParams.Amounts {
+		if appUser.Balance < params.Amounts {
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "余额不足"))
 			return
 		}
-		ok := createTradingOrder(SubmitTradeParams, appUser, asset)
+		ok := createTradingOrder(params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
@@ -141,11 +132,11 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, subInfo s
 		}
 		break
 	case 2:
-		if appUser.BonusBalance < SubmitTradeParams.Amounts {
+		if appUser.BonusBalance < params.Amounts {
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "bonus余额不足"))
 			return
 		}
-		ok := createTradingOrder(SubmitTradeParams, appUser, asset)
+		ok := createTradingOrder(params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
@@ -161,11 +152,11 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, subInfo s
 		}
 		break
 	case 3:
-		if appUser.VirtualBalance < SubmitTradeParams.Amounts {
+		if appUser.VirtualBalance < params.Amounts {
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "虚拟余额不足"))
 			return
 		}
-		createVirtualTradingOrder(SubmitTradeParams, appUser, asset)
+		createVirtualTradingOrder(params, appUser, asset)
 		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
 		break
 	default:
@@ -383,11 +374,11 @@ func createTradingOrder(params requests.SubmitTradeParams, appUser models.AppUse
 	createOrder.Nation = appUser.Nation
 	createOrder.CurrencyType = appUser.CurrencyType
 	createOrder.EqualReturnAmounts = 0
-	createOrder.TradeBeginDate = params.TradingBeginDate
-	createOrder.TradeEndDate = params.TradeEndDate
+	createOrder.TradeBeginDate = time.Unix(0, helpers.StringToInt64(params.TradingBeginDate)*int64(time.Millisecond))
+	createOrder.TradeEndDate = time.Unix(0, helpers.StringToInt64(params.TradeEndDate)*int64(time.Millisecond))
 	createOrder.KlineTime = params.KlineTime
-	createOrder.TradeBeginTimestamp = params.TradingBeginDate.UnixMilli()
-	createOrder.TradeEndTimestamp = params.TradeEndDate.UnixMilli()
+	createOrder.TradeBeginTimestamp = createOrder.TradeBeginDate.UnixMilli()
+	createOrder.TradeEndTimestamp = createOrder.TradeEndDate.UnixMilli()
 	createOrder.UpDownType = params.UpDownType
 	createOrder.LockingKey = orderId
 	err = mysql.DB.Debug().Model(models.TradingOrder{}).Create(&createOrder).Error
@@ -447,10 +438,10 @@ func createVirtualTradingOrder(params requests.SubmitTradeParams, appUser models
 	createOrder.QuizResult = -1
 	createOrder.RealCostAmounts = 0
 	createOrder.EqualReturnAmounts = 0
-	createOrder.TradeBeginDate = params.TradingBeginDate
-	createOrder.TradeEndDate = params.TradeEndDate
-	createOrder.TradeBeginTimestamp = params.TradingBeginDate.UnixMilli()
-	createOrder.TradeEndTimestamp = params.TradeEndDate.UnixMilli()
+	createOrder.TradeBeginDate = time.Unix(0, helpers.StringToInt64(params.TradingBeginDate)*int64(time.Millisecond))
+	createOrder.TradeEndDate = time.Unix(0, helpers.StringToInt64(params.TradeEndDate)*int64(time.Millisecond))
+	createOrder.TradeBeginTimestamp = createOrder.TradeBeginDate.UnixMilli()
+	createOrder.TradeEndTimestamp = createOrder.TradeEndDate.UnixMilli()
 	createOrder.UpDownType = params.UpDownType
 	createOrder.CurrencyType = appUser.CurrencyType
 	createOrder.Nation = appUser.Nation

@@ -689,7 +689,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 		logger.Error(errors.New("err sub,AssetsCode not right"))
 		return
 	}
-	if TradeOrderInfo.TradeBeginTimestamp <= 0 {
+	if len(TradeOrderInfo.TradeBeginTimestamp) <= 0 {
 		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,TradeBeginTimestamp not right"}`))
 		ws.Mux.Unlock()
@@ -769,7 +769,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 			if TradingOrderVirtual.EndAssetsPrice > 0 {
 				TradeOrderInfo.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
 				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
-				TradeOrderInfo.TradeEndTimestamp = TradingOrderVirtual.TradeEndTimestamp
+				TradeOrderInfo.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrderVirtual.TradeEndTimestamp)
 				marshal, err := json.Marshal(gin.H{
 					"id":   "04",
 					"data": TradeOrderInfo,
@@ -803,7 +803,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 			if TradingOrder.EndAssetsPrice > 0 {
 				TradeOrderInfo.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
 				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
-				TradeOrderInfo.TradeEndTimestamp = TradingOrder.TradeEndTimestamp
+				TradeOrderInfo.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrder.TradeEndTimestamp)
 				marshal, err := json.Marshal(gin.H{
 					"id":   "04",
 					"data": TradeOrderInfo,

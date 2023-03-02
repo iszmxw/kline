@@ -33,7 +33,6 @@ type KlineController struct {
 
 // WsIndexHandler socket 负责转发redis缓存的socket数据
 func (h *KlineController) WsIndexHandler(c *gin.Context) {
-	var AppUserId string
 	ws, err := wss.GetSocket(c)
 	if err != nil {
 		logger.Error(err)
@@ -41,8 +40,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
-	AppUserId = c.Query("userId")
-	go HeartBeatingWatch(ws, socketId)
+	appUser, _ := c.Get("user")
+	AppUserId := appUser.(response.ClientUserBeans).AppUserId
+	//go HeartBeatingWatch(ws, socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -54,7 +54,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		}
 		// 对数据进行切割，读取参数
 		// 如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
-		var SubStruct requests.Sub
+		var SubStruct requests.SubParams
 		SubErr := json.Unmarshal(message, &SubStruct)
 		if SubErr != nil {
 			logger.Error(SubErr)
@@ -69,12 +69,31 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(SubStruct.Id, "01"):
 			{
 				// 开启协诚处理推送消息
-				go PushMessage(socketId, ws, SubStruct)
+				params := subInfo.(string)
+				go PushMessage(socketId, ws, params)
 			}
 		case strings.EqualFold(SubStruct.Id, "02"):
 			{
 				// 开启协诚处理推送历史记录
-				go PushHistory(socketId, ws, SubStruct, c)
+				var params requests.SubHistory
+				err = mapstructure.Decode(subInfo, &params)
+				if err != nil {
+					logger.Error(err)
+					goto END
+				}
+				go PushHistory(socketId, ws, params, c)
+			}
+			break
+		case strings.EqualFold(SubStruct.Id, "05"):
+			{
+				// 开启协诚处理推送历史记录
+				var params requests.SubHistory
+				err = mapstructure.Decode(subInfo, &params)
+				if err != nil {
+					logger.Error(err)
+					goto END
+				}
+				go PushZipHistory(socketId, ws, params, c)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "03"):
@@ -88,13 +107,13 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(SubStruct.Id, "04"): // 下单开奖通知
 			{
 				// 开启协诚处理 下单开奖通知
-				go PushNotice(socketId, ws, SubStruct.Sub)
-			}
-			break
-		case strings.EqualFold(SubStruct.Id, "05"):
-			{
-				// 开启协诚处理推送历史记录
-				go PushZipHistory(socketId, ws, SubStruct, c)
+				var params requests.TradeOrderInfo
+				err = mapstructure.Decode(subInfo, &params)
+				if err != nil {
+					logger.Error(err)
+					goto END
+				}
+				go PushNotice(socketId, ws, params)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "06"): // 弹窗通知
@@ -105,20 +124,32 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		case strings.EqualFold(SubStruct.Id, "07"): // 下单接口
 			{
-				// 开启协诚处理 用户下单
-				go new(TradeController).SubmitTrade(socketId, ws, subInfo)
+				// 开启协诚处理 用户下单 下单参数
+				var params requests.SubmitTradeParams
+				err = mapstructure.Decode(subInfo, &params)
+				if err != nil {
+					logger.Error(err)
+					goto END
+				}
+				go new(TradeController).SubmitTrade(socketId, ws, params)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "08"):
 			{
 				// 开启协诚处理推送余额
-				go PushUserInfo(socketId, ws, subInfo)
+				go PushUserInfo(socketId, ws, AppUserId)
 			}
 			break
 		case strings.EqualFold(SubStruct.Id, "09"):
 			{
 				// 开启协诚处理推送费率
-				go PushRate(socketId, ws, subInfo)
+				var params requests.SubNationInfo // {"nation":"Indonesia","itemCode":""}
+				err = mapstructure.Decode(subInfo, &params)
+				if err != nil {
+					logger.Error(err)
+					goto END
+				}
+				go PushRate(socketId, ws, params)
 			}
 			break
 		default:
@@ -133,35 +164,28 @@ END:
 
 // 推送socket消息
 
-func PushHistory(socketId string, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
+func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c *gin.Context) {
 	timeStart := time.Now().UnixMilli()
 	logger.RequestId = socketId
 	// 订阅 历史消息
-	if len(SubStruct.Sub) == 0 {
+	if len(params.Symbol) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
 		SocketResp(ws, websocket.TextMessage, `{"id":"10401","data":"订阅历史消息条件参数缺失"}`)
 		return
 	}
-	var (
-		SubHistory requests.SubHistory // {"symbol":"BTC-USD","beginDate":"","endDate":"","Limit":"3000"}
-		Count      = int64(3000)       // 查询总条数默认获取3000条
-	)
-	err := json.Unmarshal([]byte(SubStruct.Sub), &SubHistory)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	symbol := SubHistory.Symbol
-	beginDate := SubHistory.BeginDate
-	endDate := SubHistory.EndDate
-	if helpers.StringToInt64(SubHistory.Limit) > 0 { // 查询数量
-		Count = helpers.StringToInt64(SubHistory.Limit)
+	var Count = int64(3000) // 查询总条数默认获取3000条
+	symbol := params.Symbol
+	beginDate := params.BeginDate
+	endDate := params.EndDate
+	if helpers.StringToInt64(params.Limit) > 0 { // 查询数量
+		Count = helpers.StringToInt64(params.Limit)
 	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10402","data":"beginDate 起始交易日期必填"}`)
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
+		logger.Info(helpers.StringToInt64(beginDate), time.Now().UnixMilli())
 		logger.Error(errors.New("越界查询"))
 		SocketResp(ws, websocket.TextMessage, `{"id":"10403","data":"越界查询 beginDate error"}`)
 		return
@@ -200,7 +224,7 @@ func PushHistory(socketId string, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 	if Count > 10000 {
 		Count = 10000
 	}
-	err = KlineDB.Order("ts desc").Limit(int(Count)).Select("log_id,contract_code,ch,ts,mrid,c_open,c_close,high,low,amount,vol,c_count,ts_date,create_date,kline_source").Find(&data).Error
+	err := KlineDB.Order("ts desc").Limit(int(Count)).Select("log_id,contract_code,ch,ts,mrid,c_open,c_close,high,low,amount,vol,c_count,ts_date,create_date,kline_source").Find(&data).Error
 	if err != nil {
 		logger.Error(err)
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
@@ -226,7 +250,7 @@ func PushHistory(socketId string, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 		go kline.TickerCheckTodaySleep(false)                      // 检测一次资产市场状态
 	}
 	var result []byte
-	if strings.EqualFold(SubHistory.Gzip, "1") {
+	if strings.EqualFold(params.Gzip, "1") {
 		marshal, err := json.Marshal(data)
 		if err != nil {
 			logger.Error(err)
@@ -285,29 +309,21 @@ func PushHistory(socketId string, ws *wss.WsConn, SubStruct requests.Sub, c *gin
 
 // 推送 zipSocket 消息
 
-func PushZipHistory(socketId string, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
+func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c *gin.Context) {
 	timeStart := time.Now().UnixMilli()
 	logger.RequestId = socketId
 	// 订阅 历史消息
-	if len(SubStruct.Sub) == 0 {
+	if len(params.Symbol) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
 		SocketResp(ws, websocket.TextMessage, `{"id":"10401","data":"订阅历史消息条件参数缺失"}`)
 		return
 	}
-	var (
-		SubHistory requests.SubHistory // {"symbol":"BTC-USD","beginDate":"","endDate":"","Limit":"3000"}
-		Count      = int64(3000)       // 查询总条数默认获取3000条
-	)
-	err := json.Unmarshal([]byte(SubStruct.Sub), &SubHistory)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	symbol := SubHistory.Symbol
-	beginDate := SubHistory.BeginDate
-	endDate := SubHistory.EndDate
-	if helpers.StringToInt64(SubHistory.Limit) > 0 { // 查询数量
-		Count = helpers.StringToInt64(SubHistory.Limit)
+	var Count = int64(3000) // 查询总条数默认获取3000条
+	symbol := params.Symbol
+	beginDate := params.BeginDate
+	endDate := params.EndDate
+	if helpers.StringToInt64(params.Limit) > 0 { // 查询数量
+		Count = helpers.StringToInt64(params.Limit)
 	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10402","data":"beginDate 起始交易日期必填"}`)
@@ -352,7 +368,7 @@ func PushZipHistory(socketId string, ws *wss.WsConn, SubStruct requests.Sub, c *
 	if Count > 10000 {
 		Count = 10000
 	}
-	err = KlineDB.Order("ts desc").Limit(int(Count)).Select("ts,c_open,c_close,high,low").Find(&data).Error
+	err := KlineDB.Order("ts desc").Limit(int(Count)).Select("ts,c_open,c_close,high,low").Find(&data).Error
 	if err != nil {
 		logger.Error(err)
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
@@ -424,16 +440,16 @@ func PushZipHistory(socketId string, ws *wss.WsConn, SubStruct requests.Sub, c *
 	logger.Info(fmt.Sprintf("历史记录查询耗时：%v ms", time.Now().UnixMilli()-timeStart))
 }
 
-func PushMessage(socketId string, ws *wss.WsConn, SubStruct requests.Sub) {
+func PushMessage(socketId string, ws *wss.WsConn, params string) {
 	logger.RequestId = socketId
 	// 订阅的 market.ETH-USD.index.1min，没有值
-	if len(SubStruct.Sub) == 0 {
+	if len(params) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"no sub"}`)
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
 		return
 	}
 	// 订阅的 ETH-USD，没有值
-	Sub := strings.Split(SubStruct.Sub, ".")
+	Sub := strings.Split(params, ".")
 	if len(Sub) < 2 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"sub error"}`)
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
@@ -536,68 +552,57 @@ END:
 
 // 下单结果通知
 
-func PushNotice(socketId string, ws *wss.WsConn, subInfo string) {
+func PushNotice(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo) {
 	logger.RequestId = socketId
-	if len(subInfo) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"no sub"}`)
-		logger.Error(errors.New("下单通知结构体为空"))
-		return
-	}
-	var TradeOrderInfo requests.TradeOrderInfo
-	err := json.Unmarshal([]byte(subInfo), &TradeOrderInfo)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	if len(TradeOrderInfo.AppUserId) == 0 {
+	if len(params.AppUserId) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,AppUserId not right"}`)
 		logger.Error(errors.New("err sub,AppUserId not right"))
 		return
 	}
-	if len(TradeOrderInfo.AssetsCode) == 0 {
+	if len(params.AssetsCode) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,AssetsCode not right"}`)
 		logger.Error(errors.New("err sub,AssetsCode not right"))
 		return
 	}
-	if TradeOrderInfo.TradeBeginTimestamp <= 0 {
+	if len(params.TradeBeginTimestamp) <= 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,TradeBeginTimestamp not right"}`)
 		logger.Error(errors.New("err sub,TradeBeginTimestamp not right"))
 		return
 	}
-	if len(TradeOrderInfo.BeginAssetsPrice) == 0 {
+	if len(params.BeginAssetsPrice) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,BeginAssetsPrice not right"}`)
 		logger.Error(errors.New("err sub,BeginAssetsPrice not right"))
 		return
 	}
-	if len(TradeOrderInfo.UpDownType) == 0 {
+	if len(params.UpDownType) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,UpDownType not right"}`)
 		logger.Error(errors.New("err sub,UpDownType not right"))
 		return
 	}
-	if len(TradeOrderInfo.Amounts) == 0 {
+	if len(params.Amounts) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,Amounts not right"}`)
 		logger.Error(errors.New("err sub,Amounts not right"))
 		return
 	}
-	if len(TradeOrderInfo.IsDemo) == 0 {
+	if len(params.IsDemo) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,IsDemo not right"}`)
 		logger.Error(errors.New("err sub,IsDemo not right"))
 		return
 	}
-	if len(TradeOrderInfo.ItemCode) == 0 {
-		TradeOrderInfo.ItemCode = config.GetString("app.item_code")
+	if len(params.ItemCode) == 0 {
+		params.ItemCode = config.GetString("app.item_code")
 	}
 	// 获取交易资产的小数点位数
 	var TradingAssets models.TradingAssets
 	mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("item_code", TradeOrderInfo.ItemCode).
-		Where("assets_code", TradeOrderInfo.AssetsCode).
+		Where("item_code", params.ItemCode).
+		Where("assets_code", params.AssetsCode).
 		Find(&TradingAssets)
 	if TradingAssets.Id <= 0 {
 		logger.Error(errors.New("查询错误"))
 		return
 	}
-	beginAssetsPrice, err := helpers.FormatFloat(helpers.StrToFloat64(TradeOrderInfo.BeginAssetsPrice), TradingAssets.PointNumber)
+	beginAssetsPrice, err := helpers.FormatFloat(helpers.StrToFloat64(params.BeginAssetsPrice), TradingAssets.PointNumber)
 	if err != nil {
 		logger.Error(err)
 		return
@@ -611,15 +616,15 @@ func PushNotice(socketId string, ws *wss.WsConn, subInfo string) {
 			goto STOP
 		}
 		times++
-		if TradeOrderInfo.IsDemo == "1" { // 如果是 demo 订单，就走demo表查询
+		if params.IsDemo == "1" { // 如果是 demo 订单，就走demo表查询
 			var TradingOrderVirtual models.TradingOrderVirtual
 			mysql.DB.Debug().Model(models.TradingOrderVirtual{}).
-				Where("app_user_id", TradeOrderInfo.AppUserId).
-				Where("assets_code", TradeOrderInfo.AssetsCode).
-				Where("trade_begin_timestamp", TradeOrderInfo.TradeBeginTimestamp).
+				Where("app_user_id", params.AppUserId).
+				Where("assets_code", params.AssetsCode).
+				Where("trade_begin_timestamp", params.TradeBeginTimestamp).
 				Where("begin_assets_price", beginAssetsPrice).
-				Where("up_down_type", TradeOrderInfo.UpDownType).
-				Where("amounts", TradeOrderInfo.Amounts).
+				Where("up_down_type", params.UpDownType).
+				Where("amounts", params.Amounts).
 				Find(&TradingOrderVirtual)
 			if TradingOrderVirtual.QuizResult == -1 {
 				// 未出结果跳过
@@ -627,12 +632,12 @@ func PushNotice(socketId string, ws *wss.WsConn, subInfo string) {
 			}
 			// 结束值
 			if TradingOrderVirtual.EndAssetsPrice > 0 {
-				TradeOrderInfo.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
-				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
-				TradeOrderInfo.TradeEndTimestamp = TradingOrderVirtual.TradeEndTimestamp
+				params.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
+				params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
+				params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrderVirtual.TradeEndTimestamp)
 				marshal, err := json.Marshal(gin.H{
 					"id":   "04",
-					"data": TradeOrderInfo,
+					"data": params,
 				})
 				if err != nil {
 					logger.Error(err)
@@ -646,12 +651,12 @@ func PushNotice(socketId string, ws *wss.WsConn, subInfo string) {
 		} else {
 			var TradingOrder models.TradingOrder
 			mysql.DB.Debug().Model(models.TradingOrder{}).
-				Where("app_user_id", TradeOrderInfo.AppUserId).
-				Where("assets_code", TradeOrderInfo.AssetsCode).
-				Where("trade_begin_timestamp", TradeOrderInfo.TradeBeginTimestamp).
+				Where("app_user_id", params.AppUserId).
+				Where("assets_code", params.AssetsCode).
+				Where("trade_begin_timestamp", params.TradeBeginTimestamp).
 				Where("begin_assets_price", beginAssetsPrice).
-				Where("up_down_type", TradeOrderInfo.UpDownType).
-				Where("amounts", TradeOrderInfo.Amounts).
+				Where("up_down_type", params.UpDownType).
+				Where("amounts", params.Amounts).
 				Find(&TradingOrder)
 			if TradingOrder.QuizResult == -1 {
 				// 未出结果跳过
@@ -659,12 +664,12 @@ func PushNotice(socketId string, ws *wss.WsConn, subInfo string) {
 			}
 			// 结束值
 			if TradingOrder.EndAssetsPrice > 0 {
-				TradeOrderInfo.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
-				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
-				TradeOrderInfo.TradeEndTimestamp = TradingOrder.TradeEndTimestamp
+				params.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
+				params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
+				params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrder.TradeEndTimestamp)
 				marshal, err := json.Marshal(gin.H{
 					"id":   "04",
-					"data": TradeOrderInfo,
+					"data": params,
 				})
 				if err != nil {
 					logger.Error(err)
@@ -733,41 +738,30 @@ STOP:
 
 // 推送Rate socket消息
 
-func PushRate(socketId string, ws *wss.WsConn, subInfo string) {
+func PushRate(socketId string, ws *wss.WsConn, params requests.SubNationInfo) {
 	// 2 小时内一个长连接禁止重复订阅相同的 topic
 	checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:01", socketId)
 	if redis.Client.CheckExist(checkMsg) {
 		logger.Info("该订阅已存在，请勿重新订阅")
 		return
 	}
-	_, redisAddErr := redis.Client.Add(checkMsg, subInfo, 30*60) // 半个小时内不允许重复请求
+	_, redisAddErr := redis.Client.Add(checkMsg, "subInfo", 30*60) // 半个小时内不允许重复请求
 	if redisAddErr != nil {
 		logger.Error(redisAddErr)
 		return
 	}
-	var SubNationInfo requests.SubNationInfo // {"nation":"Indonesia","itemCode":""}
-	err := json.Unmarshal([]byte(subInfo), &SubNationInfo)
-	if err != nil {
-		logger.Error(err)
-		wss.WsClose(ws)
-		return
-	}
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		// 空消息跳过
-		if len(subInfo) <= 0 {
-			goto END
+		if len(params.ItemCode) <= 0 {
+			params.ItemCode = "IQO"
 		}
-		if len(SubNationInfo.ItemCode) <= 0 {
-			SubNationInfo.ItemCode = "IQO"
-		}
-		if len(SubNationInfo.Nation) <= 0 {
-			SubNationInfo.Nation = "Indonesia"
+		if len(params.Nation) <= 0 {
+			params.Nation = "Indonesia"
 		}
 		var PushRateData []response.PushRateData
 		DB := mysql.DB
-		err = DB.Model(models.TradingAssets{}).
-			Where("item_code", SubNationInfo.ItemCode).
+		err := DB.Model(models.TradingAssets{}).
+			Where("item_code", params.ItemCode).
 			Where("is_show", 1).
 			Find(&PushRateData).Error
 		if err != nil {
@@ -802,29 +796,17 @@ END:
 
 // 查询用户系信息
 
-func PushUserInfo(socketId string, ws *wss.WsConn, subInfo string) {
+func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 	// 2 小时内一个长连接禁止重复订阅相同的 topic
 	onceRequest := fmt.Sprintf("ws_return_rate:%v:socket_request:02", socketId)
 	nums := redis.Client.Incr(onceRequest) // 不允许重复请求
-	var SubUserInfo requests.SubUserInfo   // {"appUserId":"123456"}
-	err := json.Unmarshal([]byte(subInfo), &SubUserInfo)
-	if err != nil {
-		logger.Error(err)
-		wss.WsClose(ws)
-		return
-	}
-	if len(SubUserInfo.AppUserId) == 0 {
-		wss.WsClose(ws)
-		return
-	}
-	logger.Info(SubUserInfo)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		var AppUser response.AppUser
 		var HistoryTrading response.HistoryTrading
 		DB := mysql.DB
-		err = DB.Model(models.AppUser{}).
-			Where("app_user_id", SubUserInfo.AppUserId).
+		err := DB.Model(models.AppUser{}).
+			Where("app_user_id", AppUserId).
 			//Where("is_show", 1).
 			Find(&AppUser).Error
 		if err != nil {
@@ -834,7 +816,7 @@ func PushUserInfo(socketId string, ws *wss.WsConn, subInfo string) {
 		}
 		result := cmap.New().Items()
 		err = DB.Model(models.TradingOrder{}).
-			Where("app_user_id", SubUserInfo.AppUserId).
+			Where("app_user_id", AppUserId).
 			Where("amount_type", 1).
 			Select("count(1) AS hisTradingCount,sum(amounts) AS hisTradingAmounts").
 			Find(&result).Error
@@ -876,7 +858,7 @@ func PushUserInfo(socketId string, ws *wss.WsConn, subInfo string) {
 				}
 				// 重置用户余额
 				if AppUser.VirtualBalance <= UserOperationRules.Value {
-					err = DB.Model(models.AppUser{}).Where("app_user_id", SubUserInfo.AppUserId).Update("virtual_balance", item.DemoBalance).Error
+					err = DB.Model(models.AppUser{}).Where("app_user_id", AppUserId).Update("virtual_balance", item.DemoBalance).Error
 					if err != nil {
 						SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
 						logger.Error(err)
