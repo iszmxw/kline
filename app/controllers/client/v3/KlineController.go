@@ -41,8 +41,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
-	HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
-	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	AppUserId = c.Query("userId")
 	go HeartBeatingWatch(ws, socketId)
 	// 为了释放for死循环的资源
@@ -83,7 +81,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			{
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
-				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
+				_, _ = redis.Client.Add(fmt.Sprintf("ws_index:%v:heart_beating_key", c.GetHeader("Sec-WebSocket-Key")), currentTime, 300) // 5分钟过期
 				SocketResp(ws, websocket.TextMessage, `{"id":"03","data":"pong"}`)
 			}
 			break

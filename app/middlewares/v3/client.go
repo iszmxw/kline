@@ -15,6 +15,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
 	wss "goapi/pkg/websocket"
+	"time"
 )
 
 // AddressLimit 地区限制
@@ -40,6 +41,11 @@ func AddressLimit() gin.HandlerFunc {
 // Client 定义客户端中间件
 func Client() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.IsWebsocket() {
+			// 心跳分分钟过期
+			HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", c.GetHeader("Sec-WebSocket-Key"))
+			_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
+		}
 		// 设置语言，默认英文
 		SetLang(c, "en")
 		path := c.FullPath()
@@ -78,7 +84,7 @@ func CheckLogin(c *gin.Context) {
 		if c.IsWebsocket() {
 			ws, _ := wss.GetSocket(c)
 			go v3.HeartBeatingWatch(ws, c.GetHeader("Sec-WebSocket-Key"))
-			v3.SocketResp(ws, websocket.TextMessage, "Token 无效")
+			v3.SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"token 无效"}`)
 			c.Abort()
 			return
 		} else {

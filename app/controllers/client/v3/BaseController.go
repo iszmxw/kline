@@ -57,7 +57,6 @@ func IsDie(HeartBeatingKey string) bool { // 检测是否死掉
 // 心跳观测
 
 func HeartBeatingWatch(ws *wss.WsConn, socketId string) {
-	time.Sleep(30 * time.Second)
 	for !ws.IsClose {
 		HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
 		if IsDie(HeartBeatingKey) {
