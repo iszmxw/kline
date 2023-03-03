@@ -762,7 +762,6 @@ func PushRate(socketId string, ws *wss.WsConn, params requests.SubNationInfo) {
 		DB := mysql.DB
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", params.ItemCode).
-			Where("is_show", 1).
 			Find(&PushRateData).Error
 		if err != nil {
 			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
@@ -807,7 +806,6 @@ func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 		DB := mysql.DB
 		err := DB.Model(models.AppUser{}).
 			Where("app_user_id", AppUserId).
-			//Where("is_show", 1).
 			Find(&AppUser).Error
 		if err != nil {
 			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
