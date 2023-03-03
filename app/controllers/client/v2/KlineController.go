@@ -909,7 +909,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 			goto END
 		}
 		if len(SubNationInfo.ItemCode) <= 0 {
-			SubNationInfo.ItemCode = "IQO"
+			SubNationInfo.ItemCode = config.GetString("app.item_code")
 		}
 		if len(SubNationInfo.Nation) <= 0 {
 			SubNationInfo.Nation = "Indonesia"

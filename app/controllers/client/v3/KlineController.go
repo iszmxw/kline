@@ -753,7 +753,7 @@ func PushRate(socketId string, ws *wss.WsConn, params requests.SubNationInfo) {
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		if len(params.ItemCode) <= 0 {
-			params.ItemCode = "IQO"
+			params.ItemCode = config.GetString("app.item_code")
 		}
 		if len(params.Nation) <= 0 {
 			params.Nation = "Indonesia"
