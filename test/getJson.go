@@ -1,12 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"goapi/config"
 	"goapi/pkg/logger"
-	"io/ioutil"
-	"net/http"
-	"strings"
+	"os"
 	"time"
 )
 
@@ -20,18 +19,30 @@ func init() {
 	logger.Init("test")
 }
 
+type S struct {
+	ChangeType    int     `json:"changeType"`
+	ChangeBalance float64 `json:"changeBalance"`
+	SourceIndex   int64   `json:"sourceIndex"`
+	TimerBalance  float64 `json:"timerBalance"`
+}
+
 func main() {
-	client := &http.Client{}
-	request, err := http.NewRequest("POST", "https://api.adjust.com/public/v1/apps/majbv8e0m8e8/trackers", strings.NewReader(`{
-	  "name": "11588@qq.com"
-	}`))
+	filePtr, err := os.Open("./test/xw.json")
 	if err != nil {
-		panic(err)
+		fmt.Println("文件打开失败 [Err:%s]", err.Error())
+		return
 	}
-	//request.Header.Add("Authorization", "Token token=ygMaBirkbgfB97ADsFMn")
-	request.Header.Add("Content-Type", "application/json")
-	response, _ := client.Do(request)
-	defer response.Body.Close()
-	result, _ := ioutil.ReadAll(response.Body)
-	fmt.Println(string(result))
+	defer filePtr.Close()
+	var info []S
+	// 创建json解码器
+	decoder := json.NewDecoder(filePtr)
+	err = decoder.Decode(&info)
+	if err != nil {
+		fmt.Println("解码失败", err.Error())
+	} else {
+		for index, item := range info {
+			fmt.Println(index, item)
+		}
+	}
+
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"goapi/app/response"
-	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
@@ -50,10 +49,6 @@ func CheckStatus(Source, ContractCode string) string {
 			break
 		}
 		if len(push) > 0 { // 有数据记录 缓存
-			_, _ = redis.Client.Add(KeyStatus, status, 0)
-		}
-		if kline.CheckSourceSleep(Source, ContractCode) { // 休市
-			status = "5" // 当前数据源处于休市状态
 			_, _ = redis.Client.Add(KeyStatus, status, 0)
 		}
 		// 最终结果
