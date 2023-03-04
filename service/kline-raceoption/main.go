@@ -26,7 +26,7 @@ func init() {
 
 func main() {
 	// pprof 分析
-	pprof.Debug(":6061")
+	pprof.Debug(":6070")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	CodeData := KlineCommon.GetData(kconfig.KlineSource)

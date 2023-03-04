@@ -39,7 +39,6 @@ func main() {
 	AppPort := flag.Int64("APP_PORT", conf.GetInt64("app.port"), "服务端口")
 	flag.Parse()
 	// 初始化 SQL
-	// 定义日志目录
 	logger.Info("初始化 SQL")
 	bootstrap.SetupDB()
 	// 初始化 Redis
