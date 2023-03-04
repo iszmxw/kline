@@ -6,6 +6,7 @@ import (
 	"goapi/app/models"
 	"goapi/bootstrap"
 	"goapi/config"
+	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"strings"
@@ -36,7 +37,7 @@ type Result struct {
 }
 
 func main() {
-	bootstrap.SetupRedis(0)
+	bootstrap.SetupRedis(conf.GetInt("redis.db"))
 	defer bootstrap.RedisClose()
 
 	sql := `

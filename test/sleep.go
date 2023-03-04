@@ -3,6 +3,7 @@ package main
 import (
 	"goapi/bootstrap"
 	"goapi/config"
+	conf "goapi/pkg/config"
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
 	"time"
@@ -21,7 +22,7 @@ func init() {
 }
 
 func main() {
-	bootstrap.SetupRedis(0)
+	bootstrap.SetupRedis(conf.GetInt("redis.db"))
 	defer bootstrap.RedisClose()
 	kline.UpdateSleep("kline-system", "GBP-JPY", "1", "1")
 	time.Sleep(20)
