@@ -195,7 +195,7 @@ func (p *FXCM) marketRequest(method, path string, params map[string]string) (err
 
 func (p *FXCM) GetTicker(info KlineCommon.Info) *wsdata.TickerValue {
 	pair := info.Symbol
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 	logger.Info("开始订阅")
 	if err, response := p.marketRequest("POST", "/subscribe", map[string]string{
 		"pairs": strings.ReplaceAll(pair, "/", "%2F"),
