@@ -47,10 +47,6 @@ func (p *FXCM) triggerEvent(event EventType) {
 	p.event <- event
 }
 
-func (p *FXCM) WatchEvent() chan EventType {
-	return p.event
-}
-
 // SetConfigure
 
 func (p *FXCM) SetConfigure(config Config) {
@@ -86,22 +82,19 @@ func (p *FXCM) Start() error {
 		return err
 	}
 
-	_ = p.Socket.On(socketio.OnConnection, func(c *socketio.Channel, args interface{}) {
+	err = p.Socket.On(socketio.OnConnection, func(c *socketio.Channel, args interface{}) {
 		logger.Printf("Socket Connected[%s]", c.Id())
 		p.sid = c.Id()
-		go p.triggerEvent(0) // EventConnected
 	})
 
-	_ = p.Socket.On(socketio.OnDisconnection, func(c *socketio.Channel, args interface{}) {
+	err = p.Socket.On(socketio.OnDisconnection, func(c *socketio.Channel, args interface{}) {
 		logger.Printf("Socket Disconnected:%v", args)
-		go p.triggerEvent(1) // EventLostConnection
 	})
 
-	_ = p.Socket.On(socketio.OnError, func(c *socketio.Channel) {
+	err = p.Socket.On(socketio.OnError, func(c *socketio.Channel) {
 		logger.Printf("Error occurs")
-		go p.triggerEvent(2) // EventLostConnection
 	})
-	return nil
+	return err
 }
 
 // 订阅市场数据

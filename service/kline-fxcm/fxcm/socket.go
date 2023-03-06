@@ -25,6 +25,7 @@ func SocketFxcm(info KlineCommon.Info) {
 	wsClient.CloseChanCallback = make(chan KlineCommon.Info, 20)
 	if err := wsClient.Start(); err != nil {
 		logger.Info(err)
+		wsClient.Close()
 		go SocketFxcm(info)
 		return
 	}
@@ -54,7 +55,7 @@ func SocketFxcm(info KlineCommon.Info) {
 			go SocketFxcm(info)
 			return
 		}
-		_ = wsClient.Socket.On(info.Symbol, func(c *socketio.Channel, args interface{}) {
+		err := wsClient.Socket.On(info.Symbol, func(c *socketio.Channel, args interface{}) {
 			var stream wsdata.DataStream
 			err := json.Unmarshal([]byte(args.(string)), &stream)
 			if err != nil {
@@ -134,10 +135,15 @@ func SocketFxcm(info KlineCommon.Info) {
 			//}
 
 		})
+		if err != nil {
+			logger.Error(err)
+			wsClient.Close()
+		}
 	}
 	select {
 	case Symbol, ok := <-wsClient.CloseChanCallback:
 		if ok {
+			wsClient.Close()
 			// 重启服务
 			logger.Info("重启", Symbol)
 			KlineCommon.RebootSocketLog(config.KlineSource, Symbol)
