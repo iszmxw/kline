@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"goapi/app/response"
 	"goapi/pkg/logger"
-	"goapi/pkg/notice/mail"
+	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"time"
 )
@@ -22,41 +22,42 @@ func CheckStatus(Source, ContractCode string) string {
 	}
 	if len(push) == 0 {
 		status = "-2" // -2 代表读取redis暂无数据
-	}
-	var SubIndexKLineResponse *response.SubIndexKLineResponse
-	WsIndexErr := json.Unmarshal([]byte(push), &SubIndexKLineResponse)
-	if WsIndexErr != nil {
-		logger.Error(errors.New("json解析错误：" + push))
-		logger.Error(WsIndexErr)
-		status = "-3" // -1 代表解析 redis 的数据错误
 	} else {
-		// 差
-		SystemTs := time.Now().UnixMilli()
-		diff := (SystemTs - SubIndexKLineResponse.Ts) / 1000
-		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", Source, ContractCode)
-		switch true {
-		case diff < 60*1:
-			status = "1" // 正常，绿色
-			break
-		case (diff >= 60) && (diff < 60*2):
-			status = "2" // 延迟，黄色
-			break
-		case (diff >= 60*2) && (diff < 60*3):
-			status = "3" // 警告，延迟过高
-			break
-		case diff >= 60*3:
-			status = "4" // 警告，延迟过高
-			break
-		}
-		if len(push) > 0 { // 有数据记录 缓存
-			_, _ = redis.Client.Add(KeyStatus, status, 0)
-		}
-		// 最终结果
-		if status == "4" {
-			NoticeMail.Notice("msgHeartbeatAnomaly", map[string]interface{}{
-				"name": Source,
-				"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
-			})
+		var SubIndexKLineResponse *response.SubIndexKLineResponse
+		WsIndexErr := json.Unmarshal([]byte(push), &SubIndexKLineResponse)
+		if WsIndexErr != nil {
+			logger.Error(errors.New("json解析错误：" + push))
+			logger.Error(WsIndexErr)
+			status = "-3" // -1 代表解析 redis 的数据错误
+		} else {
+			// 差
+			SystemTs := time.Now().UnixMilli()
+			diff := (SystemTs - SubIndexKLineResponse.Ts) / 1000
+			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", Source, ContractCode)
+			switch true {
+			case diff < 60*1:
+				status = "1" // 正常，绿色
+				break
+			case (diff >= 60) && (diff < 60*2):
+				status = "2" // 延迟，黄色
+				break
+			case (diff >= 60*2) && (diff < 60*3):
+				status = "3" // 警告，延迟过高
+				break
+			case diff >= 60*3:
+				status = "4" // 警告，延迟过高
+				break
+			}
+			if len(push) > 0 { // 有数据记录 缓存
+				_, _ = redis.Client.Add(KeyStatus, status, 0)
+			}
+			// 最终结果
+			if status == "4" {
+				NoticeMail.Notice("msgHeartbeatAnomaly", map[string]interface{}{
+					"name": Source,
+					"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
+				})
+			}
 		}
 	}
 	return status

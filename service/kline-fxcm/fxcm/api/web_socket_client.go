@@ -36,8 +36,9 @@ type FXCM struct {
 	config            Config
 	event             chan EventType
 	Socket            *socketio.Client
+	Info              KlineCommon.Info
 	mutex             sync.Mutex
-	sid               string
+	Sid               string
 	OnceReboot        sync.Once             // Reboot动作锁
 	CloseChanCallback chan KlineCommon.Info // 关闭通知外部
 	IsClose           bool
@@ -81,18 +82,20 @@ func (p *FXCM) Start() error {
 	if err != nil {
 		return err
 	}
-
 	err = p.Socket.On(socketio.OnConnection, func(c *socketio.Channel, args interface{}) {
 		logger.Printf("Socket Connected[%s]", c.Id())
-		p.sid = c.Id()
+		p.GetTicker(p.Info)
+		p.Sid = c.Id()
 	})
 
 	err = p.Socket.On(socketio.OnDisconnection, func(c *socketio.Channel, args interface{}) {
 		logger.Printf("Socket Disconnected:%v", args)
+		p.Close()
 	})
 
 	err = p.Socket.On(socketio.OnError, func(c *socketio.Channel) {
 		logger.Printf("Error occurs")
+		p.Close()
 	})
 	return err
 }
@@ -184,7 +187,7 @@ func (p *FXCM) marketRequest(method, path string, params map[string]string) (err
 
 func (p *FXCM) GetTicker(info KlineCommon.Info) *wsdata.TickerValue {
 	pair := info.Symbol
-	time.Sleep(time.Second * 3)
+	time.Sleep(1 * time.Second)
 	logger.Info("开始订阅")
 	if err, response := p.marketRequest("POST", "/subscribe", map[string]string{
 		"pairs": strings.ReplaceAll(pair, "/", "%2F"),
@@ -209,12 +212,13 @@ func (p *FXCM) GetTicker(info KlineCommon.Info) *wsdata.TickerValue {
 		pairs := values["pairs"].([]interface{})
 		if pairs != nil && len(pairs) > 0 {
 			rates := pairs[len(pairs)-1].(map[string]interface{})["Rates"].([]interface{})
-			return &wsdata.TickerValue{
+			result := &wsdata.TickerValue{
 				High: rates[1].(float64), // asks
 				Low:  rates[0].(float64), // bids
 				Last: (rates[0].(float64) + rates[1].(float64)) / 2,
 				Time: time.Unix(int64(pairs[len(pairs)-1].(map[string]interface{})["Updated"].(float64)/1000), 0).Format(xtime.TimeFormat),
 			}
+			return result
 		}
 	}
 	return nil

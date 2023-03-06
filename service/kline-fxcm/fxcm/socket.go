@@ -22,6 +22,7 @@ import (
 
 func SocketFxcm(info KlineCommon.Info) {
 	wsClient := new(api.FXCM)
+	wsClient.Info = info
 	wsClient.CloseChanCallback = make(chan KlineCommon.Info, 20)
 	if err := wsClient.Start(); err != nil {
 		logger.Info(err)
@@ -30,7 +31,7 @@ func SocketFxcm(info KlineCommon.Info) {
 		return
 	}
 	// 开启定时器30秒检测一次数据活跃状态
-	wsClient.OnceReboot.Do(func() {
+	go wsClient.OnceReboot.Do(func() {
 		defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, info.Symbol)
 		ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
 		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, info.ContractCode)
@@ -49,7 +50,6 @@ func SocketFxcm(info KlineCommon.Info) {
 
 	// 开始订阅
 	{
-		wsClient.GetTicker(info)
 		// 接收数据
 		if wsClient.Socket == nil {
 			go SocketFxcm(info)
