@@ -30,36 +30,38 @@ func main() {
 	for {
 		// 每隔一秒钟执行一次
 		time.Sleep(time.Second)
-		go func() {
-			// 1、查询需要插针的资产
-			var list []models.TradingAssetsMonitoring
-			mysql.DB.Debug().
-				Model(models.TradingAssetsMonitoring{}).
-				Where("is_valid", 1).
-				Find(&list)
-			for index, item := range list {
-				logger.Info(index, item.ID, "---", item.AssetsCode)
-				// 检测是否安全期内
-				// 1、设置提前触发时间（拿这个时间价格作为判断条件）
-				item.InadvanceTimer = 20000
-				var tradingOrder []models.TradingOrder
-				mysql.DB.Debug().Model(models.TradingOrder{}).
-					Where("quiz_result", -1).
-					Where("is_valid", 1).
-					Where("trade_end_timestamp <= ?", time.Now().UnixMilli()-item.InadvanceTimer).
-					Find(&tradingOrder)
-				if len(tradingOrder) > 0 {
-					go monitoring(item, tradingOrder)
-				}
-			}
-		}()
+		go monitoring()
 	}
 
 }
 
 // 监控
-func monitoring(config models.TradingAssetsMonitoring, orders []models.TradingOrder) {
+func monitoring() {
+	// 1、查询需要插针的资产
+	var list []models.TradingAssetsMonitoring
+	mysql.DB.Debug().
+		Model(models.TradingAssetsMonitoring{}).
+		Where("is_valid", 1).
+		Find(&list)
+	for index, item := range list {
+		logger.Info(index, item.ID, "---", item.AssetsCode)
+		// 检测是否安全期内
+		// 1、设置提前触发时间（拿这个时间价格作为判断条件）
+		logger.Info(item)
+		var tradingOrder []models.TradingOrder
+		mysql.DB.Debug().Model(models.TradingOrder{}).
+			Where("quiz_result", -1).
+			Where("is_valid", 1).
+			Where("trade_end_timestamp <= ?", time.Now().UnixMilli()-item.InadvanceTimer).
+			Find(&tradingOrder)
+		if len(tradingOrder) > 0 {
+			go calculate(item, tradingOrder)
+		}
+	}
+}
 
+// 进行计算分析是否需要插针，以及按照规则生成插针数据
+func calculate(config models.TradingAssetsMonitoring, orders []models.TradingOrder) {
 	var (
 		// 买涨的人数
 		upPeoples int64 = 0

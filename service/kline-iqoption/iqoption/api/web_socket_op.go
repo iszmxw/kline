@@ -44,6 +44,7 @@ type WebSocketOp struct {
 	ReqTopicMap       map[string]*CallbackFunc // 请求历史
 	closeChanCallback chan int                 // 关闭通知外部
 	allSubStars       list.List
+	List              *list.List
 	ContractCode      string // 订阅的币种
 	Symbol            string // 订阅的币种
 	IsLogin           bool   // 是否已经 Login
@@ -63,6 +64,7 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.ReqTopicMap = make(map[string]*CallbackFunc)
 	ws.allSubStars = list.List{}
+	ws.List = list.New()
 	ws.closeChanCallback = closeChanCallback
 	ret := ws.connServer()
 	return ret

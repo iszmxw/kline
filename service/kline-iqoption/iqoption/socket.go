@@ -40,6 +40,15 @@ func SocketIqoption(info KlineCommon.Info) {
 				}
 			}()
 			UpstreamTs := int64(resp.From * 1000) // 上游的ts
+			l := wsClient.List.Back()
+			if l != nil {
+				wsClient.List.Remove(l)
+				if l.Value == UpstreamTs {
+					logger.Info("相等了")
+					return
+				}
+			}
+			wsClient.List.PushFront(UpstreamTs)
 			TimeDiff := SystemTs - UpstreamTs
 			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
 			logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
@@ -70,9 +79,7 @@ func SocketIqoption(info KlineCommon.Info) {
 					Model(models.KlineLog{}).
 					Select("log_id").
 					Where("contract_code", info.ContractCode).
-					Where("ts", SystemTs).
 					Where("upstream_ts", UpstreamTs).
-					Where("c_close", data.Tick.Close).
 					Where("kline_source", config.KlineSource).
 					Find(&KlineData).Error
 				if err != nil {

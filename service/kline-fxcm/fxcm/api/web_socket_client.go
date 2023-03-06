@@ -1,6 +1,7 @@
 package api
 
 import (
+	"container/list"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,6 +43,7 @@ type FXCM struct {
 	OnceReboot        sync.Once             // Reboot动作锁
 	CloseChanCallback chan KlineCommon.Info // 关闭通知外部
 	IsClose           bool
+	List              *list.List
 }
 
 func (p *FXCM) triggerEvent(event EventType) {
@@ -77,8 +79,14 @@ func (p *FXCM) Start() error {
 	p.event = make(chan EventType, 1)
 	token := p.config.Custom["token"].(string)
 	var err error
-	p.Socket, err = socketio.Dial(config.WssFXCMUrl+"/socket.io/?EIO=3&transport=websocket&access_token="+token,
-		transport.GetDefaultWebsocketTransport())
+	url := config.WssFXCMUrl + "/socket.io/?EIO=3&transport=websocket&access_token=" + token
+	p.Socket, err = socketio.Dial(url, &transport.WebsocketTransport{
+		PingInterval:   25 * time.Second,
+		PingTimeout:    transport.WsDefaultPingTimeout,
+		ReceiveTimeout: transport.WsDefaultReceiveTimeout,
+		SendTimeout:    transport.WsDefaultSendTimeout,
+		BufferSize:     transport.WsDefaultBufferSize,
+	})
 	if err != nil {
 		return err
 	}
