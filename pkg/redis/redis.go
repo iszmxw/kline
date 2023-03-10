@@ -92,6 +92,14 @@ func (rdb *Redis) ZAdd(key string, members ...redis.Z) int64 {
 	return rdb.Client.ZAdd(Set(key), members...).Val()
 }
 
+func (rdb *Redis) ZRangeWithScores(key string, start, stop int64) []redis.Z {
+	return rdb.Client.ZRangeWithScores(Set(key), start, stop).Val()
+}
+
+func (rdb *Redis) ZRem(key string, members ...interface{}) int64 {
+	return rdb.Client.ZRem(Set(key), members...).Val()
+}
+
 func (rdb *Redis) Expire(key string, exTime int) *redis.BoolCmd {
 	return rdb.Client.Expire(Set(key), time.Duration(exTime)*time.Second)
 }
@@ -100,6 +108,15 @@ func (rdb *Redis) Lpush(key string, values ...interface{}) (bool, error) {
 	_, err := rdb.Client.LPush(Set(key), values...).Result()
 	if err != nil {
 		fmt.Println("Lpush 失败")
+		return false, err
+	}
+	return true, nil
+}
+
+func (rdb *Redis) Rpush(key string, values ...interface{}) (bool, error) {
+	_, err := rdb.Client.RPush(Set(key), values...).Result()
+	if err != nil {
+		fmt.Println("Rpush 失败")
 		return false, err
 	}
 	return true, nil

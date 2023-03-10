@@ -11,6 +11,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
+	"goapi/service/binary-monitoring/config"
 	"math/rand"
 	"strings"
 	"time"
@@ -80,7 +81,7 @@ func Start() {
 }
 
 // 进行计算分析是否需要插针，以及按照规则生成插针数据
-func calculate(currentTimeMillis int64, config response.TradingAssetsMonitoring, orders []response.TradingOrder) {
+func calculate(currentTimeMillis int64, conf response.TradingAssetsMonitoring, orders []response.TradingOrder) {
 	var (
 		// 买涨的人数
 		upPeoples int64 = 0
@@ -138,7 +139,7 @@ func calculate(currentTimeMillis int64, config response.TradingAssetsMonitoring,
 		// 盈亏平了，不用进行干预
 		return
 	}
-	if winLoss < config.LossThreshold {
+	if winLoss < conf.LossThreshold {
 		return
 	}
 	// 如果该区域平台亏损金额大于xx美金，开始进行干预
@@ -146,32 +147,32 @@ func calculate(currentTimeMillis int64, config response.TradingAssetsMonitoring,
 	logger.Info("最小close", LClose)
 	// 低价位平台盈利
 	if strings.EqualFold("winDown", WinType) {
-		CreateInterferenceNeedle(currentTimeMillis, HClose, LClose, config)
+		CreateInterferenceNeedle(currentTimeMillis, HClose, LClose, conf)
 	}
 	// 高价位平台盈利
 	if strings.EqualFold("winUp", WinType) {
-		CreateInterferenceNeedle(currentTimeMillis, HClose, LClose, config)
+		CreateInterferenceNeedle(currentTimeMillis, HClose, LClose, conf)
 	}
 
 }
 
 // 创建干扰针
 
-func CreateInterferenceNeedle(currentTimeMillis int64, HClose, LClose float64, config response.TradingAssetsMonitoring) {
+func CreateInterferenceNeedle(currentTimeMillis int64, HClose, LClose float64, conf response.TradingAssetsMonitoring) {
 	// 提前插针时间
-	EarlyExecutionTimer := currentTimeMillis + (60-config.EarlyexecutionTimer)*1000
+	EarlyExecutionTimer := currentTimeMillis + (60-conf.EarlyexecutionTimer)*1000
 	EarlyExecutionTimerEnd := currentTimeMillis + 60*1000
 	RecoverTs := EarlyExecutionTimerEnd
-	RecoverTimer := currentTimeMillis + (60-config.RecoverTimer)*1000
+	RecoverTimer := currentTimeMillis + (60-conf.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
 	cClose := HClose
-	for i := 0; i < config.EarlyexecutionFrequency; i++ {
-		cClose = cClose * (1 - config.VolatilityAmplitude)
-		cClose, _ = helpers.FormatFloat(cClose, config.PointNumber)
-		data := redisData(config.AssetsCode, "EthanYep", EarlyExecutionTimer+(int64(i))*1000, cClose)
+	for i := 0; i < conf.EarlyexecutionFrequency; i++ {
+		cClose = cClose * (1 - conf.VolatilityAmplitude)
+		cClose, _ = helpers.FormatFloat(cClose, conf.PointNumber)
+		data := redisData(conf.AssetsCode, config.KlineSource, EarlyExecutionTimer+(int64(i))*1000, cClose)
 		logger.Info(data)
 		if len(data) > 0 {
-			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", config.AssetsCode), data)
+			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", conf.AssetsCode), data)
 			if err != nil {
 				panic(err)
 			}
@@ -179,48 +180,48 @@ func CreateInterferenceNeedle(currentTimeMillis int64, HClose, LClose float64, c
 	}
 	// 资产在最低价格~最低价格*(1-资产震荡幅度）之间按设置震荡频率随机震荡，直到区间结束时间
 	cClose = LClose
-	timeNow := EarlyExecutionTimer + int64(config.EarlyexecutionFrequency)*1000
+	timeNow := EarlyExecutionTimer + int64(conf.EarlyexecutionFrequency)*1000
 	i := 0
 	for SystemTs := timeNow; SystemTs <= EarlyExecutionTimerEnd; SystemTs = SystemTs + 1000 {
 		i++
 		// 求余，每隔xx秒震荡一次，随机的是震荡方向
-		ok := decimal.NewFromInt(int64(i)).Mod(decimal.NewFromInt(config.VolatilityFrequency)).IsZero()
+		ok := decimal.NewFromInt(int64(i)).Mod(decimal.NewFromInt(conf.VolatilityFrequency)).IsZero()
 		if ok {
 			// 随机震荡
 			if rand.Intn(2) == 0 {
-				cClose = cClose * (1 - config.ShockAmplitude)
+				cClose = cClose * (1 - conf.ShockAmplitude)
 			} else {
-				cClose = cClose * (1 + config.ShockAmplitude)
+				cClose = cClose * (1 + conf.ShockAmplitude)
 			}
 		}
-		cClose, _ = helpers.FormatFloat(cClose, config.PointNumber)
+		cClose, _ = helpers.FormatFloat(cClose, conf.PointNumber)
 		if cClose > LClose {
 			cClose = LClose
 		}
 		result := cClose
 		logger.Info(result)
 		// 获取随机数 close 值
-		data := redisData(config.AssetsCode, "EthanYep", SystemTs, cClose)
+		data := redisData(conf.AssetsCode, config.KlineSource, SystemTs, cClose)
 		logger.Info(data)
 		if len(data) > 0 {
-			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", config.AssetsCode), data)
+			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", conf.AssetsCode), data)
 			if err != nil {
 				panic(err)
 			}
 		}
 	}
 	// 追加结束信号，后面好根据结束信号来生成恢复数据插针逻辑
-	data := redisData(config.AssetsCode, "End", 0, 0)
+	data := redisData(conf.AssetsCode, "End", 0, 0)
 	logger.Info(data)
 	if len(data) > 0 {
-		_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", config.AssetsCode), data)
+		_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", conf.AssetsCode), data)
 		if err != nil {
 			panic(err)
 		}
 	}
 	redis.Client.ZAdd("Queue:interferenceNeedle:list", goRedis.Z{
 		Score:  float64(EarlyExecutionTimer),
-		Member: fmt.Sprintf("Queue:interferenceNeedle:%s", config.AssetsCode),
+		Member: fmt.Sprintf("Queue:interferenceNeedle:%s", conf.AssetsCode),
 	})
 	// 频次
 	logger.Info(time.Now().UnixMilli(), EarlyExecutionTimer, time.Now().UnixMilli()-EarlyExecutionTimer, RecoverTimer, RecoverTs, EarlyExecutionTimerEnd)

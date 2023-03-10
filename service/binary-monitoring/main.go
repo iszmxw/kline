@@ -7,6 +7,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/pprof"
 	"goapi/service/binary-monitoring/monitoring"
+	"goapi/service/binary-monitoring/queue"
 	"time"
 )
 
@@ -26,7 +27,7 @@ func main() {
 	pprof.Debug(":6069")
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
-	//go queue.Start()
+	go queue.Start()
 	monitoring.CreateInterferenceNeedle(time.Now().UnixMilli(), 0.66103, 0.66096, response.TradingAssetsMonitoring{
 		ID:                      29,
 		PointNumber:             5,
@@ -44,9 +45,9 @@ func main() {
 		VolatilityAmplitude:     0.001,
 		VolatilityFrequency:     2,
 	})
-	//for {
-	//	// 每隔一秒钟执行一次
-	//	time.Sleep(time.Second)
-	//	go monitoring.Start()
-	//}
+	for {
+		// 每隔一秒钟执行一次
+		time.Sleep(time.Second)
+		//go monitoring.Start()
+	}
 }

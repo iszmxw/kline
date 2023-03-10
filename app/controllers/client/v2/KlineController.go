@@ -596,7 +596,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		// raceoption:market.ETH-USD.index.1min
 		key := fmt.Sprintf("%v:market.%v.index.1min", klineSource, AssetsCode)
 		push, getErr := redis.Client.SelectDbGet(15, key)
-		if getErr != nil {
+		if getErr != nil && getErr.Error() != "redis: nil" {
 			logger.Error(getErr)
 			logger.Info(key)
 			wss.WsClose(ws)
