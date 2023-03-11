@@ -199,24 +199,6 @@ func (p *Params) Calculate(currentTimeMillis int64, conf response.TradingAssetsM
 	if err != nil {
 		logger.Error(err)
 	}
-	// 插针明细表
-	p.Peoples = helpers.RemoveRepeatedElement(p.Peoples)
-	var NeedleDetails models.NeedleDetails
-	NeedleDetails.AssetsCode = p.config.AssetsCode
-	NeedleDetails.StartTimer = 0
-	NeedleDetails.StartDate = time.Unix(0, NeedleDetails.StartTimer*int64(time.Millisecond))
-	NeedleDetails.EndTimer = 0
-	NeedleDetails.EndDate = time.Unix(0, NeedleDetails.EndTimer*int64(time.Millisecond))
-	NeedleDetails.OrderNum = len(orders)
-	NeedleDetails.PeopleNum = len(p.Peoples)
-	//
-	NeedleDetails.MarketQuoteOdds = 0
-	NeedleDetails.MarketQuoteWinAmount = 0
-	NeedleDetails.NeedleAfterOdds = 0
-	NeedleDetails.NeedleAfterWinAmount = 0
-	//
-	NeedleDetails.CreateDate = time.Now()
-	NeedleDetails.UpdateDate = time.Now()
 	go p.CreateInterferenceNeedle(currentTimeMillis, Close)
 
 }
@@ -347,6 +329,29 @@ func (p *Params) CreateInterferenceNeedle(currentTimeMillis int64, Close float64
 		Score:  float64(EarlyExecutionTimer),
 		Member: fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode),
 	})
+
+	// 插针明细表
+	p.Peoples = helpers.RemoveRepeatedElement(p.Peoples)
+	var NeedleDetails models.NeedleDetails
+	NeedleDetails.AssetsCode = p.config.AssetsCode
+	NeedleDetails.StartTimer = EarlyExecutionTimer
+	NeedleDetails.StartDate = time.Unix(0, EarlyExecutionTimer*int64(time.Millisecond))
+	NeedleDetails.EndTimer = EarlyExecutionTimerEnd
+	NeedleDetails.EndDate = time.Unix(0, EarlyExecutionTimerEnd*int64(time.Millisecond))
+	NeedleDetails.OrderNum = p.upNum + p.downNum
+	NeedleDetails.PeopleNum = len(p.Peoples)
+	//
+	NeedleDetails.MarketQuoteOdds = 0
+	NeedleDetails.MarketQuoteWinAmount = 0
+	NeedleDetails.NeedleAfterOdds = 0
+	NeedleDetails.NeedleAfterWinAmount = 0
+	//
+	NeedleDetails.CreateDate = time.Now()
+	NeedleDetails.UpdateDate = time.Now()
+	err := mysql.DB.Model(models.NeedleDetails{}).Create(&NeedleDetails).Error
+	if err != nil {
+		logger.Error(err)
+	}
 	// 频次
 	logger.Info(time.Now().UnixMilli(), EarlyExecutionTimer, time.Now().UnixMilli()-EarlyExecutionTimer, RecoverTimer, RecoverTs, EarlyExecutionTimerEnd)
 }
