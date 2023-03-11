@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"goapi/pkg/logger"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -140,7 +142,12 @@ func getCheckDataCount(num int, url string, payloadBody string) {
 		fmt.Println(err)
 		return
 	}
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(res.Body)
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {

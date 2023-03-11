@@ -211,7 +211,6 @@ func (rdb *Redis) SelectDbSetNx(db int, key string, value interface{}, exTime in
 	pipe.Select(rdb.DefaultDB)
 	cmderArr, err := pipe.Exec()
 	strMap := GetCmdResult(cmderArr)
-	logger.Info(strMap[1])
 	if strMap[1].(bool) {
 		return true, err
 	}

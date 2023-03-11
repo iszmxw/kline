@@ -3,6 +3,7 @@ package zip
 import (
 	"bytes"
 	"compress/gzip"
+	"goapi/pkg/logger"
 	"io/ioutil"
 )
 
@@ -12,7 +13,12 @@ func GZipDecompress(input []byte) ([]byte, error) {
 	if gzipErr != nil {
 		return nil, gzipErr
 	}
-	defer reader.Close()
+	defer func(reader *gzip.Reader) {
+		err := reader.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(reader)
 	result, readErr := ioutil.ReadAll(reader)
 	if readErr != nil {
 		return nil, readErr

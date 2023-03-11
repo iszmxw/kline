@@ -1,6 +1,6 @@
 package trade_sleep
 
-const AUD_JPY = `
+const AudJpy = `
 [
   {
     "name": "Monday",

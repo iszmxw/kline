@@ -18,7 +18,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
 	wss "goapi/pkg/websocket"
-	wss_heart_beating "goapi/pkg/wss-heart-beating"
+	wssHeartBeating "goapi/pkg/wss-heart-beating"
 	"math/rand"
 	"strings"
 	"time"
@@ -236,7 +236,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		if wss_heart_beating.IsDie(HeartBeatingKey) {
+		if wssHeartBeating.IsDie(HeartBeatingKey) {
 			goto STOP
 		}
 		if len(SubBody.Nation) == 0 {

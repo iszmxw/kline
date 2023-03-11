@@ -13,67 +13,67 @@ func GetTimeIsSleep(ContractCode string) bool {
 	var result bool
 	switch ContractCode {
 	case "AUD-CAD":
-		config = AUD_CAD
+		config = AudCad
 		break
 	case "AUD-CHF":
-		config = AUD_CHF
+		config = AudChf
 		break
 	case "AUD-USD":
-		config = AUD_USD
+		config = AudUsd
 		break
 	case "CAD-CHF":
-		config = CAD_CHF
+		config = CadChf
 		break
 	case "COPPER":
 		config = COPPER
 		break
 	case "EUR-AUD":
-		config = EUR_AUD
+		config = EurAud
 		break
 	case "EUR-GBP":
-		config = EUR_GBP
+		config = EurGbp
 		break
 	case "EUR-JPY":
-		config = EUR_JPY
+		config = EurJpy
 		break
 	case "EUR-USD":
-		config = EUR_USD
+		config = EurUsd
 		break
 	case "GBP-JPY":
-		config = GBP_JPY
+		config = GbpJpy
 		break
 	case "GOLD":
 		config = GOLD
 		break
 	case "NZD-USD":
-		config = NZD_USD
+		config = NzdUsd
 		break
 	case "USD-CAD":
-		config = USD_CAD
+		config = UsdCad
 		break
 	case "USD-JPY":
-		config = USD_JPY
+		config = UsdJpy
 		break
 	case "wheat":
 		config = WHEAT
 		break
 	case "AUD-CAD-OTC":
-		config = AUD_CAD_OTC
+		config = AudCadOtc
 		break
 	case "EUR-GBP-OTC":
-		config = EUR_GBP_OTC
+		config = EurGbpOtc
 		break
 	case "EUR-JPY-OTC":
-		config = EUR_JPY_OTC
+		config = EurJpyOtc
 		break
 	case "EUR-USD-OTC":
-		config = EUR_USD_OTC
+		config = EurUsdOtc
 		break
 	case "GBP-USD-OTC":
-		config = GBP_USD_OTC
+		config = GbpUsdOtc
 		break
 	case "USD-CHF-OTC":
-		config = USD_CHF_OTC
+		config = UsdChfOtc
 		break
 	}
 	if len(config) > 0 {

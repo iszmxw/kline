@@ -1,6 +1,6 @@
 package trade_sleep
 
-const EUR_GBP_OTC = `
+const EurGbpOtc = `
 [
   {
     "name": "Monday",

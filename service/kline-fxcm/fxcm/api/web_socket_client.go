@@ -129,7 +129,7 @@ func (p *FXCM) marketRequest(method, path string, params map[string]string) (err
 	var request *http.Request
 	var err error
 	if method == "GET" {
-		request, err = http.NewRequest(method, config.HttpFXCMUrl+path+"?"+string(bodyStr), nil)
+		request, err = http.NewRequest(method, config.HttpFXCMUrl+path+"?"+bodyStr, nil)
 		if err != nil {
 			return err, nil
 		}

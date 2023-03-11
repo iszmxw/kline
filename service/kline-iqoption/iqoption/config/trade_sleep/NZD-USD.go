@@ -1,6 +1,6 @@
 package trade_sleep
 
-const NZD_USD = `
+const NzdUsd = `
 [
   {
     "name": "Monday",

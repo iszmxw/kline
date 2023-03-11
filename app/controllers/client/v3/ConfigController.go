@@ -14,7 +14,7 @@ type ConfigController struct {
 	BaseController
 }
 
-// 获取15库的所有键值对
+// 获取 15 库的所有键值对
 
 func (h *ConfigController) SetKlineToken(c *gin.Context) {
 	key := c.Query("key")

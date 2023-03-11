@@ -53,7 +53,8 @@ func Uint2String(str string) int {
 	return i
 }
 
-// Struct2json Struct转换json
+// Struct转换json
+
 func Struct2json(value interface{}) string {
 	bs, _ := json.Marshal(value)
 	var out bytes.Buffer

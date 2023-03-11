@@ -1,6 +1,6 @@
 package trade_sleep
 
-const CAD_CHF = `
+const CadChf = `
 [
   {
     "name": "Monday",

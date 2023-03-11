@@ -46,7 +46,11 @@ func main() {
 		}
 	}(file)
 	jsByte, err := ioutil.ReadAll(file)
-	vm.Run(string(jsByte))
+	_, err = vm.Run(string(jsByte))
+	if err != nil {
+		logger.Error(err)
+		return
+	}
 	commonFunc(vm, "common")
 	newsPageFunc(vm, "newsPage")
 	newsPageInfoFunc(vm, "newsPageInfo")

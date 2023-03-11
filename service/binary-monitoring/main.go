@@ -1,7 +1,6 @@
 package main
 
 import (
-	"goapi/app/response"
 	"goapi/bootstrap"
 	"goapi/config"
 	"goapi/pkg/logger"
@@ -28,26 +27,26 @@ func main() {
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	go queue.Start()
-	monitoring.CreateInterferenceNeedle(time.Now().UnixMilli(), 0.66103, 0.66096, response.TradingAssetsMonitoring{
-		ID:                      29,
-		PointNumber:             5,
-		AssetsCode:              "AUD-USD",
-		IsMonitoring:            1,
-		AreaTimer:               0,
-		IntervalTimer:           60,
-		InadvanceTimer:          20,
-		LossThreshold:           0,
-		EarlyexecutionTimer:     24,
-		EarlyexecutionFrequency: 5,
-		RecoverTimer:            0,
-		RecoverFrequency:        0,
-		ShockAmplitude:          0.001,
-		VolatilityAmplitude:     0.001,
-		VolatilityFrequency:     2,
-	})
+	//monitoring.CreateInterferenceNeedle(time.Now().UnixMilli(), 0.66103, 0.66096, response.TradingAssetsMonitoring{
+	//	ID:                      29,
+	//	PointNumber:             5,
+	//	AssetsCode:              "AUD-USD",
+	//	IsMonitoring:            1,
+	//	AreaTimer:               0,
+	//	IntervalTimer:           60,
+	//	InadvanceTimer:          20,
+	//	LossThreshold:           0,
+	//	EarlyexecutionTimer:     24,
+	//	EarlyexecutionFrequency: 5,
+	//	RecoverTimer:            0,
+	//	RecoverFrequency:        0,
+	//	ShockAmplitude:          0.0001,
+	//	VolatilityAmplitude:     0.0001,
+	//	VolatilityFrequency:     2,
+	//})
 	for {
 		// 每隔一秒钟执行一次
 		time.Sleep(time.Second)
-		//go monitoring.Start()
+		go monitoring.Start()
 	}
 }

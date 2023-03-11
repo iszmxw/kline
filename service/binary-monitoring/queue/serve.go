@@ -92,11 +92,10 @@ func Consume(key string) {
 			continue
 		}
 		// 到点了，开始存储数据
-		logger.Info(fmt.Sprintf("当前系统时间：%v,data.Ts时间：%v,两者的时间差：【%v】", time.Now().Format("2006-01-02 15:04:05"), data.TsDate, timeNow-data.Ts), data)
+		logger.Info(fmt.Sprintf("当前系统时间：%v,数据时间：%v,两者的时间差：【%v】", time.Now().Format("2006-01-02 15:04:05"), data.TsDate, timeNow-data.Ts))
 		if response.KlineSource(AssetsCode) == config.KlineSource {
 			var KlineData models.KlineLog
-			err = mysql.DB.Debug().
-				Model(models.KlineLog{}).
+			err = mysql.DB.Model(models.KlineLog{}).
 				Select("log_id").
 				Where("contract_code", AssetsCode).
 				Where("ts", data.Ts).
@@ -116,7 +115,6 @@ func Consume(key string) {
 				logger.Error(err)
 				continue
 			}
-			logger.Info(data.Ch, lineLogRes)
 		}
 	}
 	logger.Info(exist)

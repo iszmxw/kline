@@ -23,7 +23,7 @@ type SubPriceKLineResponse struct {
 		H  string `json:"h"` // 这根K线期间最高成交价
 		L1 string `json:"l"` // 这根K线期间最低成交价
 		V  string `json:"v"` // 无意义字段
-		N  int    `json:"n"` // 这根K线更新期间数据数量
+		N  int    `json:"n"` // 这根K线更新 期间 数据数量
 		X  bool   `json:"x"` // 这根K线是否完结(是否已经开始下一根K线)
 		Q  string `json:"q"` // 无意义字段
 		V1 string `json:"V"` // 无意义字段

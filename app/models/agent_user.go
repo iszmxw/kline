@@ -30,6 +30,6 @@ type AgentUser struct {
 	RegistNation             string    `json:"regist_nation"`               //注册时国家
 	CreateDate               time.Time `json:"create_date"`                 //创建日期
 	UpdateDate               time.Time `json:"update_date"`                 //更新日期
-	LevelStartSettlementDate time.Time `json:"level_start_settlement_date"` //等级开始结算周期,每30天为一周期
+	LevelStartSettlementDate time.Time `json:"level_start_settlement_date"` //等级开始结算周期,每30天为 一 周期
 	LevelEndSettlementDate   time.Time `json:"level_end_settlement_date"`   //等级结算结束日，下一等级开始日
 }

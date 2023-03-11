@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"goapi/pkg/logger"
 	"io"
 	"io/ioutil"
 
@@ -31,14 +32,18 @@ func AesCBCDecrypt(src, key, iv []byte, padding string) ([]byte, error) {
 
 func Md5(text string) string {
 	hashMd5 := md5.New()
-	io.WriteString(hashMd5, text)
+	_, err := io.WriteString(hashMd5, text)
+	if err != nil {
+		logger.Error(err)
+		return ""
+	}
 	return fmt.Sprintf("%x", hashMd5.Sum(nil))
 }
 
 func Zip(data []byte) ([]byte, error) {
 	var b bytes.Buffer
 	gz, _ := gzip.NewWriterLevel(&b, 9)
-	if _, err := gz.Write([]byte(data)); err != nil {
+	if _, err := gz.Write(data); err != nil {
 		return nil, err
 	}
 	if err := gz.Flush(); err != nil {
@@ -52,12 +57,20 @@ func Zip(data []byte) ([]byte, error) {
 
 func UnZip(data []byte) ([]byte, error) {
 	b := new(bytes.Buffer)
-	binary.Write(b, binary.LittleEndian, data)
+	err := binary.Write(b, binary.LittleEndian, data)
+	if err != nil {
+		return nil, err
+	}
 	r, err := gzip.NewReader(b)
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
+	defer func(r *gzip.Reader) {
+		err = r.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(r)
 	unzipData, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err

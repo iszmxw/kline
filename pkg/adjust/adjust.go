@@ -35,7 +35,7 @@ type EventTokenStrObj struct {
 	} `json:"eventTokenStrObj"`
 }
 
-// Response represents the response from an track request.
+// Response represents the response from a track request.
 type Response struct {
 	Status       string `json:"status"`
 	Error        string `json:"error"`

@@ -1,6 +1,6 @@
 package trade_sleep
 
-const AUD_CAD_OTC = `
+const AudCadOtc = `
 [
   {
     "name": "Monday",

@@ -13,5 +13,5 @@ CREATE TABLE `t_trading_assets_monitoring` (
                                                `creator` varchar(128) DEFAULT NULL COMMENT '创建人',
                                                `updater` varchar(128) DEFAULT NULL COMMENT '更新人',
                                                `create_date` datetime DEFAULT NULL COMMENT '创建日期',
-                                               `update_date` datetime DEFAULT NULL COMMENT '更新日期',
+                                               `update_date` datetime DEFAULT NULL COMMENT '更新日期'
 ) ENGINE=InnoDB AUTO_INCREMENT=152 DEFAULT CHARSET=utf8mb4 COMMENT='资产表';

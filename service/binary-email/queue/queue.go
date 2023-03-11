@@ -58,7 +58,7 @@ func Consume() {
 					return
 				}
 				if !VerifyEmailFormat(params.To) {
-					logger.Error(errors.New("Invalid email format"))
+					logger.Error(errors.New("invalid email format"))
 					logger.Info(params)
 					return
 				}

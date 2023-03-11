@@ -67,7 +67,7 @@ func SetupRouteEmail() *gin.Engine {
 }
 
 func NoResponse(c *gin.Context) {
-	//返回404状态码
+	//返回 404 状态码
 	c.JSON(http.StatusNotFound, gin.H{
 		"status": 404,
 		"error":  "404, page not exists!",

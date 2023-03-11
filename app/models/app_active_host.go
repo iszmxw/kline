@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-// app活跃域名表
+// AppActiveHost app活跃域名表
 type AppActiveHost struct {
 	Id         int64     `gorm:"column:id; PRIMARY_KEY" json:"id"` //app活跃域名表主键自增ID
 	ActiveHost string    `json:"active_host"`                      //活跃的域名

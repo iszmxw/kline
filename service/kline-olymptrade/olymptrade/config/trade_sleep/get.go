@@ -13,16 +13,16 @@ func GetTimeIsSleep(ContractCode string) bool {
 	var result bool
 	switch ContractCode {
 	case "EUR-USD":
-		config = EUR_USD
+		config = EurUsd
 		break
 	case "GBP-USD":
-		config = GBP_USD
+		config = GbpUsd
 		break
 	case "AUD-CAD":
-		config = AUD_CAD
+		config = AudCad
 		break
 	case "USD-JPY":
-		config = USD_JPY
+		config = UsdJpy
 		break
 	case "GOLD":
 		config = GOLD
@@ -37,13 +37,13 @@ func GetTimeIsSleep(ContractCode string) bool {
 		config = Tesla
 		break
 	case "CAD-JPY":
-		config = CAD_JPY
+		config = CadJpy
 		break
 	case "EUR-AUD":
-		config = EUR_AUD
+		config = EurAud
 		break
 	case "USD-CAD":
-		config = USD_CAD
+		config = UsdCad
 		break
 	case "Microsoft":
 		config = Microsoft
@@ -61,13 +61,13 @@ func GetTimeIsSleep(ContractCode string) bool {
 		config = Amazon
 		break
 	case "AUD-CHF":
-		config = AUD_CHF
+		config = AudChf
 		break
 	case "AUD-JPY":
-		config = AUD_JPY
+		config = AudJpy
 		break
 	case "GBP-AUD":
-		config = GBP_AUD
+		config = GbpAud
 		break
 	}
 	if len(config) > 0 {

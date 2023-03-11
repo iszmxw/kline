@@ -2,6 +2,7 @@ package config
 
 //const LinearSwapDefaultHost = "ws.qxbroker.com"
 //const LinearSwapDefaultHost = "ws.quotex-trade.io"
+
 const LinearSwapDefaultHost = "ws2.qxbroker.com"
 const Origin = "https://qxbroker.com"
 const Domain = "https://qxbroker.com"

@@ -1,6 +1,6 @@
 package trade_sleep
 
-const USD_CHF_OTC = `
+const UsdChfOtc = `
 [
   {
     "name": "Monday",

@@ -19,7 +19,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
-	wss_heart_beating "goapi/pkg/wss-heart-beating"
+	wssheartbeating "goapi/pkg/wss-heart-beating"
 	"reflect"
 	"strings"
 	"time"
@@ -371,7 +371,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	logger.Info(fmt.Sprintf("历史记录查询耗时：%v ms", time.Now().UnixMilli()-timeStart))
 }
 
-// 推送 zipSocket 消息
+// PushZipHistory 推送 zipSocket 消息
 func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct requests.Sub, c *gin.Context) {
 	timeStart := time.Now().UnixMilli()
 	logger.RequestId = socketId
@@ -483,10 +483,10 @@ func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct 
 	var result []byte
 	for _, val := range data {
 		temp[0] = float64(val.Ts)
-		temp[1] = float64(val.COpen)
-		temp[2] = float64(val.CClose)
-		temp[3] = float64(val.High)
-		temp[4] = float64(val.Low)
+		temp[1] = val.COpen
+		temp[2] = val.CClose
+		temp[3] = val.High
+		temp[4] = val.Low
 		tempArr = append(tempArr, temp)
 	}
 	marshal, err := json.Marshal(tempArr)
@@ -574,7 +574,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4) // 当前请求正在订阅的资产，4小时失效
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		if wss_heart_beating.IsDie(HeartBeatingKey) {
+		if wssheartbeating.IsDie(HeartBeatingKey) {
 			goto STOP
 		}
 		HisSubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
@@ -901,7 +901,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 	HeartBeatingKey := fmt.Sprintf("ws_return_rate:%v:heart_beating_key", socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		if wss_heart_beating.IsDie(HeartBeatingKey) {
+		if wssheartbeating.IsDie(HeartBeatingKey) {
 			goto STOP
 		}
 		// 空消息跳过

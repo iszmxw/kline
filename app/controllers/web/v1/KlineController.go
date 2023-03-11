@@ -614,7 +614,7 @@ func (h *KlineController) GetAllKlineSourceHandler(c *gin.Context) {
 	return
 }
 
-// 获取15库的所有键值对
+// 获取 15 库的所有键值对
 
 func (h *KlineController) GetRedisKeyHandler(c *gin.Context) {
 	keys := c.Query("keys")
@@ -632,7 +632,7 @@ func (h *KlineController) GetRedisKeyHandler(c *gin.Context) {
 	return
 }
 
-// 获取15库的所有键值对
+// 获取 15 库的所有键值对
 
 func (h *KlineController) SetKlineToken(c *gin.Context) {
 	key := c.Query("key")

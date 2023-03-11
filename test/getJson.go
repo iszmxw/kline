@@ -29,10 +29,15 @@ type S struct {
 func main() {
 	filePtr, err := os.Open("./test/xw.json")
 	if err != nil {
-		fmt.Println("文件打开失败 [Err:%s]", err.Error())
+		fmt.Printf("文件打开失败 [Err:%s]\n", err.Error())
 		return
 	}
-	defer filePtr.Close()
+	defer func(filePtr *os.File) {
+		err := filePtr.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(filePtr)
 	var info []S
 	// 创建json解码器
 	decoder := json.NewDecoder(filePtr)

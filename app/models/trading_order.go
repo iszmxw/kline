@@ -18,7 +18,7 @@ type TradingOrder struct {
 	EndAssetsPrice      float64   `json:"end_assets_price"`                                         //截止资产指数值
 	TradeBeginDate      time.Time `json:"trade_begin_date"`                                         //交易起始日期
 	TradeEndDate        time.Time `json:"trade_end_date"`                                           //交易截止日期
-	QuizResult          int       `json:"quiz_result"`                                              //竞猜结果 1对 0错 -1未检出结果 2结果检出中
+	QuizResult          int       `json:"quiz_result"`                                              //竞猜结果 1对 0 错 -1未检出结果 2 结果检出中
 	IsValid             int       `json:"is_valid"`                                                 //是否有效 1是 0否
 	CreateDate          time.Time `json:"create_date"`                                              //添加日期
 	UpdateDate          time.Time `json:"update_date"`                                              //更新日期
