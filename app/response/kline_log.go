@@ -4,8 +4,6 @@ import (
 	"goapi/app/models"
 	"goapi/pkg/helpers"
 	"time"
-
-	"github.com/gostudys/huobi_contract_golang/src/ws/response"
 )
 
 // KlineLog  K线数据表
@@ -84,7 +82,7 @@ type SubIndexKLineResponse struct {
 }
 
 // KlineLogData 组装数据
-func KlineLogData(ContractCode string, data *response.SubIndexKLineResponse, UpstreamTs int64) *models.KlineLog {
+func KlineLogData(ContractCode string, data SubIndexKLineResponse, UpstreamTs int64) *models.KlineLog {
 	return &models.KlineLog{
 		ContractCode: ContractCode,                                  // 合约代码 BTC-USD
 		Ch:           data.Ch,                                       // k线类型请求kline的wss请求地址
