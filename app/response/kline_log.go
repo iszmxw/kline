@@ -84,7 +84,7 @@ type SubIndexKLineResponse struct {
 }
 
 // KlineLogData 组装数据
-func KlineLogData(ContractCode string, data *response.SubIndexKLineResponse) *models.KlineLog {
+func KlineLogData(ContractCode string, data *response.SubIndexKLineResponse, UpstreamTs int64) *models.KlineLog {
 	return &models.KlineLog{
 		ContractCode: ContractCode,                                  // 合约代码 BTC-USD
 		Ch:           data.Ch,                                       // k线类型请求kline的wss请求地址
@@ -100,6 +100,7 @@ func KlineLogData(ContractCode string, data *response.SubIndexKLineResponse) *mo
 		CCount:       data.Tick.Count,                               // 交易笔数
 		TsDate:       time.Unix(0, data.Ts*int64(time.Millisecond)), // kline返回日期
 		CreateDate:   time.Now(),                                    // 创建日期
-		KlineSource:  "huobi",                                       // k线来源 huobi
+		UpstreamTs:   UpstreamTs,
+		KlineSource:  "huobi", // k线来源 huobi
 	}
 }

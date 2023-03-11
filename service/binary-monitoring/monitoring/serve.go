@@ -137,7 +137,12 @@ func calculate(currentTimeMillis int64, conf response.TradingAssetsMonitoring, o
 		logger.Info("平了")
 		return
 	}
-	mysql.DB.Model(models.TradingOrder{}).Where("")
+	err = mysql.DB.Model(models.TradingOrder{}).Where("trade_order_id in ?", OrderIds).Updates(map[string]interface{}{
+		"is_interference": 1,
+	}).Error
+	if err != nil {
+		logger.Error(err)
+	}
 	Peoples = helpers.RemoveRepeatedElement(Peoples)
 	// 插针明细表
 	var NeedleDetails models.NeedleDetails

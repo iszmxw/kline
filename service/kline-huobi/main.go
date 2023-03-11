@@ -154,7 +154,7 @@ func SocketHuoBi(info KlineCommon.Info) {
 			if KlineData.LogId > 0 {
 				return
 			}
-			AddData := res.KlineLogData(info.ContractCode, resp)
+			AddData := res.KlineLogData(info.ContractCode, resp, UpstreamTs)
 			DB := mysql.DB.Debug()
 			result := DB.Model(models.KlineLog{}).Create(&AddData)
 			if result.Error != nil {
