@@ -17,6 +17,26 @@ import (
 	"time"
 )
 
+type Params struct {
+	// 买涨的人数
+	upNum int64
+	// 买涨的金额
+	upAmounts float64
+	// 买跌的人数
+	downNum int64
+	// 买跌的金额
+	downAmounts float64
+	// HClose 最大 close
+	HClose float64
+	// LClose 最小 close
+	LClose   float64
+	winLoss  float64
+	WinType  string
+	Peoples  []string
+	OrderIds []string
+	config   response.TradingAssetsMonitoring
+}
+
 // 监控
 
 func Start() {
@@ -72,87 +92,123 @@ func Start() {
 			Joins(models.Prefix("right join $_app_currency_rate on $_trading_order.currency_type=$_app_currency_rate.currency_b")).
 			Find(&tradingOrder)
 		if len(tradingOrder) > 0 {
-			calculate(currentTimeMillis, item, tradingOrder)
+			new(Params).Calculate(currentTimeMillis, item, tradingOrder)
 		}
 	}
 }
 
+// 初始化参数
+
+func (p *Params) Init(config response.TradingAssetsMonitoring) bool {
+	// 买涨的人数
+	p.upNum = 0
+	// 买涨的金额
+	p.upAmounts = 0.00
+	// 买跌的人数
+	p.downNum = 0
+	// 买跌的金额
+	p.downAmounts = 0.00
+	// HClose 最大 close
+	p.HClose = 0.00
+	// LClose 最小 close
+	p.LClose = 0.00
+	p.winLoss = 0.00
+	p.WinType = ""
+	p.Peoples = make([]string, 0)
+	p.OrderIds = make([]string, 0)
+	// 插针配置
+	p.config = config
+	return true
+}
+
 // 进行计算分析是否需要插针，以及按照规则生成插针数据
-func calculate(currentTimeMillis int64, conf response.TradingAssetsMonitoring, orders []response.TradingOrder) {
-	var (
-		// 买涨的人数
-		upNum int64 = 0
-		// 买涨的金额
-		upAmounts float64 = 0.00
-		// 买跌的人数
-		downNum int64 = 0
-		// 买跌的金额
-		downAmounts float64 = 0.00
-		// HClose 最大 close
-		HClose float64 = 0.00
-		// LClose 最小 close
-		LClose   float64 = 100000000.00
-		winLoss  float64 = 0.00
-		WinType  string  = ""
-		Peoples  []string
-		OrderIds []string
-	)
-	for _, order := range orders {
-		Peoples = append(Peoples, order.AppUserID)
-		OrderIds = append(OrderIds, order.TradeOrderID)
-		// 最大close
-		if order.BeginAssetsPrice > HClose {
-			HClose = order.BeginAssetsPrice
-		}
-		// 最大close
-		if order.BeginAssetsPrice < LClose {
-			LClose = order.BeginAssetsPrice
-		}
+
+func (p *Params) Calculate(currentTimeMillis int64, conf response.TradingAssetsMonitoring, orders []response.TradingOrder) {
+	if !p.Init(conf) {
+		logger.Info("初始化参数失败")
+		return
+	}
+	if len(orders) == 1 {
+		order := orders[0]
+		p.Peoples = append(p.Peoples, order.AppUserID)
+		p.OrderIds = append(p.OrderIds, order.TradeOrderID)
 		if strings.EqualFold("up", order.UpDownType) {
-			upNum++
+			p.upNum++
 			// 换算美元
-			upAmounts = decimal.NewFromFloat(upAmounts).Add(
+			p.upAmounts = decimal.NewFromFloat(p.upAmounts).Add(
 				decimal.NewFromFloat(order.Amounts).Mul(decimal.NewFromFloat(order.ReturnRate)).
 					Div(decimal.NewFromFloat(order.CurrencyRate)),
 			).InexactFloat64()
 		}
 		if strings.EqualFold("down", order.UpDownType) {
-			downNum++
+			p.downNum++
 			// 换算美元
-			downAmounts = decimal.NewFromFloat(downAmounts).Add(
+			p.downAmounts = decimal.NewFromFloat(p.downAmounts).Add(
 				decimal.NewFromFloat(order.Amounts).Mul(decimal.NewFromFloat(order.ReturnRate)).
 					Div(decimal.NewFromFloat(order.CurrencyRate)),
 			).InexactFloat64()
 		}
+		p.HClose = order.BeginAssetsPrice
+		p.LClose = order.BeginAssetsPrice
+	} else {
+		for _, order := range orders {
+			p.Peoples = append(p.Peoples, order.AppUserID)
+			p.OrderIds = append(p.OrderIds, order.TradeOrderID)
+			if strings.EqualFold("up", order.UpDownType) {
+				p.upNum++
+				// 换算美元
+				p.upAmounts = decimal.NewFromFloat(p.upAmounts).Add(
+					decimal.NewFromFloat(order.Amounts).Mul(decimal.NewFromFloat(order.ReturnRate)).
+						Div(decimal.NewFromFloat(order.CurrencyRate)),
+				).InexactFloat64()
+			}
+			if strings.EqualFold("down", order.UpDownType) {
+				p.downNum++
+				// 换算美元
+				p.downAmounts = decimal.NewFromFloat(p.downAmounts).Add(
+					decimal.NewFromFloat(order.Amounts).Mul(decimal.NewFromFloat(order.ReturnRate)).
+						Div(decimal.NewFromFloat(order.CurrencyRate)),
+				).InexactFloat64()
+			}
+			// 最大close
+			if order.BeginAssetsPrice > p.HClose {
+				p.HClose = order.BeginAssetsPrice
+			}
+			// 最大close
+			if order.BeginAssetsPrice < p.LClose {
+				p.LClose = order.BeginAssetsPrice
+			}
+		}
+	}
+	// 检测是否需要进行干预，以及干预的方向
+	ok, Close := p.finalResult()
+	if !ok {
+		return
 	}
 	// 检测是否安全期内
-	ok, err := redis.Client.SelectDbSetNx(15, fmt.Sprintf("Monitoring:%s", orders[0].AssetsCode), "suo", conf.IntervalTimer)
+	ok, err := redis.Client.SelectDbSetNx(15, fmt.Sprintf("Monitoring:%s", orders[0].AssetsCode), "suo", p.config.IntervalTimer)
 	if err != nil {
 		return
 	}
 	if !ok {
 		return
 	}
-	if HClose == LClose && len(orders) > 1 {
-		logger.Info("平了")
-		return
-	}
-	err = mysql.DB.Model(models.TradingOrder{}).Where("trade_order_id in ?", OrderIds).Updates(map[string]interface{}{
+	err = mysql.DB.Model(models.TradingOrder{}).Where("trade_order_id in ?", p.OrderIds).Updates(map[string]interface{}{
 		"is_interference": 1,
 	}).Error
 	if err != nil {
 		logger.Error(err)
 	}
-	Peoples = helpers.RemoveRepeatedElement(Peoples)
 	// 插针明细表
+	p.Peoples = helpers.RemoveRepeatedElement(p.Peoples)
 	var NeedleDetails models.NeedleDetails
-	NeedleDetails.AssetsCode = conf.AssetsCode
+	NeedleDetails.AssetsCode = p.config.AssetsCode
 	NeedleDetails.StartTimer = 0
 	NeedleDetails.StartDate = time.Unix(0, NeedleDetails.StartTimer*int64(time.Millisecond))
 	NeedleDetails.EndTimer = 0
 	NeedleDetails.EndDate = time.Unix(0, NeedleDetails.EndTimer*int64(time.Millisecond))
 	NeedleDetails.OrderNum = len(orders)
-	NeedleDetails.PeopleNum = len(Peoples)
+	NeedleDetails.PeopleNum = len(p.Peoples)
 	//
 	NeedleDetails.MarketQuoteOdds = 0
 	NeedleDetails.MarketQuoteWinAmount = 0
@@ -161,102 +217,135 @@ func calculate(currentTimeMillis int64, conf response.TradingAssetsMonitoring, o
 	//
 	NeedleDetails.CreateDate = time.Now()
 	NeedleDetails.UpdateDate = time.Now()
+	go p.CreateInterferenceNeedle(currentTimeMillis, Close)
+
+}
+
+// 最终结果
+func (p *Params) finalResult() (bool, float64) {
+	logger.Info("最大close", p.HClose)
+	logger.Info("最小close", p.LClose)
 	// 区域内用户盈利金额
-	winLoss = decimal.NewFromFloat(upAmounts).Sub(decimal.NewFromFloat(downAmounts)).InexactFloat64()
-	if winLoss > 0 {
-		WinType = "winDown" // 低价位平台盈利
-	} else if winLoss < 0 {
-		winLoss = -winLoss
-		WinType = "winUp" // 高价位平台盈利
-	} else {
-		// 盈亏平了，不用进行干预
-		return
+	p.winLoss = decimal.NewFromFloat(p.upAmounts).Sub(decimal.NewFromFloat(p.downAmounts)).InexactFloat64()
+	if p.winLoss == 0 { // 不用干预的情况：盈亏平了
+		return false, 0
 	}
-	if winLoss < conf.LossThreshold {
-		return
+	if p.winLoss > 0 {
+		p.WinType = "winDown" // 低价位平台盈利
 	}
-	// 如果该区域平台亏损金额大于xx美金，开始进行干预
-	logger.Info("最大close", HClose)
-	logger.Info("最小close", LClose)
-	// 低价位平台盈利
-	if strings.EqualFold("winDown", WinType) {
-		go CreateInterferenceNeedle(currentTimeMillis, HClose, LClose, conf)
+	if p.winLoss < 0 {
+		p.winLoss = -p.winLoss
+		p.WinType = "winUp" // 高价位平台盈利
 	}
-	// 高价位平台盈利
-	if strings.EqualFold("winUp", WinType) {
-		go CreateInterferenceNeedle(currentTimeMillis, HClose, LClose, conf)
+	// 不用干预的情况：区域平台亏损金额<xx美金
+	if p.winLoss < p.config.LossThreshold {
+		return false, 0
 	}
 
+	// 同一个时间点有人买涨，有人买跌
+	if p.HClose == p.LClose {
+		if strings.EqualFold("winUp", p.WinType) { // 高价位平台盈利，算出一个高价位
+			Close := p.HClose * decimal.NewFromFloat(1).Add(decimal.NewFromFloat(p.config.VolatilityAmplitude)).InexactFloat64()
+			return true, Close
+		}
+		if strings.EqualFold("winDown", p.WinType) { // 低价位平台盈利，算出一个低价位
+			Close := p.LClose * decimal.NewFromFloat(1).Sub(decimal.NewFromFloat(p.config.VolatilityAmplitude)).InexactFloat64()
+			return true, Close
+		}
+	}
+	if strings.EqualFold("winUp", p.WinType) { // 高价位平台盈利
+		return true, p.HClose
+	}
+	if strings.EqualFold("winDown", p.WinType) { // 低价位平台盈利
+		return true, p.LClose
+	}
+	return false, 0
 }
 
 // 创建干扰针
 
-func CreateInterferenceNeedle(currentTimeMillis int64, HClose, LClose float64, conf response.TradingAssetsMonitoring) {
+func (p *Params) CreateInterferenceNeedle(currentTimeMillis int64, Close float64) {
 	// 提前插针时间
-	EarlyExecutionTimer := currentTimeMillis + (60-conf.EarlyexecutionTimer)*1000
+	EarlyExecutionTimer := currentTimeMillis + (60-p.config.EarlyexecutionTimer)*1000
 	EarlyExecutionTimerEnd := currentTimeMillis + 60*1000
 	RecoverTs := EarlyExecutionTimerEnd
-	RecoverTimer := currentTimeMillis + (60-conf.RecoverTimer)*1000
+	RecoverTimer := currentTimeMillis + (60-p.config.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
-	cClose := HClose
-	diffClose := decimal.NewFromFloat(HClose).Sub(decimal.NewFromFloat(LClose)).InexactFloat64()
-	for i := 0; i < conf.EarlyexecutionFrequency; i++ {
-		diffClose = diffClose * decimal.NewFromFloat(1).Sub(decimal.NewFromFloat(conf.VolatilityAmplitude)).InexactFloat64()
-		cClose = cClose - diffClose
-		cClose, _ = helpers.FormatFloat(cClose, conf.PointNumber)
-		data := redisData(conf.AssetsCode, config.KlineSource, EarlyExecutionTimer+(int64(i))*1000, cClose)
+	cClose := p.HClose
+	var diffClose float64 = 0
+	// 低价位平台盈利
+	if strings.EqualFold("winDown", p.WinType) {
+		diffClose = decimal.NewFromFloat(p.HClose).Sub(decimal.NewFromFloat(Close)).InexactFloat64()
+	}
+	// 高价位平台盈利
+	if strings.EqualFold("winUp", p.WinType) {
+		diffClose = decimal.NewFromFloat(Close).Sub(decimal.NewFromFloat(p.LClose)).InexactFloat64()
+	}
+	for i := 0; i < p.config.EarlyexecutionFrequency; i++ {
+		// 低价位平台盈利
+		if strings.EqualFold("winDown", p.WinType) {
+			diffClose = diffClose * decimal.NewFromFloat(1).Sub(decimal.NewFromFloat(p.config.VolatilityAmplitude)).InexactFloat64()
+			cClose = cClose - diffClose
+		}
+		// 高价位平台盈利
+		if strings.EqualFold("winUp", p.WinType) {
+			diffClose = diffClose * decimal.NewFromFloat(1).Add(decimal.NewFromFloat(p.config.VolatilityAmplitude)).InexactFloat64()
+			cClose = cClose + diffClose
+		}
+		cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
+		data := redisData(p.config.AssetsCode, config.KlineSource, EarlyExecutionTimer+(int64(i))*1000, cClose)
 		logger.Info(data)
 		if len(data) > 0 {
-			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", conf.AssetsCode), data)
+			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
 			if err != nil {
 				panic(err)
 			}
 		}
 	}
 	// 资产在最低价格~最低价格*(1-资产震荡幅度）之间按设置震荡频率随机震荡，直到区间结束时间
-	cClose = LClose
-	timeNow := EarlyExecutionTimer + int64(conf.EarlyexecutionFrequency)*1000
+	cClose = Close
+	timeNow := EarlyExecutionTimer + int64(p.config.EarlyexecutionFrequency)*1000
 	i := 0
 	for SystemTs := timeNow; SystemTs <= EarlyExecutionTimerEnd; SystemTs = SystemTs + 1000 {
 		i++
 		// 求余，每隔xx秒震荡一次，随机的是震荡方向
-		ok := decimal.NewFromInt(int64(i)).Mod(decimal.NewFromInt(conf.VolatilityFrequency)).IsZero()
+		ok := decimal.NewFromInt(int64(i)).Mod(decimal.NewFromInt(p.config.VolatilityFrequency)).IsZero()
 		if ok {
 			// 随机震荡
 			if rand.Intn(2) == 0 {
-				cClose = cClose * decimal.NewFromFloat(1).Sub(decimal.NewFromFloat(conf.ShockAmplitude)).InexactFloat64()
+				cClose = cClose * decimal.NewFromFloat(1).Sub(decimal.NewFromFloat(p.config.ShockAmplitude)).InexactFloat64()
 			} else {
-				cClose = cClose * decimal.NewFromFloat(1).Add(decimal.NewFromFloat(conf.ShockAmplitude)).InexactFloat64()
+				cClose = cClose * decimal.NewFromFloat(1).Add(decimal.NewFromFloat(p.config.ShockAmplitude)).InexactFloat64()
 			}
 		}
-		cClose, _ = helpers.FormatFloat(cClose, conf.PointNumber)
-		if cClose > LClose {
-			cClose = LClose
+		cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
+		if cClose > p.LClose {
+			cClose = p.LClose
 		}
 		result := cClose
 		logger.Info(result)
 		// 获取随机数 close 值
-		data := redisData(conf.AssetsCode, config.KlineSource, SystemTs, cClose)
+		data := redisData(p.config.AssetsCode, config.KlineSource, SystemTs, cClose)
 		logger.Info(data)
 		if len(data) > 0 {
-			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", conf.AssetsCode), data)
+			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
 			if err != nil {
 				panic(err)
 			}
 		}
 	}
 	// 追加结束信号，后面好根据结束信号来生成恢复数据插针逻辑
-	data := redisData(conf.AssetsCode, "End", 0, 0)
+	data := redisData(p.config.AssetsCode, "End", 0, 0)
 	logger.Info(data)
 	if len(data) > 0 {
-		_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", conf.AssetsCode), data)
+		_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
 		if err != nil {
 			panic(err)
 		}
 	}
 	redis.Client.ZAdd("Queue:interferenceNeedle:list", goRedis.Z{
 		Score:  float64(EarlyExecutionTimer),
-		Member: fmt.Sprintf("Queue:interferenceNeedle:%s", conf.AssetsCode),
+		Member: fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode),
 	})
 	// 频次
 	logger.Info(time.Now().UnixMilli(), EarlyExecutionTimer, time.Now().UnixMilli()-EarlyExecutionTimer, RecoverTimer, RecoverTs, EarlyExecutionTimerEnd)
