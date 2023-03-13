@@ -1,11 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"github.com/google/uuid"
 	"goapi/bootstrap"
 	"goapi/config"
-	goadjust "goapi/pkg/adjust"
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
 	"time"
@@ -31,21 +28,7 @@ func main() {
 	bootstrap.SetupRedis(db)
 	defer bootstrap.RedisClose()
 
-	fmt.Println()
-	fmt.Println(uuid.NewUUID())
-	fmt.Println(uuid.NewUUID())
-	fmt.Println(uuid.NewUUID())
-
-	goadjust.SubmitEvent(goadjust.EventParams{
-		EventName:        "trade",
-		AppUserId:        "7FF235ACCD4",
-		IsRepeatedSubmit: "0",
-		Mobile:           "",
-		EventBindId:      "482bd535-7fcd-49ea-9678-9b9d15e81737",
-		Email:            "1360791050@qq.com",
-		FlowJsonString:   "",
-		DeviceBrand:      "Xiaomi",
-	}, "India", "adjust")
-
+	//minNum(22395.1575)
+	//fmt.Println(minNum(22395.1575))
 	time.Sleep(60 * time.Second)
 }

@@ -51,7 +51,7 @@ func Consume(key string) {
 	lLen, _ := redis.Client.LLen(key)
 	exist := true
 	for exist {
-		time.Sleep(time.Millisecond * 200)
+		time.Sleep(time.Millisecond * 100)
 		num, _ := redis.Client.LLen(key)
 		exist = num > 0
 		result := redis.Client.RPop(key)
@@ -65,13 +65,18 @@ func Consume(key string) {
 			continue
 		}
 		timeNow := time.Now().UnixMilli()
-		if timeNow < data.Ts {
-			time.Sleep(time.Millisecond * 300)
+		diffTime := timeNow - data.Ts
+		if diffTime < 0 {
 			_, err = redis.Client.Rpush(fmt.Sprintf("Queue:interferenceNeedle:%s", AssetsCode), result)
 			if err != nil {
 				panic(err)
 			}
 			continue
+		} else {
+			if diffTime > 500 {
+				//data.Ts = timeNow
+				logger.Info("数据过期啦：", diffTime)
+			}
 		}
 		i++
 		// 最后一个的时候，获取一下 Close 值

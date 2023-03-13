@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 )
 
 // 保留位数四舍五入
@@ -29,4 +30,19 @@ func FormatFloat(num float64, decimal int) (float64, error) {
 	// 再除回去，小数点后无效的0也就不存在了
 	res := strconv.FormatFloat(math.Trunc(num*d)/d, 'f', -1, 64)
 	return strconv.ParseFloat(res, 64)
+}
+
+func MinNum(num float64) float64 {
+	arr := strings.Split(fmt.Sprintf("%v", num), ".")
+	zs := StrToFloat64(arr[0])
+	xs := StrToFloat64(arr[1])
+	pf := math.Pow(10, float64(len(arr[1])))
+	if zs == 0 {
+		pf = math.Pow(10, float64(len(arr[1])+1))
+		return xs / pf
+	}
+	if pf == 0 {
+		return 0
+	}
+	return xs / pf
 }

@@ -23,24 +23,49 @@ type TradingAssets struct {
 }
 
 type TradingAssetsMonitoring struct {
-	ID                      int64   `json:"id" gorm:"column:id"`                                             // 资产表主键ID
-	AssetsCode              string  `json:"assets_code" gorm:"column:assets_code"`                           // 资产编码
-	PointNumber             int     `json:"point_number" gorm:"column:point_number"`                         // 保留小数点位数
-	IsMonitoring            int     `json:"is_monitoring" gorm:"column:is_monitoring"`                       // 是否有效1-是 0-否
-	AreaTimer               int     `json:"area_timer" gorm:"column:area_timer"`                             // 设置区域时长
-	IntervalTimer           int     `json:"interval_timer" gorm:"column:interval_timer"`                     // 设置间隔触发时间
-	InadvanceTimer          int64   `json:"inadvance_timer" gorm:"column:inadvance_timer"`                   // 设置提前触发时间（拿这个时间间隔作为判断条件）
-	LossThreshold           float64 `json:"loss_threshold" gorm:"column:loss_threshold"`                     // 触发属性：区域平台亏损金额>=xx美金
-	EarlyexecutionTimer     int64   `json:"earlyexecution_timer" gorm:"column:earlyexecution_timer"`         // 设置插针提前执行时间
-	EarlyexecutionFrequency int     `json:"earlyexecution_frequency" gorm:"column:earlyexecution_frequency"` // 设置插针提前执行频率
-	RecoverTimer            int64   `json:"recover_timer" gorm:"column:recover_timer"`                       // 设置插针恢复时间
-	RecoverFrequency        float64 `json:"recover_frequency" gorm:"column:recover_frequency"`               // 设置插针恢复频率
-	ShockAmplitude          float64 `json:"shock_amplitude" gorm:"column:shock_amplitude"`                   // 震荡幅度
-	VolatilityAmplitude     float64 `json:"volatility_amplitude" gorm:"column:volatility_amplitude"`         // 波动幅度
-	VolatilityFrequency     int64   `json:"volatility_frequency" gorm:"column:volatility_frequency"`         // 震荡频率
+	ID                  int64   `json:"id" gorm:"column:id"`                                     // 资产表主键ID
+	AssetsCode          string  `json:"assets_code" gorm:"column:assets_code"`                   // 资产编码
+	PointNumber         int     `json:"point_number" gorm:"column:point_number"`                 // 保留小数点位数
+	IsMonitoring        int     `json:"is_monitoring" gorm:"column:is_monitoring"`               // 是否有效1-是 0-否
+	ShockAmplitude      float64 `json:"shock_amplitude" gorm:"column:shock_amplitude"`           // 震荡幅度
+	VolatilityAmplitude float64 `json:"volatility_amplitude" gorm:"column:volatility_amplitude"` // 波动幅度
+	VolatilityFrequency int64   `json:"volatility_frequency" gorm:"column:volatility_frequency"` // 震荡频率
+	MonitoringNumber    int     `json:"monitoring_number" gorm:"column:monitoring_number"`       // 波动小数点位数
+	AssetsInsertFrame   string  `json:"assets_insert_frame"`
+}
+
+type TradingAssetsMonitoringConfig struct {
+	ID                  int64   `json:"id" gorm:"column:id"`                                     // 资产表主键ID
+	AssetsCode          string  `json:"assets_code" gorm:"column:assets_code"`                   // 资产编码
+	PointNumber         int     `json:"point_number" gorm:"column:point_number"`                 // 保留小数点位数
+	IsMonitoring        int     `json:"is_monitoring" gorm:"column:is_monitoring"`               // 是否有效1-是 0-否
+	ShockAmplitude      float64 `json:"shock_amplitude" gorm:"column:shock_amplitude"`           // 震荡幅度
+	VolatilityAmplitude float64 `json:"volatility_amplitude" gorm:"column:volatility_amplitude"` // 波动幅度
+	VolatilityFrequency int64   `json:"volatility_frequency" gorm:"column:volatility_frequency"` // 震荡频率
+	MonitoringNumber    int     `json:"monitoring_number" gorm:"column:monitoring_number"`       // 波动小数点位数
+	AssetsInsertFrame   AssetsInsertFrame
+}
+
+type AssetsInsertFrame struct {
+	AreaTimer               int     `json:"areaTimer"`               // 设置区域时长
+	IntervalTimer           int     `json:"intervalTimer"`           // 设置间隔触发时间
+	InAdvanceTimer          int64   `json:"inAdvanceTimer"`          // 设置提前触发时间（拿这个时间间隔作为判断条件）
+	LossThreshold           float64 `json:"lossThreshold"`           // 触发属性：区域平台亏损金额>=xx美金
+	EarlyExecutionTimer     int64   `json:"earlyExecutionTimer"`     // 设置插针提前执行时间
+	EarlyExecutionFrequency int     `json:"earlyExecutionFrequency"` // 设置插针提前执行频率
+	RecoverTimer            int64   `json:"recoverTimer"`            // 设置插针恢复时间
+	RecoverFrequency        int     `json:"recoverFrequency"`        // 设置插针恢复频率
 }
 
 type AssetsCodeArray struct {
 	AssetsCode  string `json:"assets_code"`  //资产编码
 	IsWhitelist string `json:"is_whitelist"` //是否白名单1是 0否，白名单的资产不跟随自动变化赔率
+}
+
+//  K线数据表
+
+type KlineTs struct {
+	Ts          int64   `json:"ts"`           //  kilne返回日期时间戳
+	CClose      float64 `json:"c_close"`      //  结束峰值
+	KlineSource string  `json:"kline_source"` //  k线来源 huobi
 }

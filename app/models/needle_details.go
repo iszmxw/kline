@@ -8,7 +8,6 @@ type NeedleDetails struct {
 	StartTimer           int64     `json:"start_timer" gorm:"column:start_timer"`                         // 执行插针开始时间
 	EndTimer             int64     `json:"end_timer" gorm:"column:end_timer"`                             // 执行插针结束时间
 	OrderNum             int64     `json:"order_num" gorm:"column:order_num"`                             // 干预订单数
-	LossThreshold        float64   `json:"loss_threshold" gorm:"column:loss_threshold"`                   // 干预用户数
 	PeopleNum            int       `json:"people_num" gorm:"column:people_num"`                           // 干预用户数
 	MarketQuoteOdds      int64     `json:"market_quote_odds" gorm:"column:market_quote_odds"`             // 市场报价胜率
 	MarketQuoteWinAmount float64   `json:"market_quote_win_amount" gorm:"column:market_quote_win_amount"` // 市场报价盈亏金额
