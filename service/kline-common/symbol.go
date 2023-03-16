@@ -234,7 +234,7 @@ func Iqoption() []Info {
 		Info{ID: 8, Symbol: "NZD/USD", Desc: "澳大利亚元/美元", ContractCode: "NZD-USD"},
 		Info{ID: 1486, Symbol: "COPPER", Desc: "澳大利亚元/美元", ContractCode: "COPPER"},
 		Info{ID: 1483, Symbol: "wheat", Desc: "小麦", ContractCode: "wheat"},
-		Info{ID: 37, Symbol: "Intel", Desc: "微软", ContractCode: "Intel"},
+		Info{ID: 37, Symbol: "Intel", Desc: "因特尔", ContractCode: "Intel"},
 		Info{ID: 38, Symbol: "Microsoft", Desc: "微软", ContractCode: "Microsoft"},
 		Info{ID: 167, Symbol: "Tesla", Desc: "特斯拉", ContractCode: "Tesla"},
 		Info{ID: 569, Symbol: "Netflix", Desc: "网飞", ContractCode: "Netflix"},
