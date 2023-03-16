@@ -38,5 +38,5 @@ type TradingOrder struct {
 	KlineTime           int64     `json:"kline_time"`           // 平返还金额
 	Balance             float64   `json:"balance"`              // 交易时余额
 	Nation              string    `json:"nation"`               // 绑定国家
-	IsInterference      int       `json:"is_interference"`      // 是否干扰订单0否1是
+	InterferenceId      int       `json:"interference_id"`      // 干扰订单id 0表示未干扰
 }

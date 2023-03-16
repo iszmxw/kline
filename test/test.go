@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
+	"strings"
 	"time"
 )
 
@@ -30,5 +32,9 @@ func main() {
 
 	//minNum(22395.1575)
 	//fmt.Println(minNum(22395.1575))
+
+	res := strings.Trim("000121210003456000", "0")
+	num := res[len(res)-2:]
+	fmt.Println(res, len(res), num)
 	time.Sleep(60 * time.Second)
 }

@@ -73,9 +73,10 @@ func Consume(key string) {
 			}
 			continue
 		} else {
-			if diffTime > 500 {
+			if diffTime > 800 {
 				//data.Ts = timeNow
-				logger.Info("数据过期啦：", diffTime)
+				logger.Info(fmt.Sprintf("数据过期=====系统时间：%v======TS时间：%v", time.Unix(0, timeNow*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), time.Unix(0, data.Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999")))
+				continue
 			}
 		}
 		i++
