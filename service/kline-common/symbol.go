@@ -226,16 +226,21 @@ func Iqoption() []Info {
 		Info{ID: 7, Symbol: "AUD/CAD", Desc: "欧元/澳大利亚元", ContractCode: "AUD-CAD"},
 		Info{ID: 943, Symbol: "AUD/CHF", Desc: "欧元/澳大利亚元", ContractCode: "AUD-CHF"},
 		Info{ID: 74, Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
-
 		Info{ID: 99, Symbol: "AUD/USD", Desc: "澳大利亚元/美元", ContractCode: "AUD-USD"},
 		Info{ID: 107, Symbol: "CAD/CHF", Desc: "澳大利亚元/美元", ContractCode: "CAD-CHF"},
-		Info{ID: 1486, Symbol: "COPPER", Desc: "澳大利亚元/美元", ContractCode: "COPPER"},
 		Info{ID: 2, Symbol: "EUR/GBP", Desc: "澳大利亚元/美元", ContractCode: "EUR-GBP"},
 		Info{ID: 4, Symbol: "EUR/JPY", Desc: "澳大利亚元/美元", ContractCode: "EUR-JPY"},
 		Info{ID: 3, Symbol: "GBP/JPY", Desc: "澳大利亚元/美元", ContractCode: "GBP-JPY"},
-		Info{ID: 569, Symbol: "Netflix", Desc: "澳大利亚元/美元", ContractCode: "Netflix"},
 		Info{ID: 8, Symbol: "NZD/USD", Desc: "澳大利亚元/美元", ContractCode: "NZD-USD"},
+		Info{ID: 1486, Symbol: "COPPER", Desc: "澳大利亚元/美元", ContractCode: "COPPER"},
 		Info{ID: 1483, Symbol: "wheat", Desc: "小麦", ContractCode: "wheat"},
+		Info{ID: 37, Symbol: "Intel", Desc: "微软", ContractCode: "Intel"},
+		Info{ID: 38, Symbol: "Microsoft", Desc: "微软", ContractCode: "Microsoft"},
+		Info{ID: 167, Symbol: "Tesla", Desc: "特斯拉", ContractCode: "Tesla"},
+		Info{ID: 569, Symbol: "Netflix", Desc: "网飞", ContractCode: "Netflix"},
+		Info{ID: 32, Symbol: "Apple", Desc: "苹果", ContractCode: "Apple"},
+		Info{ID: 910, Symbol: "Adidas", Desc: "阿迪达", ContractCode: "Adidas"},
+		Info{ID: 31, Symbol: "Amazon", Desc: "亚马逊", ContractCode: "Amazon"},
 	)
 	return CodeData
 }

@@ -28,7 +28,6 @@ func SocketIqoption(info KlineCommon.Info) {
 		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			SystemTs := time.Now().UnixMilli()                                   // 系統生成的Ts
 			logger.RequestId = fmt.Sprintf("%v@%v", SystemTs, info.ContractCode) // RequestId 定义为 Ts 时间戳
-			logger.Info(resp)
 			defer func() {
 				if r := recover(); r != nil {
 					NoticeMail.Notice("msgServiceAnomaly", map[string]interface{}{
@@ -50,15 +49,16 @@ func SocketIqoption(info KlineCommon.Info) {
 			}
 			wsClient.List.PushFront(UpstreamTs)
 			TimeDiff := SystemTs - UpstreamTs
-			logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
-			logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
 			if TimeDiff >= 30*1000 {
-				// 时差大于30秒直接不存储，认为数据源不健康
 				logger.Info("时差大于30秒直接不存储，认为数据源不健康")
+				logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
+				logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
+				// 时差大于30秒直接不存储，认为数据源不健康
 				return
 			}
 			data := RedisData(SystemTs, UpstreamTs, resp)
 			data.Ch = fmt.Sprintf("market.%v.index.1min", info.ContractCode)
+			logger.Info(data)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)

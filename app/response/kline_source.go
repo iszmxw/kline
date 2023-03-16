@@ -59,16 +59,16 @@ func KlineSource(AssetsCode string) string {
 		Source = "iqoption"
 		break
 	case "Microsoft":
-		Source = "qxbroker"
+		Source = "iqoption"
 		break
 	case "Intel":
-		Source = "qxbroker"
+		Source = "iqoption"
 		break
 	case "Apple":
-		Source = "olymptrade"
+		Source = "iqoption"
 		break
 	case "Tesla":
-		Source = "olymptrade"
+		Source = "iqoption"
 		break
 	case "CAD-JPY":
 		Source = "raceoption"
@@ -80,7 +80,7 @@ func KlineSource(AssetsCode string) string {
 		Source = "raceoption"
 		break
 	case "Amazon":
-		Source = "olymptrade"
+		Source = "iqoption"
 		break
 	case "AUD-CHF":
 		Source = "raceoption"
@@ -115,6 +115,9 @@ func KlineSource(AssetsCode string) string {
 	case "wheat":
 		Source = "iqoption"
 		break
+	case "Adidas":
+		Source = "iqoption"
+		break
 	default:
 		Source = "unknown"
 		break
@@ -134,7 +137,6 @@ func AllowKlineSource() map[string]interface{} {
 	data["USD-JPY"] = []string{"hsb", "fxcm", "iqoption"}
 	data["GOLD"] = []string{"hsb", "fxcm", "iqoption"}
 	data["SILVER"] = []string{"hsb", "fxcm"}
-	data["Netflix"] = []string{"qxbroker", "iqoption"}
 	data["CAD-JPY"] = []string{"fxcm"}
 	data["EUR-AUD"] = []string{"hsb", "fxcm", "iqoption"}
 	data["USD-CAD"] = []string{"hsb", "fxcm", "iqoption"}
@@ -143,12 +145,21 @@ func AllowKlineSource() map[string]interface{} {
 	data["GBP-AUD"] = []string{"hsb", "fxcm"}
 	data["AUD-USD"] = []string{"iqoption"}
 	data["CAD-CHF"] = []string{"iqoption"}
-	data["COPPER"] = []string{"iqoption"}
 	data["EUR-GBP"] = []string{"iqoption"}
 	data["EUR-JPY"] = []string{"iqoption"}
 	data["GBP-JPY"] = []string{"iqoption"}
 	data["NZD-USD"] = []string{"iqoption"}
+	data["COPPER"] = []string{"iqoption"}
 	data["wheat"] = []string{"iqoption"}
+	// 股票
+	data["Intel"] = []string{"iqoption"}
+	data["Microsoft"] = []string{"iqoption"}
+	data["Tesla"] = []string{"iqoption"}
+	data["Netflix"] = []string{"iqoption"}
+	data["Apple"] = []string{"iqoption"}
+	data["Adidas"] = []string{"iqoption"}
+	data["Amazon"] = []string{"iqoption"}
+	// otc
 	data["GBP-USD-OTC"] = []string{"iqoption"}
 	data["EUR-USD-OTC"] = []string{"iqoption"}
 	data["AUD-CAD-OTC"] = []string{"iqoption"}
