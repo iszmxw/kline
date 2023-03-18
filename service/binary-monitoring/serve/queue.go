@@ -1,4 +1,4 @@
-package queue
+package serve
 
 import (
 	"encoding/json"
@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func Start() {
+func StartQueue() {
 	for {
 		time.Sleep(time.Millisecond * 100)
 		go func() {
@@ -31,7 +31,7 @@ func Start() {
 				logger.Info("ok ", result, "--", ok)
 				if ok == 1 {
 					// 开始消费队列
-					go Consume(result[0].Member.(string))
+					go StartConsume(result[0].Member.(string))
 				}
 			}
 		}()
@@ -40,7 +40,7 @@ func Start() {
 
 // 消费队列里面的消息
 
-func Consume(key string) {
+func StartConsume(key string) {
 	// 存在
 	strArr := strings.Split(key, ":")
 	AssetsCode := strArr[len(strArr)-1]
@@ -145,26 +145,4 @@ func RecoverInterferenceNeedle(AssetsCode string, StartTime int64, EndClose floa
 	time.Sleep(time.Second * 8)
 	ok := redis.Client.Delete(fmt.Sprintf("%v:market.%v.index.1min", config.KlineSource, AssetsCode))
 	logger.Info("回收缓存", ok)
-}
-
-// LogData 存入 kline_log 的数据
-func LogData(AssetsCode string, data response.SubIndexKLineResponse) models.KlineLog {
-	var klineLog models.KlineLog
-	klineLog.ContractCode = AssetsCode                              // 合约代码 BTC-USD
-	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", AssetsCode)   // kilne返回日期时间戳
-	klineLog.Ts = data.Ts                                           // 自己生成的ts
-	klineLog.UpstreamTs = data.Ts                                   // 上游的ts
-	klineLog.ID = data.Ts                                           // 自己生成的ts/1000
-	klineLog.Mrid = 0.00                                            // ID
-	klineLog.COpen = 0.00                                           // 起始峰值
-	klineLog.CClose = helpers.StrToFloat64(data.Tick.Close)         // 结束峰值
-	klineLog.High = 0                                               // 最高峰值
-	klineLog.Low = 0                                                // 最低峰值
-	klineLog.Amount = 0                                             // 成交金额 TODO
-	klineLog.Vol = 0                                                // 成交手 TODO
-	klineLog.CCount = 0                                             // 交易笔数 TODO
-	klineLog.TsDate = time.Unix(0, data.Ts*int64(time.Millisecond)) // Kline返回日期
-	klineLog.CreateDate = time.Now()                                // 创建日期
-	klineLog.KlineSource = config.KlineSource                       // K线来源iqoption
-	return klineLog
 }
