@@ -161,7 +161,7 @@ func (ws *WebSocketOp) readLoop() {
 	//	ws.Close()
 }
 
-//写协程
+// 写协程
 func (ws *WebSocketOp) writeLoop() { // 登录
 	var once sync.Once
 	for ws.isConnServer {
@@ -207,7 +207,7 @@ END:
 		//    "enabled": true
 		//}
 		fmt.Println(string(message))
-		fmt.Println(fmt.Sprintf("%T",message))
+		fmt.Println(fmt.Sprintf("%T", message))
 		//logger.Info(message)
 	}
 ERR:

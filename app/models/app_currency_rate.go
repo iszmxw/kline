@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-
 type AppCurrencyRate struct {
 	Id         int64     `json:"id"`
 	CurrencyA  string    `json:"currency_a"`  //货币类型 IDR USD CNY

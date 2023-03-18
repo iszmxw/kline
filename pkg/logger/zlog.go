@@ -37,7 +37,7 @@ func Init(Service string) {
 		zapcore.NewCore(
 			zapcore.NewConsoleEncoder(NewDevelopmentEncoderConfig),  // json格式日志（ELK渲染收集）
 			zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout)), // 打印到控制台和文件
-			level,                                                   // 日志级别
+			level, // 日志级别
 		),
 		// 打印在文件中
 		zapcore.NewCore(

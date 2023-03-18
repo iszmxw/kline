@@ -13,6 +13,7 @@ import (
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 	"goapi/service/binary-monitoring/config"
+	"goapi/service/binary-monitoring/queue"
 	"math"
 	"math/rand"
 	"strings"
@@ -113,12 +114,14 @@ func Start() {
 			Where(models.Prefix("$_trading_order.assets_code"), item.AssetsCode).
 			Where(models.Prefix("$_trading_order.quiz_result"), -1).
 			Where(models.Prefix("$_trading_order.is_valid"), 1).
-			Where(models.Prefix("$_trading_order.trade_end_timestamp >= ?"), currentTimeMillis-(AssetsInsertFrame.InAdvanceTimer+AssetsInsertFrame.EarlyExecutionTimer)*1000).
+			Where(models.Prefix("$_trading_order.trade_end_timestamp >= ?"), currentTimeMillis-(AssetsInsertFrame.InAdvanceTimer+AssetsInsertFrame.EarlyExecutionTimer+int64(AssetsInsertFrame.EarlyExecutionFrequency))*1000).
 			Select(models.Prefix("$_trading_order.*,$_app_currency_rate.b_num as currency_rate")).
 			Joins(models.Prefix("right join $_app_currency_rate on $_trading_order.currency_type=$_app_currency_rate.currency_b")).
 			Find(&tradingOrder)
-		if len(tradingOrder) > 0 {
-			go new(Params).Calculate(currentTimeMillis, item, tradingOrder)
+		num := len(tradingOrder)
+		//logger.Info(num)
+		if num > 0 {
+			go new(Params).Calculate(currentTimeMillis-int64(AssetsInsertFrame.EarlyExecutionFrequency)*1000, item, tradingOrder)
 		}
 	}
 }
@@ -208,6 +211,8 @@ func (p *Params) Calculate(currentTimeMillis int64, conf response.TradingAssetsM
 		for _, order := range orders {
 			p.Peoples = append(p.Peoples, order.AppUserID)
 			p.OrderIds = append(p.OrderIds, order.TradeOrderID)
+			p.HClose = order.BeginAssetsPrice
+			p.LClose = order.BeginAssetsPrice
 			if strings.EqualFold("up", order.UpDownType) {
 				p.upNum++
 				// 换算美元
@@ -225,12 +230,16 @@ func (p *Params) Calculate(currentTimeMillis int64, conf response.TradingAssetsM
 				).InexactFloat64()
 			}
 			// 最大close
-			if order.BeginAssetsPrice > p.HClose {
+			if p.HClose <= order.BeginAssetsPrice {
 				p.HClose = order.BeginAssetsPrice
+			} else {
+				logger.Info(p.HClose, order.BeginAssetsPrice)
 			}
-			// 最大close
-			if order.BeginAssetsPrice < p.LClose {
+			// 最小close
+			if p.LClose >= order.BeginAssetsPrice {
 				p.LClose = order.BeginAssetsPrice
+			} else {
+				logger.Info(p.LClose, order.BeginAssetsPrice)
 			}
 			if order.TradeBeginTimestamp > p.LastTradeBeginTimestamp {
 				p.LastTradeBeginTimestamp = order.TradeBeginTimestamp
@@ -243,26 +252,32 @@ func (p *Params) Calculate(currentTimeMillis int64, conf response.TradingAssetsM
 		return
 	}
 	// 检测是否安全期内
-	ok, err := redis.Client.SelectDbSetNx(15, fmt.Sprintf("Monitoring:%s", p.config.AssetsCode), "suo", p.config.AssetsInsertFrame.IntervalTimer)
+	yes, err := redis.Client.SelectDbSetNx(15, fmt.Sprintf("Monitoring:%s", p.config.AssetsCode), "suo", p.config.AssetsInsertFrame.IntervalTimer)
 	if err != nil {
 		return
 	}
-	if !ok {
+	if !yes {
+		return
+	}
+	Close, err = helpers.FormatFloat(Close, p.config.PointNumber)
+	if err != nil {
 		return
 	}
 	if p.LClose == 0 || p.HClose == 1000000 {
-		logger.Info("最大最小值初始化失败")
-		redis.Client.Delete(fmt.Sprintf("Monitoring:%s", p.config.AssetsCode))
+		logger.Info("最大最小值初始化失败", orders)
+		ok = redis.Client.Delete(fmt.Sprintf("Monitoring:%s", p.config.AssetsCode))
+		logger.Info(ok)
 		return
 	}
 
 	logger.Info("========================trade_end_timestamp > ", time.Unix(0, (currentTimeMillis-p.config.AssetsInsertFrame.InAdvanceTimer*1000)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
 	logger.Info("========================trade_end_timestamp <= ", time.Unix(0, (currentTimeMillis+(60-p.config.AssetsInsertFrame.InAdvanceTimer)*1000)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
 	logger.Info("========================", orders[0].KlineTime, "========================")
-	logger.Info("平均close", p.avgClose)
+	//logger.Info("平均close", p.avgClose)
 	logger.Info("最大close", p.HClose)
 	logger.Info("最小close", p.LClose)
 	logger.Info("diffClose--", p.diffClose)
+	go queue.Consume(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode))
 	go p.CreateInterferenceNeedle(currentTimeMillis, Close)
 
 }
@@ -275,17 +290,16 @@ func (p *Params) finalResult() (bool, float64) {
 		return false, 0
 	}
 	var avgArr map[string]interface{}
-	var floatArr []float64
+	//var floatArr []float64
 	currentTimeMillis := time.Now().UnixMilli()
-	mysql.DB.Model(models.KlineLog{}).Debug().
+	mysql.DB.Model(models.KlineLog{}).
+		Where("ts >= ?", currentTimeMillis-60000).
 		Where("ts <= ?", currentTimeMillis).
 		Where("contract_code", p.config.AssetsCode).
-		Order("ts desc").
-		Limit(1).
-		Select("c_close as Close").
+		Select("MAX(c_close) - MIN(c_close) as Close").
 		Find(&avgArr)
-	p.avgClose = helpers.StrToFloat64(string(avgArr["Close"].([]uint8)))
-	p.avgClose = helpers.Decimal(p.avgClose, p.config.PointNumber)
+	p.diffClose = helpers.StrToFloat64(string(avgArr["Close"].([]uint8)))
+	p.diffClose = helpers.Decimal(p.diffClose, p.config.PointNumber)
 	// 区域内用户盈利金额
 	p.winLoss = decimal.NewFromFloat(p.upAmounts).Sub(decimal.NewFromFloat(p.downAmounts)).InexactFloat64()
 	if p.winLoss == 0 { // 不用干预的情况：盈亏平了
@@ -302,20 +316,20 @@ func (p *Params) finalResult() (bool, float64) {
 	if p.winLoss < p.config.AssetsInsertFrame.LossThreshold {
 		return false, 0
 	}
-	res1 := math.Abs(decimal.NewFromFloat(p.HClose).Sub(decimal.NewFromFloat(p.avgClose)).InexactFloat64())
-	res2 := math.Abs(decimal.NewFromFloat(p.LClose).Sub(decimal.NewFromFloat(p.avgClose)).InexactFloat64())
-	if res1 != 0 {
-		floatArr = append(floatArr, res1)
-	}
-	if res2 != 0 {
-		floatArr = append(floatArr, res2)
-	}
-	if len(floatArr) == 0 {
-		logger.Info("p.diffClose", "获取失败")
-		return false, 0
-	}
+	//res1 := math.Abs(decimal.NewFromFloat(p.HClose).Sub(decimal.NewFromFloat(p.avgClose)).InexactFloat64())
+	//res2 := math.Abs(decimal.NewFromFloat(p.LClose).Sub(decimal.NewFromFloat(p.avgClose)).InexactFloat64())
+	//if res1 != 0 {
+	//	floatArr = append(floatArr, res1)
+	//}
+	//if res2 != 0 {
+	//	floatArr = append(floatArr, res2)
+	//}
+	//if len(floatArr) == 0 {
+	//	logger.Info("p.diffClose", "获取失败")
+	//	return false, 0
+	//}
 	//p.diffClose = randSliceValue(floatArr)
-	p.diffClose = getNum(p.config.MonitoringNumber, p.avgClose)
+	//p.diffClose = getNum(p.config.MonitoringNumber, p.avgClose)
 	// 第几位在波动
 	//p.config.MonitoringNumber = len(strings.Split(fmt.Sprintf("%v", p.diffClose), ".")[1])
 	// 同一个时间点有人买涨，有人买跌
@@ -349,86 +363,125 @@ func randSliceValue(xs []float64) float64 {
 	return xs[rand.Intn(len(xs))]
 }
 
+func Sub(cClose, VolatilityAmplitude, Rand float64) float64 {
+	num := decimal.NewFromFloat(cClose).Sub( // 震荡幅度为0到VolatilityAmplitude之间
+		decimal.NewFromFloat(Rand).Mul(
+			decimal.NewFromFloat(VolatilityAmplitude),
+		),
+	).InexactFloat64()
+	return num
+}
+
+func Rand(cClose, VolatilityAmplitude, Rand float64) float64 {
+	num := decimal.NewFromFloat(cClose).Add( // 震荡幅度为-VolatilityAmplitude到VolatilityAmplitude之间
+		decimal.NewFromFloat(Rand).Mul(
+			decimal.NewFromFloat(VolatilityAmplitude).Sub(decimal.NewFromFloat(VolatilityAmplitude).Mul(decimal.NewFromFloat(0.5))),
+		),
+	).InexactFloat64()
+	return num
+}
+
+func RandFloat(min, max float64) float64 {
+	return rand.Float64()*(max-min) + min // 生成0到0.0345之间的随机数
+}
+
+func Add(cClose, VolatilityAmplitude, Rand float64) float64 {
+	num := decimal.NewFromFloat(cClose).Add( // 震荡幅度为0到VolatilityAmplitude之间
+		decimal.NewFromFloat(Rand).Mul(
+			decimal.NewFromFloat(VolatilityAmplitude),
+		),
+	).InexactFloat64()
+	return num
+}
+
 // 创建干扰针
 
 func (p *Params) CreateInterferenceNeedle(currentTimeMillis int64, Close float64) {
 	// 提前插针时间
 	EarlyExecutionTimer := currentTimeMillis
 	if EarlyExecutionTimer < p.LastTradeBeginTimestamp {
-		logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
-		return
+		//logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
+		//return
 	}
 	EarlyExecutionTimerEnd := currentTimeMillis + (60-p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
+	if EarlyExecutionTimerEnd < p.LastTradeBeginTimestamp {
+		EarlyExecutionTimerEnd = p.LastTradeBeginTimestamp
+		logger.Info("EarlyExecutionTimerEnd--", EarlyExecutionTimerEnd)
+	}
 	RecoverTs := EarlyExecutionTimerEnd
 	RecoverTimer := currentTimeMillis + (60-p.config.AssetsInsertFrame.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
 	cClose := p.HClose
 	//diffClose := p.diffClose
 	//logger.Info("diffClose-:", fmt.Sprintf("%v", diffClose))
+	logger.Info("p.config.AssetsInsertFrame.EarlyExecutionFrequency", p.config.AssetsInsertFrame.EarlyExecutionFrequency)
+	redis.Client.ZAdd("Queue:interferenceNeedle:list", goRedis.Z{
+		Score:  float64(EarlyExecutionTimer),
+		Member: fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode),
+	})
 	for i := 0; i < p.config.AssetsInsertFrame.EarlyExecutionFrequency; i++ {
-		p.diffClose = getNum(p.config.MonitoringNumber, cClose)
-		// 低价位平台盈利
-		if strings.EqualFold("winDown", p.WinType) {
-			cClose = cClose - decimal.NewFromFloat(p.diffClose).Mul(decimal.NewFromFloat(1).Sub(decimal.NewFromFloat(p.config.VolatilityAmplitude))).InexactFloat64()
-		}
-		// 高价位平台盈利
-		if strings.EqualFold("winUp", p.WinType) {
-			cClose = cClose + decimal.NewFromFloat(p.diffClose).Mul(decimal.NewFromFloat(1).Sub(decimal.NewFromFloat(p.config.VolatilityAmplitude))).InexactFloat64()
-			//cClose = cClose + diffClose
-		}
-		cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
-		logger.Info("cClose-:", cClose)
-		data := redisData(p.config.AssetsCode, config.KlineSource, EarlyExecutionTimer+(int64(i))*1000, cClose)
-		if len(data) > 0 {
-			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
-			if err != nil {
-				panic(err)
+		Ts := EarlyExecutionTimer + (int64(i))*1000
+		// 划分粒度，每隔1秒执行一次，一秒内300毫秒一次
+		for l := 0; l < 2; l++ {
+			Ts = Ts + (int64(l)+1)*300
+			// 低价位平台盈利
+			if strings.EqualFold("winDown", p.WinType) {
+				cClose = Sub(cClose, p.config.VolatilityAmplitude, RandFloat(0, p.diffClose))
+			}
+			// 高价位平台盈利
+			if strings.EqualFold("winUp", p.WinType) {
+				cClose = Add(cClose, p.config.VolatilityAmplitude, RandFloat(0, p.diffClose))
+			}
+			cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
+			logger.Info("cClose-:", time.Unix(0, Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose)
+			data := redisData(p.config.AssetsCode, config.KlineSource, Ts, cClose)
+			if len(data) > 0 {
+				_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 	}
 	// 资产在最低价格~最低价格*(1-资产震荡幅度）之间按设置震荡频率随机震荡，直到区间结束时间
 	cClose = Close
-	timeNow := EarlyExecutionTimer
+	timeNow := EarlyExecutionTimer + int64(p.config.AssetsInsertFrame.EarlyExecutionFrequency)*int64(1000)
 	i := 0
 	var SystemTs int64
 	for SystemTs = timeNow; SystemTs <= EarlyExecutionTimerEnd; SystemTs = SystemTs + 1000 {
 		i++
-		// 求余，每隔xx秒震荡一次，随机的是震荡方向
-		ok := decimal.NewFromInt(int64(i)).Mod(decimal.NewFromInt(p.config.VolatilityFrequency)).IsZero()
-		if ok {
-			// 随机震荡
-			p.diffClose = getNum(p.config.MonitoringNumber, cClose)
-			if rand.Intn(2) == 0 {
-				cClose = decimal.NewFromFloat(cClose).Add(decimal.NewFromFloat(p.diffClose).Mul(decimal.NewFromFloat(1).Sub(decimal.NewFromFloat(p.config.ShockAmplitude)))).InexactFloat64()
-			} else {
-				cClose = decimal.NewFromFloat(cClose).Add(decimal.NewFromFloat(p.diffClose).Mul(decimal.NewFromFloat(1).Add(decimal.NewFromFloat(p.config.ShockAmplitude)))).InexactFloat64()
-			}
-			// 低价位平台盈利
-			if strings.EqualFold("winDown", p.WinType) {
-				if cClose > Close {
-					cClose = Close - p.diffClose
+		for l := 0; l < 2; l++ {
+			SystemTs = SystemTs + (int64(l)+1)*300
+			// 求余，每隔xx秒震荡一次，随机的是震荡方向
+			ok := decimal.NewFromInt(int64(i)).Mod(decimal.NewFromInt(p.config.VolatilityFrequency)).IsZero()
+			if ok {
+				if strings.EqualFold("winDown", p.WinType) && cClose > Close { // 低价位平台盈利
+					cClose = Sub(Close, p.config.VolatilityAmplitude, RandFloat(0, p.diffClose))
+				} else if strings.EqualFold("winUp", p.WinType) && cClose < Close { // 高价位平台盈利
+					cClose = Add(Close, p.config.VolatilityAmplitude, RandFloat(0, p.diffClose))
+				} else {
+					cClose = Rand(cClose, p.config.VolatilityAmplitude, RandFloat(0, p.diffClose))
+					//if rand.Float64() < 0.8 { // 80%的概率出现随机震荡
+					//}
+					logger.Info(cClose)
+					logger.Info(cClose)
 				}
 			}
-			// 高价位平台盈利
-			if strings.EqualFold("winUp", p.WinType) {
-				if cClose < Close {
-					cClose = Close + p.diffClose
+			cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
+			// 获取随机数 close 值
+			logger.Info("cClose-:", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose)
+			data := redisData(p.config.AssetsCode, config.KlineSource, SystemTs, cClose)
+			if len(data) > 0 {
+				_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
+				if err != nil {
+					panic(err)
 				}
 			}
-		}
-		cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
-		//result := cClose
-		//logger.Info(result)
-		// 获取随机数 close 值
-		data := redisData(p.config.AssetsCode, config.KlineSource, SystemTs, cClose)
-		if len(data) > 0 {
-			_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
-			if err != nil {
-				panic(err)
-			}
+
 		}
 	}
 	// 追加结束信号，后面好根据结束信号来生成恢复数据插针逻辑
+	logger.Info("cClose-:", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose)
 	data := redisData(p.config.AssetsCode, "End", SystemTs, 0)
 	if len(data) > 0 {
 		_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
@@ -436,10 +489,6 @@ func (p *Params) CreateInterferenceNeedle(currentTimeMillis int64, Close float64
 			panic(err)
 		}
 	}
-	redis.Client.ZAdd("Queue:interferenceNeedle:list", goRedis.Z{
-		Score:  float64(EarlyExecutionTimer),
-		Member: fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode),
-	})
 	logger.Info("currentTimeMillis========================", time.Unix(0, currentTimeMillis*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
 	logger.Info("EarlyExecutionTimer========================", time.Unix(0, EarlyExecutionTimer*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
 	logger.Info("SystemTs========================", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
@@ -514,6 +563,5 @@ func redisData(AssetsCode, Source string, SystemTs int64, close float64) string 
 		logger.Error(err)
 		return ""
 	}
-	logger.Info(data.TsDate, "---------", data.Tick.Close)
 	return string(strData)
 }

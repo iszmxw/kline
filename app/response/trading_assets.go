@@ -27,7 +27,7 @@ type TradingAssetsMonitoring struct {
 	AssetsCode          string  `json:"assets_code" gorm:"column:assets_code"`                   // 资产编码
 	PointNumber         int     `json:"point_number" gorm:"column:point_number"`                 // 保留小数点位数
 	IsMonitoring        int     `json:"is_monitoring" gorm:"column:is_monitoring"`               // 是否有效1-是 0-否
-	ShockAmplitude      float64 `json:"shock_amplitude" gorm:"column:shock_amplitude"`           // 震荡幅度
+	ShockAmplitude      float64 `json:"shock_amplitude" gorm:"column:shock_amplitude"`           // 震荡幅度 TODO 暂时无用
 	VolatilityAmplitude float64 `json:"volatility_amplitude" gorm:"column:volatility_amplitude"` // 波动幅度
 	VolatilityFrequency int64   `json:"volatility_frequency" gorm:"column:volatility_frequency"` // 震荡频率
 	MonitoringNumber    int     `json:"monitoring_number" gorm:"column:monitoring_number"`       // 波动小数点位数

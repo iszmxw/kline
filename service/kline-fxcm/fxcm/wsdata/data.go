@@ -35,6 +35,6 @@ type TickerValue struct {
 
 type DataStream struct {
 	Updated int64     `json:"Updated"`
-	Rates   []float64 `json:"Rates"`  // [Bid,Ask,High,Low]
+	Rates   []float64 `json:"Rates"` // [Bid,Ask,High,Low]
 	Symbol  string    `json:"Symbol"`
 }

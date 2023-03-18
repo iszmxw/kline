@@ -77,7 +77,7 @@ func TickerCheckTodaySleep(isTicker bool) {
 				// 检查当前数据源健康状况，只查询redis里面的，不健康的就进行置灰休市处理
 				status := GetSourceStatus(response.KlineSource(data.AssetsCode), data.AssetsCode)
 				if 1 != status {
-					if data.AssetsStatus == 1 {
+					if data.AssetsStatus == 1 || data.IsValid == 1 {
 						go NoticeMail.Notice("msgAssetSleep", map[string]interface{}{
 							"assets_code": data.AssetsCode,
 							"msg":         fmt.Sprintf("%v,结束交易准备开始休市", data.AssetsCode),
@@ -86,7 +86,7 @@ func TickerCheckTodaySleep(isTicker bool) {
 					}
 					logger.Info(data.AssetsCode + "休市中")
 				} else {
-					if data.AssetsStatus == 2 {
+					if data.AssetsStatus == 2 || data.IsValid == 0 {
 						go NoticeMail.Notice("msgAssetSleep", map[string]interface{}{
 							"assets_code": data.AssetsCode,
 							"msg":         fmt.Sprintf("%v,休市完毕，准备开市交易", data.AssetsCode),

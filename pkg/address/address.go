@@ -133,23 +133,24 @@ func LimitAddress(ip string) bool {
 }
 
 /*
-	 * {
-		    "status": "success",
-		    "country": "Indonesia",
-		    "countryCode": "ID",
-		    "region": "SU",
-		    "regionName": "North Sumatra",
-		    "city": "Medan",
-		    "zip": "",
-		    "lat": 3.5847,
-		    "lon": 98.6629,
-		    "timezone": "Asia/Jakarta",
-		    "isp": "SMART-TELECOM",
-		    "org": "",
-		    "as": "AS18004 PT WIRELESS INDONESIA ( WIN )",
-		    "query": "114.79.56.80"
-		}
-	 * */
+  - {
+    "status": "success",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "region": "SU",
+    "regionName": "North Sumatra",
+    "city": "Medan",
+    "zip": "",
+    "lat": 3.5847,
+    "lon": 98.6629,
+    "timezone": "Asia/Jakarta",
+    "isp": "SMART-TELECOM",
+    "org": "",
+    "as": "AS18004 PT WIRELESS INDONESIA ( WIN )",
+    "query": "114.79.56.80"
+    }
+    *
+*/
 func GetMessageByIp(ip string) Address {
 	var address Address
 	url := fmt.Sprintf("http://ip-api.com/json/%v", ip)

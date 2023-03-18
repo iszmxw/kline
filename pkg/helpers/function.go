@@ -21,6 +21,6 @@ func GetUUID16() string {
 func GetUUID11() string {
 	res := strings.ToUpper(uuid.New().String())
 	arr := strings.Split(res, "-")
-	str:= arr[0] + arr[1]
+	str := arr[0] + arr[1]
 	return string([]rune(str)[:11])
 }

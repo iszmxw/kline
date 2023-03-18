@@ -30,7 +30,7 @@ func SocketRaceOption(info KlineCommon.Info) {
 			info.Symbol = info.Symbol + ".W"
 		}
 		logger.Info("OTC时间")
-	}else{
+	} else {
 		if strings.Contains(info.Symbol, ".W") {
 			info.Symbol = strings.ReplaceAll(info.Symbol, ".W", "") // 去除掉
 		}

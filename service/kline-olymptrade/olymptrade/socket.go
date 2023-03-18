@@ -131,9 +131,9 @@ func LogData(wsData *wsdata.SubPriceKLineResponse, ContractCode string, SystemTs
 	klineLog.ID = SystemTs                                                         // 自己生成的ts/1000
 	klineLog.Mrid = 0.00                                                           // ID
 	klineLog.COpen = 0                                                             // 起始峰值
-	klineLog.CClose = wsData.Close                                                  // 结束峰值
-	klineLog.High = wsData.High                                                     // 最高峰值
-	klineLog.Low = wsData.Low                                                       // 最低峰值
+	klineLog.CClose = wsData.Close                                                 // 结束峰值
+	klineLog.High = wsData.High                                                    // 最高峰值
+	klineLog.Low = wsData.Low                                                      // 最低峰值
 	klineLog.Amount = 0                                                            // 成交金额 TODO
 	klineLog.Vol = 0                                                               // 成交手 TODO
 	klineLog.CCount = 0                                                            // 交易笔数 TODO

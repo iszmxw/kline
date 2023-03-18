@@ -14,5 +14,5 @@ type SystemOperateLog struct {
 	OperType       int       `json:"oper_type"`                        //操作类型
 	CreateDate     time.Time `json:"create_date"`                      //操作日期
 	IsShow         int       `json:"is_show"`                          //是否显示 1是 0否
-	Result string    `json:"result"`                           //操作结果
+	Result         string    `json:"result"`                           //操作结果
 }

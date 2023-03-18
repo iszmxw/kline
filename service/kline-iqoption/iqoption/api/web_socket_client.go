@@ -26,6 +26,6 @@ func (wsIx *WSPriceClient) SubPriceKLine(info KlineCommon.Info, callbackFun OnSu
 	if id == "" {
 		id = config.DefaultId
 	}
-	fun := callbackFun                // 方法
+	fun := callbackFun // 方法
 	wsIx.sub(info, fun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
 }

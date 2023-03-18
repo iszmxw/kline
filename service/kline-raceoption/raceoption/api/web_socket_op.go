@@ -206,7 +206,7 @@ ERR:
 	ws.Close()
 }
 
-//写协程
+// 写协程
 func (ws *WebSocketOp) writeLoop() {
 	for {
 		select {

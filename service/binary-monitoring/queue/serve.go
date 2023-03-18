@@ -17,20 +17,24 @@ import (
 
 func Start() {
 	for {
-		time.Sleep(time.Second)
-		result := redis.Client.ZRangeWithScores("Queue:interferenceNeedle:list", 0, 0)
-		if len(result) == 0 {
-			continue
-		}
-		timeNow := time.Now().UnixMilli()
-		if timeNow >= int64(result[0].Score) {
-			ok := redis.Client.ZRem("Queue:interferenceNeedle:list", result[0].Member)
-			logger.Info("ok ", ok)
-			if ok == 1 {
-				// 开始消费队列
-				go Consume(result[0].Member.(string))
+		time.Sleep(time.Millisecond * 100)
+		go func() {
+			result := redis.Client.ZRangeWithScores("Queue:interferenceNeedle:list", 0, 0)
+			if len(result) == 0 {
+				return
 			}
-		}
+			timeNow := time.Now()
+			if timeNow.UnixMilli()-int64(4000) >= int64(result[0].Score) {
+				logger.Info(timeNow.UnixMilli() - int64(2000) - int64(result[0].Score))
+				logger.Info(result[0].Member, "---", timeNow.Format("2006-01-02 15:04:05.999"), "---", time.Unix(0, int64(result[0].Score)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"))
+				ok := redis.Client.ZRem("Queue:interferenceNeedle:list", result[0].Member)
+				logger.Info("ok ", result, "--", ok)
+				if ok == 1 {
+					// 开始消费队列
+					go Consume(result[0].Member.(string))
+				}
+			}
+		}()
 	}
 }
 
@@ -41,19 +45,21 @@ func Consume(key string) {
 	strArr := strings.Split(key, ":")
 	AssetsCode := strArr[len(strArr)-1]
 	RecoverSource := response.KlineSource(AssetsCode)
-	_, err := redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("kline_source:%v", AssetsCode), config.KlineSource, 0)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
 	var i int64 = 0
 	var EndClose float64
 	lLen, _ := redis.Client.LLen(key)
 	exist := true
 	for exist {
-		time.Sleep(time.Millisecond * 100)
+		_, err := redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("kline_source:%v", AssetsCode), config.KlineSource, 0)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		time.Sleep(time.Millisecond * 80)
 		num, _ := redis.Client.LLen(key)
-		exist = num > 0
+		if num <= 0 {
+			continue
+		}
 		result := redis.Client.RPop(key)
 		if len(result) <= 0 {
 			continue
@@ -75,7 +81,7 @@ func Consume(key string) {
 		} else {
 			if diffTime > 800 {
 				//data.Ts = timeNow
-				logger.Info(fmt.Sprintf("数据过期=====系统时间：%v======TS时间：%v", time.Unix(0, timeNow*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), time.Unix(0, data.Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999")))
+				logger.Info(fmt.Sprintf("【%v】数据过期=====系统时间：%v======TS时间：%v", AssetsCode, time.Unix(0, timeNow*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), time.Unix(0, data.Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999")))
 				continue
 			}
 		}
@@ -86,9 +92,10 @@ func Consume(key string) {
 		}
 		// 本轮插针结束，开始执行恢复数据逻辑
 		if strings.EqualFold("End", data.Source) {
-			logger.Info("EndClose ", EndClose)
+			logger.Info(time.Now().Format("2006-01-02 15:04:05.999"), "---EndClose---", data.TsDate)
 			go RecoverInterferenceNeedle(AssetsCode, data.Ts, EndClose, RecoverSource)
 			// 获取原有数据源的当前数据，拿到当前现价，初步按照频率恢复
+			exist = false
 			continue
 		}
 		// 收集数据缓存到redis
@@ -97,8 +104,6 @@ func Consume(key string) {
 			logger.Error(redisErr)
 			continue
 		}
-		// 到点了，开始存储数据
-		logger.Info(fmt.Sprintf("系统时间：%v 数据时间：%v 时间差：【%v】close【%v】", time.Now().Format("2006-01-02 15:04:05"), data.TsDate, timeNow-data.Ts, data.Tick.Close))
 		if response.KlineSource(AssetsCode) == config.KlineSource {
 			var KlineData models.KlineLog
 			err = mysql.DB.Model(models.KlineLog{}).
@@ -121,6 +126,8 @@ func Consume(key string) {
 				logger.Error(err)
 				continue
 			}
+			//// 到点了，开始存储数据
+			//logger.Info(fmt.Sprintf("系统时间：%v 数据时间：%v 时间差：【%v】close【%v】", time.Now().Format("2006-01-02 15:04:05"), data.TsDate, timeNow-data.Ts, data.Tick.Close))
 		}
 	}
 	logger.Info(exist)
