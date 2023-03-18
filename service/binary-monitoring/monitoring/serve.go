@@ -21,8 +21,10 @@ import (
 )
 
 type Params struct {
-	// 最后交易的时间节点
+	// 最后交易的开始时间节点
 	LastTradeBeginTimestamp int64
+	// 最后交易的结束时间节点
+	LastTradeEndTimestamp int64
 	// 买涨的人数
 	upNum int64
 	// 买涨的金额
@@ -37,6 +39,10 @@ type Params struct {
 	LClose float64
 	// avgClose 最近一分钟平均 close
 	avgClose float64
+	// maxClose 一分钟内的最大 close
+	maxClose float64
+	// minClose 一分钟内的最小 close
+	minClose float64
 	// diffClose 差异 close
 	diffClose float64
 	winLoss   float64
@@ -129,8 +135,10 @@ func Start() {
 // 初始化参数
 
 func (p *Params) Init(config response.TradingAssetsMonitoring) bool {
-	// 最后交易的时间节点
+	// 最后交易的开始时间节点
 	p.LastTradeBeginTimestamp = 0
+	// 最后交易的结束时间节点
+	p.LastTradeEndTimestamp = 0
 	// 买涨的人数
 	p.upNum = 0
 	// 买涨的金额
@@ -207,6 +215,7 @@ func (p *Params) Calculate(currentTimeMillis int64, conf response.TradingAssetsM
 		p.HClose = order.BeginAssetsPrice
 		p.LClose = order.BeginAssetsPrice
 		p.LastTradeBeginTimestamp = order.TradeBeginTimestamp
+		p.LastTradeEndTimestamp = order.TradeEndTimestamp
 	} else {
 		for _, order := range orders {
 			p.Peoples = append(p.Peoples, order.AppUserID)
@@ -241,8 +250,11 @@ func (p *Params) Calculate(currentTimeMillis int64, conf response.TradingAssetsM
 			} else {
 				logger.Info(p.LClose, order.BeginAssetsPrice)
 			}
-			if order.TradeBeginTimestamp > p.LastTradeBeginTimestamp {
+			if p.LastTradeBeginTimestamp < order.TradeBeginTimestamp {
 				p.LastTradeBeginTimestamp = order.TradeBeginTimestamp
+			}
+			if p.LastTradeEndTimestamp < order.TradeEndTimestamp {
+				p.LastTradeEndTimestamp = order.TradeEndTimestamp
 			}
 		}
 	}
@@ -296,10 +308,11 @@ func (p *Params) finalResult() (bool, float64) {
 		Where("ts >= ?", currentTimeMillis-60000).
 		Where("ts <= ?", currentTimeMillis).
 		Where("contract_code", p.config.AssetsCode).
-		Select("MAX(c_close) - MIN(c_close) as Close").
+		Select("MAX(c_close) as maxClose,MIN(c_close) as minClose").
 		Find(&avgArr)
-	p.diffClose = helpers.StrToFloat64(string(avgArr["Close"].([]uint8)))
-	p.diffClose = helpers.Decimal(p.diffClose, p.config.PointNumber)
+	p.maxClose = helpers.StrToFloat64(string(avgArr["maxClose"].([]uint8)))
+	p.minClose = helpers.StrToFloat64(string(avgArr["minClose"].([]uint8)))
+	p.diffClose = helpers.Decimal(p.maxClose-p.minClose, p.config.PointNumber)
 	// 区域内用户盈利金额
 	p.winLoss = decimal.NewFromFloat(p.upAmounts).Sub(decimal.NewFromFloat(p.downAmounts)).InexactFloat64()
 	if p.winLoss == 0 { // 不用干预的情况：盈亏平了
@@ -316,34 +329,14 @@ func (p *Params) finalResult() (bool, float64) {
 	if p.winLoss < p.config.AssetsInsertFrame.LossThreshold {
 		return false, 0
 	}
-	//res1 := math.Abs(decimal.NewFromFloat(p.HClose).Sub(decimal.NewFromFloat(p.avgClose)).InexactFloat64())
-	//res2 := math.Abs(decimal.NewFromFloat(p.LClose).Sub(decimal.NewFromFloat(p.avgClose)).InexactFloat64())
-	//if res1 != 0 {
-	//	floatArr = append(floatArr, res1)
-	//}
-	//if res2 != 0 {
-	//	floatArr = append(floatArr, res2)
-	//}
-	//if len(floatArr) == 0 {
-	//	logger.Info("p.diffClose", "获取失败")
-	//	return false, 0
-	//}
-	//p.diffClose = randSliceValue(floatArr)
-	//p.diffClose = getNum(p.config.MonitoringNumber, p.avgClose)
-	// 第几位在波动
-	//p.config.MonitoringNumber = len(strings.Split(fmt.Sprintf("%v", p.diffClose), ".")[1])
 	// 同一个时间点有人买涨，有人买跌
 	if p.HClose == p.LClose {
 		if strings.EqualFold("winUp", p.WinType) { // 高价位平台盈利，算出一个高价位
-			//xs := helpers.MinNum(p.HClose)
-			Close := p.HClose + p.diffClose*decimal.NewFromFloat(1).Add(decimal.NewFromFloat(p.config.VolatilityAmplitude)).InexactFloat64()
-			//logger.Info(Close)
+			Close := Add(p.HClose, p.config.VolatilityAmplitude*0.5, RandFloat(0, p.diffClose))
 			return true, Close
 		}
 		if strings.EqualFold("winDown", p.WinType) { // 低价位平台盈利，算出一个低价位
-			//xs := helpers.MinNum(p.LClose)
-			Close := p.LClose - p.diffClose*decimal.NewFromFloat(1).Add(decimal.NewFromFloat(p.config.VolatilityAmplitude)).InexactFloat64()
-			//logger.Info(Close)
+			Close := Sub(p.LClose, p.config.VolatilityAmplitude*0.5, RandFloat(0, p.diffClose))
 			return true, Close
 		}
 	}
@@ -357,10 +350,6 @@ func (p *Params) finalResult() (bool, float64) {
 		return false, 0
 	}
 	return false, 0
-}
-
-func randSliceValue(xs []float64) float64 {
-	return xs[rand.Intn(len(xs))]
 }
 
 func Sub(cClose, VolatilityAmplitude, Rand float64) float64 {
@@ -404,14 +393,14 @@ func (p *Params) CreateInterferenceNeedle(currentTimeMillis int64, Close float64
 		//return
 	}
 	EarlyExecutionTimerEnd := currentTimeMillis + (60-p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
-	if EarlyExecutionTimerEnd < p.LastTradeBeginTimestamp {
-		EarlyExecutionTimerEnd = p.LastTradeBeginTimestamp
+	if EarlyExecutionTimerEnd < p.LastTradeEndTimestamp {
+		EarlyExecutionTimerEnd = p.LastTradeEndTimestamp
 		logger.Info("EarlyExecutionTimerEnd--", EarlyExecutionTimerEnd)
 	}
 	RecoverTs := EarlyExecutionTimerEnd
 	RecoverTimer := currentTimeMillis + (60-p.config.AssetsInsertFrame.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
-	cClose := p.HClose
+	cClose := Close
 	//diffClose := p.diffClose
 	//logger.Info("diffClose-:", fmt.Sprintf("%v", diffClose))
 	logger.Info("p.config.AssetsInsertFrame.EarlyExecutionFrequency", p.config.AssetsInsertFrame.EarlyExecutionFrequency)
@@ -433,11 +422,13 @@ func (p *Params) CreateInterferenceNeedle(currentTimeMillis int64, Close float64
 				cClose = Add(cClose, p.config.VolatilityAmplitude, RandFloat(0, p.diffClose))
 			}
 			cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
-			logger.Info("cClose-:", time.Unix(0, Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose)
+			logger.Info("cClose-:", time.Unix(0, Ts*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose, "---", p.diffClose)
 			data := redisData(p.config.AssetsCode, config.KlineSource, Ts, cClose)
 			if len(data) > 0 {
 				_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
 				if err != nil {
+					logger.Info(data)
+					logger.Info(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode))
 					panic(err)
 				}
 			}
@@ -469,7 +460,7 @@ func (p *Params) CreateInterferenceNeedle(currentTimeMillis int64, Close float64
 			}
 			cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
 			// 获取随机数 close 值
-			logger.Info("cClose-:", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose)
+			logger.Info("cClose-:", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose, "---", p.diffClose)
 			data := redisData(p.config.AssetsCode, config.KlineSource, SystemTs, cClose)
 			if len(data) > 0 {
 				_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)

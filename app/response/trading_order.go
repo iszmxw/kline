@@ -27,7 +27,7 @@ type TradingOrder struct {
 	RealCostAmounts     float64   `json:"real_cost_amounts" gorm:"column:real_cost_amounts"`         // 实际消费金额
 	KlineTime           int64     `json:"kline_time" gorm:"column:kline_time"`                       // k线交易时间点
 	TradeBeginTimestamp int64     `json:"trade_begin_timestamp" gorm:"column:trade_begin_timestamp"` // 交易起始日期时间戳
-	TradeEndTimestamp   string    `json:"trade_end_timestamp" gorm:"column:trade_end_timestamp"`     // 交易截止日期时间戳
+	TradeEndTimestamp   int64     `json:"trade_end_timestamp" gorm:"column:trade_end_timestamp"`     // 交易截止日期时间戳
 	UserGainAmounts     float64   `json:"user_gain_amounts" gorm:"column:user_gain_amounts"`         // 用户真实亏损，大于0为客户盈利反之则亏
 	LockingKey          string    `json:"locking_key" gorm:"column:locking_key"`
 	AssetsCode          string    `json:"assets_code" gorm:"column:assets_code"`

@@ -142,6 +142,9 @@ func RecoverInterferenceNeedle(AssetsCode string, StartTime int64, EndClose floa
 		return
 	}
 	logger.Info("干扰结束数据源已恢复")
+	time.Sleep(time.Second * 8)
+	ok := redis.Client.Delete(fmt.Sprintf("%v:market.%v.index.1min", config.KlineSource, AssetsCode))
+	logger.Info("回收缓存", ok)
 }
 
 // LogData 存入 kline_log 的数据
