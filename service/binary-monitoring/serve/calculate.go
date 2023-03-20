@@ -269,7 +269,7 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 	}
 	// 追加结束信号，后面好根据结束信号来生成恢复数据插针逻辑
 	logger.Info("cClose-:", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose)
-	data := redisData(p.config.AssetsCode, "End", SystemTs, 0)
+	data := redisData(p.config.AssetsCode, "End", SystemTs, cClose)
 	if len(data) > 0 {
 		_, err := redis.Client.Lpush(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode), data)
 		if err != nil {

@@ -23,9 +23,6 @@ func (p *Service) StartConsume(key string) {
 	strArr := strings.Split(key, ":")
 	AssetsCode := strArr[len(strArr)-1]
 	RecoverSource := response.KlineSource(AssetsCode)
-	var i int64 = 0
-	var EndClose float64
-	lLen, _ := redis.Client.LLen(key)
 	exist := true
 	for exist {
 		_, err := redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("kline_source:%v", AssetsCode), config.KlineSource, 0)
@@ -63,15 +60,10 @@ func (p *Service) StartConsume(key string) {
 				continue
 			}
 		}
-		i++
-		// 最后一个的时候，获取一下 Close 值
-		if i == lLen-1 {
-			EndClose = helpers.StrToFloat64(data.Tick.Close)
-		}
 		// 本轮插针结束，开始执行恢复数据逻辑
 		if strings.EqualFold("End", data.Source) {
 			logger.Info(time.Now().Format("2006-01-02 15:04:05.999"), "---EndClose---", data.TsDate)
-			go p.RecoverInterferenceNeedle(AssetsCode, data.Ts, EndClose, RecoverSource)
+			go p.RecoverInterferenceNeedle(AssetsCode, data.Ts, helpers.StrToFloat64(data.Tick.Close), RecoverSource)
 			// 获取原有数据源的当前数据，拿到当前现价，初步按照频率恢复
 			exist = false
 			continue
@@ -95,7 +87,7 @@ func (p *Service) RecoverInterferenceNeedle(AssetsCode string, StartTime int64, 
 		if nowClose == 0 {
 			continue
 		}
-		logger.Info("nowClose---", nowClose)
+		logger.Info("nowClose---", nowClose, "cClose---", cClose)
 		i++
 		for l := 0; l < 2; l++ {
 			SystemTs = SystemTs + (int64(l)+1)*300
@@ -122,7 +114,6 @@ func (p *Service) RecoverInterferenceNeedle(AssetsCode string, StartTime int64, 
 		return
 	}
 	logger.Info("干扰结束数据源已恢复")
-	time.Sleep(time.Millisecond * 200)
 	ok := redis.Client.Delete(fmt.Sprintf("%v:market.%v.index.1min", config.KlineSource, AssetsCode))
 	logger.Info("回收缓存", ok)
 }
