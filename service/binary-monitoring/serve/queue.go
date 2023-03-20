@@ -11,6 +11,7 @@ import (
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 	"goapi/service/binary-monitoring/config"
+	"goapi/service/binary-monitoring/pkg"
 	"strings"
 	"time"
 )
@@ -31,7 +32,7 @@ func StartQueue() {
 				logger.Info("ok ", result, "--", ok)
 				if ok == 1 {
 					// 开始消费队列
-					go StartConsume(result[0].Member.(string))
+					//go StartConsume(result[0].Member.(string))
 				}
 			}
 		}()
@@ -40,7 +41,7 @@ func StartQueue() {
 
 // 消费队列里面的消息
 
-func StartConsume(key string) {
+func (p *Service) StartConsume(key string) {
 	// 存在
 	strArr := strings.Split(key, ":")
 	AssetsCode := strArr[len(strArr)-1]
@@ -93,56 +94,105 @@ func StartConsume(key string) {
 		// 本轮插针结束，开始执行恢复数据逻辑
 		if strings.EqualFold("End", data.Source) {
 			logger.Info(time.Now().Format("2006-01-02 15:04:05.999"), "---EndClose---", data.TsDate)
-			go RecoverInterferenceNeedle(AssetsCode, data.Ts, EndClose, RecoverSource)
+			go p.RecoverInterferenceNeedle(AssetsCode, data.Ts, EndClose, RecoverSource)
 			// 获取原有数据源的当前数据，拿到当前现价，初步按照频率恢复
 			exist = false
 			continue
 		}
-		// 收集数据缓存到redis
-		_, redisErr := redis.Client.Add(fmt.Sprintf("%v:%v", config.KlineSource, data.Ch), result, 0)
-		if redisErr != nil {
-			logger.Error(redisErr)
-			continue
-		}
-		if response.KlineSource(AssetsCode) == config.KlineSource {
-			var KlineData models.KlineLog
-			err = mysql.DB.Model(models.KlineLog{}).
-				Select("log_id").
-				Where("contract_code", AssetsCode).
-				Where("ts", data.Ts).
-				Where("upstream_ts", data.Ts).
-				Where("c_close", data.Tick.Close).
-				Where("kline_source", config.KlineSource).
-				Find(&KlineData).Error
-			if err != nil {
-				logger.Error(err)
-			}
-			if KlineData.LogId > 0 {
-				logger.Info(KlineData.LogId, "已存在")
-				continue
-			}
-			lineLogRes := LogData(AssetsCode, data)
-			if err = mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
-				logger.Error(err)
-				continue
-			}
-			//// 到点了，开始存储数据
-			//logger.Info(fmt.Sprintf("系统时间：%v 数据时间：%v 时间差：【%v】close【%v】", time.Now().Format("2006-01-02 15:04:05"), data.TsDate, timeNow-data.Ts, data.Tick.Close))
-		}
+		p.saveData(result, data)
+
 	}
 	logger.Info(exist)
 }
 
 //
 
-func RecoverInterferenceNeedle(AssetsCode string, StartTime int64, EndClose float64, RecoverSource string) {
+func (p *Service) RecoverInterferenceNeedle(AssetsCode string, StartTime int64, EndClose float64, RecoverSource string) {
+	cClose := EndClose
+	timeNow := StartTime
+	timEnd := timeNow + p.config.AssetsInsertFrame.RecoverTimer*1000
+	i := 0
+	var SystemTs int64
+	for SystemTs = timeNow; SystemTs <= timEnd; SystemTs = SystemTs + 1000 {
+		nowClose := getNowClose(RecoverSource, AssetsCode)
+		if nowClose == 0 {
+			continue
+		}
+		logger.Info("nowClose---", nowClose)
+		i++
+		for l := 0; l < 2; l++ {
+			SystemTs = SystemTs + (int64(l)+1)*300
+			if nowClose > cClose {
+				cClose = pkg.Add(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
+			} else {
+				cClose = pkg.Sub(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
+			}
+			cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
+			logger.Info("cClose-:", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose, "---", p.diffClose)
+			result := redisData(p.config.AssetsCode, config.KlineSource, SystemTs, cClose)
+			var data response.SubIndexKLineResponse
+			err := json.Unmarshal([]byte(result), &data)
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+			p.saveData(result, data)
+		}
+	}
 	_, err := redis.Client.Add(fmt.Sprintf("kline_source:%v", AssetsCode), RecoverSource, 0)
 	if err != nil {
 		logger.Error(err)
 		return
 	}
 	logger.Info("干扰结束数据源已恢复")
-	time.Sleep(time.Second * 8)
+	time.Sleep(time.Millisecond * 200)
 	ok := redis.Client.Delete(fmt.Sprintf("%v:market.%v.index.1min", config.KlineSource, AssetsCode))
 	logger.Info("回收缓存", ok)
+}
+
+func (p *Service) saveData(result string, data response.SubIndexKLineResponse) {
+	// 收集数据缓存到redis
+	_, redisErr := redis.Client.Add(fmt.Sprintf("%v:%v", config.KlineSource, data.Ch), result, 0)
+	if redisErr != nil {
+		logger.Error(redisErr)
+		return
+	}
+	if response.KlineSource(p.config.AssetsCode) == config.KlineSource {
+		var KlineData models.KlineLog
+		err := mysql.DB.Model(models.KlineLog{}).
+			Select("log_id").
+			Where("contract_code", p.config.AssetsCode).
+			Where("ts", data.Ts).
+			Where("upstream_ts", data.Ts).
+			Where("c_close", data.Tick.Close).
+			Where("kline_source", config.KlineSource).
+			Find(&KlineData).Error
+		if err != nil {
+			logger.Error(err)
+		}
+		if KlineData.LogId > 0 {
+			logger.Info(KlineData.LogId, "已存在")
+			return
+		}
+		lineLogRes := LogData(p.config.AssetsCode, data)
+		if err = mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
+			logger.Error(err)
+			return
+		}
+	}
+}
+
+func getNowClose(RecoverSource, AssetsCode string) float64 {
+	key := fmt.Sprintf("%v:market.%v.index.1min", RecoverSource, AssetsCode)
+	push, _ := redis.Client.SelectDbGet(15, key)
+	var WsIndex *response.WsIndex
+	WsIndexErr := json.Unmarshal([]byte(push), &WsIndex)
+	if WsIndexErr != nil {
+		logger.Error(WsIndexErr)
+		return 0
+	}
+	if len(WsIndex.Tick.Close) == 0 {
+		return 0
+	}
+	return helpers.StrToFloat64(WsIndex.Tick.Close)
 }

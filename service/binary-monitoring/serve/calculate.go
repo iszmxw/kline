@@ -179,7 +179,7 @@ func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssets
 	logger.Info("最大close", p.HClose)
 	logger.Info("最小close", p.LClose)
 	logger.Info("diffClose--", p.diffClose)
-	go StartConsume(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode))
+	go p.StartConsume(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode))
 	go p.CreateInterferenceNeedle(currentTimeMillis, Close)
 
 }
