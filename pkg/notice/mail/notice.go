@@ -6,16 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 	cmap "github.com/orcaman/concurrent-map"
 	conf "goapi/pkg/config"
-	"goapi/pkg/email"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/notice/telegram"
 	"goapi/pkg/redis"
 	"goapi/service/liveodds/utils"
-	"math/rand"
 	"net/url"
 	"runtime/debug"
-	"time"
 )
 
 func getNoticeKey(address, t string) string {
@@ -313,20 +310,20 @@ func Notice(t string, data interface{}) {
 	}
 	// telegram 通知
 	go telegram.Notice(Info)
-	if !helpers.InArray(t, []string{"msgHeartbeatAnomaly", "msgAssetSleep", "msgCheckSwitchSource", "msgNoSwitchSource"}) { // 这四个才进行邮件通知
-		return
-	}
-	// 邮件通知
-	for _, address := range conf.GetStringSlice("notify.email") {
-		if (len(address) > 0) && check(address, t) {
-			go func(address string) {
-				// 随机十秒以内进行休息，然后发送，避免发送过于频繁发送失败
-				time.Sleep(time.Duration(rand.Intn(10)) * time.Second)
-				err := email.SendEmail(Info, address)
-				if err != nil {
-					logger.Error(err)
-				}
-			}(address)
-		}
-	}
+	//if !helpers.InArray(t, []string{"msgHeartbeatAnomaly", "msgAssetSleep", "msgCheckSwitchSource", "msgNoSwitchSource"}) { // 这四个才进行邮件通知
+	//	return
+	//}
+	//// 邮件通知
+	//for _, address := range conf.GetStringSlice("notify.email") {
+	//	if (len(address) > 0) && check(address, t) {
+	//		go func(address string) {
+	//			// 随机十秒以内进行休息，然后发送，避免发送过于频繁发送失败
+	//			time.Sleep(time.Duration(rand.Intn(10)) * time.Second)
+	//			err := email.SendEmail(Info, address)
+	//			if err != nil {
+	//				logger.Error(err)
+	//			}
+	//		}(address)
+	//	}
+	//}
 }

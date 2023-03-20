@@ -71,7 +71,6 @@ func StartMonitoring() {
 			logger.Info(currentTimeMillis, "请设置小数点波动位数")
 			continue
 		}
-		//logger.Info(currentTimeMillis, index, item.ID, "---", item.AssetsCode)
 		// 1、设置提前触发时间（拿这个时间价格作为判断条件）
 		//logger.Info(currentTimeMillis, item)
 		var tradingOrder []response.TradingOrder

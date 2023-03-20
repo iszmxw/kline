@@ -12,6 +12,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/service/binary-monitoring/config"
 	"goapi/service/binary-monitoring/pkg"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -246,16 +247,19 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 			// 求余，每隔xx秒震荡一次，随机的是震荡方向
 			ok := decimal.NewFromInt(int64(i)).Mod(decimal.NewFromInt(p.config.VolatilityFrequency)).IsZero()
 			if ok {
+				// 计算价格波动方向
+				randFloat64 := rand.Float64()
+				if randFloat64 < 0.66666 { // 66.666%的概率出现随机震荡
+					if randFloat64 < 0.33333 {
+						cClose = pkg.Add(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
+					} else {
+						cClose = pkg.Sub(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
+					}
+				}
 				if strings.EqualFold("winDown", p.WinType) && cClose > Close { // 低价位平台盈利
 					cClose = pkg.Sub(Close, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
 				} else if strings.EqualFold("winUp", p.WinType) && cClose < Close { // 高价位平台盈利
 					cClose = pkg.Add(Close, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
-				} else {
-					cClose = pkg.Rand(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
-					//if rand.Float64() < 0.8 { // 80%的概率出现随机震荡
-					//}
-					logger.Info(cClose)
-					logger.Info(cClose)
 				}
 			}
 			cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
