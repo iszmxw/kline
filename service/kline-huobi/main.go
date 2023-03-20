@@ -162,25 +162,37 @@ func SocketHuoBi(info KlineCommon.Info) {
 				return
 			}
 		}
-		// 历史 kline 入库
-
-		//// 历史 kline 入队列
-		//lPushJson, lPushErr := json.Marshal(AddData)
-		//if lPushErr != nil {
-		//	logger.Error(lPushErr)
-		//	return
-		//}
-		//_, _ = redis.Client.Lpush("kline_log", lPushJson)
-		//// 历史 kline 入队列
-
-		//// 历史存入 elastic todo::暂时不开启
-		//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(AddData.LogId), AddData)
-		//if !putRes {
-		//	logger.Error(errors.New("历史存入 elastic 失败"))
-		//} else {
-		//	logger.Info("elastic-success")
-		//}
-		//time.Sleep(time.Nanosecond)
+		// 插针后的数据缓存到另外一张表
+		RecoverSource, err := redis.Client.Get(fmt.Sprintf("recover_source:%v", info.ContractCode))
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		if RecoverSource == kconfig.KlineSource {
+			var KlineData models.KlineRecoverLog
+			err = mysql.DB.
+				Model(models.KlineRecoverLog{}).
+				Select("log_id").
+				Where("contract_code", info.ContractCode).
+				Where("ts", SystemTs).
+				Where("upstream_ts", UpstreamTs).
+				Where("c_close", data.Tick.Close).
+				Where("kline_source", kconfig.KlineSource).
+				Find(&KlineData).Error
+			if err != nil {
+				logger.Error(err)
+			}
+			if KlineData.LogId > 0 {
+				return
+			}
+			AddData := res.KlineLogData(info.ContractCode, data, UpstreamTs)
+			DB := mysql.DB.Debug()
+			result := DB.Model(models.KlineRecoverLog{}).Create(&AddData)
+			if result.Error != nil {
+				logger.Error(result.Error)
+				return
+			}
+		}
 
 		runEnd := time.Now().UnixMilli() // 开始时间
 		// 计算一次存储数据消耗的时间

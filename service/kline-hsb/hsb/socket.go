@@ -102,13 +102,34 @@ func SocketHsb(info KlineCommon.Info) {
 				}
 			}
 
-			//// 历史存入 elastic
-			//putRes := esdk.IndexPut("kline_log", helpers.Int64ToString(KlineData.LogId), KlineData)
-			//if !putRes {
-			//	logger.Error(errors.New("历史存入 elastic 失败"))
-			//} else {
-			//	logger.Info("elastic-success")
-			//}
+			// 插针后的数据缓存到另外一张表
+			RecoverSource, err := redis.Client.Get(fmt.Sprintf("recover_source:%v", info.ContractCode))
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+			if RecoverSource == config.KlineSource {
+				var KlineData models.KlineRecoverLog
+				err = mysql.DB.
+					Model(models.KlineRecoverLog{}).
+					Select("log_id").
+					Where("contract_code", ContractCode).
+					Where("upstream_ts", UpstreamTs).
+					Where("kline_source", config.KlineSource).
+					Find(&KlineData).Error
+				if err != nil {
+					logger.Error(err)
+				}
+				if KlineData.LogId > 0 {
+					return
+				}
+				lineLogRes := LogData(wsData, ContractCode, SystemTs, UpstreamTs)
+				if err = mysql.DB.Model(models.KlineRecoverLog{}).Create(&lineLogRes).Error; err != nil {
+					logger.Error(err)
+					return
+				}
+			}
+
 			// 计算一次存储数据消耗的时间
 			logger.Info(KlineCommon.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		}, "")

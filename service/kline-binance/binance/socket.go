@@ -110,9 +110,40 @@ func SocketBinance(info KlineCommon.Info) {
 					return
 				}
 				lineLogRes := LogData(resp, SystemTs, UpstreamTs)
-				cerr1 := mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error
-				if cerr1 != nil {
-					logger.Error(cerr1)
+				err = mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error
+				if err != nil {
+					logger.Error(err)
+					return
+				}
+			}
+
+			// 插针后的数据缓存到另外一张表
+			RecoverSource, err := redis.Client.Get(fmt.Sprintf("recover_source:%v", info.ContractCode))
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+			if RecoverSource == config.KlineSource {
+				var KlineData models.KlineRecoverLog
+				err = mysql.DB.
+					Model(models.KlineRecoverLog{}).
+					Select("log_id").
+					Where("contract_code", ContractCode).
+					Where("ts", SystemTs).
+					Where("upstream_ts", UpstreamTs).
+					Where("c_close", data.Tick.Close).
+					Where("kline_source", config.KlineSource).
+					Find(&KlineData).Error
+				if err != nil {
+					logger.Error(err)
+				}
+				if KlineData.LogId > 0 {
+					return
+				}
+				lineLogRes := LogData(resp, SystemTs, UpstreamTs)
+				err = mysql.DB.Model(models.KlineRecoverLog{}).Create(&lineLogRes).Error
+				if err != nil {
+					logger.Error(err)
 					return
 				}
 			}

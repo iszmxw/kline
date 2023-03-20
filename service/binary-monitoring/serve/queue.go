@@ -25,14 +25,19 @@ func (p *Service) StartConsume(key string) {
 	RecoverSource := response.KlineSource(AssetsCode)
 	exist := true
 	for exist {
-		_, err := redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("kline_source:%v", AssetsCode), config.KlineSource, 0)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
 		time.Sleep(time.Millisecond * 80)
 		num, _ := redis.Client.LLen(key)
 		if num <= 0 {
+			continue
+		}
+		_, err := redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("kline_source:%v", AssetsCode), config.KlineSource, 0)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+		_, err = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("recover_source:%v", AssetsCode), RecoverSource, 0)
+		if err != nil {
+			logger.Error(err)
 			continue
 		}
 		result := redis.Client.RPop(key)

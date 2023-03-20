@@ -99,6 +99,38 @@ func SocketIqoption(info KlineCommon.Info) {
 				}
 				logger.Info("0003"+data.Ch, lineLogRes)
 			}
+			// 插针后的数据缓存到另外一张表
+			RecoverSource, err := redis.Client.Get(fmt.Sprintf("recover_source:%v", info.ContractCode))
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+			if RecoverSource == config.KlineSource {
+				var KlineData models.KlineRecoverLog
+				err = mysql.DB.Debug().
+					Model(models.KlineRecoverLog{}).
+					Select("log_id").
+					Where("contract_code", info.ContractCode).
+					Where("ts", SystemTs).
+					Where("upstream_ts", UpstreamTs).
+					Where("c_close", data.Tick.Close).
+					Where("kline_source", config.KlineSource).
+					Find(&KlineData).Error
+				if err != nil {
+					logger.Error(err)
+				}
+				logger.Info("0002"+data.Ch, KlineData)
+				if KlineData.LogId > 0 {
+					logger.Info("0004", "已存在")
+					return
+				}
+				lineLogRes := LogData(resp, info.ContractCode, SystemTs, UpstreamTs)
+				if err = mysql.DB.Model(models.KlineRecoverLog{}).Create(&lineLogRes).Error; err != nil {
+					logger.Error(err)
+					return
+				}
+				logger.Info("0003"+data.Ch, lineLogRes)
+			}
 			logger.Info(KlineCommon.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		}, "")
 	}
