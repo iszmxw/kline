@@ -2,7 +2,6 @@ package serve
 
 import (
 	"fmt"
-	goRedis "github.com/go-redis/redis"
 	"github.com/shopspring/decimal"
 	"goapi/app/models"
 	"goapi/app/response"
@@ -25,7 +24,6 @@ func (p *Service) finalResult() (bool, float64) {
 		return false, 0
 	}
 	var avgArr map[string]interface{}
-	//var floatArr []float64
 	currentTimeMillis := time.Now().UnixMilli()
 	mysql.DB.Model(models.KlineLog{}).
 		Where("ts >= ?", currentTimeMillis-60000).
@@ -202,13 +200,7 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 	RecoverTimer := currentTimeMillis + (60-p.config.AssetsInsertFrame.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
 	cClose := Close
-	//diffClose := p.diffClose
-	//logger.Info("diffClose-:", fmt.Sprintf("%v", diffClose))
-	logger.Info("p.config.AssetsInsertFrame.EarlyExecutionFrequency", p.config.AssetsInsertFrame.EarlyExecutionFrequency)
-	redis.Client.ZAdd("Queue:interferenceNeedle:list", goRedis.Z{
-		Score:  float64(EarlyExecutionTimer),
-		Member: fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode),
-	})
+	logger.Info("p.config.AssetsInsertFrame.EarlyExecutionFrequency--", p.config.AssetsInsertFrame.EarlyExecutionFrequency)
 	for i := 0; i < p.config.AssetsInsertFrame.EarlyExecutionFrequency; i++ {
 		Ts := EarlyExecutionTimer + (int64(i))*1000
 		// 划分粒度，每隔1秒执行一次，一秒内300毫秒一次

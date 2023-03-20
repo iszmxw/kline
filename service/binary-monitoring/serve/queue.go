@@ -16,29 +16,6 @@ import (
 	"time"
 )
 
-func StartQueue() {
-	for {
-		time.Sleep(time.Millisecond * 100)
-		go func() {
-			result := redis.Client.ZRangeWithScores("Queue:interferenceNeedle:list", 0, 0)
-			if len(result) == 0 {
-				return
-			}
-			timeNow := time.Now()
-			if timeNow.UnixMilli()-int64(4000) >= int64(result[0].Score) {
-				logger.Info(timeNow.UnixMilli() - int64(2000) - int64(result[0].Score))
-				logger.Info(result[0].Member, "---", timeNow.Format("2006-01-02 15:04:05.999"), "---", time.Unix(0, int64(result[0].Score)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"))
-				ok := redis.Client.ZRem("Queue:interferenceNeedle:list", result[0].Member)
-				logger.Info("ok ", result, "--", ok)
-				if ok == 1 {
-					// 开始消费队列
-					//go StartConsume(result[0].Member.(string))
-				}
-			}
-		}()
-	}
-}
-
 // 消费队列里面的消息
 
 func (p *Service) StartConsume(key string) {
