@@ -305,8 +305,8 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 		logger.Error(err)
 	}
 	err = mysql.DB.Model(models.TradingOrder{}).Where("trade_order_id in ?", p.OrderIds).Updates(map[string]interface{}{
-		"interference_id":          NeedleDetails.ID,
-		"interference_quiz_result": -1,
+		"interference_id": NeedleDetails.ID,
+		"quiz_result_old": -1,
 	}).Error
 	if err != nil {
 		logger.Error(err)

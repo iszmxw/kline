@@ -15,6 +15,9 @@ GOOS=linux GOARCH=amd64 go build -o $appBuildDir/web/binary-go-web service/binar
 # 1、打包 email 接口
 GOOS=linux GOARCH=amd64 go build -o $appBuildDir/email/binary-go-email service/binary-email/main.go
 
+# 11、打包 binary-monitoring 插针服务
+GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-monitoring service/binary-monitoring/main.go
+
 # 2、打包 火币网 K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-huobi service/kline-huobi/main.go
 

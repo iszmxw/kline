@@ -18,6 +18,8 @@ runname6=iqoption-go-fxcm
 putfile6=binary-go-fxcm
 runname7=iqoption-go-iqoption
 putfile7=binary-go-iqoption
+runname8=iqoption-go-monitoring
+putfile8=binary-go-monitoring
 port=7107
 app=test-iqoption-kline
 
@@ -50,6 +52,7 @@ ls -l $appdir | grep $runname3 | awk '{print $6,$7,$8,$9}'
 #ls -l $appdir | grep $runname5 | awk '{print $6,$7,$8,$9}'
 ls -l $appdir | grep $runname6 | awk '{print $6,$7,$8,$9}'
 ls -l $appdir | grep $runname7 | awk '{print $6,$7,$8,$9}'
+ls -l $appdir | grep $runname8 | awk '{print $6,$7,$8,$9}'
 
 if [ ! -f $appdir/$runname1 ]; then
   echo "$appdir/$runname1 文件不存在请检查后再操作"
@@ -79,6 +82,10 @@ if [ ! -f $appdir/$runname7 ]; then
   echo "$appdir/$runname7 文件不存在请检查后再操作"
   exit 0
 fi
+if [ ! -f $appdir/$runname8 ]; then
+  echo "$appdir/$runname8 文件不存在请检查后再操作"
+  exit 0
+fi
 
 if [ ! -f $appdir/$putfile1 ]; then
   echo "$appdir/$putfile1 文件不存在请检查后再操作"
@@ -106,6 +113,10 @@ if [ ! -f $appdir/$putfile6 ]; then
 fi
 if [ ! -f $appdir/$putfile7 ]; then
   echo "$appdir/$putfile7 文件不存在请检查后再操作"
+  exit 0
+fi
+if [ ! -f $appdir/$putfile8 ]; then
+  echo "$appdir/$putfile8 文件不存在请检查后再操作"
   exit 0
 fi
 
@@ -138,6 +149,10 @@ sleep 3
 app_pid7=$(ps -ef | grep $runname7 | grep 07 | awk '{print $2}')
 echo "old PID $app_pid7"
 kill -9 $app_pid7
+sleep 3
+app_pid8=$(ps -ef | grep $runname8 | grep 08 | awk '{print $2}')
+echo "old PID $app_pid8"
+kill -9 $app_pid8
 
 echo "2、移动旧代码到history目录"
 sleep 1
@@ -148,6 +163,7 @@ mv $appdir/$runname3 $appdirHistory/$runname3"_"$date
 #mv $appdir/$runname5 $appdirHistory/$runname5"_"$date
 mv $appdir/$runname6 $appdirHistory/$runname6"_"$date
 mv $appdir/$runname7 $appdirHistory/$runname7"_"$date
+mv $appdir/$runname8 $appdirHistory/$runname8"_"$date
 
 echo "3、重命名新版本代码名称"
 sleep 1
@@ -158,6 +174,7 @@ mv $appdir/$putfile3 $appdir/$runname3
 #mv $appdir/$putfile5 $appdir/$runname5
 mv $appdir/$putfile6 $appdir/$runname6
 mv $appdir/$putfile7 $appdir/$runname7
+mv $appdir/$putfile8 $appdir/$runname8
 
 echo "4、启动项目代码"
 cd $appdir
@@ -176,6 +193,8 @@ nohup $appdir/$runname6 --APP_PORT=06 >/dev/null 2>$appdirError/$runname6.log &
 echo $! >$appdirLogs/$runname6-running.pid
 nohup $appdir/$runname7 --APP_PORT=07 >/dev/null 2>$appdirError/$runname7.log &
 echo $! >$appdirLogs/$runname7-running.pid
+nohup $appdir/$runname8 --APP_PORT=08 >/dev/null 2>$appdirError/$runname8.log &
+echo $! >$appdirLogs/$runname8-running.pid
 
 sleep 5
 app_new_pid1=$(ps -ef | grep $runname1 | grep 01 | awk '{print $2}')
@@ -192,6 +211,8 @@ app_new_pid6=$(ps -ef | grep $runname6 | grep 06 | awk '{print $2}')
 echo "$runname6 new PID $app_new_pid6"
 app_new_pid7=$(ps -ef | grep $runname7 | grep 07 | awk '{print $2}')
 echo "$runname7 new PID $app_new_pid7"
+app_new_pid8=$(ps -ef | grep $runname8 | grep 08 | awk '{print $2}')
+echo "$runname8 new PID $app_new_pid8"
 
 if [ $app_new_pid1 -gt 0 ]; then
   echo "$runname1运行成功"

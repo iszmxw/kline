@@ -141,7 +141,7 @@ RESULT:
 	var list []models.TradingOrder
 	mysql.DB.Model(models.TradingOrder{}).
 		Where("trade_order_id in ?", p.OrderIds).
-		Where("interference_quiz_result", -1).
+		Where("quiz_result_old", -1).
 		Find(&list)
 	if len(list) > 0 {
 		for _, item := range list {
@@ -156,20 +156,20 @@ RESULT:
 				if KlineRecoverLog.LogId == 0 {
 					return
 				}
-				if TradingOrder.InterferenceQuizResult == 1 || TradingOrder.InterferenceQuizResult == 0 {
+				if TradingOrder.QuizResultOld == 1 || TradingOrder.QuizResultOld == 0 {
 					return
 				}
-				InterferenceQuizResult := -1
+				QuizResultOld := -1
 				UserGainAmountsOld := 0.00
 				if TradingOrder.BeginAssetsPrice < KlineRecoverLog.CClose {
 					if TradingOrder.UpDownType == "up" {
 						logger.Info("对了--", TradingOrder.TradeOrderId)
-						InterferenceQuizResult = 1
+						QuizResultOld = 1
 						UserGainAmountsOld = TradingOrder.Amounts * TradingOrder.ReturnRate
 					}
 					if TradingOrder.UpDownType == "down" {
 						logger.Info("错了--", TradingOrder.TradeOrderId)
-						InterferenceQuizResult = 0
+						QuizResultOld = 0
 						if TradingOrder.AmountType == 1 {
 							UserGainAmountsOld = -TradingOrder.Amounts
 						}
@@ -178,14 +178,14 @@ RESULT:
 				if TradingOrder.BeginAssetsPrice > KlineRecoverLog.CClose {
 					if TradingOrder.UpDownType == "up" {
 						logger.Info("错了--", TradingOrder.TradeOrderId)
-						InterferenceQuizResult = 0
+						QuizResultOld = 0
 						if TradingOrder.AmountType == 1 {
 							UserGainAmountsOld = -TradingOrder.Amounts
 						}
 					}
 					if TradingOrder.UpDownType == "down" {
 						logger.Info("对了--", TradingOrder.TradeOrderId)
-						InterferenceQuizResult = 1
+						QuizResultOld = 1
 						UserGainAmountsOld = TradingOrder.Amounts * TradingOrder.ReturnRate
 					}
 				}
@@ -193,8 +193,8 @@ RESULT:
 					logger.Info("平了--", TradingOrder.TradeOrderId)
 				}
 				mysql.DB.Debug().Model(models.TradingOrder{}).Where("trade_order_id", TradingOrder.TradeOrderId).Updates(map[string]interface{}{
-					"interference_quiz_result": InterferenceQuizResult,
-					"user_gain_amounts_old":    UserGainAmountsOld,
+					"quiz_result_old":       QuizResultOld,
+					"user_gain_amounts_old": UserGainAmountsOld,
 				})
 			}(item)
 		}
