@@ -35,7 +35,7 @@ func (p *Service) StartConsume(key string) {
 			logger.Error(err)
 			continue
 		}
-		_, err = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), fmt.Sprintf("recover_source:%v", AssetsCode), RecoverSource, 0)
+		_, err = redis.Client.Add(fmt.Sprintf("recover_source:%v", AssetsCode), RecoverSource, 2*60)
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -53,6 +53,7 @@ func (p *Service) StartConsume(key string) {
 		timeNow := time.Now().UnixMilli()
 		diffTime := timeNow - data.Ts
 		if diffTime < 0 {
+			// 可以放到 list 列表减少一层网络io
 			_, err = redis.Client.Rpush(fmt.Sprintf("Queue:interferenceNeedle:%s", AssetsCode), result)
 			if err != nil {
 				panic(err)
@@ -74,7 +75,6 @@ func (p *Service) StartConsume(key string) {
 			continue
 		}
 		p.saveData(result, data)
-
 	}
 	logger.Info(exist)
 }
@@ -85,42 +85,56 @@ func (p *Service) RecoverInterferenceNeedle(AssetsCode string, StartTime int64, 
 	cClose := EndClose
 	timeNow := StartTime
 	timEnd := timeNow + p.config.AssetsInsertFrame.RecoverTimer*1000
-	i := 0
-	var SystemTs int64
-	for SystemTs = timeNow; SystemTs <= timEnd; SystemTs = SystemTs + 1000 {
-		nowClose := getNowClose(RecoverSource, AssetsCode)
-		if nowClose == 0 {
-			continue
-		}
-		logger.Info("nowClose---", nowClose, "cClose---", cClose)
-		i++
-		for l := 0; l < 2; l++ {
-			SystemTs = SystemTs + (int64(l)+1)*300
-			if nowClose > cClose {
-				cClose = pkg.Add(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
-			} else {
-				cClose = pkg.Sub(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+	duration := time.Duration(timEnd * int64(time.Millisecond))
+	timer := time.NewTimer(time.Unix(0, int64(duration)).Sub(time.Now()))
+	defer timer.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			{
+				nowClose := getNowClose(RecoverSource, AssetsCode)
+				if nowClose == 0 {
+					continue
+				}
+				logger.Info("nowClose---", nowClose, "cClose---", cClose)
+				SystemTs := time.Now().UnixMilli()
+				//SystemTs = SystemTs + (int64(l)+1)*300
+				if nowClose > cClose {
+					cClose = pkg.Add(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
+				} else {
+					cClose = pkg.Sub(cClose, p.config.VolatilityAmplitude, pkg.RandFloat(0, p.diffClose))
+				}
+				cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
+				logger.Info("cClose-:", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose, "---", p.diffClose)
+				result := redisData(p.config.AssetsCode, config.KlineSource, SystemTs, cClose)
+				var data response.SubIndexKLineResponse
+				err := json.Unmarshal([]byte(result), &data)
+				if err != nil {
+					logger.Error(err)
+					continue
+				}
+				p.saveData(result, data)
+				time.Sleep(time.Millisecond * 300)
 			}
-			cClose, _ = helpers.FormatFloat(cClose, p.config.PointNumber)
-			logger.Info("cClose-:", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "---------", cClose, "---", p.diffClose)
-			result := redisData(p.config.AssetsCode, config.KlineSource, SystemTs, cClose)
-			var data response.SubIndexKLineResponse
-			err := json.Unmarshal([]byte(result), &data)
-			if err != nil {
-				logger.Error(err)
-				continue
+		case <-timer.C:
+			{
+				_, err := redis.Client.Add(fmt.Sprintf("kline_source:%v", AssetsCode), RecoverSource, 0)
+				if err != nil {
+					logger.Error(err)
+					return
+				}
+				logger.Info("干扰结束数据源已恢复")
+				ok := redis.Client.Delete(fmt.Sprintf("%v:market.%v.index.1min", config.KlineSource, AssetsCode))
+				logger.Info("回收缓存", ok)
+				time.Sleep(time.Second * 5)
+				ok2 := redis.Client.Delete(fmt.Sprintf("recover_source:%v", AssetsCode))
+				logger.Info("回收数据源存储", ok2)
 			}
-			p.saveData(result, data)
+			return
 		}
 	}
-	_, err := redis.Client.Add(fmt.Sprintf("kline_source:%v", AssetsCode), RecoverSource, 0)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	logger.Info("干扰结束数据源已恢复")
-	ok := redis.Client.Delete(fmt.Sprintf("%v:market.%v.index.1min", config.KlineSource, AssetsCode))
-	logger.Info("回收缓存", ok)
 }
 
 func (p *Service) saveData(result string, data response.SubIndexKLineResponse) {
