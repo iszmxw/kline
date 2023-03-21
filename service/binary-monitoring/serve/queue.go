@@ -131,8 +131,72 @@ func (p *Service) RecoverInterferenceNeedle(AssetsCode string, StartTime int64, 
 				time.Sleep(time.Second * 5)
 				ok2 := redis.Client.Delete(fmt.Sprintf("recover_source:%v", AssetsCode))
 				logger.Info("回收数据源存储", ok2)
+				goto RESULT
 			}
-			return
+		}
+	}
+RESULT:
+	logger.Info("开始处理结果，查询插针订单的之前数据源的结果，并且分析数据")
+	logger.Info(p.OrderIds)
+	var list []models.TradingOrder
+	mysql.DB.Model(models.TradingOrder{}).
+		Where("trade_order_id in ?", p.OrderIds).
+		Where("interference_quiz_result", -1).
+		Find(&list)
+	if len(list) > 0 {
+		for _, item := range list {
+			go func(TradingOrder models.TradingOrder) {
+				var KlineRecoverLog models.KlineRecoverLog
+				mysql.DB.Debug().Model(models.KlineRecoverLog{}).
+					Where("contract_code", TradingOrder.AssetsCode).
+					Where("ts > ?", TradingOrder.TradeBeginTimestamp).
+					Where("ts <= ?", TradingOrder.TradeEndTimestamp).
+					Order("ts desc").
+					Limit(1).Find(&KlineRecoverLog)
+				if KlineRecoverLog.LogId == 0 {
+					return
+				}
+				if TradingOrder.InterferenceQuizResult == 1 || TradingOrder.InterferenceQuizResult == 0 {
+					return
+				}
+				InterferenceQuizResult := -1
+				UserGainAmountsOld := 0.00
+				if TradingOrder.BeginAssetsPrice < KlineRecoverLog.CClose {
+					if TradingOrder.UpDownType == "up" {
+						logger.Info("对了--", TradingOrder.TradeOrderId)
+						InterferenceQuizResult = 1
+						UserGainAmountsOld = TradingOrder.Amounts * TradingOrder.ReturnRate
+					}
+					if TradingOrder.UpDownType == "down" {
+						logger.Info("错了--", TradingOrder.TradeOrderId)
+						InterferenceQuizResult = 0
+						if TradingOrder.AmountType == 1 {
+							UserGainAmountsOld = -TradingOrder.Amounts
+						}
+					}
+				}
+				if TradingOrder.BeginAssetsPrice > KlineRecoverLog.CClose {
+					if TradingOrder.UpDownType == "up" {
+						logger.Info("错了--", TradingOrder.TradeOrderId)
+						InterferenceQuizResult = 0
+						if TradingOrder.AmountType == 1 {
+							UserGainAmountsOld = -TradingOrder.Amounts
+						}
+					}
+					if TradingOrder.UpDownType == "down" {
+						logger.Info("对了--", TradingOrder.TradeOrderId)
+						InterferenceQuizResult = 1
+						UserGainAmountsOld = TradingOrder.Amounts * TradingOrder.ReturnRate
+					}
+				}
+				if TradingOrder.BeginAssetsPrice == KlineRecoverLog.CClose {
+					logger.Info("平了--", TradingOrder.TradeOrderId)
+				}
+				mysql.DB.Debug().Model(models.TradingOrder{}).Where("trade_order_id", TradingOrder.TradeOrderId).Updates(map[string]interface{}{
+					"interference_quiz_result": InterferenceQuizResult,
+					"user_gain_amounts_old":    UserGainAmountsOld,
+				})
+			}(item)
 		}
 	}
 }
