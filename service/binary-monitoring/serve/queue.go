@@ -163,12 +163,12 @@ RESULT:
 				UserGainAmountsOld := 0.00
 				if TradingOrder.BeginAssetsPrice < KlineRecoverLog.CClose {
 					if TradingOrder.UpDownType == "up" {
-						logger.Info("对了--", TradingOrder.TradeOrderId)
+						logger.Info(TradingOrder.QuizResult, "--对了--", TradingOrder.TradeOrderId)
 						QuizResultOld = 1
 						UserGainAmountsOld = TradingOrder.Amounts * TradingOrder.ReturnRate
 					}
 					if TradingOrder.UpDownType == "down" {
-						logger.Info("错了--", TradingOrder.TradeOrderId)
+						logger.Info(TradingOrder.QuizResult, "--错了--", TradingOrder.TradeOrderId)
 						QuizResultOld = 0
 						if TradingOrder.AmountType == 1 {
 							UserGainAmountsOld = -TradingOrder.Amounts
@@ -177,20 +177,20 @@ RESULT:
 				}
 				if TradingOrder.BeginAssetsPrice > KlineRecoverLog.CClose {
 					if TradingOrder.UpDownType == "up" {
-						logger.Info("错了--", TradingOrder.TradeOrderId)
+						logger.Info(TradingOrder.QuizResult, "--错了--", TradingOrder.TradeOrderId)
 						QuizResultOld = 0
 						if TradingOrder.AmountType == 1 {
 							UserGainAmountsOld = -TradingOrder.Amounts
 						}
 					}
 					if TradingOrder.UpDownType == "down" {
-						logger.Info("对了--", TradingOrder.TradeOrderId)
+						logger.Info(TradingOrder.QuizResult, "--对了--", TradingOrder.TradeOrderId)
 						QuizResultOld = 1
 						UserGainAmountsOld = TradingOrder.Amounts * TradingOrder.ReturnRate
 					}
 				}
 				if TradingOrder.BeginAssetsPrice == KlineRecoverLog.CClose {
-					logger.Info("平了--", TradingOrder.TradeOrderId)
+					logger.Info(TradingOrder.QuizResult, "--平了--", TradingOrder.TradeOrderId)
 				}
 				mysql.DB.Debug().Model(models.TradingOrder{}).Where("trade_order_id", TradingOrder.TradeOrderId).Updates(map[string]interface{}{
 					"quiz_result_old":       QuizResultOld,
