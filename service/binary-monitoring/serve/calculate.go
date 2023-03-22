@@ -170,8 +170,8 @@ func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssets
 		return
 	}
 
-	logger.Info("========================trade_end_timestamp > ", time.Unix(0, (currentTimeMillis-p.config.AssetsInsertFrame.InAdvanceTimer*1000)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
-	logger.Info("========================trade_end_timestamp <= ", time.Unix(0, (currentTimeMillis+(60-p.config.AssetsInsertFrame.InAdvanceTimer)*1000)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
+	//logger.Info("========================trade_end_timestamp > ", time.Unix(0, (currentTimeMillis-p.config.AssetsInsertFrame.InAdvanceTimer*1000)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
+	//logger.Info("========================trade_end_timestamp <= ", time.Unix(0, (currentTimeMillis+(60-p.config.AssetsInsertFrame.InAdvanceTimer)*1000)*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
 	logger.Info("========================", orders[0].KlineTime, "========================")
 	//logger.Info("平均close", p.avgClose)
 	logger.Info("最大close", p.HClose)
@@ -202,7 +202,7 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 	RecoverTimer := currentTimeMillis + (60-p.config.AssetsInsertFrame.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
 	cClose := Close
-	logger.Info("p.config.AssetsInsertFrame.EarlyExecutionFrequency--", p.config.AssetsInsertFrame.EarlyExecutionFrequency)
+	//logger.Info("p.config.AssetsInsertFrame.EarlyExecutionFrequency--", p.config.AssetsInsertFrame.EarlyExecutionFrequency)
 	for i := 0; i < p.config.AssetsInsertFrame.EarlyExecutionFrequency; i++ {
 		Ts := EarlyExecutionTimer + (int64(i))*1000
 		// 划分粒度，每隔1秒执行一次，一秒内300毫秒一次

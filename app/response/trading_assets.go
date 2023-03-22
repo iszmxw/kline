@@ -30,7 +30,6 @@ type TradingAssetsMonitoring struct {
 	ShockAmplitude      float64 `json:"shock_amplitude" gorm:"column:shock_amplitude"`           // 震荡幅度 TODO 暂时无用
 	VolatilityAmplitude float64 `json:"volatility_amplitude" gorm:"column:volatility_amplitude"` // 波动幅度
 	VolatilityFrequency int64   `json:"volatility_frequency" gorm:"column:volatility_frequency"` // 震荡频率
-	MonitoringNumber    int     `json:"monitoring_number" gorm:"column:monitoring_number"`       // 波动小数点位数
 	AssetsInsertFrame   string  `json:"assets_insert_frame"`
 }
 
@@ -42,7 +41,6 @@ type TradingAssetsMonitoringConfig struct {
 	ShockAmplitude      float64 `json:"shock_amplitude" gorm:"column:shock_amplitude"`           // 震荡幅度
 	VolatilityAmplitude float64 `json:"volatility_amplitude" gorm:"column:volatility_amplitude"` // 波动幅度
 	VolatilityFrequency int64   `json:"volatility_frequency" gorm:"column:volatility_frequency"` // 震荡频率
-	MonitoringNumber    int     `json:"monitoring_number" gorm:"column:monitoring_number"`       // 波动小数点位数
 	AssetsInsertFrame   AssetsInsertFrame
 }
 
