@@ -55,8 +55,10 @@ PWD=$(pwd)
 IP=$(curl -s ip.sb)
 
 if [[ -n "$IP" && "$IP" = "47.242.235.4" ]]; then
+    cp -r "$appBuildDir/kline/" "/home/yezhiming/binary/kline"
     # shellcheck disable=SC2164
-    cp -r "$appBuildDir/kline/" "/home/yezhiming/binary/kline" && cd /home/yezhiming/binary/kline
+    cd "/home/yezhiming/binary/kline"
+    echo "$IP"
 else
     echo "IP address doesn't match"
     rsync -a "$appBuildDir/kline/" "$PWD/logs/"
