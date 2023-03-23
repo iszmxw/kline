@@ -90,7 +90,7 @@ func StartMonitoring() {
 			Where(models.Prefix("$_trading_order.assets_code"), item.AssetsCode).
 			Where(models.Prefix("$_trading_order.quiz_result"), -1).
 			Where(models.Prefix("$_trading_order.is_valid"), 1).
-			Where(models.Prefix("$_trading_order.trade_end_timestamp <= ?"), currentTimeMillis+((60-AssetsInsertFrame.InAdvanceTimer)*1000)).
+			Where(models.Prefix("$_trading_order.trade_end_timestamp <= ?"), currentTimeMillis+(AssetsInsertFrame.InAdvanceTimer*1000)).
 			Select(models.Prefix("$_trading_order.*,$_app_currency_rate.b_num as currency_rate")).
 			Joins(models.Prefix("right join $_app_currency_rate on $_trading_order.currency_type=$_app_currency_rate.currency_b")).
 			Find(&tradingOrder)

@@ -67,7 +67,7 @@ func (p *Service) finalResult() (bool, float64) {
 	if strings.EqualFold("winDown", p.WinType) { // 低价位平台盈利
 		return true, p.LClose
 	}
-	if p.LastTradeBeginTimestamp == 0 {
+	if p.MinTradeEndTimestamp == 0 {
 		return false, 0
 	}
 	return false, 0
@@ -103,8 +103,8 @@ func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssets
 		}
 		p.HClose = order.BeginAssetsPrice
 		p.LClose = order.BeginAssetsPrice
-		p.LastTradeBeginTimestamp = order.TradeBeginTimestamp
-		p.LastTradeEndTimestamp = order.TradeEndTimestamp
+		p.MinTradeEndTimestamp = order.TradeBeginTimestamp
+		p.MaxTradeEndTimestamp = order.TradeEndTimestamp
 	} else {
 		for _, order := range orders {
 			p.Peoples = append(p.Peoples, order.AppUserID)
@@ -139,11 +139,11 @@ func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssets
 			} else {
 				logger.Info(p.LClose, order.BeginAssetsPrice)
 			}
-			if p.LastTradeBeginTimestamp < order.TradeBeginTimestamp {
-				p.LastTradeBeginTimestamp = order.TradeBeginTimestamp
+			if p.MinTradeEndTimestamp > order.TradeEndTimestamp {
+				p.MinTradeEndTimestamp = order.TradeEndTimestamp
 			}
-			if p.LastTradeEndTimestamp < order.TradeEndTimestamp {
-				p.LastTradeEndTimestamp = order.TradeEndTimestamp
+			if p.MaxTradeEndTimestamp < order.TradeEndTimestamp {
+				p.MaxTradeEndTimestamp = order.TradeEndTimestamp
 			}
 		}
 	}
@@ -190,15 +190,15 @@ func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssets
 
 func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float64) {
 	// 提前插针时间
-	EarlyExecutionTimer := currentTimeMillis + (60-p.config.AssetsInsertFrame.EarlyExecutionTimer-int64(p.config.AssetsInsertFrame.EarlyExecutionFrequency))*1000
-	if EarlyExecutionTimer < p.LastTradeBeginTimestamp {
-		logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
-		pkg.Notice("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
+	EarlyExecutionTimer := currentTimeMillis - (p.config.AssetsInsertFrame.EarlyExecutionTimer+int64(p.config.AssetsInsertFrame.EarlyExecutionFrequency))*1000
+	if EarlyExecutionTimer < p.MinTradeEndTimestamp-60000 {
+		logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.MinTradeEndTimestamp)
+		pkg.Notice("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.MinTradeEndTimestamp)
 		ok := redis.Client.Delete(fmt.Sprintf("Monitoring:%s", p.config.AssetsCode))
 		logger.Info(ok)
 		return
 	}
-	EarlyExecutionTimerEnd := p.LastTradeEndTimestamp
+	EarlyExecutionTimerEnd := p.MaxTradeEndTimestamp
 	RecoverTs := EarlyExecutionTimerEnd
 	RecoverTimer := RecoverTs + (p.config.AssetsInsertFrame.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
@@ -232,7 +232,7 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 	}
 	// 资产在最低价格~最低价格*(1-资产震荡幅度）之间按设置震荡频率随机震荡，直到区间结束时间
 	cClose = Close
-	timeNow := currentTimeMillis + (60-p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
+	timeNow := currentTimeMillis - (p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
 	i := 0
 	var SystemTs int64
 	for SystemTs = timeNow; SystemTs <= EarlyExecutionTimerEnd; SystemTs = SystemTs + 1000 {

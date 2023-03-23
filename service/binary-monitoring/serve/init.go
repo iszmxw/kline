@@ -7,10 +7,10 @@ import (
 )
 
 type Service struct {
-	// 最后交易的开始时间节点
-	LastTradeBeginTimestamp int64
+	// 最早交易的结束时间节点
+	MinTradeEndTimestamp int64
 	// 最后交易的结束时间节点
-	LastTradeEndTimestamp int64
+	MaxTradeEndTimestamp int64
 	// 买涨的人数
 	upNum int64
 	// 买涨的金额
@@ -42,9 +42,9 @@ type Service struct {
 
 func (p *Service) Init(config response.TradingAssetsMonitoring) bool {
 	// 最后交易的开始时间节点
-	p.LastTradeBeginTimestamp = 0
+	p.MinTradeEndTimestamp = 0
 	// 最后交易的结束时间节点
-	p.LastTradeEndTimestamp = 0
+	p.MaxTradeEndTimestamp = 0
 	// 买涨的人数
 	p.upNum = 0
 	// 买涨的金额
