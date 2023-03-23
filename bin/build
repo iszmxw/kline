@@ -54,13 +54,17 @@ PWD=$(pwd)
 
 IP=$(curl -s ip.sb)
 
+echo "$IP"
+
 if [[ -n "$IP" && "$IP" = "47.242.235.4" ]]; then
     cp -r "$appBuildDir"/kline/* /home/yezhiming/binary/kline
     # shellcheck disable=SC2164
     cd /home/yezhiming/binary/kline
-    echo "$IP"
+    ./update-kline.sh
 else
     echo "IP address doesn't match"
     rsync -a "$appBuildDir/kline/" "$PWD/logs/"
 fi
+
+pwd
 
