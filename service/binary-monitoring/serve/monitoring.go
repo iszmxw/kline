@@ -72,19 +72,37 @@ func StartMonitoring() {
 			pkg.Notice(currentTimeMillis, "区域时长大于间隔触发时间")
 			continue
 		}
+		// 提前判断时间不对
+		if AssetsInsertFrame.InAdvanceTimer >= 60 || AssetsInsertFrame.InAdvanceTimer < 5 {
+			logger.Info(currentTimeMillis, "提前判断时间不对")
+			pkg.Notice(currentTimeMillis, "提前判断时间不对,设置的区间建议为5~60之间")
+			continue
+		}
+		// 插针提前执行时间
+		if AssetsInsertFrame.EarlyExecutionTimer > AssetsInsertFrame.InAdvanceTimer {
+			logger.Info(currentTimeMillis, "插针提前执行时间")
+			pkg.Notice(currentTimeMillis, "插针提前执行时间,提前执行时间不能大于提前判断时间")
+			continue
+		}
+		// 插针提前执行频率
+		if AssetsInsertFrame.EarlyExecutionFrequency <= 0 {
+			logger.Info(currentTimeMillis, "插针提前执行频率")
+			pkg.Notice(currentTimeMillis, "插针提前执行频率,必须大于零")
+			continue
+		}
 		// 1、设置提前触发时间（拿这个时间价格作为判断条件）
 		var tradingOrder []response.TradingOrder
 		mysql.DB.Model(models.TradingOrder{}).
 			Where(models.Prefix("$_trading_order.assets_code"), item.AssetsCode).
 			Where(models.Prefix("$_trading_order.quiz_result"), -1).
 			Where(models.Prefix("$_trading_order.is_valid"), 1).
-			Where(models.Prefix("$_trading_order.trade_end_timestamp >= ?"), currentTimeMillis-(AssetsInsertFrame.InAdvanceTimer+AssetsInsertFrame.EarlyExecutionTimer+int64(AssetsInsertFrame.EarlyExecutionFrequency))*1000).
+			Where(models.Prefix("$_trading_order.trade_end_timestamp >= ?"), currentTimeMillis-(AssetsInsertFrame.InAdvanceTimer*1000)).
 			Select(models.Prefix("$_trading_order.*,$_app_currency_rate.b_num as currency_rate")).
 			Joins(models.Prefix("right join $_app_currency_rate on $_trading_order.currency_type=$_app_currency_rate.currency_b")).
 			Find(&tradingOrder)
 		num := len(tradingOrder)
 		if num > 0 {
-			go new(Service).Calculate(currentTimeMillis-int64(AssetsInsertFrame.EarlyExecutionFrequency)*1000, item, tradingOrder)
+			go new(Service).Calculate(currentTimeMillis-int64(AssetsInsertFrame.EarlyExecutionTimer)*1000, item, tradingOrder)
 		}
 	}
 }

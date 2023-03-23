@@ -194,16 +194,18 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 	if EarlyExecutionTimer < p.LastTradeBeginTimestamp {
 		logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
 		pkg.Notice("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
+		ok := redis.Client.Delete(fmt.Sprintf("Monitoring:%s", p.config.AssetsCode))
+		logger.Info(ok)
 		return
 	}
-	EarlyExecutionTimerEnd := currentTimeMillis + (60-p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
+	EarlyExecutionTimerEnd := currentTimeMillis + (p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
 	if EarlyExecutionTimerEnd < p.LastTradeEndTimestamp {
 		EarlyExecutionTimerEnd = p.LastTradeEndTimestamp
 		logger.Info("EarlyExecutionTimerEnd--", EarlyExecutionTimerEnd)
 		pkg.Notice("EarlyExecutionTimerEnd--", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
 	}
 	RecoverTs := EarlyExecutionTimerEnd
-	RecoverTimer := currentTimeMillis + (60-p.config.AssetsInsertFrame.RecoverTimer)*1000
+	RecoverTimer := RecoverTs + (p.config.AssetsInsertFrame.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
 	cClose := Close
 	//logger.Info("p.config.AssetsInsertFrame.EarlyExecutionFrequency--", p.config.AssetsInsertFrame.EarlyExecutionFrequency)

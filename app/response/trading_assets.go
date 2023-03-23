@@ -47,7 +47,7 @@ type TradingAssetsMonitoringConfig struct {
 type AssetsInsertFrame struct {
 	AreaTimer               int     `json:"areaTimer"`               // 设置区域时长
 	IntervalTimer           int     `json:"intervalTimer"`           // 设置间隔触发时间
-	InAdvanceTimer          int64   `json:"inAdvanceTimer"`          // 设置提前触发时间（拿这个时间间隔作为判断条件）
+	InAdvanceTimer          int64   `json:"inAdvanceTimer"`          // 提前判断时间 设置提前触发时间（拿这个时间间隔作为判断条件）
 	LossThreshold           float64 `json:"lossThreshold"`           // 触发属性：区域平台亏损金额>=xx美金
 	EarlyExecutionTimer     int64   `json:"earlyExecutionTimer"`     // 设置插针提前执行时间
 	EarlyExecutionFrequency int     `json:"earlyExecutionFrequency"` // 设置插针提前执行频率
