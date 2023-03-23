@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 echo -e "\033[35m 打包开始... \033[0m"
 
@@ -49,3 +49,16 @@ GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-iqoption servic
 #GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-liveoddsService service/liveodds/calculate.go
 
 echo -e "\033[35m Success... \033[0m"
+
+PWD=$(pwd)
+
+IP=$(curl -s ip.sb)
+
+if [[ -n "$IP" && "$IP" = "47.242.235.4" ]]; then
+    # shellcheck disable=SC2164
+    cp -r "$appBuildDir/kline/" "/home/yezhiming/binary/kline" && cd /home/yezhiming/binary/kline
+else
+    echo "IP address doesn't match"
+    rsync -a "$appBuildDir/kline/" "$PWD/logs/"
+fi
+
