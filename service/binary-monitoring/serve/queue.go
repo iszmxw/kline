@@ -128,7 +128,7 @@ func (p *Service) RecoverInterferenceNeedle(AssetsCode string, StartTime int64, 
 				logger.Info("干扰结束数据源已恢复")
 				ok := redis.Client.Delete(fmt.Sprintf("%v:market.%v.index.1min", config.KlineSource, AssetsCode))
 				logger.Info("回收缓存", ok)
-				time.Sleep(time.Second * 5)
+				time.Sleep(time.Second * 2)
 				ok2 := redis.Client.Delete(fmt.Sprintf("recover_source:%v", AssetsCode))
 				logger.Info("回收数据源存储", ok2)
 				goto RESULT
@@ -138,6 +138,7 @@ func (p *Service) RecoverInterferenceNeedle(AssetsCode string, StartTime int64, 
 RESULT:
 	logger.Info("开始处理结果，查询插针订单的之前数据源的结果，并且分析数据")
 	logger.Info(p.OrderIds)
+	pkg.Notice("干扰结束数据源已恢复", "开始处理结果，查询插针订单的之前数据源的结果，并且分析数据", p.OrderIds)
 	var list []models.TradingOrder
 	mysql.DB.Model(models.TradingOrder{}).
 		Where("trade_order_id in ?", p.OrderIds).
@@ -164,11 +165,13 @@ RESULT:
 				if TradingOrder.BeginAssetsPrice < KlineRecoverLog.CClose {
 					if TradingOrder.UpDownType == "up" {
 						logger.Info(TradingOrder.QuizResult, "--对了--", TradingOrder.TradeOrderId)
+						pkg.Notice(TradingOrder.QuizResult, "--对了--", TradingOrder.TradeOrderId)
 						QuizResultOld = 1
 						UserGainAmountsOld = TradingOrder.Amounts * TradingOrder.ReturnRate
 					}
 					if TradingOrder.UpDownType == "down" {
 						logger.Info(TradingOrder.QuizResult, "--错了--", TradingOrder.TradeOrderId)
+						pkg.Notice(TradingOrder.QuizResult, "--错了--", TradingOrder.TradeOrderId)
 						QuizResultOld = 0
 						if TradingOrder.AmountType == 1 {
 							UserGainAmountsOld = -TradingOrder.Amounts
@@ -178,6 +181,7 @@ RESULT:
 				if TradingOrder.BeginAssetsPrice > KlineRecoverLog.CClose {
 					if TradingOrder.UpDownType == "up" {
 						logger.Info(TradingOrder.QuizResult, "--错了--", TradingOrder.TradeOrderId)
+						pkg.Notice(TradingOrder.QuizResult, "--错了--", TradingOrder.TradeOrderId)
 						QuizResultOld = 0
 						if TradingOrder.AmountType == 1 {
 							UserGainAmountsOld = -TradingOrder.Amounts
@@ -185,12 +189,14 @@ RESULT:
 					}
 					if TradingOrder.UpDownType == "down" {
 						logger.Info(TradingOrder.QuizResult, "--对了--", TradingOrder.TradeOrderId)
+						pkg.Notice(TradingOrder.QuizResult, "--对了--", TradingOrder.TradeOrderId)
 						QuizResultOld = 1
 						UserGainAmountsOld = TradingOrder.Amounts * TradingOrder.ReturnRate
 					}
 				}
 				if TradingOrder.BeginAssetsPrice == KlineRecoverLog.CClose {
 					logger.Info(TradingOrder.QuizResult, "--平了--", TradingOrder.TradeOrderId)
+					pkg.Notice(TradingOrder.QuizResult, "--平了--", TradingOrder.TradeOrderId)
 				}
 				mysql.DB.Debug().Model(models.TradingOrder{}).Where("trade_order_id", TradingOrder.TradeOrderId).Updates(map[string]interface{}{
 					"quiz_result_old":       QuizResultOld,

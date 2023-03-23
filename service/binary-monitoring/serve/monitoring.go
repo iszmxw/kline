@@ -8,6 +8,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
+	"goapi/service/binary-monitoring/pkg"
 	"time"
 )
 
@@ -39,35 +40,39 @@ func StartMonitoring() {
 		if 60-AssetsInsertFrame.InAdvanceTimer <= 0 {
 			// 设置提前触发时间,如果设置不合理，就跳过，同时打印日志，或者发送通知
 			logger.Info(currentTimeMillis, "设置提前触发时间不合理")
+			pkg.Notice(currentTimeMillis, "设置提前触发时间不合理")
 			continue
 		}
 		if 60-AssetsInsertFrame.EarlyExecutionTimer <= 10 {
 			// 提前执行时间不合理
 			logger.Info(currentTimeMillis, "提前执行时间设置不合理，建议10~45之间")
+			pkg.Notice(currentTimeMillis, "提前执行时间设置不合理，建议10~45之间")
 			continue
 		}
-		if item.ShockAmplitude == 0 {
-			// 未配置震荡幅度
-			logger.Info(currentTimeMillis, "未配置震荡幅度")
-			continue
-		}
+		//if item.ShockAmplitude == 0 {
+		//	// 未配置震荡幅度
+		//	logger.Info(currentTimeMillis, "未配置震荡幅度")
+		//	continue
+		//}
 		if item.VolatilityFrequency == 0 {
 			// 未配置震荡频率
 			logger.Info(currentTimeMillis, "未配置震荡频率")
+			pkg.Notice(currentTimeMillis, "未配置震荡频率")
 			continue
 		}
 		if item.VolatilityAmplitude == 0 {
 			// 未配置波动幅度
 			logger.Info(currentTimeMillis, "未配置波动幅度")
+			pkg.Notice(currentTimeMillis, "未配置波动幅度")
 			continue
 		}
 		// 区域时长大于间隔触发时间，不执行
 		if AssetsInsertFrame.AreaTimer > AssetsInsertFrame.IntervalTimer {
 			logger.Info(currentTimeMillis, "区域时长大于间隔触发时间")
+			pkg.Notice(currentTimeMillis, "区域时长大于间隔触发时间")
 			continue
 		}
 		// 1、设置提前触发时间（拿这个时间价格作为判断条件）
-		//logger.Info(currentTimeMillis, item)
 		var tradingOrder []response.TradingOrder
 		mysql.DB.Model(models.TradingOrder{}).
 			Where(models.Prefix("$_trading_order.assets_code"), item.AssetsCode).

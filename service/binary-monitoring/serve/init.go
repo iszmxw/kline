@@ -69,11 +69,11 @@ func (p *Service) Init(config response.TradingAssetsMonitoring) bool {
 		return false
 	}
 	p.config = response.TradingAssetsMonitoringConfig{
-		ID:                  config.ID,
-		AssetsCode:          config.AssetsCode,
-		PointNumber:         config.PointNumber,
-		IsMonitoring:        config.IsMonitoring,
-		ShockAmplitude:      config.ShockAmplitude,
+		ID:           config.ID,
+		AssetsCode:   config.AssetsCode,
+		PointNumber:  config.PointNumber,
+		IsMonitoring: config.IsMonitoring,
+		//ShockAmplitude:      config.ShockAmplitude,
 		VolatilityAmplitude: config.VolatilityAmplitude,
 		VolatilityFrequency: config.VolatilityFrequency,
 		AssetsInsertFrame: response.AssetsInsertFrame{

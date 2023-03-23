@@ -7,6 +7,11 @@ import (
 	"net/http"
 )
 
+const (
+	LarkIDTest = "8f95cc4a-72bc-472a-93e3-3584975675ed" // 测试环境房间
+	LarkIDPro  = "40ea8c9f-1fa5-4549-8359-bb4aeb311575" // 测试环境房间
+)
+
 type Client struct {
 	WebhookURL string
 }

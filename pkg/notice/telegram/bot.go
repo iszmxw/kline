@@ -10,10 +10,8 @@ import (
 
 const (
 	TOKEN      = "5202189634:AAHdLadirD9tujR-djCNbyAyiohJGiWFvAU"
-	chatIDPro  = -1001505716949                         // 正式环境房间
-	chatIDTest = -1001786874645                         // 测试环境房间
-	larkIDTest = "8f95cc4a-72bc-472a-93e3-3584975675ed" // 测试环境房间
-	larkIDPro  = "40ea8c9f-1fa5-4549-8359-bb4aeb311575" // 测试环境房间
+	chatIDPro  = -1001505716949 // 正式环境房间
+	chatIDTest = -1001786874645 // 测试环境房间
 )
 
 func Notice(info map[string]interface{}) {
@@ -28,7 +26,7 @@ func Notice(info map[string]interface{}) {
 	// 开启 debug
 	if conf.GetString("app.env") == "company_pro" { // 正式环境监控
 		err := larkbot.
-			NewClient(larkIDPro).
+			NewClient(larkbot.LarkIDPro).
 			SendMessage(text)
 		if err != nil {
 			logger.Error(err)
@@ -36,7 +34,7 @@ func Notice(info map[string]interface{}) {
 		}
 	} else {
 		err := larkbot.
-			NewClient(larkIDTest).
+			NewClient(larkbot.LarkIDTest).
 			SendMessage(text)
 		if err != nil {
 			logger.Error(err)

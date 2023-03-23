@@ -78,6 +78,7 @@ func (p *Service) finalResult() (bool, float64) {
 func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssetsMonitoring, orders []response.TradingOrder) {
 	if !p.Init(conf) {
 		logger.Info("初始化参数失败")
+		pkg.Notice(currentTimeMillis, "初始化参数失败")
 		return
 	}
 	if len(orders) == 1 {
@@ -179,6 +180,7 @@ func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssets
 	logger.Info("diffClose--", p.diffClose)
 	oks := redis.Client.Delete(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode))
 	logger.Info("清楚历史数据", oks)
+	pkg.Notice(currentTimeMillis, "开始生成插针数据", "最大close", p.HClose, "最小close", p.LClose, "diffClose--", p.diffClose, "清楚历史数据", oks)
 	go p.StartConsume(fmt.Sprintf("Queue:interferenceNeedle:%s", p.config.AssetsCode))
 	go p.CreateInterferenceNeedle(currentTimeMillis, Close)
 
@@ -190,13 +192,15 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 	// 提前插针时间
 	EarlyExecutionTimer := currentTimeMillis
 	if EarlyExecutionTimer < p.LastTradeBeginTimestamp {
-		//logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
-		//return
+		logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
+		pkg.Notice("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
+		return
 	}
 	EarlyExecutionTimerEnd := currentTimeMillis + (60-p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
 	if EarlyExecutionTimerEnd < p.LastTradeEndTimestamp {
 		EarlyExecutionTimerEnd = p.LastTradeEndTimestamp
 		logger.Info("EarlyExecutionTimerEnd--", EarlyExecutionTimerEnd)
+		pkg.Notice("EarlyExecutionTimerEnd--", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
 	}
 	RecoverTs := EarlyExecutionTimerEnd
 	RecoverTimer := currentTimeMillis + (60-p.config.AssetsInsertFrame.RecoverTimer)*1000
@@ -282,6 +286,9 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 	logger.Info("EarlyExecutionTimer========================", time.Unix(0, EarlyExecutionTimer*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
 	logger.Info("SystemTs========================", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
 
+	pkg.Notice("currentTimeMillis========================", time.Unix(0, currentTimeMillis*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
+	pkg.Notice("EarlyExecutionTimer========================", time.Unix(0, EarlyExecutionTimer*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
+	pkg.Notice("SystemTs========================", time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999"), "========================")
 	// 插针明细表
 	p.Peoples = helpers.RemoveRepeatedElement(p.Peoples)
 	var NeedleDetails models.NeedleDetails
