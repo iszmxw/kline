@@ -44,9 +44,15 @@ func StartMonitoring() {
 			continue
 		}
 		// 插针提前执行时间
-		if AssetsInsertFrame.EarlyExecutionTimer > AssetsInsertFrame.InAdvanceTimer {
+		if AssetsInsertFrame.EarlyExecutionTimer+int64(AssetsInsertFrame.EarlyExecutionFrequency) > 60 {
 			logger.Info(currentTimeMillis, "插针提前执行时间")
-			pkg.Notice(currentTimeMillis, "插针提前执行时间,提前执行时间不能大于提前判断时间")
+			pkg.Notice(currentTimeMillis, "插针提前执行时间+插针提前执行频率,不能超过60秒，建议5~60")
+			continue
+		}
+		// 插针提前执行时间
+		if AssetsInsertFrame.EarlyExecutionTimer+int64(AssetsInsertFrame.EarlyExecutionFrequency) > AssetsInsertFrame.InAdvanceTimer {
+			logger.Info(currentTimeMillis, "插针提前执行时间")
+			pkg.Notice(currentTimeMillis, "插针提前执行时间+插针提前执行频率,提前执行时间+插针提前执行频率不能大于提前判断时间")
 			continue
 		}
 		//if item.ShockAmplitude == 0 {
@@ -84,7 +90,7 @@ func StartMonitoring() {
 			Where(models.Prefix("$_trading_order.assets_code"), item.AssetsCode).
 			Where(models.Prefix("$_trading_order.quiz_result"), -1).
 			Where(models.Prefix("$_trading_order.is_valid"), 1).
-			Where(models.Prefix("$_trading_order.trade_end_timestamp >= ?"), currentTimeMillis-(AssetsInsertFrame.InAdvanceTimer*1000)).
+			Where(models.Prefix("$_trading_order.trade_end_timestamp <= ?"), currentTimeMillis+((60-AssetsInsertFrame.InAdvanceTimer)*1000)).
 			Select(models.Prefix("$_trading_order.*,$_app_currency_rate.b_num as currency_rate")).
 			Joins(models.Prefix("right join $_app_currency_rate on $_trading_order.currency_type=$_app_currency_rate.currency_b")).
 			Find(&tradingOrder)

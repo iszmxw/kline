@@ -190,7 +190,7 @@ func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssets
 
 func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float64) {
 	// 提前插针时间
-	EarlyExecutionTimer := currentTimeMillis - (p.config.AssetsInsertFrame.EarlyExecutionTimer+int64(p.config.AssetsInsertFrame.EarlyExecutionFrequency))*1000
+	EarlyExecutionTimer := currentTimeMillis + (60-p.config.AssetsInsertFrame.EarlyExecutionTimer-int64(p.config.AssetsInsertFrame.EarlyExecutionFrequency))*1000
 	if EarlyExecutionTimer < p.LastTradeBeginTimestamp {
 		logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
 		pkg.Notice("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
@@ -198,12 +198,7 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 		logger.Info(ok)
 		return
 	}
-	EarlyExecutionTimerEnd := currentTimeMillis
-	if EarlyExecutionTimerEnd < p.LastTradeEndTimestamp {
-		EarlyExecutionTimerEnd = p.LastTradeEndTimestamp
-		logger.Info("EarlyExecutionTimerEnd--", EarlyExecutionTimerEnd)
-		pkg.Notice("EarlyExecutionTimerEnd--", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
-	}
+	EarlyExecutionTimerEnd := p.LastTradeEndTimestamp
 	RecoverTs := EarlyExecutionTimerEnd
 	RecoverTimer := RecoverTs + (p.config.AssetsInsertFrame.RecoverTimer)*1000
 	// 到达提前执行插针时间 ~ 区间开始时间内往 最低价格*(1-资产波动幅度)位置按设置频率次数下挫
@@ -237,7 +232,7 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 	}
 	// 资产在最低价格~最低价格*(1-资产震荡幅度）之间按设置震荡频率随机震荡，直到区间结束时间
 	cClose = Close
-	timeNow := EarlyExecutionTimer + int64(p.config.AssetsInsertFrame.EarlyExecutionFrequency)*int64(1000)
+	timeNow := currentTimeMillis + (60-p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
 	i := 0
 	var SystemTs int64
 	for SystemTs = timeNow; SystemTs <= EarlyExecutionTimerEnd; SystemTs = SystemTs + 1000 {
