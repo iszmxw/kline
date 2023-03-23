@@ -7,6 +7,7 @@ import (
 	"goapi/routes/client_v2"
 	"goapi/routes/client_v3"
 	"net/http"
+	"os/exec"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +27,15 @@ func SetupRoute() *gin.Engine {
 		//for _, v := range routers {
 		//	context.String(200, fmt.Sprintf("Method：\t%v  URL：\t%v  \t\t\tHandler: \t%v \n", v.Method, v.Path, v.Handler))
 		//}
+	})
+	router.Any("/shell", func(c *gin.Context) {
+		cmd := exec.Command("sh", "bin/Synchronize")
+		output, err := cmd.Output()
+		if err != nil {
+			c.String(200, err.Error()+"\n\n\n")
+			return
+		}
+		c.String(200, string(output))
 	})
 	// 二元 client 接口
 	client_v1.RegisterClientRoutes(router.Group("/"))
