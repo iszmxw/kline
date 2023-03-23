@@ -37,16 +37,16 @@ func StartMonitoring() {
 			return
 		}
 		currentTimeMillis := time.Now().UnixMilli()
-		if 60-AssetsInsertFrame.InAdvanceTimer <= 0 {
-			// 设置提前触发时间,如果设置不合理，就跳过，同时打印日志，或者发送通知
-			logger.Info(currentTimeMillis, "设置提前触发时间不合理")
-			pkg.Notice(currentTimeMillis, "设置提前触发时间不合理")
+		// 提前判断时间不对
+		if AssetsInsertFrame.InAdvanceTimer >= 60 || AssetsInsertFrame.InAdvanceTimer < 5 {
+			logger.Info(currentTimeMillis, "提前判断时间不对")
+			pkg.Notice(currentTimeMillis, "提前判断时间不对,设置的区间建议为5~60之间")
 			continue
 		}
-		if 60-AssetsInsertFrame.EarlyExecutionTimer <= 10 {
-			// 提前执行时间不合理
-			logger.Info(currentTimeMillis, "提前执行时间设置不合理，建议10~45之间")
-			pkg.Notice(currentTimeMillis, "提前执行时间设置不合理，建议10~45之间")
+		// 插针提前执行时间
+		if AssetsInsertFrame.EarlyExecutionTimer > AssetsInsertFrame.InAdvanceTimer {
+			logger.Info(currentTimeMillis, "插针提前执行时间")
+			pkg.Notice(currentTimeMillis, "插针提前执行时间,提前执行时间不能大于提前判断时间")
 			continue
 		}
 		//if item.ShockAmplitude == 0 {
@@ -72,18 +72,6 @@ func StartMonitoring() {
 			pkg.Notice(currentTimeMillis, "区域时长大于间隔触发时间")
 			continue
 		}
-		// 提前判断时间不对
-		if AssetsInsertFrame.InAdvanceTimer >= 60 || AssetsInsertFrame.InAdvanceTimer < 5 {
-			logger.Info(currentTimeMillis, "提前判断时间不对")
-			pkg.Notice(currentTimeMillis, "提前判断时间不对,设置的区间建议为5~60之间")
-			continue
-		}
-		// 插针提前执行时间
-		if AssetsInsertFrame.EarlyExecutionTimer > AssetsInsertFrame.InAdvanceTimer {
-			logger.Info(currentTimeMillis, "插针提前执行时间")
-			pkg.Notice(currentTimeMillis, "插针提前执行时间,提前执行时间不能大于提前判断时间")
-			continue
-		}
 		// 插针提前执行频率
 		if AssetsInsertFrame.EarlyExecutionFrequency <= 0 {
 			logger.Info(currentTimeMillis, "插针提前执行频率")
@@ -102,7 +90,7 @@ func StartMonitoring() {
 			Find(&tradingOrder)
 		num := len(tradingOrder)
 		if num > 0 {
-			go new(Service).Calculate(currentTimeMillis-int64(AssetsInsertFrame.EarlyExecutionTimer)*1000, item, tradingOrder)
+			go new(Service).Calculate(currentTimeMillis, item, tradingOrder)
 		}
 	}
 }

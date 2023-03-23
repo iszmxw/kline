@@ -190,7 +190,7 @@ func (p *Service) Calculate(currentTimeMillis int64, conf response.TradingAssets
 
 func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float64) {
 	// 提前插针时间
-	EarlyExecutionTimer := currentTimeMillis
+	EarlyExecutionTimer := currentTimeMillis - (p.config.AssetsInsertFrame.EarlyExecutionTimer+int64(p.config.AssetsInsertFrame.EarlyExecutionFrequency))*1000
 	if EarlyExecutionTimer < p.LastTradeBeginTimestamp {
 		logger.Info("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
 		pkg.Notice("插针时间比当前订单的时间还要早", EarlyExecutionTimer-p.LastTradeBeginTimestamp)
@@ -198,7 +198,7 @@ func (p *Service) CreateInterferenceNeedle(currentTimeMillis int64, Close float6
 		logger.Info(ok)
 		return
 	}
-	EarlyExecutionTimerEnd := currentTimeMillis + (p.config.AssetsInsertFrame.EarlyExecutionTimer)*1000
+	EarlyExecutionTimerEnd := currentTimeMillis
 	if EarlyExecutionTimerEnd < p.LastTradeEndTimestamp {
 		EarlyExecutionTimerEnd = p.LastTradeEndTimestamp
 		logger.Info("EarlyExecutionTimerEnd--", EarlyExecutionTimerEnd)
