@@ -3,6 +3,7 @@ package wss
 import (
 	"errors"
 	"goapi/pkg/logger"
+	"goapi/pkg/redis"
 	"net/http"
 	"sync"
 
@@ -24,6 +25,7 @@ type WsConn struct {
 	*websocket.Conn              // 基础连接
 	Mux             sync.RWMutex // 锁
 	IsClose         bool         // 是否关闭
+	AppUserId       string       // 用户 ID
 }
 
 func GetSocket(c *gin.Context) (*WsConn, error) {
@@ -38,6 +40,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 			ws,
 			sync.RWMutex{},
 			false,
+			"",
 		}, nil
 	} else {
 		return nil, errors.New("不是socket請求")
@@ -51,6 +54,9 @@ func WsClose(ws *WsConn) {
 		logger.Info("当前socket已关闭")
 	} else {
 		ws.Mux.Lock()
+		if len(ws.AppUserId) > 0 {
+			redis.Client.SRem("onlineUsers", ws.AppUserId)
+		}
 		closeErr := ws.Conn.Close()
 		if closeErr != nil {
 			logger.Error(closeErr)
