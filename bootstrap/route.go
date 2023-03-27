@@ -1,7 +1,9 @@
 package bootstrap
 
 import (
+	"fmt"
 	"goapi/app/middlewares/common"
+	"goapi/pkg/redis"
 	"goapi/routes"
 	"goapi/routes/client_v1"
 	"goapi/routes/client_v2"
@@ -21,7 +23,8 @@ func SetupRoute() *gin.Engine {
 	router.NoRoute(NoResponse)
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
-		context.String(200, "Hello World!："+requestId.(string)+"\n\n\n")
+		num := redis.Client.SCard("onlineUsers")
+		context.String(200, fmt.Sprintf("Hello World!：%v--%v\n\n\n", requestId, num))
 		//context.String(200, "下面是所有接口服务：\n\n\n")
 		//routers := router.Routes()
 		//for _, v := range routers {

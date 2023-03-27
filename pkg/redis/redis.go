@@ -100,6 +100,10 @@ func (rdb *Redis) SRem(key string, members ...interface{}) int64 {
 	return rdb.Client.SRem(Set(key), members...).Val()
 }
 
+func (rdb *Redis) SCard(key string) int64 {
+	return rdb.Client.SCard(Set(key)).Val()
+}
+
 func (rdb *Redis) ZRangeWithScores(key string, start, stop int64) []redis.Z {
 	return rdb.Client.ZRangeWithScores(Set(key), start, stop).Val()
 }
