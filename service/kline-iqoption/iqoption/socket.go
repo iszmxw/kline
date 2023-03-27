@@ -101,7 +101,7 @@ func SocketIqoption(info KlineCommon.Info) {
 			}
 			// 插针后的数据缓存到另外一张表
 			RecoverSource, err := redis.Client.Get(fmt.Sprintf("recover_source:%v", info.ContractCode))
-			if err != nil {
+			if err != nil && err.Error() != "redis: nil" {
 				logger.Error(err)
 				return
 			}
