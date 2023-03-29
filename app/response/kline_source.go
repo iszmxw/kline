@@ -118,6 +118,12 @@ func KlineSource(AssetsCode string) string {
 	case "Adidas":
 		Source = "iqoption"
 		break
+	case "BRENT":
+		Source = "iqoption"
+		break
+	case "NGAS":
+		Source = "iqoption"
+		break
 	default:
 		Source = "unknown"
 		break

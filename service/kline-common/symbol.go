@@ -241,6 +241,8 @@ func Iqoption() []Info {
 		Info{ID: 32, Symbol: "Apple", Desc: "苹果", ContractCode: "Apple"},
 		Info{ID: 910, Symbol: "Adidas", Desc: "阿迪达", ContractCode: "Adidas"},
 		Info{ID: 31, Symbol: "Amazon", Desc: "亚马逊", ContractCode: "Amazon"},
+		Info{ID: 969, Symbol: "BRENT", Desc: "布伦特油", ContractCode: "BRENT"},
+		Info{ID: 1485, Symbol: "NGAS", Desc: "天然气", ContractCode: "NGAS"},
 	)
 	return CodeData
 }
