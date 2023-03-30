@@ -75,6 +75,12 @@ func GetTimeIsSleep(ContractCode string) bool {
 	case "USD-CHF-OTC":
 		config = UsdChfOtc
 		break
+	case "BRENT":
+		config = BRENT
+		break
+	case "NGAS":
+		config = NGAS
+		break
 	}
 	if len(config) > 0 {
 		result = true
