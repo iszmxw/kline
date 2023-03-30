@@ -85,8 +85,10 @@ func SocketHsb(info KlineCommon.Info) {
 				err := mysql.DB.
 					Model(models.KlineLog{}).
 					Select("log_id").
-					Where("contract_code", ContractCode).
+					Where("contract_code", info.ContractCode).
+					Where("ts", SystemTs).
 					Where("upstream_ts", UpstreamTs).
+					Where("c_close", data.Tick.Close).
 					Where("kline_source", config.KlineSource).
 					Find(&KlineData).Error
 				if err != nil {
@@ -113,8 +115,10 @@ func SocketHsb(info KlineCommon.Info) {
 				err = mysql.DB.
 					Model(models.KlineRecoverLog{}).
 					Select("log_id").
-					Where("contract_code", ContractCode).
+					Where("contract_code", info.ContractCode).
+					Where("ts", SystemTs).
 					Where("upstream_ts", UpstreamTs).
+					Where("c_close", data.Tick.Close).
 					Where("kline_source", config.KlineSource).
 					Find(&KlineData).Error
 				if err != nil {
