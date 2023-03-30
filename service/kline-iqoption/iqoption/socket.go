@@ -73,7 +73,9 @@ func SocketIqoption(info KlineCommon.Info) {
 				return
 			}
 			// 当前数据源匹配就入库
-			if response.KlineSource(info.ContractCode) == config.KlineSource {
+			KlineSource := response.KlineSource(info.ContractCode)
+			logger.Info(KlineSource, info.ContractCode)
+			if KlineSource == config.KlineSource {
 				var KlineData models.KlineLog
 				err = mysql.DB.Debug().
 					Model(models.KlineLog{}).
