@@ -3,7 +3,9 @@ package v3
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"goapi/app/response"
+	"goapi/pkg/config"
 	"goapi/pkg/echo"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
@@ -46,7 +48,7 @@ func CheckWebLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	strInfo, err = redis.Client.WebGet("IQOptionPro:Web:Token:" + tokenString)
+	strInfo, err = redis.Client.WebGet(fmt.Sprintf("%s:Web:Token:", config.GetString("app.name")) + tokenString)
 	if err != nil {
 		logger.Error(err)
 		echo.Error(c, "LoginInvalid", err.Error())
