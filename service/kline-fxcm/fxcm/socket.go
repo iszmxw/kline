@@ -24,14 +24,6 @@ import (
 func SocketFxcm(info KlineCommon.Info) {
 	wsClient := new(api.FXCM)
 	wsClient.Info = info
-	wsClient.List = list.New()
-	wsClient.CloseChanCallback = make(chan KlineCommon.Info, 20)
-	if err := wsClient.Start(); err != nil {
-		logger.Info(err)
-		wsClient.Close()
-		go SocketFxcm(info)
-		return
-	}
 	// 开启定时器30秒检测一次数据活跃状态
 	go wsClient.OnceReboot.Do(func() {
 		defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, info.Symbol)
@@ -47,8 +39,16 @@ func SocketFxcm(info KlineCommon.Info) {
 	STOP:
 		// 关闭
 		ticker.Stop()
-		wsClient.CloseChanCallback <- info
+		go SocketFxcm(info)
 	})
+	wsClient.List = list.New()
+	wsClient.CloseChanCallback = make(chan KlineCommon.Info, 20)
+	if err := wsClient.Start(); err != nil {
+		logger.Info(err)
+		wsClient.Close()
+		go SocketFxcm(info)
+		return
+	}
 
 	// 开始订阅
 	{
@@ -66,6 +66,7 @@ func SocketFxcm(info KlineCommon.Info) {
 				return
 			}
 			logger.Info(stream)
+			stream.Symbol = info.ContractCode
 			SystemTs := time.Now().UnixMilli() // 开始时间 系統生成的Ts
 			// RequestId 定义为 Ts 时间戳
 			logger.RequestId = fmt.Sprintf("%v", SystemTs)
