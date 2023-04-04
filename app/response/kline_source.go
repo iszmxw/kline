@@ -38,22 +38,22 @@ func KlineSource(AssetsCode string) string {
 		Source = "huobi"
 		break
 	case "EUR-USD":
-		Source = "qxbroker"
+		Source = "iqoption"
 		break
 	case "GBP-USD":
-		Source = "qxbroker"
+		Source = "iqoption"
 		break
 	case "AUD-CAD":
-		Source = "qxbroker"
+		Source = "iqoption"
 		break
 	case "USD-JPY":
-		Source = "qxbroker"
+		Source = "iqoption"
 		break
 	case "GOLD":
-		Source = "qxbroker"
+		Source = "fxcm"
 		break
 	case "SILVER":
-		Source = "qxbroker"
+		Source = "iqoption"
 		break
 	case "Netflix":
 		Source = "iqoption"
@@ -71,25 +71,25 @@ func KlineSource(AssetsCode string) string {
 		Source = "iqoption"
 		break
 	case "CAD-JPY":
-		Source = "raceoption"
+		Source = "iqoption"
 		break
 	case "EUR-AUD":
-		Source = "raceoption"
+		Source = "iqoption"
 		break
 	case "USD-CAD":
-		Source = "raceoption"
+		Source = "iqoption"
 		break
 	case "Amazon":
 		Source = "iqoption"
 		break
 	case "AUD-CHF":
-		Source = "raceoption"
+		Source = "iqoption"
 		break
 	case "AUD-JPY":
-		Source = "raceoption"
+		Source = "iqoption"
 		break
 	case "GBP-AUD":
-		Source = "raceoption"
+		Source = "iqoption"
 		break
 	case "AUD-USD":
 		Source = "iqoption"
@@ -142,7 +142,7 @@ func AllowKlineSource() map[string]interface{} {
 	data["AUD-CAD"] = []string{"fxcm", "iqoption"}
 	data["USD-JPY"] = []string{"hsb", "fxcm", "iqoption"}
 	data["GOLD"] = []string{"hsb", "fxcm", "iqoption"}
-	data["SILVER"] = []string{"hsb", "fxcm"}
+	data["SILVER"] = []string{"hsb", "fxcm", "iqoption"}
 	data["CAD-JPY"] = []string{"fxcm"}
 	data["EUR-AUD"] = []string{"hsb", "fxcm", "iqoption"}
 	data["USD-CAD"] = []string{"hsb", "fxcm", "iqoption"}
