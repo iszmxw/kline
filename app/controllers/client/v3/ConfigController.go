@@ -11,6 +11,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/service/binary-monitoring/pkg"
 	"golang.org/x/text/unicode/norm"
+	"time"
 	"unicode/utf8"
 )
 
@@ -75,8 +76,15 @@ func (h *ConfigController) CheckLanguage(c *gin.Context) {
 		if isAllChinese(item.ShowWord) {
 			// 收集等于中文的语言包
 			result = append(result, item)
-			pkg.Notice("检测到中文", item.ShowColumn, "---", item.ShowWord, "---", item.Type)
 		}
+	}
+	if len(result) > 0 {
+		go func(result []models.LanguageShowApp) {
+			for _, item := range result {
+				time.Sleep(time.Second * 2)
+				pkg.NoticeLanguage(fmt.Sprintf("关键字:%s\r\n", item.ShowWord), fmt.Sprintf("语言位置:%s\r\n", item.ShowColumn), fmt.Sprintf("使用类型:%s\r\n", item.Type))
+			}
+		}(result)
 	}
 	echo.Success(c, result, "ok")
 }

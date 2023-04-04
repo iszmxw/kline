@@ -9,7 +9,19 @@ import (
 func Notice(text ...interface{}) {
 	go func() {
 		err := larkbot.
-			NewClient("319b49a2-7167-48fd-8167-616adc851ff6").
+			NewClient(larkbot.LarkNeedle).
+			SendMessage(fmt.Sprint(text...))
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+	}()
+}
+
+func NoticeLanguage(text ...interface{}) {
+	go func() {
+		err := larkbot.
+			NewClient(larkbot.LarkLanguage).
 			SendMessage(fmt.Sprint(text...))
 		if err != nil {
 			logger.Error(err)
