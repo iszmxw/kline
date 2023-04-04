@@ -45,6 +45,8 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			{
 				// 设置token
 				config.Any("/setKlineToken.json", ClientV3Group.ConfigController.SetKlineToken)
+				// 检查多语言是否包含中文，然后发送警告
+				config.Any("/checkLanguage.json", ClientV3Group.ConfigController.CheckLanguage)
 			}
 		}
 

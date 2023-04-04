@@ -53,6 +53,7 @@ func Client() gin.HandlerFunc {
 		case "/app/v3/agent/register.json":
 		case "/app/v3/agent/statistics.json":
 		case "/app/v3/config/setKlineToken.json":
+		case "/app/v3/config/checkLanguage.json":
 		case "/app/v3/notice/siteLetterNotification.json":
 			// 继续往下面执行
 			c.Next()

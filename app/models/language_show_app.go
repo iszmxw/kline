@@ -12,4 +12,5 @@ type LanguageShowApp struct {
 	Sort         int       `json:"sort"`
 	Updater      string    `json:"updater"`     //修改者
 	UpdateDate   time.Time `json:"update_date"` //修改时间
+	IsValid      string    `json:"is_valid"`    //是否使用
 }
