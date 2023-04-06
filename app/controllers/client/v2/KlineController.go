@@ -51,7 +51,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	AppUserId = c.Query("userId")
 	ws.AppUserId = AppUserId
-	redis.Client.SAdd("onlineUsers", ws.AppUserId)
+	if len(ws.AppUserId) > 0 {
+		redis.Client.SAdd("onlineUsers", ws.AppUserId)
+	}
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
