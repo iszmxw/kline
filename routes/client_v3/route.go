@@ -24,13 +24,6 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				trade.Any("/wsIndex.json", ClientV3Group.KlineController.WsIndexHandler)
 			}
 
-			// 通知
-			notice := V3Route.Group("/notice")
-			{
-				// 站内信通知
-				notice.Any("/siteLetterNotification.json", ClientV3Group.NoticeController.StationLetterHandler)
-			}
-
 			// 代理落地页接口
 			agent := V3Route.Group("/agent")
 			{

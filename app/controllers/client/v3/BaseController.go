@@ -16,7 +16,6 @@ type BaseController struct {
 type Group struct {
 	BaseController
 	KlineController
-	NoticeController
 	AgentController
 	ConfigController
 	TradeController

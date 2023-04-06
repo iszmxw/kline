@@ -152,6 +152,18 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go PushRate(socketId, ws, params)
 			}
 			break
+		case strings.EqualFold(SubStruct.Id, "10"):
+			{
+				// 开启协诚处理 小红点消息通知
+				var params requests.SubToken // {"token":"123456","decive_brand":""}
+				err = mapstructure.Decode(subInfo, &params)
+				if err != nil {
+					logger.Error(err)
+					goto END
+				}
+				go StationLetterPushNotice(socketId, ws, params)
+			}
+			break
 		default:
 			break
 		}
@@ -894,4 +906,86 @@ func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 	}
 END:
 	logger.Info("已经跳出协诚的循环推送")
+}
+
+// 小红点消息通知
+
+func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.SubToken) {
+	logger.RequestId = socketId
+	HeartBeatingKey := fmt.Sprintf("NoticeHeartBeatingKey:%v", socketId)
+	// {"token":"123456","decive_brand":"apple"}
+	if len(SubToken.Token) == 0 {
+		wss.WsClose(ws)
+		return
+	}
+	// 为了释放for死循环的资源
+	for !ws.IsClose {
+		if IsDie(HeartBeatingKey) {
+			goto STOP
+		}
+		strInfo, err := redis.Client.DefaultGet(SubToken.Token)
+		if err != nil {
+			logger.Error(err)
+			goto STOP
+		}
+		// json字符串数组,转换成切片
+		var user response.ClientUserBeans
+		var NoticeInfo response.NoticeInfo
+		multiErr := json.Unmarshal([]byte(strInfo), &user)
+		if multiErr != nil {
+			logger.Error(errors.New("转换出错"))
+			logger.Error(multiErr)
+			goto STOP
+		}
+		logger.Info(user)
+		result := cmap.New().Items()
+		// 查询用户未读消息，展示小红点
+		err = mysql.DB.Debug().Model(models.OffMailSendLog{}).Where(
+			map[string]interface{}{
+				"item_code":    config.GetString("app.item_code"),
+				"nation":       user.Nation,
+				"decive_brand": SubToken.DeciveBrand,
+			}).Where("app_user_id = 'ALL' OR app_user_id = ?", user.AppUserId).
+			Select("count(1) AS total").
+			Find(&result).Error
+		if err != nil {
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","data":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		// map转struct
+		err = mapstructure.Decode(result, &NoticeInfo)
+		if err != nil {
+			ws.Mux.Lock()
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","data":"no data"}`))
+			ws.Mux.Unlock()
+			logger.Error(err)
+			return
+		}
+		marshal, err := json.Marshal(gin.H{
+			"id":   "02",
+			"data": NoticeInfo,
+		})
+		if err != nil {
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","data":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		ws.Mux.Lock()
+		WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, marshal)
+		ws.Mux.Unlock()
+		if WriteMessageErr != nil {
+			wss.WsClose(ws)
+			// 跳出for关闭后面的推送
+			goto END
+		}
+		// 5秒推送一次消息
+		time.Sleep(time.Second * 5)
+		// 返回数据给用户
+	}
+STOP:
+	logger.Error(errors.New("StationLetterPushNotice关闭Socket"))
+	wss.WsClose(ws)
+END:
+	logger.Info("StationLetterPushNotice已经跳出协诚的循环推送")
 }
