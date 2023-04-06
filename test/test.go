@@ -8,7 +8,6 @@ import (
 	"goapi/pkg/logger"
 	"golang.org/x/text/unicode/norm"
 	"time"
-	"unicode"
 	"unicode/utf8"
 )
 
@@ -50,12 +49,12 @@ func main() {
 	bootstrap.SetupRedis(db)
 	defer bootstrap.RedisClose()
 
-	text1 := "你好世界"
+	s1 := "你好世界"
+	s2 := "Hello, 世界"
+	text1 := "asa你好世界"
 	text2 := "Hello, world!"
 	text3 := "Halo, dunia!"
 	text4 := "¡Hola, mundo!"
-	s1 := "你好世界"
-	s2 := "Hello, 世界"
 	fmt.Println(isAllChinese(s1))    // 输出 true
 	fmt.Println(isAllChinese(s2))    // 输出 false
 	fmt.Println(isAllChinese(text1)) // 输出 false
@@ -64,44 +63,4 @@ func main() {
 	fmt.Println(isAllChinese(text4)) // 输出 false
 
 	time.Sleep(60 * time.Second)
-}
-
-func isChinese(text string) bool {
-	for _, char := range text {
-		if !unicode.Is(unicode.Han, char) { // 如果不是中文字符，则返回false
-			return false
-		}
-	}
-	return true
-}
-
-func isEnglish(text string) bool {
-	for _, char := range text {
-		if !unicode.In(char, unicode.Latin) { // 如果不是英文字符，则返回false
-			return false
-		}
-	}
-	return true
-}
-
-func isIndonesian(text string) bool {
-	for _, char := range text {
-		if !unicode.In(char, unicode.Latin) {
-			return false
-		}
-	}
-	return true
-}
-
-func isMexicanSpanish(text string) bool {
-	for _, char := range text {
-		if !unicode.In(char, unicode.Latin, &unicode.RangeTable{
-			R16: []unicode.Range16{
-				{0xA700, 0xA7FF, 1}, // 墨西哥西班牙语字母
-			},
-		}) {
-			return false
-		}
-	}
-	return true
 }
