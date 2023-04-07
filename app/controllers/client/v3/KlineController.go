@@ -40,8 +40,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
-	appUser, _ := c.Get("user")
-	AppUserId := appUser.(response.ClientUserBeans).AppUserId
+	NoLogin := c.GetBool("NoLogin")
 	//go HeartBeatingWatch(ws, socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
@@ -61,18 +60,30 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			goto END
 		}
 		subInfo := SubStruct.Sub
+		ID := SubStruct.Id
+		// 检测登录权限
+		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09"}
+		for _, id := range needLoginIDs {
+			if ID == id {
+				// 需要登录
+				if NoLogin {
+					SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"token 无效"}`)
+					return
+				}
+			}
+		}
 		switch true {
 		case ws.IsClose:
 			{
 				goto END
 			}
-		case strings.EqualFold(SubStruct.Id, "01"):
+		case strings.EqualFold(ID, "01"):
 			{
 				// 开启协诚处理推送消息
 				params := subInfo.(string)
 				go PushMessage(socketId, ws, params)
 			}
-		case strings.EqualFold(SubStruct.Id, "02"):
+		case strings.EqualFold(ID, "02"):
 			{
 				// 开启协诚处理推送历史记录
 				var params requests.SubHistory
@@ -84,7 +95,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go PushHistory(socketId, ws, params, c)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "05"):
+		case strings.EqualFold(ID, "05"):
 			{
 				// 开启协诚处理推送历史记录
 				var params requests.SubHistory
@@ -96,7 +107,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go PushZipHistory(socketId, ws, params, c)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "03"):
+		case strings.EqualFold(ID, "03"):
 			{
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
@@ -104,7 +115,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				SocketResp(ws, websocket.TextMessage, `{"id":"03","data":"pong"}`)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "04"): // 下单开奖通知
+		case strings.EqualFold(ID, "04"): // 下单开奖通知
 			{
 				// 开启协诚处理 下单开奖通知
 				var params requests.TradeOrderInfo
@@ -116,13 +127,15 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go PushNotice(socketId, ws, params)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "06"): // 弹窗通知
+		case strings.EqualFold(ID, "06"): // 弹窗通知
 			{
+				appUser, _ := c.Get("user")
+				AppUserId := appUser.(response.ClientUserBeans).AppUserId
 				// 开启协诚处理 弹窗通知
 				go PushPopup(socketId, ws, AppUserId)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "07"): // 下单接口
+		case strings.EqualFold(ID, "07"): // 下单接口
 			{
 				// 开启协诚处理 用户下单 下单参数
 				var params requests.SubmitTradeParams
@@ -134,13 +147,15 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go new(TradeController).SubmitTrade(socketId, ws, params)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "08"):
+		case strings.EqualFold(ID, "08"):
 			{
 				// 开启协诚处理推送余额
+				appUser, _ := c.Get("user")
+				AppUserId := appUser.(response.ClientUserBeans).AppUserId
 				go PushUserInfo(socketId, ws, AppUserId)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "09"):
+		case strings.EqualFold(ID, "09"):
 			{
 				// 开启协诚处理推送费率
 				var params requests.SubNationInfo // {"nation":"Indonesia","itemCode":""}
@@ -152,7 +167,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go PushRate(socketId, ws, params)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "10"):
+		case strings.EqualFold(ID, "10"):
 			{
 				// 开启协诚处理 小红点消息通知
 				var params requests.SubToken // {"token":"123456","decive_brand":""}

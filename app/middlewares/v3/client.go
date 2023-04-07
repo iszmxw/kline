@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	v3 "goapi/app/controllers/client/v3"
 	"goapi/app/response"
 	"goapi/pkg/address"
@@ -68,43 +67,44 @@ func Client() gin.HandlerFunc {
 
 // CheckLogin 检测登录
 func CheckLogin(c *gin.Context) {
-	var (
-		strInfo string
-		err     error
-	)
 	// 获取 "token"
 	tokenString := request.GetParam(c, "token")
 	if len(tokenString) <= 0 || tokenString == "<nil>" {
-		logger.Error(errors.New("未检测到token"))
-		echo.Error(c, "LoginInvalid", "")
-		c.Abort()
-		return
+		if !c.IsWebsocket() {
+			logger.Error(errors.New("未检测到token"))
+			echo.Error(c, "LoginInvalid", "")
+			c.Abort()
+			return
+		}
 	}
-	strInfo, err = redis.Client.Get(fmt.Sprintf("Client:Token:%s", tokenString))
-	if err != nil {
+	strInfo, _ := redis.Client.Get(fmt.Sprintf("Client:Token:%s", tokenString))
+	if len(strInfo) > 0 {
+		// json字符串数组,转换成切片
+		var user response.ClientUserBeans
+		multiErr := json.Unmarshal([]byte(strInfo), &user)
+		if multiErr != nil {
+			logger.Error(errors.New("转换出错"))
+			logger.Error(multiErr)
+			return
+		}
+		logger.Info(user)
+		// 保存用户到 上下文
+		c.Set("user", user)
+		// 是否登录
+		c.Set("NoLogin", false)
+	} else {
 		if c.IsWebsocket() {
 			ws, _ := wss.GetSocket(c)
 			go v3.HeartBeatingWatch(ws, c.GetHeader("Sec-WebSocket-Key"))
-			v3.SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"token 无效"}`)
-			c.Abort()
-			return
+			c.Set("NoLogin", true)
+			// 继续往下面执行
+			c.Next()
 		} else {
 			echo.Error(c, "LoginInvalid", "")
 			c.Abort()
 			return
 		}
 	}
-	// json字符串数组,转换成切片
-	var user response.ClientUserBeans
-	multiErr := json.Unmarshal([]byte(strInfo), &user)
-	if multiErr != nil {
-		logger.Error(errors.New("转换出错"))
-		logger.Error(multiErr)
-		return
-	}
-	logger.Info(user)
-	// 保存用户到 上下文
-	c.Set("user", user)
 	// 再次确认设置语言
 	SetLang(c, "en")
 	// 继续往下面执行

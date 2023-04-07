@@ -29,12 +29,21 @@ type WsConn struct {
 }
 
 func GetSocket(c *gin.Context) (*WsConn, error) {
+	var ws *websocket.Conn
+	var err error
 	if c.IsWebsocket() {
-		//升级get请求为webSocket协议
-		ws, err := upGrader.Upgrade(c.Writer, c.Request, nil)
-		if err != nil {
-			logger.Error(err)
-			return nil, err
+		if c.GetBool("socket") {
+			wsAny, _ := c.Get("ws")
+			ws = wsAny.(*websocket.Conn)
+		} else {
+			c.Set("socket", true)
+			//升级get请求为webSocket协议
+			ws, err = upGrader.Upgrade(c.Writer, c.Request, nil)
+			if err != nil {
+				logger.Error(err)
+				return nil, err
+			}
+			c.Set("ws", ws)
 		}
 		return &WsConn{
 			ws,

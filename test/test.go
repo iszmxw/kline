@@ -7,6 +7,7 @@ import (
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
 	"golang.org/x/text/unicode/norm"
+	"reflect"
 	"time"
 	"unicode/utf8"
 )
@@ -49,18 +50,12 @@ func main() {
 	bootstrap.SetupRedis(db)
 	defer bootstrap.RedisClose()
 
-	s1 := "你好世界"
-	s2 := "Hello, 世界"
-	text1 := "asa你好世界"
-	text2 := "Hello, world!"
-	text3 := "Halo, dunia!"
-	text4 := "¡Hola, mundo!"
-	fmt.Println(isAllChinese(s1))    // 输出 true
-	fmt.Println(isAllChinese(s2))    // 输出 false
-	fmt.Println(isAllChinese(text1)) // 输出 false
-	fmt.Println(isAllChinese(text2)) // 输出 false
-	fmt.Println(isAllChinese(text3)) // 输出 false
-	fmt.Println(isAllChinese(text4)) // 输出 false
+	arr := []string{"apple", "banana", "orange"}
+	str := "apple"
 
-	time.Sleep(60 * time.Second)
+	if reflect.DeepEqual(arr, []string{str}) {
+		fmt.Println("Array is equal to", str)
+	} else {
+		fmt.Println("Array is not equal to", str)
+	}
 }
