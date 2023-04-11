@@ -106,7 +106,7 @@ func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.
 		if wssHeartBeating.IsDie(HeartBeatingKey) {
 			goto STOP
 		}
-		strInfo, err := redis.Client.DefaultGet(SubToken.Token)
+		strInfo, err := redis.Client.DefaultGet(fmt.Sprintf("Client:Token:%s", SubToken.Token))
 		if err != nil {
 			logger.Error(err)
 			goto STOP

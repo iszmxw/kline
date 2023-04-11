@@ -166,7 +166,7 @@ func (rdb *Redis) Get(key string) (string, error) {
 func (rdb *Redis) DefaultGet(key string) (string, error) {
 	defer rdb.mutex.Unlock()
 	rdb.mutex.Lock()
-	value, err := rdb.Client.Get(key).Result()
+	value, err := rdb.Client.Get(Set(key)).Result()
 	return value, err
 }
 

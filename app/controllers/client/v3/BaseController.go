@@ -47,8 +47,9 @@ func IsDie(HeartBeatingKey string) bool { // 检测是否死掉
 			isDie = true
 		}
 	} else {
-		logger.Error(errors.New("心跳初始化失效，或者心跳已停止"))
-		isDie = true
+		// 处理心跳数据
+		currentTime := time.Now().Format("2006-01-02 15:04:05")
+		_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
 	}
 	return isDie
 }

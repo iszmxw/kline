@@ -938,7 +938,7 @@ func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.
 		if IsDie(HeartBeatingKey) {
 			goto STOP
 		}
-		strInfo, err := redis.Client.DefaultGet(SubToken.Token)
+		strInfo, err := redis.Client.DefaultGet(fmt.Sprintf("Client:Token:%s", SubToken.Token))
 		if err != nil {
 			logger.Error(err)
 			goto STOP
