@@ -53,6 +53,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	ws.AppUserId = AppUserId
 	if len(ws.AppUserId) > 0 {
 		redis.Client.SAdd("onlineUsers", ws.AppUserId)
+		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", ws.AppUserId).Update("online", 1)
 	}
 	// 为了释放for死循环的资源
 	for !ws.IsClose {

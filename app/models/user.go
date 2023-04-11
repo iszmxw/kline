@@ -58,4 +58,5 @@ type AppUser struct {
 	RegistNation         string     `json:"regist_nation"`         //注册时国家
 	RejectReason         string     `json:"reject_reason"`         //拒绝原因
 	FlowJson             string     `json:"flow_json"`             //整合流量方公司的参数json
+	Online               int        `json:"online"`                //用户是否在线，1-是，0-否
 }
