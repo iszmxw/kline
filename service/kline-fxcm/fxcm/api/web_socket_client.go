@@ -10,6 +10,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/xtime"
 	KlineCommon "goapi/service/kline-common"
+	"goapi/service/kline-common/source"
 	"goapi/service/kline-fxcm/fxcm/config"
 	"goapi/service/kline-fxcm/fxcm/wsdata"
 	"golang.org/x/net/proxy"
@@ -35,7 +36,6 @@ type Config struct {
 
 type FXCM struct {
 	config            Config
-	event             chan EventType
 	Socket            *socketio.Client
 	Info              KlineCommon.Info
 	mutex             sync.Mutex
@@ -44,10 +44,6 @@ type FXCM struct {
 	CloseChanCallback chan KlineCommon.Info // 关闭通知外部
 	IsClose           bool
 	List              *list.List
-}
-
-func (p *FXCM) triggerEvent(event EventType) {
-	p.event <- event
 }
 
 // SetConfigure
@@ -59,11 +55,44 @@ func (p *FXCM) SetConfigure(config Config) {
 	}
 }
 
-// Close close the connection to the exchange and other handles
+// 初始化参数
+
+func (p *FXCM) Init(info KlineCommon.Info) *FXCM {
+	p.IsClose = false
+	p.List = list.New()
+	p.CloseChanCallback = make(chan KlineCommon.Info, 20)
+	p.Info = info
+	// 开启定时器30秒检测一次数据活跃状态
+	go p.OnceReboot.Do(func() {
+		defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, info.Symbol)
+		ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
+		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, info.ContractCode)
+		for range ticker.C {
+			status := source.CheckStatus(config.KlineSource, info.ContractCode)
+			if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
+				logger.Info(KeyStatus + "当前数据不健康正在重启中" + info.Symbol)
+				goto STOP
+			}
+		}
+	STOP:
+		// 关闭
+		ticker.Stop()
+		p.Close()
+		p.CloseChanCallback <- p.Info
+	})
+	return p
+}
+
+// Close the connection to the exchange and other handles
 
 func (p *FXCM) Close() {
-	if p.Socket != nil {
-		p.Socket.Close()
+	if !p.IsClose || p.Socket != nil {
+		p.IsClose = true
+		logger.Info(p.Info.ContractCode, "-关闭")
+		if p.Socket != nil {
+			logger.Info(p.Info.ContractCode, "-链接关闭")
+			p.Socket.Close()
+		}
 	}
 }
 
@@ -76,7 +105,6 @@ func (p *FXCM) Start() error {
 		Proxy: "",
 	})
 	logger.Info("Start websocket")
-	p.event = make(chan EventType, 1)
 	token := p.config.Custom["token"].(string)
 	var err error
 	url := config.WssFXCMUrl + "/socket.io/?EIO=3&transport=websocket&access_token=" + token

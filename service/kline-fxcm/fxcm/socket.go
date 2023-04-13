@@ -1,7 +1,6 @@
 package fxcm
 
 import (
-	"container/list"
 	"encoding/json"
 	"fmt"
 	socketio "github.com/graarh/golang-socketio"
@@ -13,7 +12,6 @@ import (
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-common"
-	"goapi/service/kline-common/source"
 	"goapi/service/kline-fxcm/fxcm/api"
 	"goapi/service/kline-fxcm/fxcm/config"
 	"goapi/service/kline-fxcm/fxcm/wsdata"
@@ -22,28 +20,9 @@ import (
 )
 
 func SocketFxcm(info KlineCommon.Info) {
-	wsClient := new(api.FXCM)
-	wsClient.Info = info
-	// 开启定时器30秒检测一次数据活跃状态
-	go wsClient.OnceReboot.Do(func() {
-		defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, info.Symbol)
-		ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
-		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, info.ContractCode)
-		for range ticker.C {
-			status := source.CheckStatus(config.KlineSource, info.ContractCode)
-			if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
-				logger.Info(KeyStatus + "当前数据不健康正在重启中" + info.Symbol)
-				goto STOP
-			}
-		}
-	STOP:
-		// 关闭
-		ticker.Stop()
-		go SocketFxcm(info)
-	})
-	wsClient.List = list.New()
-	wsClient.CloseChanCallback = make(chan KlineCommon.Info, 20)
-	if err := wsClient.Start(); err != nil {
+	wsClient := new(api.FXCM).Init(info)
+	err := wsClient.Start()
+	if err != nil {
 		logger.Info(err)
 		wsClient.Close()
 		go SocketFxcm(info)
@@ -53,7 +32,7 @@ func SocketFxcm(info KlineCommon.Info) {
 	// 开始订阅
 	{
 		// 接收数据
-		if wsClient.Socket == nil {
+		if wsClient.IsClose || wsClient.Socket == nil {
 			go SocketFxcm(info)
 			return
 		}
