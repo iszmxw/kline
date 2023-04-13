@@ -41,6 +41,7 @@ type FXCM struct {
 	mutex             sync.Mutex
 	Sid               string
 	OnceReboot        sync.Once             // Reboot动作锁
+	OnceClose         sync.Once             // 关闭动作锁
 	CloseChanCallback chan KlineCommon.Info // 关闭通知外部
 	IsClose           bool
 	List              *list.List
@@ -86,13 +87,14 @@ func (p *FXCM) Init(info KlineCommon.Info) *FXCM {
 // Close the connection to the exchange and other handles
 
 func (p *FXCM) Close() {
-	if !p.IsClose || p.Socket != nil {
+	if !p.IsClose {
 		p.IsClose = true
-		logger.Info(p.Info.ContractCode, "-关闭")
-		if p.Socket != nil {
-			logger.Info(p.Info.ContractCode, "-链接关闭")
-			p.Socket.Close()
-		}
+		p.OnceClose.Do(func() {
+			logger.Info(p.Info.ContractCode, "-关闭")
+			if p.Socket != nil {
+				p.Socket.Close()
+			}
+		})
 	}
 }
 
