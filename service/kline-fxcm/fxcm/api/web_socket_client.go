@@ -44,6 +44,7 @@ type FXCM struct {
 	OnceClose         sync.Once             // 关闭动作锁
 	CloseChanCallback chan KlineCommon.Info // 关闭通知外部
 	IsClose           bool
+	IsReboot          bool // 是否已 Reboot
 	List              *list.List
 }
 
@@ -63,25 +64,30 @@ func (p *FXCM) Init(info KlineCommon.Info) *FXCM {
 	p.List = list.New()
 	p.CloseChanCallback = make(chan KlineCommon.Info, 20)
 	p.Info = info
-	// 开启定时器30秒检测一次数据活跃状态
-	go p.OnceReboot.Do(func() {
-		defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, info.Symbol)
-		ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
-		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, info.ContractCode)
-		for range ticker.C {
-			status := source.CheckStatus(config.KlineSource, info.ContractCode)
-			if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
-				logger.Info(KeyStatus + "当前数据不健康正在重启中" + info.Symbol)
-				goto STOP
-			}
-		}
-	STOP:
-		// 关闭
-		ticker.Stop()
-		p.Close()
-		p.CloseChanCallback <- p.Info
-	})
 	return p
+}
+
+func (p *FXCM) TickerReboot() {
+	if !p.IsReboot { // 只能发起一次 Reboot
+		p.IsReboot = true
+		p.OnceReboot.Do(func() {
+			defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, p.Info.Symbol)
+			ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
+			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, p.Info.ContractCode)
+			for range ticker.C {
+				status := source.CheckStatus(config.KlineSource, p.Info.ContractCode)
+				if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
+					logger.Info(KeyStatus + "当前数据不健康正在重启中" + p.Info.Symbol)
+					goto STOP
+				}
+			}
+		STOP:
+			// 关闭
+			ticker.Stop()
+			p.Close()
+			p.CloseChanCallback <- p.Info
+		})
+	}
 }
 
 // Close the connection to the exchange and other handles
@@ -256,6 +262,8 @@ func (p *FXCM) GetTicker(info KlineCommon.Info) *wsdata.TickerValue {
 				Last: (rates[0].(float64) + rates[1].(float64)) / 2,
 				Time: time.Unix(int64(pairs[len(pairs)-1].(map[string]interface{})["Updated"].(float64)/1000), 0).Format(xtime.TimeFormat),
 			}
+			// 开启定时器30秒检测一次数据活跃状态
+			go p.TickerReboot()
 			return result
 		}
 	}
