@@ -61,6 +61,7 @@ func (p *FXCM) SetConfigure(config Config) {
 
 func (p *FXCM) Init(info KlineCommon.Info) *FXCM {
 	p.IsClose = false
+	p.IsReboot = false
 	p.List = list.New()
 	p.CloseChanCallback = make(chan KlineCommon.Info, 20)
 	p.Info = info
