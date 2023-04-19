@@ -41,6 +41,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
 	NoLogin := c.GetBool("NoLogin")
+	isVest := c.GetInt("isvest")
 	//go HeartBeatingWatch(ws, socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
@@ -67,6 +68,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			if ID == id {
 				// 需要登录
 				if NoLogin {
+					if isVest == 0 {
+						continue
+					}
 					SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"token 无效"}`)
 					return
 				}
