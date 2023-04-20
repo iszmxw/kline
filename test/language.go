@@ -51,7 +51,7 @@ func main() {
 		logger.Error(err)
 		return
 	}
-	commonFunc(vm, "tutorial")
+	commonFunc(vm, "paymentInfo")
 	//newsPageFunc(vm, "newsPage")
 	//newsPageInfoFunc(vm, "newsPageInfo")
 	//bonusActivitiesFunc(vm, "bonusActivities")
@@ -208,7 +208,7 @@ func insertData(languageCode, key, val string) {
 		result.Sort = 0
 		result.Updater = "yezhiming"
 		result.UpdateDate = time.Now()
-		result.IsValid = "1"
+		result.IsValid = "0"
 		err = DB.Model(models.LanguageShowApp{}).Create(&result).Error
 		if err != nil {
 			logger.Error(err)
