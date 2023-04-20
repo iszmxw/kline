@@ -1,6 +1,34 @@
 /**
  * null--表示当前语言去除这个文案
  */
+// 新增语言
+var tutorial = {
+    INSA:{
+        welcomeTitle: 'Selamat datang di Smart Trade!',
+        welcomeContent: 'Tutorial akan memandu Anda melalui langkah pertama di platform.<br />Harap pilih opsi yang paling sesuai pengalaman trading Anda.',
+        isNewUser: 'Saya Pemula Ajari saya dasar-dasarnya di sini',
+        isOldUser: 'Saya trader Coba trading',
+    },
+    EN:{
+        welcomeTitle: 'Welcome to Smart Trade!',
+        welcomeContent: 'The tutorial will guide you through your first steps on the platform.<br />Please, pick the option that describes your trading experience best.',
+        isNewUser: 'Never traded before Teach me the basics here',
+        isOldUser: 'Already traded Show me how it’s here',
+    },
+    MX:{
+        welcomeTitle: 'Welcome to Smart Trade!',
+        welcomeContent: 'The tutorial will guide you through your first steps on the platform.<br />Please, pick the option that describes your trading experience best.',
+        isNewUser: 'Never traded before Teach me the basics here',
+        isOldUser: 'Already traded Show me how it’s here',
+    },
+    CH:{
+        welcomeTitle: 'Welcome to Smart Trade!',
+        welcomeContent: 'The tutorial will guide you through your first steps on the platform.<br />Please, pick the option that describes your trading experience best.',
+        isNewUser: 'Never traded before Teach me the basics here',
+        isOldUser: 'Already traded Show me how it’s here',
+    }
+};
+
 // 公共
 var common = {
     INSA: {
@@ -4032,9 +4060,9 @@ var tradePage = {
             Amount_mintrade: '交易金额不能低于:', //交易金额不能低于
             trade_max_tips: '您今天的真实交易次数已经超过', //您今天的真实交易次数已经超过100次
             Deposit: '充值',
-            buDown1: `Earn `,
-            buDown2: ` % profit after 1min`,
-            singleTransactionLimit: '单笔最高交易金额{currencySymbol} {money}'
+            buDown1: 'Earn ',
+            buDown2: ' % profit after 1min',
+            singleTransactionLimit: '单笔最高交易金额{currencySymbol} {money}',
         }
     },
 };
