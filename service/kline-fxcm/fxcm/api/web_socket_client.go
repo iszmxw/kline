@@ -86,7 +86,6 @@ func (p *FXCM) TickerReboot() {
 			// 关闭
 			ticker.Stop()
 			p.Close()
-			p.CloseChanCallback <- p.Info
 		})
 	}
 }
@@ -98,6 +97,7 @@ func (p *FXCM) Close() {
 		p.IsClose = true
 		p.OnceClose.Do(func() {
 			logger.Info(p.Info.ContractCode, "-关闭")
+			p.CloseChanCallback <- p.Info
 			if p.Socket != nil {
 				p.Socket.Close()
 			}
@@ -237,7 +237,7 @@ func (p *FXCM) GetTicker(info KlineCommon.Info) *wsdata.TickerValue {
 	if err, response := p.marketRequest("POST", "/subscribe", map[string]string{
 		"pairs": strings.ReplaceAll(pair, "/", "%2F"),
 	}); err != nil {
-		p.CloseChanCallback <- info
+		p.Close()
 		logger.Info(fmt.Sprintf("Fail to get ticker:%v", err))
 		return nil
 	} else {
@@ -251,7 +251,7 @@ func (p *FXCM) GetTicker(info KlineCommon.Info) *wsdata.TickerValue {
 
 		if values["response"] != nil && values["response"].(map[string]interface{})["executed"].(bool) != true {
 			logger.Info(fmt.Sprintf("Fail to get ticker:%v", err))
-			p.CloseChanCallback <- info
+			p.Close()
 			return nil
 		}
 		pairs := values["pairs"].([]interface{})
