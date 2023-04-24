@@ -25,7 +25,6 @@ func SocketFxcm(info KlineCommon.Info) {
 	if err != nil {
 		logger.Info(err)
 		wsClient.Close()
-		return
 	}
 	// 开始订阅
 	go SubPriceKLine(wsClient)
