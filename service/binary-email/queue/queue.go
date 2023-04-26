@@ -63,7 +63,7 @@ func Consume() {
 					return
 				}
 				// 剩余可用条数
-				err, SystemEmailRoutingNode := config.GetOne()
+				err, SystemEmailRoutingNode := config.GetOne(1)
 				if err != nil {
 					SystemEmailRoutingNode.AvailableNumber = 1
 				}
