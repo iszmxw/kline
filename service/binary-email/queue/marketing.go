@@ -16,7 +16,7 @@ import (
 
 // 邮件营销队列
 
-const MarketingKey = "IQOptionPro:EmailMessageQueue"
+const MarketingKey = "EmailMessageQueue"
 
 // 消费营销邮件
 
