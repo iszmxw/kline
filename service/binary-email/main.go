@@ -38,6 +38,7 @@ func main() {
 
 	defer bootstrap.RedisClose()
 	go queue.Consume()
+	go queue.ConsumeMarketingEmail()
 	// 初始化路由绑定
 	logger.Info("加载路由")
 	router := bootstrap.SetupRouteEmail()

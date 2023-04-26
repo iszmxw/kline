@@ -9,7 +9,7 @@ import (
 
 // 读取一条配置信息
 
-func GetOne(email string) (error, response.SystemEmailRoutingNode) {
+func GetOne() (error, response.SystemEmailRoutingNode) {
 	var result response.SystemEmailRoutingNode
 	mysql.DB.Debug().Model(models.SystemEmailRoutingNode{}).Where(map[string]interface{}{
 		"valid": 1,
