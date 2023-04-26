@@ -63,8 +63,6 @@ func ConsumeMarketingEmail() {
 				sendOneEmail.MessageContent = params.Body
 				err = email.SendOneEmail(params)
 				if err != nil {
-					// 统计失败率
-					common.CreateSystemEmailSendLog(sendOneEmail, SystemEmailRoutingNode.AvailableNumber, 0, err.Error())
 					go StatisticsEmail(params.From, "fail")
 					logger.Error(err)
 					// 未发送成功，重新放入消息队列
@@ -82,7 +80,7 @@ func ConsumeMarketingEmail() {
 				if err != nil {
 					logger.Error(err)
 				}
-				common.CreateSystemEmailSendLog(sendOneEmail, AvailableNumber, 1, "")
+				common.CreateMarketingEmailSendLog(sendOneEmail, marketingEmailInfo)
 			}()
 		}
 		time.Sleep(1 * time.Second)
