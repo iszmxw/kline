@@ -63,10 +63,15 @@ func Consume() {
 					return
 				}
 				// 剩余可用条数
-				err, SystemEmailRoutingNode := config.GetOne(params.From)
+				err, SystemEmailRoutingNode := config.GetOne()
 				if err != nil {
 					SystemEmailRoutingNode.AvailableNumber = 1
 				}
+				params.From = SystemEmailRoutingNode.Email
+				params.Host = SystemEmailRoutingNode.ChannelHost
+				params.Port = SystemEmailRoutingNode.ChannelPort
+				params.Username = SystemEmailRoutingNode.ChannelUsername
+				params.Password = SystemEmailRoutingNode.ChannelPassword
 				var sendOneEmail requests.SendOneEmail
 				sendOneEmail.MailAccount = params.From
 				sendOneEmail.ReceiveEmail = params.To
