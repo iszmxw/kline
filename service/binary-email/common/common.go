@@ -50,4 +50,5 @@ func CreateMarketingEmailSendLog(params requests.SendOneEmail, marketingEmailInf
 	if err != nil {
 		logger.Error(err)
 	}
+	logger.Info(MarketingEmailSendLog.SendEmail, "发送成功", MarketingEmailSendLog.ReceiveEmail, "接收成功")
 }
