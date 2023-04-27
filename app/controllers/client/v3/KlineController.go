@@ -71,7 +71,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					if isVest == 0 {
 						continue
 					}
-					SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"token 无效"}`)
+					SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"token 无效"}`)
 					return
 				}
 			}
@@ -117,7 +117,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(fmt.Sprintf("ws_index:%v:heart_beating_key", c.GetHeader("Sec-WebSocket-Key")), currentTime, 300) // 5分钟过期
-				SocketResp(ws, websocket.TextMessage, `{"id":"03","data":"pong"}`)
+				SocketResp(ws, websocket.TextMessage, `{"id":"03","msg":"pong"}`)
 			}
 			break
 		case strings.EqualFold(ID, "04"): // 下单开奖通知
@@ -202,7 +202,7 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 	// 订阅 历史消息
 	if len(params.Symbol) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10401","data":"订阅历史消息条件参数缺失"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10401","msg":"订阅历史消息条件参数缺失"}`)
 		return
 	}
 	var Count = int64(3000) // 查询总条数默认获取3000条
@@ -213,21 +213,21 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 		Count = helpers.StringToInt64(params.Limit)
 	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10402","data":"beginDate 起始交易日期必填"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10402","msg":"beginDate 起始交易日期必填"}`)
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Info(helpers.StringToInt64(beginDate), time.Now().UnixMilli())
 		logger.Error(errors.New("越界查询"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10403","data":"越界查询 beginDate error"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10403","msg":"越界查询 beginDate error"}`)
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10404","data":"endDate 截止交易日期必填"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10404","msg":"endDate 截止交易日期必填"}`)
 		return
 	}
 	if len(symbol) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10405","data":"symbol 不能为空"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10405","msg":"symbol 不能为空"}`)
 		return
 	}
 	tips := fmt.Sprintf(
@@ -241,7 +241,7 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 	// 没有读取到 klineSource
 	if len(klineSource) == 0 {
 		logger.Error(errors.New("没有读取到 klineSource"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10406","data":"没有读取到 klineSource"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10406","msg":"没有读取到 klineSource"}`)
 		return
 	}
 	var data []response.KlineLog
@@ -347,7 +347,7 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 	// 订阅 历史消息
 	if len(params.Symbol) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10401","data":"订阅历史消息条件参数缺失"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10401","msg":"订阅历史消息条件参数缺失"}`)
 		return
 	}
 	var Count = int64(3000) // 查询总条数默认获取3000条
@@ -358,20 +358,20 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 		Count = helpers.StringToInt64(params.Limit)
 	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10402","data":"beginDate 起始交易日期必填"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10402","msg":"beginDate 起始交易日期必填"}`)
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Error(errors.New("越界查询"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10403","data":"越界查询 beginDate error"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10403","msg":"越界查询 beginDate error"}`)
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10404","data":"endDate 截止交易日期必填"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10404","msg":"endDate 截止交易日期必填"}`)
 		return
 	}
 	if len(symbol) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10405","data":"symbol 不能为空"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10405","msg":"symbol 不能为空"}`)
 		return
 	}
 	tips := fmt.Sprintf(
@@ -385,7 +385,7 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 	// 没有读取到 klineSource
 	if len(klineSource) == 0 {
 		logger.Error(errors.New("没有读取到 klineSource"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10406","data":"没有读取到 klineSource"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10406","msg":"没有读取到 klineSource"}`)
 		return
 	}
 	var data []response.KlineLogSimple
@@ -483,7 +483,7 @@ func PushMessage(socketId string, ws *wss.WsConn, params string) {
 	// 订阅的 ETH-USD，没有值
 	Sub := strings.Split(params, ".")
 	if len(Sub) < 2 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"sub error"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"sub error"}`)
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
 		return
 	}
@@ -497,7 +497,7 @@ func PushMessage(socketId string, ws *wss.WsConn, params string) {
 	SubKey := fmt.Sprintf("ws_index:%v:socket_request", socketId)
 	SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 	if SubAssetsCode == AssetsCode {             // 当前订阅的资产已存
-		SocketResp(ws, websocket.TextMessage, `{"id":"10411","data":"please no repeat sub"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10411","msg":"please no repeat sub"}`)
 		logger.Error(errors.New(fmt.Sprintf("当前订阅的资产{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", AssetsCode, socketId)))
 		return
 	}
@@ -587,37 +587,37 @@ END:
 func PushNotice(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo) {
 	logger.RequestId = socketId
 	if len(params.AppUserId) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,AppUserId not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AppUserId not right"}`)
 		logger.Error(errors.New("err sub,AppUserId not right"))
 		return
 	}
 	if len(params.AssetsCode) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,AssetsCode not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AssetsCode not right"}`)
 		logger.Error(errors.New("err sub,AssetsCode not right"))
 		return
 	}
 	if len(params.TradeBeginTimestamp) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,TradeBeginTimestamp not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,TradeBeginTimestamp not right"}`)
 		logger.Error(errors.New("err sub,TradeBeginTimestamp not right"))
 		return
 	}
 	if len(params.BeginAssetsPrice) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,BeginAssetsPrice not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,BeginAssetsPrice not right"}`)
 		logger.Error(errors.New("err sub,BeginAssetsPrice not right"))
 		return
 	}
 	if len(params.UpDownType) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,UpDownType not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,UpDownType not right"}`)
 		logger.Error(errors.New("err sub,UpDownType not right"))
 		return
 	}
 	if len(params.Amounts) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,Amounts not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,Amounts not right"}`)
 		logger.Error(errors.New("err sub,Amounts not right"))
 		return
 	}
 	if len(params.IsDemo) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,IsDemo not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,IsDemo not right"}`)
 		logger.Error(errors.New("err sub,IsDemo not right"))
 		return
 	}
@@ -724,7 +724,7 @@ STOP:
 func PushPopup(socketId string, ws *wss.WsConn, AppUserId string) {
 	logger.RequestId = socketId
 	if len(AppUserId) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"PushPopup no sub"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"PushPopup no sub"}`)
 		logger.Error(errors.New("用户ID为空"))
 		return
 	}
