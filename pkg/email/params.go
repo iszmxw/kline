@@ -17,7 +17,7 @@ type MarketingEmailInfo struct {
 	Title        string `json:"title"`
 	Body         string `json:"body"`
 	Email        string `json:"email"`
-	Type         string `json:"type"`
+	Type         int    `json:"type"`
 	Nation       string `json:"nation"`        // 国家
 	LanguageCode string `json:"language_code"` // 语言编码
 }

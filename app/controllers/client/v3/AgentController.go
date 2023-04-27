@@ -183,7 +183,7 @@ func (h *AgentController) StatisticsHandler(c *gin.Context) {
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
 				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
+				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","msg":"pong"}`))
 				ws.Mux.Unlock()
 				if WriteMessageErr != nil {
 					logger.Error(WriteMessageErr)
@@ -226,7 +226,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 	SubNation, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的国家
 	if SubNation == SubBody.Nation {         // 当前订阅的国家已存在
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","data":"please no repeat sub"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","msg":"please no repeat sub"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New(fmt.Sprintf("当前订阅的国家{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", SubNation, socketId)))
 		return
@@ -298,7 +298,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 			"data": result,
 		})
 		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
 			return
 		}

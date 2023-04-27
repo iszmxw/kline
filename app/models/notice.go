@@ -4,7 +4,7 @@ import "time"
 
 // 站内信发送表
 
-type OffMail struct {
+type Notice struct {
 	MailId       int64     `json:"mail_id"`        //站内信发送表
 	AppUserId    string    `json:"app_user_id"`    //客户ID
 	SendType     int       `json:"send_type"`      //发送类型
