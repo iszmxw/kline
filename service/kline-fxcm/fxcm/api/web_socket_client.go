@@ -125,8 +125,11 @@ func (p *FXCM) Start() error {
 		BufferSize:     transport.WsDefaultBufferSize,
 	})
 	if err != nil {
+		p.Close()
 		return err
 	}
+	// 开启定时器30秒检测一次数据活跃状态
+	go p.TickerReboot()
 	err = p.Socket.On(socketio.OnConnection, func(c *socketio.Channel, args interface{}) {
 		logger.Printf("Socket Connected[%s]", c.Id())
 		p.GetTicker(p.Info)
