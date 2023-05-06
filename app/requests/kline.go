@@ -24,7 +24,7 @@ type SubStationLetter struct {
 
 type SubToken struct {
 	Token       string `json:"token"`
-	DeciveBrand string `json:"decive_brand"`
+	DeciveBrand string `json:"decive_brand" mapstructure:"decive_brand"`
 }
 
 type SubNationInfo struct {

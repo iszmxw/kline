@@ -181,6 +181,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
+				logger.Info(subInfo, params)
 				go StationLetterPushNotice(socketId, ws, params)
 			}
 			break
