@@ -951,6 +951,7 @@ func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.
 		}
 		// json字符串数组,转换成切片
 		var user response.ClientUserBeans
+		var userInfo response.AppUser
 		var NoticeInfo response.NoticeInfo
 		multiErr := json.Unmarshal([]byte(strInfo), &user)
 		if multiErr != nil {
@@ -958,15 +959,24 @@ func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.
 			logger.Error(multiErr)
 			goto STOP
 		}
-		logger.Info(user)
+		err = mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", user.AppUserId).Find(&userInfo).Error
+		if err != nil {
+			logger.Error(errors.New("查询出错"))
+			logger.Error(err)
+			goto STOP
+		}
+		logger.Info(userInfo)
 		result := cmap.New().Items()
 		// 查询用户未读消息，展示小红点
 		err = mysql.DB.Debug().Model(models.NoticeLog{}).Where(
 			map[string]interface{}{
 				"item_code":    config.GetString("app.item_code"),
-				"nation":       user.Nation,
+				"nation":       userInfo.Nation,
+				"read_state":   0,
 				"decive_brand": SubToken.DeciveBrand,
-			}).Where("app_user_id = 'ALL' OR app_user_id = ?", user.AppUserId).
+			}).Where("app_user_id = 'ALL' OR app_user_id = ?", userInfo.AppUserId).
+			Where("send_time >= ?", userInfo.CreateTs).
+			Where("(send_time / 1000) >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(),INTERVAL 7 DAY))").
 			Select("count(1) AS total").
 			Find(&result).Error
 		if err != nil {
