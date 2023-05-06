@@ -968,15 +968,16 @@ func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.
 		logger.Info(userInfo)
 		result := cmap.New().Items()
 		// 查询用户未读消息，展示小红点
-		err = mysql.DB.Debug().Model(models.NoticeLog{}).Where(
-			map[string]interface{}{
-				"item_code":    config.GetString("app.item_code"),
-				"nation":       userInfo.Nation,
-				"read_state":   0,
-				"decive_brand": SubToken.DeciveBrand,
-			}).Where("app_user_id = 'ALL' OR app_user_id = ?", userInfo.AppUserId).
-			Where("send_time >= ?", userInfo.CreateTs).
-			Where("(send_time / 1000) >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(),INTERVAL 7 DAY))").
+		err = mysql.DB.Debug().Model(models.NoticeLog{}).
+			Joins(models.Prefix("left join $_notice on $_notice.mail_id=$_notice_log.mail_id")).
+			Where(map[string]interface{}{
+				models.Prefix("$_notice_log.item_code"):    config.GetString("app.item_code"),
+				models.Prefix("$_notice_log.nation"):       userInfo.Nation,
+				models.Prefix("$_notice_log.read_state"):   0,
+				models.Prefix("$_notice_log.decive_brand"): SubToken.DeciveBrand,
+			}).Where(models.Prefix("$_notice_log.app_user_id = 'ALL' OR $_notice_log.app_user_id = ?"), userInfo.AppUserId).
+			Where(models.Prefix("$_notice.send_time >= ?"), userInfo.CreateTs).
+			Where(models.Prefix("($_notice.send_time / 1000) >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(),INTERVAL 7 DAY))")).
 			Select("count(1) AS total").
 			Find(&result).Error
 		if err != nil {
