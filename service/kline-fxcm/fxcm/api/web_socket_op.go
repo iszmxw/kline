@@ -13,7 +13,6 @@ import (
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-fxcm/fxcm/config"
 	"goapi/service/kline-fxcm/fxcm/wsdata"
-	"golang.org/x/net/proxy"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -32,7 +31,6 @@ type CallbackFunc struct {
 }
 
 type WebSocketOp struct {
-	config            Config
 	Socket            *socketio.Client
 	Info              KlineCommon.Info
 	mutex             sync.Mutex // 锁
@@ -78,25 +76,10 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	return ret
 }
 
-func (ws *WebSocketOp) SetConfigure(config Config) {
-	ws.config = config
-	if ws.config.Proxy != "" {
-		logger.Info(fmt.Sprintf("Proxy:%s", ws.config.Proxy))
-	}
-}
-
 func (ws *WebSocketOp) connServer() bool {
-	// 配置
-	ws.SetConfigure(Config{
-		Custom: map[string]interface{}{
-			"token": config.Token,
-		},
-		Proxy: "",
-	})
 	logger.Info("Start websocket")
-	token := ws.config.Custom["token"].(string)
 	var err error
-	Url := config.WssUrl + "/socket.io/?EIO=3&transport=websocket&access_token=" + token
+	Url := fmt.Sprintf("%v/socket.io/?EIO=3&transport=websocket&access_token=%v", config.WssUrl, config.Token)
 	ws.Socket, err = socketio.Dial(Url, &transport.WebsocketTransport{
 		PingInterval:   25 * time.Second,
 		PingTimeout:    transport.WsDefaultPingTimeout,
@@ -113,7 +96,7 @@ func (ws *WebSocketOp) connServer() bool {
 	go ws.TickerReboot()
 	err = ws.Socket.On(socketio.OnConnection, func(c *socketio.Channel, args interface{}) {
 		logger.Printf("Socket Connected[%s]", c.Id())
-		ws.SubTopic(ws.Info)
+		ws.SubTopic()
 		ws.Sid = c.Id()
 	})
 	if err != nil {
@@ -155,18 +138,19 @@ func (ws *WebSocketOp) sub(ContractCode string, Symbol string, fun interface{}, 
 	ws.SubTopicMap[Symbol] = mi
 	ws.Symbol = Symbol
 	ws.ContractCode = ContractCode
+	ws.SubTopic()
 	return true
 }
 
-func (ws *WebSocketOp) SubTopic(info KlineCommon.Info) *wsdata.TickerValue {
-	pair := info.Symbol
+func (ws *WebSocketOp) SubTopic() *wsdata.TickerValue {
 	time.Sleep(3 * time.Second)
 	logger.Info("开始订阅")
+	pair := ws.Symbol
 	if err, response := ws.marketRequest("POST", "/subscribe", map[string]string{
 		"pairs": strings.ReplaceAll(pair, "/", "%2F"),
 	}); err != nil {
 		ws.Close()
-		logger.Info(fmt.Sprintf("Fail to get ticker:%v", err))
+		logger.Info(fmt.Sprintf("订阅失败:%v", err))
 		return nil
 	} else {
 		logger.Info(pair)
@@ -176,9 +160,8 @@ func (ws *WebSocketOp) SubTopic(info KlineCommon.Info) *wsdata.TickerValue {
 			logger.Info(fmt.Sprintf("Fail to parse:%v", err))
 			return nil
 		}
-
 		if values["response"] != nil && values["response"].(map[string]interface{})["executed"].(bool) != true {
-			logger.Info(fmt.Sprintf("Fail to get ticker:%v", err))
+			logger.Info(fmt.Sprintf("订阅失败:%v", err))
 			ws.Close()
 			return nil
 		}
@@ -232,21 +215,17 @@ func (ws *WebSocketOp) marketRequest(method, path string, params map[string]stri
 	request.Header.Add("User-Agent", "request")
 	request.Header.Add("Accept", "application/json")
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	request.Header.Add("Authorization", "Bearer "+ws.Socket.Id()+ws.config.Custom["token"].(string))
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %v%v", ws.Socket.Id(), config.Token))
 	// setup a http client
 	httpTransport := &http.Transport{}
 	httpClient := &http.Client{Transport: httpTransport}
-	if ws.config.Proxy != "" {
-		values := strings.Split(ws.config.Proxy, ":")
-		if values[0] == "SOCKS5" {
-			dialer, err := proxy.SOCKS5("tcp", values[1]+":"+values[2], nil, proxy.Direct)
-			if err != nil {
-				return err, nil
-			}
-			httpTransport.Dial = dialer.Dial
-		}
-
-	}
+	//// 设置代理 whether to use proxy, eg: "SOCKS5:127.0.0.1:1080"
+	//dialer, err := proxy.SOCKS5("tcp", "", nil, proxy.Direct)
+	//if err != nil {
+	//	return err, nil
+	//}
+	//httpTransport.Dial = dialer.Dial
+	//// 设置代理
 	var resp *http.Response
 	resp, err = httpClient.Do(request)
 	if err != nil {

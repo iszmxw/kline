@@ -10,18 +10,6 @@ import (
 	"sync"
 )
 
-type EventType int8
-
-// var once sync.Once
-
-// Config the configuration of the exchange
-type Config struct {
-	// custom configuration of the exchange
-	Custom map[string]interface{}
-	// whether to use proxy, eg: "SOCKS5:127.0.0.1:1080"
-	Proxy string
-}
-
 type WSPriceClient struct {
 	WebSocketOp
 	AllSubStars list.List
