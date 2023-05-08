@@ -1,16 +1,12 @@
 package fxcm
 
 import (
-	"encoding/json"
+	"container/list"
 	"fmt"
-	socketio "github.com/graarh/golang-socketio"
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
-	"goapi/pkg/mysql"
-	NoticeMail "goapi/pkg/notice/mail"
-	"goapi/pkg/redis"
 	"goapi/service/kline-common"
 	"goapi/service/kline-fxcm/fxcm/api"
 	"goapi/service/kline-fxcm/fxcm/config"
@@ -19,154 +15,155 @@ import (
 	"time"
 )
 
-func SocketFxcm(info KlineCommon.Info) {
-	wsClient := new(api.FXCM).Init(info)
-	err := wsClient.Start()
-	if err != nil {
-		logger.Info(err)
-		wsClient.Close()
-	}
+func SocketFXcm(info KlineCommon.Info) {
+	callback := make(chan int, 1)
 	// 开始订阅
-	go SubPriceKLine(wsClient)
+	{
+		logger.Info(info)
+		wsClient := new(api.WSPriceClient).Init("", KlineCommon.GetProxy(config.KlineSource), callback)
+		wsClient.AllSubStars = list.List{}
+		wsClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
+			logger.Info(resp)
+		}, "")
+	}
 	select {
-	case Symbol, ok := <-wsClient.CloseChanCallback:
-		if ok {
-			wsClient.Close()
-			// 重启服务
-			logger.Info("重启", Symbol)
-			KlineCommon.RebootSocketLog(config.KlineSource, Symbol)
-			go SocketFxcm(Symbol)
-		} else {
-			logger.Info("!ok", "重启服务失败")
+	case msg, ok := <-callback:
+		if !ok {
+			logger.Info(ok)
+			return
 		}
+		logger.Info(msg)
+		// 重启服务
+		KlineCommon.RebootSocketLog(config.KlineSource, info)
+		go SocketFXcm(info)
 	}
 }
 
-func SubPriceKLine(wsClient *api.FXCM) {
-	// 接收数据
-	if wsClient.IsClose || wsClient.Socket == nil {
-		wsClient.Close()
-		return
-	}
-	info := wsClient.Info
-	err := wsClient.Socket.On(info.Symbol, func(c *socketio.Channel, args interface{}) {
-		var stream wsdata.DataStream
-		err := json.Unmarshal([]byte(args.(string)), &stream)
-		if err != nil {
-			logger.Error(err)
-			wsClient.Close()
-			return
-		}
-		logger.Info(stream)
-		stream.Symbol = info.ContractCode
-		SystemTs := time.Now().UnixMilli() // 开始时间 系統生成的Ts
-		// RequestId 定义为 Ts 时间戳
-		logger.RequestId = fmt.Sprintf("%v", SystemTs)
-		defer func() {
-			if r := recover(); r != nil {
-				NoticeMail.Notice("msgServiceAnomaly", map[string]interface{}{
-					"name": config.KlineSource,
-					"r":    r,
-				})
-				// 关闭
-				wsClient.Close()
-			}
-		}()
-		UpstreamTs := stream.Updated // 上游的ts
-		l := wsClient.List.Back()
-		if l != nil {
-			wsClient.List.Remove(l)
-			if l.Value == UpstreamTs {
-				logger.Info("相等了")
-				return
-			}
-		}
-		wsClient.List.PushFront(UpstreamTs)
-		TimeDiff := SystemTs - UpstreamTs
-		logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
-		logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
-		data := RedisData(SystemTs, stream)
-		data.Ch = fmt.Sprintf("market.%v.index.1min", info.ContractCode)
-		redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
-		if err != nil {
-			logger.Error(err)
-			wsClient.Close()
-			return
-		}
-		// 收集数据缓存到redis
-		key := fmt.Sprintf("%v:%v", config.KlineSource, data.Ch)
-		logger.Info("0001"+data.Ch, data)
-		_, redisErr := redis.Client.Add(key, redisData, 0)
-		if redisErr != nil {
-			logger.Error(redisErr)
-			wsClient.Close()
-			return
-		}
-		// 当前数据源匹配就入库
-		if response.KlineSource(info.ContractCode) == config.KlineSource {
-			var KlineData models.KlineLog
-			err = mysql.DB.Debug().
-				Model(models.KlineLog{}).
-				Select("log_id").
-				Where("contract_code", info.ContractCode).
-				Where("ts", SystemTs).
-				Where("upstream_ts", UpstreamTs).
-				Where("c_close", data.Tick.Close).
-				Where("kline_source", config.KlineSource).
-				Find(&KlineData).Error
-			if err != nil {
-				logger.Error(err)
-			}
-			logger.Info("0002"+data.Ch, KlineData)
-			if KlineData.LogId > 0 {
-				return
-			}
-			lineLogRes := LogData(stream, SystemTs)
-			if err = mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
-				logger.Error(err)
-				return
-			}
-			logger.Info("0003"+data.Ch, lineLogRes)
-		}
-
-		// 插针后的数据缓存到另外一张表
-		RecoverSource, err := redis.Client.Get(fmt.Sprintf("recover_source:%v", info.ContractCode))
-		if err != nil && err.Error() != "redis: nil" {
-			logger.Error(err)
-			return
-		}
-		if RecoverSource == config.KlineSource {
-			var KlineData models.KlineRecoverLog
-			err = mysql.DB.Debug().
-				Model(models.KlineRecoverLog{}).
-				Select("log_id").
-				Where("contract_code", info.ContractCode).
-				Where("ts", SystemTs).
-				Where("upstream_ts", UpstreamTs).
-				Where("c_close", data.Tick.Close).
-				Where("kline_source", config.KlineSource).
-				Find(&KlineData).Error
-			if err != nil {
-				logger.Error(err)
-			}
-			logger.Info("0002"+data.Ch, KlineData)
-			if KlineData.LogId > 0 {
-				return
-			}
-			lineLogRes := LogData(stream, SystemTs)
-			if err = mysql.DB.Model(models.KlineRecoverLog{}).Create(&lineLogRes).Error; err != nil {
-				logger.Error(err)
-				return
-			}
-			logger.Info("0003"+data.Ch, lineLogRes)
-		}
-
-	})
-	if err != nil {
-		logger.Error(err)
-		wsClient.Close()
-	}
-}
+//func SubPriceKLine(wsClient *api.WSPriceClient) {
+//	// 接收数据
+//	if wsClient.IsClose || wsClient.Socket == nil {
+//		wsClient.Close()
+//		return
+//	}
+//	info := wsClient.Info
+//	err := wsClient.Socket.On(info.Symbol, func(c *socketio.Channel, args interface{}) {
+//		var stream wsdata.DataStream
+//		err := json.Unmarshal([]byte(args.(string)), &stream)
+//		if err != nil {
+//			logger.Error(err)
+//			wsClient.Close()
+//			return
+//		}
+//		logger.Info(stream)
+//		stream.Symbol = info.ContractCode
+//		SystemTs := time.Now().UnixMilli() // 开始时间 系統生成的Ts
+//		// RequestId 定义为 Ts 时间戳
+//		logger.RequestId = fmt.Sprintf("%v", SystemTs)
+//		defer func() {
+//			if r := recover(); r != nil {
+//				NoticeMail.Notice("msgServiceAnomaly", map[string]interface{}{
+//					"name": config.KlineSource,
+//					"r":    r,
+//				})
+//				// 关闭
+//				wsClient.Close()
+//			}
+//		}()
+//		UpstreamTs := stream.Updated // 上游的ts
+//		l := wsClient.List.Back()
+//		if l != nil {
+//			wsClient.List.Remove(l)
+//			if l.Value == UpstreamTs {
+//				logger.Info("相等了")
+//				return
+//			}
+//		}
+//		wsClient.List.PushFront(UpstreamTs)
+//		TimeDiff := SystemTs - UpstreamTs
+//		logger.Info(fmt.Sprintf("ShiCha=%v", TimeDiff)) // 时差提示
+//		logger.Info(KlineCommon.TimeDiffTips(config.KlineSource, UpstreamTs))
+//		data := RedisData(SystemTs, stream)
+//		data.Ch = fmt.Sprintf("market.%v.index.1min", info.ContractCode)
+//		redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
+//		if err != nil {
+//			logger.Error(err)
+//			wsClient.Close()
+//			return
+//		}
+//		// 收集数据缓存到redis
+//		key := fmt.Sprintf("%v:%v", config.KlineSource, data.Ch)
+//		logger.Info("0001"+data.Ch, data)
+//		_, redisErr := redis.Client.Add(key, redisData, 0)
+//		if redisErr != nil {
+//			logger.Error(redisErr)
+//			wsClient.Close()
+//			return
+//		}
+//		// 当前数据源匹配就入库
+//		if response.KlineSource(info.ContractCode) == config.KlineSource {
+//			var KlineData models.KlineLog
+//			err = mysql.DB.Debug().
+//				Model(models.KlineLog{}).
+//				Select("log_id").
+//				Where("contract_code", info.ContractCode).
+//				Where("ts", SystemTs).
+//				Where("upstream_ts", UpstreamTs).
+//				Where("c_close", data.Tick.Close).
+//				Where("kline_source", config.KlineSource).
+//				Find(&KlineData).Error
+//			if err != nil {
+//				logger.Error(err)
+//			}
+//			logger.Info("0002"+data.Ch, KlineData)
+//			if KlineData.LogId > 0 {
+//				return
+//			}
+//			lineLogRes := LogData(stream, SystemTs)
+//			if err = mysql.DB.Model(models.KlineLog{}).Create(&lineLogRes).Error; err != nil {
+//				logger.Error(err)
+//				return
+//			}
+//			logger.Info("0003"+data.Ch, lineLogRes)
+//		}
+//
+//		// 插针后的数据缓存到另外一张表
+//		RecoverSource, err := redis.Client.Get(fmt.Sprintf("recover_source:%v", info.ContractCode))
+//		if err != nil && err.Error() != "redis: nil" {
+//			logger.Error(err)
+//			return
+//		}
+//		if RecoverSource == config.KlineSource {
+//			var KlineData models.KlineRecoverLog
+//			err = mysql.DB.Debug().
+//				Model(models.KlineRecoverLog{}).
+//				Select("log_id").
+//				Where("contract_code", info.ContractCode).
+//				Where("ts", SystemTs).
+//				Where("upstream_ts", UpstreamTs).
+//				Where("c_close", data.Tick.Close).
+//				Where("kline_source", config.KlineSource).
+//				Find(&KlineData).Error
+//			if err != nil {
+//				logger.Error(err)
+//			}
+//			logger.Info("0002"+data.Ch, KlineData)
+//			if KlineData.LogId > 0 {
+//				return
+//			}
+//			lineLogRes := LogData(stream, SystemTs)
+//			if err = mysql.DB.Model(models.KlineRecoverLog{}).Create(&lineLogRes).Error; err != nil {
+//				logger.Error(err)
+//				return
+//			}
+//			logger.Info("0003"+data.Ch, lineLogRes)
+//		}
+//
+//	})
+//	if err != nil {
+//		logger.Error(err)
+//		wsClient.Close()
+//	}
+//}
 
 // LogData 存入 kline_log 的数据
 func LogData(stream wsdata.DataStream, SystemTs int64) models.KlineLog {
