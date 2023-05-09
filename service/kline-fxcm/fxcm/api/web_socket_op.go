@@ -193,30 +193,7 @@ func (ws *WebSocketOp) runFunction(mi *CallbackFunc, data []byte) {
 }
 
 func (ws *WebSocketOp) msgHand(message []byte) {
-	var stream wsdata.DataStream
-	err := json.Unmarshal(message, &stream)
-	if err != nil {
-		logger.Error(err)
-		ws.Close()
-		return
-	}
-	logger.Info(stream)
-	byteRes, err := json.Marshal(&wsdata.SubPriceKLineResponse{
-		Symbol:     stream.Symbol,
-		TimeId:     fmt.Sprintf("%v", stream.Updated),
-		Ask:        stream.Rates[0],
-		Bid:        stream.Rates[1],
-		Strike:     stream.Rates[2],
-		AskVolume:  fmt.Sprintf("%v", stream.Rates[0]),
-		BidVolume:  fmt.Sprintf("%v", stream.Rates[0]),
-		MarketTime: fmt.Sprintf("%v", stream.Rates[0]),
-	})
-	if err != nil {
-		logger.Error(err)
-		ws.Close()
-		return
-	}
-	ws.handleSubCallbackFun(ws.Symbol, byteRes, message)
+	ws.handleSubCallbackFun(ws.Symbol, message, message)
 }
 
 func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFunc {
