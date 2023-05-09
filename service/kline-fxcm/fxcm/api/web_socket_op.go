@@ -35,33 +35,22 @@ type WebSocketOp struct {
 	Info              KlineCommon.Info
 	mutex             sync.Mutex // 锁
 	Sid               string
-	OnceReboot        sync.Once             // Reboot动作锁
-	OnceClose         sync.Once             // 关闭动作锁
-	CloseChanCallback chan KlineCommon.Info // 关闭通知外部
+	OnceReboot        sync.Once // Reboot动作锁
+	OnceClose         sync.Once // 关闭动作锁
 	IsClose           bool
 	IsReboot          bool // 是否已 Reboot
 	List              *list.List
-
 	host              string                   // 连接地址
 	proxy             *url.URL                 // 代理地址设置
 	path              string                   // 路由
-	isClose           bool                     // 是否关闭
-	onceTick          sync.Once                // Tick动作锁
-	onceClose         sync.Once                // 关闭动作锁
-	oncePing          sync.Once                // Ping动作锁
-	onceReboot        sync.Once                // Reboot动作锁
 	closeChan         chan byte                // 关闭chan
 	readChan          chan []byte              //读消息管道
 	SubTopicMap       map[string]*CallbackFunc // 订阅历史
-	ReqTopicMap       map[string]*CallbackFunc // 请求历史
-	authConnect       int                      // 自动重连次数
 	isConnect         bool                     // 是否已经链接
+	CloseChanCallback chan KlineCommon.Info    // 关闭通知外部
 	closeChanCallback chan int                 // 关闭通知外部
 	ContractCode      string                   // 订阅的币种
 	Symbol            string                   // 订阅的币种
-	IsPing            bool                     // 是否已开始 ping
-	IsTick            bool                     // 是否已开始 Tick
-	Description       string                   // 描述
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -133,7 +122,7 @@ func (ws *WebSocketOp) readLoop() {
 		time.Sleep(time.Second)
 	}
 	err := ws.Socket.On(ws.Symbol, func(c *socketio.Channel, args interface{}) {
-		if ws.isClose {
+		if ws.IsClose {
 			logger.Info(ws.Symbol + "读协程已关闭")
 			close(ws.readChan)
 			ws.Close()
@@ -367,7 +356,9 @@ func (ws *WebSocketOp) Close() {
 	if !ws.IsClose {
 		ws.IsClose = true
 		ws.OnceClose.Do(func() {
-			logger.Info(ws.ContractCode, "-关闭")
+			logger.Info(ws.Symbol + "关闭Socket:start")
+			close(ws.closeChan)
+			ws.closeChanCallback <- 1
 			ws.CloseChanCallback <- ws.Info
 			if ws.Socket != nil {
 				ws.Socket.Close()
