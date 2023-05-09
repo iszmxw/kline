@@ -50,10 +50,12 @@ type WebSocketOp struct {
 	onceClose         sync.Once                // 关闭动作锁
 	oncePing          sync.Once                // Ping动作锁
 	onceReboot        sync.Once                // Reboot动作锁
+	closeChan         chan byte                // 关闭chan
 	readChan          chan []byte              //读消息管道
 	SubTopicMap       map[string]*CallbackFunc // 订阅历史
 	ReqTopicMap       map[string]*CallbackFunc // 请求历史
 	authConnect       int                      // 自动重连次数
+	isConnect         bool                     // 是否已经链接
 	closeChanCallback chan int                 // 关闭通知外部
 	ContractCode      string                   // 订阅的币种
 	Symbol            string                   // 订阅的币种
@@ -70,6 +72,9 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	ws.proxy = proxy
 	ws.path = path
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
+	ws.closeChan = make(chan byte, 1)
+	ws.readChan = make(chan []byte)
+
 	ws.List = list.New()
 	ws.closeChanCallback = closeChanCallback
 	ret := ws.connServer()
@@ -116,7 +121,102 @@ func (ws *WebSocketOp) connServer() bool {
 	if err != nil {
 		return false
 	}
+	go ws.readLoop()
+	go ws.DoHand()
 	return true
+}
+
+// 读协程
+func (ws *WebSocketOp) readLoop() {
+	defer KlineCommon.KlineRecover("readLoop", config.KlineSource, ws.Symbol)
+	for !ws.isConnect {
+		time.Sleep(time.Second)
+	}
+	err := ws.Socket.On(ws.Symbol, func(c *socketio.Channel, args interface{}) {
+		if ws.isClose {
+			logger.Info(ws.Symbol + "读协程已关闭")
+			close(ws.readChan)
+			ws.Close()
+			return
+		}
+		ws.readChan <- []byte(args.(string))
+	})
+	if err != nil {
+		logger.Info(ws.Symbol + "读协程已关闭")
+		close(ws.readChan)
+		ws.Close()
+	}
+}
+
+func (ws *WebSocketOp) DoHand() {
+	defer KlineCommon.KlineRecover("DoHand", config.KlineSource, ws.Symbol)
+	for {
+		select {
+		case msg, ok := <-ws.readChan:
+			if !ok {
+				logger.Info(ws.Symbol + "不ok了")
+				goto ERR
+			}
+			ws.msgHand(msg)
+		case <-ws.closeChan:
+			goto ERR
+		}
+	}
+ERR:
+	logger.Info(ws.Symbol + "do已关闭")
+	ws.Close()
+}
+
+func (ws *WebSocketOp) handleSubCallbackFun(ch string, data []byte, jdata interface{}) {
+	var mi *CallbackFunc = nil
+	if _, found := ws.SubTopicMap[ch]; found {
+		mi = ws.SubTopicMap[ch]
+	}
+	if mi == nil {
+		logger.Error(errors.New(fmt.Sprintf("no callback function to handle: %s", jdata)))
+		return
+	}
+	ws.runFunction(mi, data)
+}
+
+func (ws *WebSocketOp) runFunction(mi *CallbackFunc, data []byte) {
+	param := reflect.New(mi.param).Interface()
+	err := json.Unmarshal(data, &param)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	rargs := make([]reflect.Value, 1)
+	rargs[0] = reflect.ValueOf(param)
+	fun := reflect.ValueOf(mi.fun)
+	fun.Call(rargs)
+}
+
+func (ws *WebSocketOp) msgHand(message []byte) {
+	var stream wsdata.DataStream
+	err := json.Unmarshal(message, &stream)
+	if err != nil {
+		logger.Error(err)
+		ws.Close()
+		return
+	}
+	logger.Info(stream)
+	byteRes, err := json.Marshal(&wsdata.SubPriceKLineResponse{
+		Symbol:     stream.Symbol,
+		TimeId:     fmt.Sprintf("%v", stream.Updated),
+		Ask:        stream.Rates[0],
+		Bid:        stream.Rates[1],
+		Strike:     stream.Rates[2],
+		AskVolume:  fmt.Sprintf("%v", stream.Rates[0]),
+		BidVolume:  fmt.Sprintf("%v", stream.Rates[0]),
+		MarketTime: fmt.Sprintf("%v", stream.Rates[0]),
+	})
+	if err != nil {
+		logger.Error(err)
+		ws.Close()
+		return
+	}
+	ws.handleSubCallbackFun(ws.Symbol, byteRes, message)
 }
 
 func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFunc {
@@ -138,7 +238,6 @@ func (ws *WebSocketOp) sub(ContractCode string, Symbol string, fun interface{}, 
 	ws.SubTopicMap[Symbol] = mi
 	ws.Symbol = Symbol
 	ws.ContractCode = ContractCode
-	ws.SubTopic()
 	return true
 }
 
@@ -176,6 +275,7 @@ func (ws *WebSocketOp) SubTopic() *wsdata.TickerValue {
 			}
 			// 开启定时器30秒检测一次数据活跃状态
 			go ws.TickerReboot()
+			ws.isConnect = true
 			return result
 		}
 	}
