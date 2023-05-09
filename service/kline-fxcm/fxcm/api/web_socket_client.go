@@ -26,11 +26,11 @@ func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanC
 	return wsIx
 }
 
-type OnSubPriceKLineResponse func(*wsdata.SubPriceKLineResponse)
+type OnSubPriceKLineResponse func(*wsdata.DataStream)
 
 func (wsIx *WSPriceClient) SubPriceKLine(info KlineCommon.Info, callbackFun OnSubPriceKLineResponse, id string) {
 	ContractCode := info.ContractCode // EUR-USD
 	Symbol := info.Symbol             // EURUSD
 	fun := callbackFun                // 方法
-	wsIx.sub(ContractCode, Symbol, fun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
+	wsIx.sub(ContractCode, Symbol, fun, reflect.TypeOf(wsdata.DataStream{}))
 }
