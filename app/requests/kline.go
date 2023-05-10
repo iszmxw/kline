@@ -32,6 +32,15 @@ type SubNationInfo struct {
 	Nation   string `json:"nation"`
 }
 
+type SubAdjustCallBack struct {
+	Sub AdjustCallBack `json:"sub"`
+	Id  string         `json:"id"`
+}
+
+type AdjustCallBack struct {
+	Adid string `json:"adid"`
+}
+
 type TradeOrderInfo struct {
 	TradeOrderId        string `json:"tradeOrderId"` //交易表主键自增ID
 	AppUserId           string `json:"appUserId"`

@@ -185,6 +185,19 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				go StationLetterPushNotice(socketId, ws, params)
 			}
 			break
+		case strings.EqualFold(ID, "11"):
+			{
+				// 开启协诚处理 adjust 自然量，推广量检测
+				var params requests.AdjustCallBack // {"adid":"123456"}
+				err = mapstructure.Decode(subInfo, &params)
+				if err != nil {
+					logger.Error(err)
+					goto END
+				}
+				logger.Info(subInfo, params)
+				go AdjustCallBackNotice(socketId, ws, params)
+			}
+			break
 		default:
 			break
 		}
@@ -1020,4 +1033,74 @@ STOP:
 	wss.WsClose(ws)
 END:
 	logger.Info("StationLetterPushNotice已经跳出协诚的循环推送")
+}
+
+// adjust 回调推送通知
+
+func AdjustCallBackNotice(socketId string, ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack) {
+	logger.RequestId = socketId
+	HeartBeatingKey := fmt.Sprintf("NoticeHeartBeatingKey:%v", socketId)
+	// {"adid":"123456"}
+	if len(AdjustCallBack.Adid) == 0 {
+		wss.WsClose(ws)
+		return
+	}
+	// 为了释放for死循环的资源
+	for !ws.IsClose {
+		if IsDie(HeartBeatingKey) {
+			goto STOP
+		}
+		isVerst := "A"
+		vestCheck := ""
+		var result []models.TAppUserAdjustCallbackData
+		// 查询用户未读消息，展示小红点
+		err := mysql.DB.Debug().Model(models.TAppUserAdjustCallbackData{}).Where("adid", AdjustCallBack.Adid).Find(&result).Error
+		if err != nil {
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		if len(result) == 0 {
+			vestCheck = "0"
+		} else {
+			vestCheck = "1"
+			for _, item := range result {
+				if !strings.EqualFold(item.Network, "Organic") || strings.EqualFold(item.IsOrganic, "0") {
+					isVerst = "B"
+				}
+			}
+		}
+		OK, _ := redis.Client.Get(fmt.Sprintf(":Client:iosVestAccount:ALL"))
+		if strings.EqualFold(OK, "ok") {
+			isVerst = "B"
+		}
+		marshal, err := json.Marshal(gin.H{
+			"id": "10",
+			"data": gin.H{
+				"vest":      isVerst,
+				"vestCheck": vestCheck,
+			},
+		})
+		if err != nil {
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		ws.Mux.Lock()
+		WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, marshal)
+		ws.Mux.Unlock()
+		if WriteMessageErr != nil {
+			wss.WsClose(ws)
+			// 跳出for关闭后面的推送
+			goto END
+		}
+		// 5秒推送一次消息
+		time.Sleep(time.Second * 5)
+		// 返回数据给用户
+	}
+STOP:
+	logger.Error(errors.New("AdjustCallBackNotice关闭Socket"))
+	wss.WsClose(ws)
+END:
+	logger.Info("AdjustCallBackNotice已经跳出协诚的循环推送")
 }
