@@ -99,7 +99,8 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	CreateAppUser.UserName = "user"
 	CreateAppUser.IsLogout = 0
 	CreateAppUser.DeciveBrand = "HTML5" // 设置设备品牌 多个用,号隔开 当前为最后一个
-	CreateAppUser.InvitDate = nil
+	CreateAppUser.InvitDate = time.Now()
+	CreateAppUser.InvitTs = time.Now().UnixMilli()
 	CreateAppUser.LastLoginDate = nil
 	CreateAppUser.PullBlackDate = nil
 	DB := mysql.DB.Begin()
