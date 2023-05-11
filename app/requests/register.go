@@ -10,8 +10,8 @@ type RegisterParams struct {
 }
 
 type SubStatistics struct {
-	Sub SubBody `json:"sub"`
-	Id  string  `json:"id"`
+	Sub interface{} `json:"sub"`
+	Id  string      `json:"id"`
 }
 
 type SubBody struct {

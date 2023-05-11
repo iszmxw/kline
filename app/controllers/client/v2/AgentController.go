@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
@@ -164,6 +165,7 @@ func (h *AgentController) StatisticsHandler(c *gin.Context) {
 		}
 		var SubStruct requests.SubStatistics
 		SubErr := json.Unmarshal(message, &SubStruct)
+		ID := SubStruct.Id
 		if SubErr != nil {
 			logger.Error(SubErr)
 			goto END
@@ -173,13 +175,13 @@ func (h *AgentController) StatisticsHandler(c *gin.Context) {
 			{
 				goto END
 			}
-		case strings.EqualFold(SubStruct.Id, "01"): // 推送客户总量，今日交易总量(Rp)
+		case strings.EqualFold(ID, "01"): // 推送客户总量，今日交易总量(Rp)
 			{
 				// 开启协诚处理 推送客户总量，今日交易总量(Rp)
 				go h.PushStatistics(socketId, mt, ws, SubStruct.Sub)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "03"): // 维持心跳
+		case strings.EqualFold(ID, "03"): // 维持心跳
 			{
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
@@ -218,7 +220,7 @@ END:
 const initTime = 1665504000 // 初始时间戳
 const costumer = 1524788    // 初始客户数据
 
-func (h *AgentController) PushStatistics(socketId string, messageType int, ws *wss.WsConn, SubBody requests.SubBody) {
+func (h *AgentController) PushStatistics(socketId string, messageType int, ws *wss.WsConn, SubBodyStr interface{}) {
 	logger.RequestId = socketId
 	currentTime := time.Now()
 	startTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 0, 0, 0, 0, currentTime.Location()).Unix()
@@ -226,7 +228,13 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 
 	SubKey := fmt.Sprintf("PushStatistics:%v:socket_request", socketId)
 	SubNation, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的国家
-	if SubNation == SubBody.Nation {         // 当前订阅的国家已存在
+	var SubBody requests.SubBody
+	err := mapstructure.Decode(SubBodyStr, &SubBody)
+	if err != nil {
+		logger.Error(err)
+		goto STOP
+	}
+	if SubNation == SubBody.Nation { // 当前订阅的国家已存在
 		ws.Mux.Lock()
 		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","msg":"please no repeat sub"}`))
 		ws.Mux.Unlock()
