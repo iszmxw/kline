@@ -33,6 +33,13 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				agent.Any("/statistics.json", ClientV3Group.AgentController.StatisticsHandler)
 			}
 
+			// 邀请推广落地页接口
+			promote := V3Route.Group("/promote")
+			{
+				// 落地页app注册模块
+				promote.Any("/register.json", ClientV3Group.AgentController.RegisterHandler)
+			}
+
 			// 设置token接口
 			config := V3Route.Group("/config")
 			{

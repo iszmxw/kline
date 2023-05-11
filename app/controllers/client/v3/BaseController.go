@@ -17,6 +17,7 @@ type Group struct {
 	BaseController
 	KlineController
 	AgentController
+	PromoteController
 	ConfigController
 	TradeController
 }
