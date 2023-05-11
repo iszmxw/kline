@@ -37,7 +37,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			promote := V3Route.Group("/promote")
 			{
 				// 落地页app注册模块
-				promote.Any("/register.json", ClientV3Group.AgentController.RegisterHandler)
+				promote.Any("/register.json", ClientV3Group.PromoteController.RegisterHandler)
 			}
 
 			// 设置token接口
