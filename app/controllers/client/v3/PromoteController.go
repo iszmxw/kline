@@ -34,7 +34,7 @@ func (h *PromoteController) RegisterHandler(c *gin.Context) {
 		return
 	}
 	if len(params.InviteCode) == 0 {
-		echo.Error(c, "SystemError", "")
+		echo.Error(c, "ParamsError", "")
 		return
 	}
 	c.Request.Header.Set("Language", params.LanguageCode)

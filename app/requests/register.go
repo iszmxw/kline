@@ -2,7 +2,7 @@ package requests
 
 type RegisterParams struct {
 	LanguageCode string `json:"languageCode" validate:"required"`
-	Pid          string `json:"pid" validate:"required"`
+	Pid          string `json:"pid"`
 	InviteCode   string `json:"inviteCode"`
 	Email        string `json:"email" validate:"required,email"`
 	Code         string `json:"code" validate:"required"`
