@@ -48,6 +48,10 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 		echo.Error(c, "VerificationCodeErr", "")
 		return
 	}
+	if len(params.Pid) == 0 {
+		echo.Error(c, "ParamsError", "")
+		return
+	}
 	// 检测该用户是否存在系统中
 	var queryAppUser response.AppUser
 	var CreateAppUser models.AppUser

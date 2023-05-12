@@ -40,6 +40,10 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	if validate.ParamsError(c, params) {
 		return
 	}
+	if len(params.Pid) == 0 {
+		echo.Error(c, "ParamsError", "")
+		return
+	}
 	c.Request.Header.Set("Language", params.LanguageCode)
 	// 检查验证码
 	code, _ := redis.Client.Get(fmt.Sprintf("Agent:Sms:%s", params.Email))
