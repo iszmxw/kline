@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	LarkIDTest   = "8f95cc4a-72bc-472a-93e3-3584975675ed" // 测试环境房间
-	LarkIDPro    = "40ea8c9f-1fa5-4549-8359-bb4aeb311575" // 测试环境房间
-	LarkNeedle   = "319b49a2-7167-48fd-8167-616adc851ff6" // 插针ID
-	LarkLanguage = "9dd8ccce-8e1f-4c1b-abc5-49ef64a00dc5" // 测试环境房间
+	LarkIDTest          = "8f95cc4a-72bc-472a-93e3-3584975675ed" // 测试环境房间
+	LarkIDPro           = "40ea8c9f-1fa5-4549-8359-bb4aeb311575" // 测试环境房间
+	LarkNeedle          = "319b49a2-7167-48fd-8167-616adc851ff6" // 插针ID
+	LarkLanguage        = "9dd8ccce-8e1f-4c1b-abc5-49ef64a00dc5" // 测试环境房间
+	LarkServeMonitoring = "c83007c5-d8b3-4104-bbd2-d47aa9cac8e3" // 服务监控机器人
 )
 
 type Client struct {
