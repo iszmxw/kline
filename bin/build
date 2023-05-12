@@ -42,6 +42,9 @@ GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-fxcm service/kl
 # 11、打包 kline-iqoption K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-iqoption service/kline-iqoption/main.go
 
+# 12、打包 binary-activity 服务监控
+GOOS=linux GOARCH=amd64 go build -o $appBuildDir/activity/binary-go-activity service/binary-activity/main.go
+
 ## 3、打包 新浪 K线图采集服务
 #GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-sinaService service/kline-sina/main.go
 

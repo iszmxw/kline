@@ -29,3 +29,15 @@ func NoticeLanguage(text ...interface{}) {
 		}
 	}()
 }
+
+func NoticeServeKill(text ...interface{}) {
+	go func() {
+		err := larkbot.
+			NewClient(larkbot.LarkServeMonitoring).
+			SendMessage(fmt.Sprint(text...))
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+	}()
+}
