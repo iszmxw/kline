@@ -55,8 +55,8 @@ func (h *PromoteController) RegisterHandler(c *gin.Context) {
 		"referral_code": params.InviteCode,
 	}).Find(&queryAgentUser)
 	if len(queryAgentUser.AppUserId) == 0 {
-		echo.Error(c, "SystemError", "")
-		return
+		queryAgentUser.Nation = params.Nation
+		queryAgentUser.AppUserId = ""
 	}
 	mysql.DB.Debug().Model(models.AppUser{}).Where(map[string]interface{}{
 		"item_code": config.GetString("app.item_code"),
@@ -68,10 +68,10 @@ func (h *PromoteController) RegisterHandler(c *gin.Context) {
 	}
 	CreateAppUser.ItemCode = config.GetString("app.item_code")
 	CreateAppUser.Nation = queryAgentUser.Nation // 国家
-	CreateAppUser.RegistNation = res.Country     // 注册时候国家
-	CreateAppUser.City = res.City                // 城市
-	CreateAppUser.AppUserId = helpers.GetUUID11()
 	CreateAppUser.AgentUserId = queryAgentUser.AppUserId
+	CreateAppUser.RegistNation = res.Country // 注册时候国家
+	CreateAppUser.City = res.City            // 城市
+	CreateAppUser.AppUserId = helpers.GetUUID11()
 	CreateAppUser.Mobile = ""
 	CreateAppUser.Email = params.Email
 	CreateAppUser.Password = params.Password
