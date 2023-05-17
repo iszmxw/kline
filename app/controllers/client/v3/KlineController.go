@@ -1075,7 +1075,7 @@ func AdjustCallBackNotice(socketId string, ws *wss.WsConn, AdjustCallBack reques
 			isVerst = "B"
 		}
 		marshal, err := json.Marshal(gin.H{
-			"id": "10",
+			"id": "11",
 			"data": gin.H{
 				"vest":      isVerst,
 				"vestCheck": vestCheck,
