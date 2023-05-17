@@ -1,7 +1,6 @@
 package fxcm
 
 import (
-	"container/list"
 	"encoding/json"
 	"fmt"
 	"goapi/app/models"
@@ -20,12 +19,11 @@ import (
 )
 
 func SocketFXcm(info KlineCommon.Info) {
-	callback := make(chan int, 1)
+	callback := make(chan KlineCommon.Info, 1)
 	// 开始订阅
 	{
 		logger.Info(info)
-		wsClient := new(api.WSPriceClient).Init("", KlineCommon.GetProxy(config.KlineSource), callback)
-		wsClient.AllSubStars = list.List{}
+		wsClient := new(api.WSPriceClient).Init("", KlineCommon.GetProxy(config.KlineSource), callback, info)
 		wsClient.SubPriceKLine(info, func(stream *wsdata.DataStream) {
 			stream.Symbol = info.ContractCode
 			SystemTs := time.Now().UnixMilli() // 开始时间 系統生成的Ts

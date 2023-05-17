@@ -1,28 +1,24 @@
 package api
 
 import (
-	"container/list"
 	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-fxcm/fxcm/config"
 	"goapi/service/kline-fxcm/fxcm/wsdata"
 	"net/url"
 	"reflect"
-	"sync"
 )
 
 type WSPriceClient struct {
 	WebSocketOp
-	AllSubStars list.List
-	OpenOnce    sync.Once
 }
 
 // 初始化参数
 
-func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
+func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanCallback, Info KlineCommon.Info) *WSPriceClient {
 	if host == "" {
 		host = config.HttpUrl
 	}
-	wsIx.open("/socket.io/?EIO=3&transport=websocket", host, proxy, callback)
+	wsIx.open("/socket.io/?EIO=3&transport=websocket", host, proxy, callback, Info)
 	return wsIx
 }
 

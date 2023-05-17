@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-type closeChanCallback chan int
+type closeChanCallback chan KlineCommon.Info
 
 type CallbackFunc struct {
 	fun   interface{}
@@ -32,7 +32,6 @@ type CallbackFunc struct {
 
 type WebSocketOp struct {
 	Socket            *socketio.Client
-	Info              KlineCommon.Info
 	mutex             sync.Mutex // 锁
 	Sid               string
 	OnceReboot        sync.Once // Reboot动作锁
@@ -47,13 +46,13 @@ type WebSocketOp struct {
 	readChan          chan []byte              //读消息管道
 	SubTopicMap       map[string]*CallbackFunc // 订阅历史
 	isConnect         bool                     // 是否已经链接
-	CloseChanCallback chan KlineCommon.Info    // 关闭通知外部
-	closeChanCallback chan int                 // 关闭通知外部
+	Info              KlineCommon.Info         // 当前资产
+	closeChanCallback chan KlineCommon.Info    // 关闭通知外部
 	ContractCode      string                   // 订阅的币种
 	Symbol            string                   // 订阅的币种
 }
 
-func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
+func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback, Info KlineCommon.Info) bool {
 	if host == "" {
 		ws.host = ""
 	}
@@ -63,8 +62,8 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 	ws.SubTopicMap = make(map[string]*CallbackFunc)
 	ws.closeChan = make(chan byte, 1)
 	ws.readChan = make(chan []byte)
-
 	ws.List = list.New()
+	ws.Info = Info
 	ws.closeChanCallback = closeChanCallback
 	ret := ws.connServer()
 	return ret
@@ -332,13 +331,13 @@ func (ws *WebSocketOp) TickerReboot() {
 	if !ws.IsReboot { // 只能发起一次 Reboot
 		ws.IsReboot = true
 		ws.OnceReboot.Do(func() {
-			defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, ws.Info.Symbol)
+			defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, ws.Symbol)
 			ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
-			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.Info.ContractCode)
+			KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, ws.ContractCode)
 			for range ticker.C {
-				status := source.CheckStatus(config.KlineSource, ws.Info.ContractCode)
+				status := source.CheckStatus(config.KlineSource, ws.ContractCode)
 				if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
-					logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Info.Symbol)
+					logger.Info(KeyStatus + "当前数据不健康正在重启中" + ws.Symbol)
 					goto STOP
 				}
 			}
@@ -356,10 +355,9 @@ func (ws *WebSocketOp) Close() {
 	if !ws.IsClose {
 		ws.IsClose = true
 		ws.OnceClose.Do(func() {
-			logger.Info(ws.Symbol + "关闭Socket:start")
+			logger.Info(ws.Info.ContractCode + "关闭Socket:start")
 			close(ws.closeChan)
-			ws.closeChanCallback <- 1
-			ws.CloseChanCallback <- ws.Info
+			ws.closeChanCallback <- ws.Info
 			if ws.Socket != nil {
 				ws.Socket.Close()
 			}
