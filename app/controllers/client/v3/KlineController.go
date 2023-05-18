@@ -63,7 +63,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		subInfo := SubStruct.Sub
 		ID := SubStruct.Id
 		// 检测登录权限
-		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09"}
+		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09", "11"}
 		for _, id := range needLoginIDs {
 			if ID == id {
 				// 需要登录
