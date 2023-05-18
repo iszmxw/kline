@@ -15,7 +15,7 @@ curl --include \
      --header "Upgrade: websocket" \
      --header "Sec-WebSocket-Key: NVwjmQUcWCenfWu98asDmg==" \
      --header "Sec-WebSocket-Version: 13" \
-     https://goclient.smarttradess.com/app/v2/trade/wsIndex.json?token=d278b72f18814eed9041b1d345ff2aef&userId=15DC8EF440C
+     https://goclientio.smosignal.com/app/v3/trade/wsIndex.json?token=5D99F774-54C9-4515-8469-FC22C6A68FE3?isvest=0
 
 #curl --include \
 #     --no-buffer \
