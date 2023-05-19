@@ -68,7 +68,7 @@ func (h *PromoteController) RegisterHandler(c *gin.Context) {
 	}
 	CreateAppUser.ItemCode = config.GetString("app.item_code")
 	CreateAppUser.Nation = queryAgentUser.Nation // 国家
-	CreateAppUser.AgentUserId = queryAgentUser.AppUserId
+	CreateAppUser.ParentCode = queryAgentUser.ReferralCode
 	CreateAppUser.RegistNation = res.Country // 注册时候国家
 	CreateAppUser.City = res.City            // 城市
 	CreateAppUser.AppUserId = helpers.GetUUID11()
