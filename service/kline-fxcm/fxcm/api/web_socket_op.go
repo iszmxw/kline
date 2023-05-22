@@ -75,13 +75,17 @@ func (ws *WebSocketOp) connServer() bool {
 	Url := fmt.Sprintf("%v/socket.io/?EIO=3&transport=websocket&access_token=%v", config.WssUrl, config.Token)
 	ws.Socket, err = socketio.Dial(Url, &transport.WebsocketTransport{
 		PingInterval:   25 * time.Second,
-		PingTimeout:    transport.WsDefaultPingTimeout,
-		ReceiveTimeout: transport.WsDefaultReceiveTimeout,
-		SendTimeout:    transport.WsDefaultSendTimeout,
+		PingTimeout:    30 * time.Second,
+		ReceiveTimeout: 30 * time.Second,
+		SendTimeout:    30 * time.Second,
 		BufferSize:     transport.WsDefaultBufferSize,
 	})
 	if err != nil {
 		logger.Error(err)
+		if strings.Contains(err.Error(), "cannot assign requested address") {
+			logger.Info("休息一分钟")
+			time.Sleep(time.Second * 60)
+		}
 		ws.Close()
 		return false
 	}
