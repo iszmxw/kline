@@ -81,10 +81,11 @@ func (ws *WebSocketOp) connServer() bool {
 		BufferSize:     transport.WsDefaultBufferSize,
 	})
 	if err != nil {
-		logger.Error(err)
 		if strings.Contains(err.Error(), "cannot assign requested address") {
 			logger.Info("休息一分钟")
 			time.Sleep(time.Second * 60)
+		} else {
+			logger.Error(err)
 		}
 		ws.Close()
 		return false
