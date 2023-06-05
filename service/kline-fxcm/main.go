@@ -35,7 +35,7 @@ func main() {
 	for {
 		if start == "ok" {
 			for _, obj := range CodeData {
-				go fxcm.SocketFxcm(obj)
+				go fxcm.SocketFXcm(obj)
 			}
 			start = "no"
 		}
