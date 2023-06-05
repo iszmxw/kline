@@ -12,15 +12,16 @@ RUN GOOS=linux GOARCH=amd64 go build -o iqoption-web service/binary-web/main.go 
     mv iqoption-web binary/web
 
 # 运行阶段 使用简洁的作为基础镜像
-FROM scratch
+FROM alpine:latest
 
 # 设置工作目录
 WORKDIR /home/yezhiming/binary/web
 
 # 将打包后的程序拷贝到容器中
 COPY --from=build /work/binary/web /home/yezhiming/binary/web
-# 拷贝配置文件到容器里面
-COPY application.properties /home/yezhiming/binary/web/
+
+# 创建配置文件挂载目录
+RUN mkdir -p /home/yezhiming/binary/web/config
 
 # 暴露应用程序使用的端口
 EXPOSE 8080

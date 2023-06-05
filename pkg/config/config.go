@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
+	"os"
 )
 
 // Viper Viper 库实例
@@ -21,7 +22,12 @@ func init() {
 	//             "props", "prop", "env", "dotenv"
 	Viper.SetConfigType("properties")
 	// 4. 环境变量配置文件查找的路径，相对于 main.go
-	Viper.AddConfigPath(".")
+	configFile := os.Getenv("CONFIG_FILE")
+	if configFile == "" {
+		Viper.AddConfigPath(".")
+	} else {
+		Viper.AddConfigPath(configFile)
+	}
 
 	// 5. 开始读根目录下的 .env 文件，读不到会报错
 	err := Viper.ReadInConfig()
