@@ -1,4 +1,6 @@
 #!/bin/bash
+pwd &
+ls -la &
 ./iqoption-go-binance --APP_PORT=01 &
 ./iqoption-go-hsb --APP_PORT=02 &
 ./iqoption-go-huobi --APP_PORT=03 &
