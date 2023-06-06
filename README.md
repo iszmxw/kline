@@ -38,6 +38,19 @@ docker build -t iqoption-kline -f Dockerfile.kline.dockerfile .
 docker build -t iqoption-web -f Dockerfile.web.dockerfile .
 ```
 
+
+- 运行 docker 镜像
+
+```shell
+# 运行 client
+docker run -e=CONFIG_FILE="./config" -v=/Users/johnyep/service/kline:/home/yezhiming/binary/client/config -p 7104:7104 --name=xw-client -d iqoption-client:latest
+# 运行 email
+docker run -e=CONFIG_FILE="./config" -v=/Users/johnyep/service/kline:/home/yezhiming/binary/email/config -p 7107:7107 --name=xw-email -d iqoption-email:latest
+# 运行 web
+docker run -e=CONFIG_FILE="./config" -v=/Users/johnyep/service/kline:/home/yezhiming/binary/web/config -p 7105:7105 --name=xw-web -d iqoption-web:latest
+# 运行 kline
+docker run -e=CONFIG_FILE="./config" -v=/Users/johnyep/service/kline:/home/yezhiming/binary/kline/config --name=xw-kline -d iqoption-kline:latest
+```
 - 打包火币网socket服务
 
 ```shell
