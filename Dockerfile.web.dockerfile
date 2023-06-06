@@ -24,7 +24,8 @@ COPY --from=build /work/binary/web /home/yezhiming/binary/web
 RUN mkdir -p /home/yezhiming/binary/web/config
 
 # 暴露应用程序使用的端口
-EXPOSE 8080
+EXPOSE 7105
 
 # 运行应用程序
-CMD ["./iqoption-web"]
+CMD ["./iqoption-web", "--APP_PORT=7105"]
+
