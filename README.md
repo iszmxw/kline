@@ -22,6 +22,22 @@
 
 ## 打包编译
 
+- 打包docker镜像
+
+```shell
+# client 服务
+docker build -t iqoption-client -f Dockerfile.client.dockerfile .
+
+# 邮件服务
+docker build -t iqoption-email -f Dockerfile.email.dockerfile .
+
+# kline 服务
+docker build -t iqoption-kline -f Dockerfile.kline.dockerfile .
+
+# web 服务
+docker build -t iqoption-web -f Dockerfile.web.dockerfile .
+```
+
 - 打包火币网socket服务
 
 ```shell

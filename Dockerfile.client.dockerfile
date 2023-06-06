@@ -25,7 +25,7 @@ COPY --from=build /work/binary/client /home/yezhiming/binary/client
 COPY application.properties /home/yezhiming/binary/client/
 
 # 暴露应用程序使用的端口
-EXPOSE 8080
+EXPOSE 7104
 
 # 运行应用程序
-CMD ["./iqoption-client"]
+CMD ["./iqoption-client", "--APP_PORT=7104"]
