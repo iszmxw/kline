@@ -12,7 +12,7 @@ RUN GOOS=linux GOARCH=amd64 go build -o iqoption-web service/binary-web/main.go 
     mv iqoption-web binary/web
 
 # 运行阶段 使用简洁的作为基础镜像
-FROM alpine:latest
+FROM --platform=linux/amd64 alpine:latest
 
 # 设置工作目录
 WORKDIR /home/yezhiming/binary/web
@@ -27,5 +27,5 @@ RUN mkdir -p /home/yezhiming/binary/web/config
 EXPOSE 7105
 
 # 运行应用程序
-CMD ["./iqoption-web", "--APP_PORT=7105"]
+CMD ["./iqoption-web", "--APP_PORT=7105", ">/dev/null", "2>error.log", "&"]
 

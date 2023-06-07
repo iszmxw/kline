@@ -12,7 +12,7 @@ RUN GOOS=linux GOARCH=amd64 go build -o iqoption-email service/binary-email/main
     mv iqoption-email binary/email
 
 # 运行阶段 使用简洁的作为基础镜像
-FROM alpine:latest
+FROM --platform=linux/amd64 alpine:latest
 
 # 设置工作目录
 WORKDIR /home/yezhiming/binary/email
@@ -27,4 +27,4 @@ RUN mkdir -p /home/yezhiming/binary/email/config
 EXPOSE 7107
 
 # 运行应用程序
-CMD ["./iqoption-email", "--APP_PORT=7107"]
+CMD ["./iqoption-email", "--APP_PORT=7107", ">/dev/null", "2>error.log", "&"]

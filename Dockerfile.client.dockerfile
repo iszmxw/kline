@@ -13,7 +13,7 @@ RUN GOOS=linux GOARCH=amd64 go build -o iqoption-client . && \
 
 
 # 运行阶段 使用简洁的作为基础镜像
-FROM alpine:latest
+FROM --platform=linux/amd64 alpine:latest
 
 # 设置工作目录
 WORKDIR /home/yezhiming/binary/client
@@ -28,4 +28,4 @@ RUN mkdir -p /home/yezhiming/binary/client/config
 EXPOSE 7104
 
 # 运行应用程序
-CMD ["./iqoption-client", "--APP_PORT=7104"]
+CMD ["./iqoption-client", "--APP_PORT=7104", ">/dev/null", "2>error.log", "&"]
