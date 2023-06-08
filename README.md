@@ -65,11 +65,11 @@ docker push iszmxw/iqoption-kline:latest
 # 运行 client
 docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/client:/home/yezhiming/binary/client/config -p 7104:7104 --name=xw-client --network="host" -d iszmxw/iqoption-client:latest
 # 运行 email
-docker run -e=CONFIG_FILE=./config -v=/Users/johnyep/service/kline:/home/yezhiming/binary/email/config -p 7107:7107 --name=xw-email --network="host" -d iszmxw/iqoption-email:latest
+docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/email:/home/yezhiming/binary/email/config -p 7107:7107 --name=xw-email --network="host" -d iszmxw/iqoption-email:latest
 # 运行 web
-docker run -e=CONFIG_FILE=./config -v=/Users/johnyep/service/kline:/home/yezhiming/binary/web/config -p 7105:7105 --name=xw-web --network="host" -d iszmxw/iqoption-web:latest
+docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/web:/home/yezhiming/binary/web/config -p 7105:7105 --name=xw-web --network="host" -d iszmxw/iqoption-web:latest
 # 运行 kline
-docker run -e=CONFIG_FILE=./config -v=/Users/johnyep/service/kline:/home/yezhiming/binary/kline/config --name=xw-kline --network="host" -d iszmxw/iqoption-kline:latest
+docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/kline:/home/yezhiming/binary/kline/config --name=xw-kline --network="host" -d iszmxw/iqoption-kline:latest
 ```
 - 打包火币网socket服务
 
