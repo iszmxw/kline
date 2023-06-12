@@ -286,7 +286,7 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			goto END
 		}
 		// 5秒推送一次消息
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 3)
 		// 返回数据给用户
 	}
 END:
