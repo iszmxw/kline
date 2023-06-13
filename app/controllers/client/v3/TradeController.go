@@ -116,7 +116,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "余额不足"))
 			return
 		}
-		ok := createTradingOrder(params, appUser, asset)
+		ok := createTradingOrder(socketId, ws, params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
@@ -136,7 +136,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "bonus余额不足"))
 			return
 		}
-		ok := createTradingOrder(params, appUser, asset)
+		ok := createTradingOrder(socketId, ws, params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
@@ -156,7 +156,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "虚拟余额不足"))
 			return
 		}
-		createVirtualTradingOrder(params, appUser, asset)
+		createVirtualTradingOrder(socketId, ws, params, appUser, asset)
 		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","msg":"%v"}`, "ok"))
 		break
 	default:
@@ -328,7 +328,7 @@ func DecisionAlgorithmInterface(a, b, calculateMethod int) bool {
 }
 
 // 创建真实交易订单
-func createTradingOrder(params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
+func createTradingOrder(socketId string, ws *wss.WsConn, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
 	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
 	createOrder := new(models.TradingOrder)
 	createOrder.TradeOrderId = orderId
@@ -406,11 +406,25 @@ func createTradingOrder(params requests.SubmitTradeParams, appUser models.AppUse
 	default:
 		break
 	}
+	// 开启协诚处理 下单开奖通知
+	go PushNotice(socketId, ws, requests.TradeOrderInfo{
+		TradeOrderId:        createOrder.TradeOrderId,
+		AppUserId:           createOrder.AppUserId,
+		AssetsCode:          createOrder.AssetsCode,
+		ItemCode:            createOrder.ItemCode,
+		TradeBeginTimestamp: fmt.Sprintf("%v", createOrder.TradeBeginTimestamp),
+		TradeEndTimestamp:   fmt.Sprintf("%v", createOrder.TradeEndTimestamp),
+		BeginAssetsPrice:    fmt.Sprintf("%v", createOrder.BeginAssetsPrice),
+		EndAssetsPrice:      fmt.Sprintf("%v", createOrder.EndAssetsPrice),
+		UpDownType:          createOrder.UpDownType,
+		Amounts:             fmt.Sprintf("%v", createOrder.Amounts),
+		IsDemo:              "0",
+	})
 	return true
 }
 
 // 创建虚拟交易订单
-func createVirtualTradingOrder(params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
+func createVirtualTradingOrder(socketId string, ws *wss.WsConn, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
 	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
 	createOrder := new(models.TradingOrderVirtual)
 	createOrder.TradeOrderId = orderId
@@ -459,6 +473,19 @@ func createVirtualTradingOrder(params requests.SubmitTradeParams, appUser models
 		logger.Error(err)
 		return false
 	}
+	go PushNotice(socketId, ws, requests.TradeOrderInfo{
+		TradeOrderId:        createOrder.TradeOrderId,
+		AppUserId:           createOrder.AppUserId,
+		AssetsCode:          createOrder.AssetsCode,
+		ItemCode:            createOrder.ItemCode,
+		TradeBeginTimestamp: fmt.Sprintf("%v", createOrder.TradeBeginTimestamp),
+		TradeEndTimestamp:   fmt.Sprintf("%v", createOrder.TradeEndTimestamp),
+		BeginAssetsPrice:    fmt.Sprintf("%v", createOrder.BeginAssetsPrice),
+		EndAssetsPrice:      fmt.Sprintf("%v", createOrder.EndAssetsPrice),
+		UpDownType:          createOrder.UpDownType,
+		Amounts:             fmt.Sprintf("%v", createOrder.Amounts),
+		IsDemo:              "0",
+	})
 	return true
 }
 
