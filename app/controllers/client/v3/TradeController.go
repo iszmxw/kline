@@ -99,6 +99,12 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"AssetClosed"}`)
 		return
 	}
+	// 前端传递费率和数据库读取到的不一致
+	if asset.ReturnRate != params.ReturnRate {
+		logger.Info("returnRate不一致：", asset.ReturnRate, "---", params.ReturnRate)
+		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "参数错误：returnRate"))
+		return
+	}
 	var appUser models.AppUser
 	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AssetsId).Find(&appUser)
 	// 进行交易规则校验，虚拟交易不进行校验

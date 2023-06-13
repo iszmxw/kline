@@ -3,6 +3,7 @@ package requests
 type SubmitTradeParams struct {
 	AssetsId         string  `json:"assetsId" validate:"required"`         //资产
 	Amounts          float64 `json:"amounts" validate:"required"`          // 交易金额
+	ReturnRate       float64 `json:"returnRate" validate:"required"`       // 收益率
 	TradingBeginDate string  `json:"tradingBeginDate" validate:"required"` // 交易起始日期
 	TradeEndDate     string  `json:"tradeEndDate" validate:"required"`     // 交易截止日期
 	BeginAssetsPrice float64 `json:"beginAssetsPrice" validate:"required"` // 起始交易资产价格
