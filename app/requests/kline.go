@@ -41,20 +41,6 @@ type AdjustCallBack struct {
 	Adid string `json:"adid"`
 }
 
-type TradeOrderInfo struct {
-	TradeOrderId        string `json:"tradeOrderId"` //交易表主键自增ID
-	AppUserId           string `json:"appUserId"`
-	AssetsCode          string `json:"assetsCode"`
-	ItemCode            string `json:"itemCode"`
-	TradeBeginTimestamp string `json:"tradeBeginTimestamp"`
-	TradeEndTimestamp   string `json:"tradeEndTimestamp"`
-	BeginAssetsPrice    string `json:"beginAssetsPrice"`
-	EndAssetsPrice      string `json:"endAssetsPrice"`
-	UpDownType          string `json:"upDownType"`
-	Amounts             string `json:"amounts"`
-	IsDemo              string `json:"isDemo"`
-}
-
 type DayTime struct {
 	Num string `json:"num" form:"num" validate:"required"`
 }
