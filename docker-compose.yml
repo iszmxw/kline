@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  xw-client:
+    image: iszmxw/iqoption-client:latest
+    container_name: xw-client
+    restart: always
+    environment:
+      CONFIG_FILE: ./config
+    volumes:
+      - /home/yezhiming/binary/client:/home/yezhiming/binary/client/config
+    ports:
+      - "7104:7104"
+    network_mode: "host"
+
+  xw-email:
+    image: iszmxw/iqoption-email:latest
+    container_name: xw-email
+    restart: always
+    environment:
+      CONFIG_FILE: ./config
+    volumes:
+      - /home/yezhiming/binary/email:/home/yezhiming/binary/email/config
+    ports:
+      - "7107:7107"
+    network_mode: "host"
+
+  xw-web:
+    image: iszmxw/iqoption-web:latest
+    container_name: xw-web
+    restart: always
+    environment:
+      CONFIG_FILE: ./config
+    volumes:
+      - /home/yezhiming/binary/web:/home/yezhiming/binary/web/config
+    ports:
+      - "7105:7105"
+    network_mode: "host"
+
+  xw-kline:
+    image: iszmxw/iqoption-kline:latest
+    container_name: xw-kline
+    restart: always
+    environment:
+      CONFIG_FILE: ./config
+    volumes:
+      - /home/yezhiming/binary/kline:/home/yezhiming/binary/kline/config
+    network_mode: "host"
