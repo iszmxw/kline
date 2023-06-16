@@ -815,7 +815,7 @@ func PushRate(socketId string, ws *wss.WsConn, params requests.SubNationInfo) {
 			return
 		}
 		marshal, err := json.Marshal(gin.H{
-			"id":   "01",
+			"id":   "09",
 			"data": PushRateData,
 		})
 		if err != nil {
@@ -913,7 +913,7 @@ func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 			}
 		}
 		marshal, err := json.Marshal(gin.H{
-			"id":   "02",
+			"id":   "08",
 			"data": AppUser,
 		})
 		if err != nil {
