@@ -107,7 +107,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		return
 	}
 	var appUser models.AppUser
-	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AssetsId).Find(&appUser)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AppUserId).Find(&appUser)
 	// 进行交易规则校验，虚拟交易不进行校验
 	if params.AmountType != 3 {
 		ok, msg := tradeJuedge(appUser, params)
@@ -135,7 +135,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","msg":"%v"}`, "ok"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"07","msg":"%v"}`, "ok"))
 		}
 		break
 	case 2:
@@ -155,7 +155,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","msg":"%v"}`, "ok"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"07","msg":"%v"}`, "ok"))
 		}
 		break
 	case 3:
@@ -164,7 +164,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			return
 		}
 		createVirtualTradingOrder(socketId, ws, params, appUser, asset)
-		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","msg":"%v"}`, "ok"))
+		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"07","msg":"%v"}`, "ok"))
 		break
 	default:
 		break
