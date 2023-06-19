@@ -83,8 +83,9 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		Raw(`SELECT COUNT(tkl.c_close) FROM t_kline_log tkl,t_trading_assets tta WHERE tkl.contract_code = tta.assets_code AND tkl.ts = ? AND tta.id = ? AND tkl.c_close = ?`,
 			params.KlineTime, params.AssetsId, params.BeginAssetsPrice).
 		Row().
-		Scan(&size).Error
+		Scan(&size)
 	if err != nil {
+		logger.Error(err)
 		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"校验是否存在该交易点数据"}`)
 		return
 	}
