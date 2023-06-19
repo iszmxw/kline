@@ -120,7 +120,6 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 	}
 	// 交易金额类型 1 余额 2 bonus 3 虚拟货币
 	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
-	createVirtualTradingOrder(socketId, ws, orderId, params, appUser, asset)
 	marshal, err := json.Marshal(gin.H{
 		"id":  "07",
 		"msg": "ok",
@@ -179,6 +178,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "虚拟余额不足"))
 			return
 		}
+		createVirtualTradingOrder(socketId, ws, orderId, params, appUser, asset)
 		SocketResp(ws, websocket.TextMessage, string(marshal))
 		break
 	default:
