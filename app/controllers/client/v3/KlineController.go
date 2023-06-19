@@ -149,6 +149,8 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
+				appUser, _ := c.Get("user")
+				params.AppUserId = appUser.(response.ClientUserBeans).AppUserId
 				go new(TradeController).SubmitTrade(socketId, ws, params)
 			}
 			break
