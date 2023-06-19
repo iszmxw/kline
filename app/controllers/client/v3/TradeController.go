@@ -504,7 +504,7 @@ func createVirtualTradingOrder(socketId string, ws *wss.WsConn, orderId string, 
 		EndAssetsPrice:      fmt.Sprintf("%v", createOrder.EndAssetsPrice),
 		UpDownType:          createOrder.UpDownType,
 		Amounts:             fmt.Sprintf("%v", createOrder.Amounts),
-		IsDemo:              "0",
+		IsDemo:              "1",
 	})
 	return true
 }
