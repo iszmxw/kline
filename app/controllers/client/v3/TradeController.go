@@ -1,7 +1,9 @@
 package v3
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"goapi/app/models"
@@ -117,13 +119,27 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		}
 	}
 	// 交易金额类型 1 余额 2 bonus 3 虚拟货币
+	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
+	createVirtualTradingOrder(socketId, ws, orderId, params, appUser, asset)
+	marshal, err := json.Marshal(gin.H{
+		"id":  "07",
+		"msg": "ok",
+		"data": gin.H{
+			"tradeOrderId": orderId,
+		},
+	})
+	if err != nil {
+		logger.Error(err)
+		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "参数解析错误"))
+		return
+	}
 	switch params.AmountType {
 	case 1:
 		if appUser.Balance < params.Amounts {
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "余额不足"))
 			return
 		}
-		ok := createTradingOrder(socketId, ws, params, appUser, asset)
+		ok := createTradingOrder(socketId, ws, orderId, params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
@@ -135,7 +151,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"07","msg":"%v"}`, "ok"))
+			SocketResp(ws, websocket.TextMessage, string(marshal))
 		}
 		break
 	case 2:
@@ -143,7 +159,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "bonus余额不足"))
 			return
 		}
-		ok := createTradingOrder(socketId, ws, params, appUser, asset)
+		ok := createTradingOrder(socketId, ws, orderId, params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
@@ -155,7 +171,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"07","msg":"%v"}`, "ok"))
+			SocketResp(ws, websocket.TextMessage, string(marshal))
 		}
 		break
 	case 3:
@@ -163,8 +179,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "虚拟余额不足"))
 			return
 		}
-		createVirtualTradingOrder(socketId, ws, params, appUser, asset)
-		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"07","msg":"%v"}`, "ok"))
+		SocketResp(ws, websocket.TextMessage, string(marshal))
 		break
 	default:
 		break
@@ -335,8 +350,7 @@ func DecisionAlgorithmInterface(a, b, calculateMethod int) bool {
 }
 
 // 创建真实交易订单
-func createTradingOrder(socketId string, ws *wss.WsConn, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
-	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
+func createTradingOrder(socketId string, ws *wss.WsConn, orderId string, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
 	createOrder := new(models.TradingOrder)
 	createOrder.TradeOrderId = orderId
 	createOrder.Amounts = params.Amounts
@@ -431,8 +445,7 @@ func createTradingOrder(socketId string, ws *wss.WsConn, params requests.SubmitT
 }
 
 // 创建虚拟交易订单
-func createVirtualTradingOrder(socketId string, ws *wss.WsConn, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
-	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
+func createVirtualTradingOrder(socketId string, ws *wss.WsConn, orderId string, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
 	createOrder := new(models.TradingOrderVirtual)
 	createOrder.TradeOrderId = orderId
 	createOrder.Amounts = params.Amounts
