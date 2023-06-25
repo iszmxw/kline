@@ -2,7 +2,9 @@ package wss
 
 import (
 	"errors"
+	"goapi/app/models"
 	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 	"net/http"
 	"sync"
@@ -65,6 +67,7 @@ func WsClose(ws *WsConn) {
 		ws.Mux.Lock()
 		if len(ws.AppUserId) > 0 {
 			redis.Client.SRem("onlineUsers", ws.AppUserId)
+			mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", ws.AppUserId).Update("online", 0)
 		}
 		closeErr := ws.Conn.Close()
 		if closeErr != nil {

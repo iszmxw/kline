@@ -53,6 +53,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	ws.AppUserId = AppUserId
 	if len(ws.AppUserId) > 0 {
 		redis.Client.SAdd("onlineUsers", ws.AppUserId)
+		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", ws.AppUserId).Update("online", 1)
 	}
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
@@ -94,7 +95,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
 				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
+				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","msg":"pong"}`))
 				ws.Mux.Unlock()
 				if WriteMessageErr != nil {
 					logger.Error(WriteMessageErr)
@@ -182,7 +183,7 @@ func (h *KlineController) WsReturnRateHandler(c *gin.Context) {
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
 				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
+				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","msg":"pong"}`))
 				ws.Mux.Unlock()
 				if WriteMessageErr != nil {
 					logger.Error(WriteMessageErr)
@@ -208,7 +209,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	if len(SubStruct.Sub) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10401","data":"订阅历史消息条件参数缺失"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10401","msg":"订阅历史消息条件参数缺失"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -229,26 +230,26 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10402","data":"beginDate 起始交易日期必填"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10402","msg":"beginDate 起始交易日期必填"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Error(errors.New("越界查询"))
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10403","data":"越界查询 beginDate error"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10403","msg":"越界查询 beginDate error"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10404","data":"endDate 截止交易日期必填"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10404","msg":"endDate 截止交易日期必填"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if len(symbol) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10405","data":"symbol 不能为空"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10405","msg":"symbol 不能为空"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -264,7 +265,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	if len(klineSource) == 0 {
 		logger.Error(errors.New("没有读取到 klineSource"))
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10406","data":"没有读取到 klineSource"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10406","msg":"没有读取到 klineSource"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -284,7 +285,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	if err != nil {
 		logger.Error(err)
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -313,7 +314,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		if err != nil {
 			logger.Error(err)
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			return
 		}
@@ -321,7 +322,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		if err != nil {
 			logger.Error(err)
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			return
 		}
@@ -340,7 +341,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		if err != nil {
 			logger.Error(err)
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			return
 		}
@@ -360,7 +361,7 @@ func PushHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 		if err != nil {
 			logger.Error(err)
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			return
 		}
@@ -383,7 +384,7 @@ func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct 
 	if len(SubStruct.Sub) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10401","data":"订阅历史消息条件参数缺失"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10401","msg":"订阅历史消息条件参数缺失"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -404,26 +405,26 @@ func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct 
 	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10402","data":"beginDate 起始交易日期必填"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10402","msg":"beginDate 起始交易日期必填"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Error(errors.New("越界查询"))
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10403","data":"越界查询 beginDate error"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10403","msg":"越界查询 beginDate error"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10404","data":"endDate 截止交易日期必填"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10404","msg":"endDate 截止交易日期必填"}`))
 		ws.Mux.Unlock()
 		return
 	}
 	if len(symbol) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10405","data":"symbol 不能为空"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10405","msg":"symbol 不能为空"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -439,7 +440,7 @@ func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct 
 	if len(klineSource) == 0 {
 		logger.Error(errors.New("没有读取到 klineSource"))
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10406","data":"没有读取到 klineSource"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10406","msg":"没有读取到 klineSource"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -459,7 +460,7 @@ func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct 
 	if err != nil {
 		logger.Error(err)
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -497,7 +498,7 @@ func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct 
 	if err != nil {
 		logger.Error(err)
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -505,7 +506,7 @@ func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct 
 	if err != nil {
 		logger.Error(err)
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -523,7 +524,7 @@ func PushZipHistory(socketId string, messageType int, ws *wss.WsConn, SubStruct 
 	if err != nil {
 		logger.Error(err)
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 		ws.Mux.Unlock()
 		return
 	}
@@ -542,7 +543,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	// 订阅的 market.ETH-USD.index.1min，没有值
 	if len(SubStruct.Sub) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","msg":"no sub"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
 		return
@@ -551,7 +552,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	Sub := strings.Split(SubStruct.Sub, ".")
 	if len(Sub) < 2 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"sub error"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","msg":"sub error"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
 		return
@@ -559,7 +560,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	AssetsCode := Sub[1]
 	if len(AssetsCode) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","msg":"no sub"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("订阅的 ETH-USD，没有值"))
 		return
@@ -570,7 +571,7 @@ func PushMessage(socketId string, messageType int, ws *wss.WsConn, SubStruct req
 	SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 	if SubAssetsCode == AssetsCode {             // 当前订阅的资产已存
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","data":"please no repeat sub"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","msg":"please no repeat sub"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New(fmt.Sprintf("当前订阅的资产{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", AssetsCode, socketId)))
 		return
@@ -668,7 +669,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 	logger.RequestId = socketId
 	if len(subInfo) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"no sub"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","msg":"no sub"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("下单通知结构体为空"))
 		return
@@ -681,49 +682,49 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 	}
 	if len(TradeOrderInfo.AppUserId) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,AppUserId not right"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","msg":"err sub,AppUserId not right"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("err sub,AppUserId not right"))
 		return
 	}
 	if len(TradeOrderInfo.AssetsCode) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,AssetsCode not right"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","msg":"err sub,AssetsCode not right"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("err sub,AssetsCode not right"))
 		return
 	}
 	if len(TradeOrderInfo.TradeBeginTimestamp) <= 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,TradeBeginTimestamp not right"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","msg":"err sub,TradeBeginTimestamp not right"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("err sub,TradeBeginTimestamp not right"))
 		return
 	}
 	if len(TradeOrderInfo.BeginAssetsPrice) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,BeginAssetsPrice not right"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","msg":"err sub,BeginAssetsPrice not right"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("err sub,BeginAssetsPrice not right"))
 		return
 	}
 	if len(TradeOrderInfo.UpDownType) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,UpDownType not right"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","msg":"err sub,UpDownType not right"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("err sub,UpDownType not right"))
 		return
 	}
 	if len(TradeOrderInfo.Amounts) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,Amounts not right"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","msg":"err sub,Amounts not right"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("err sub,Amounts not right"))
 		return
 	}
 	if len(TradeOrderInfo.IsDemo) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","data":"err sub,IsDemo not right"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10410","msg":"err sub,IsDemo not right"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("err sub,IsDemo not right"))
 		return
@@ -836,7 +837,7 @@ func PushPopup(socketId string, messageType int, ws *wss.WsConn, AppUserId strin
 	logger.RequestId = socketId
 	if len(AppUserId) == 0 {
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","data":"PushPopup no sub"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10407","msg":"PushPopup no sub"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New("用户ID为空"))
 		return
@@ -922,11 +923,10 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		DB := mysql.DB
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", SubNationInfo.ItemCode).
-			Where("is_show", 1).
 			Find(&PushRateData).Error
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
@@ -937,7 +937,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		})
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
@@ -951,7 +951,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 			goto END
 		}
 		// 5秒推送一次消息
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 3)
 		// 返回数据给用户
 	}
 STOP:
@@ -990,7 +990,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 			Find(&AppUser).Error
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
@@ -1003,7 +1003,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 			Find(&result).Error
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
@@ -1012,7 +1012,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		err = mapstructure.Decode(result, &HistoryTrading)
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
@@ -1026,7 +1026,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 			Find(&ListAppItem).Error
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
@@ -1048,7 +1048,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 					err = DB.Model(models.AppUser{}).Where("app_user_id", SubUserInfo.AppUserId).Update("virtual_balance", item.DemoBalance).Error
 					if err != nil {
 						ws.Mux.Lock()
-						_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+						_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 						ws.Mux.Unlock()
 						logger.Error(err)
 						return
@@ -1063,7 +1063,7 @@ func PushUserInfo(socketId string, messageType int, ws *wss.WsConn, subInfo stri
 		})
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return

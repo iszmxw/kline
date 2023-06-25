@@ -29,8 +29,15 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			{
 				// 落地页app注册模块
 				agent.Any("/register.json", ClientV3Group.AgentController.RegisterHandler)
+			}
+
+			// 邀请推广落地页接口
+			promote := V3Route.Group("/promote")
+			{
+				// 落地页app注册模块
+				promote.Any("/register.json", ClientV3Group.PromoteController.RegisterHandler)
 				// 博眼球，数据造假，时时推送假数据
-				agent.Any("/statistics.json", ClientV3Group.AgentController.StatisticsHandler)
+				promote.Any("/statistics.json", ClientV3Group.AgentController.StatisticsHandler)
 			}
 
 			// 设置token接口

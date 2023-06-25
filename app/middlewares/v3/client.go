@@ -50,7 +50,8 @@ func Client() gin.HandlerFunc {
 		path := c.FullPath()
 		switch path {
 		case "/app/v3/agent/register.json":
-		case "/app/v3/agent/statistics.json":
+		case "/app/v3/promote/register.json":
+		case "/app/v3/promote/statistics.json":
 		case "/app/v3/config/setKlineToken.json":
 		case "/app/v3/config/checkLanguage.json":
 		case "/app/v3/notice/siteLetterNotification.json":

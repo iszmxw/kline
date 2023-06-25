@@ -14,6 +14,7 @@ type AppUser struct {
 	HisTradingCount   int64   `gorm:"-" json:"hisTradingCount"`   //历史交易次数
 	HisTradingAmounts float64 `gorm:"-" json:"hisTradingAmounts"` //历史交易金额
 	FlowBindId        string  `json:"flow_bind_id"`               //整合流量方公司绑定ID
+	CreateTs          string  `json:"create_ts"`                  //创建时间
 }
 
 type HistoryTrading struct {

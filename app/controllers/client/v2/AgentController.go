@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
@@ -45,6 +46,10 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	code, _ := redis.Client.Get(fmt.Sprintf("Agent:Sms:%s", params.Email))
 	if !strings.EqualFold(params.Code, code) {
 		echo.Error(c, "VerificationCodeErr", "")
+		return
+	}
+	if len(params.Pid) == 0 {
+		echo.Error(c, "ParamsError", "")
 		return
 	}
 	// 检测该用户是否存在系统中
@@ -100,7 +105,8 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	CreateAppUser.UserName = "user"
 	CreateAppUser.IsLogout = 0
 	CreateAppUser.DeciveBrand = "HTML5" // 设置设备品牌 多个用,号隔开 当前为最后一个
-	CreateAppUser.InvitDate = nil
+	CreateAppUser.InvitDate = time.Now()
+	CreateAppUser.InvitTs = time.Now().UnixMilli()
 	CreateAppUser.LastLoginDate = nil
 	CreateAppUser.PullBlackDate = nil
 	DB := mysql.DB.Begin()
@@ -163,6 +169,7 @@ func (h *AgentController) StatisticsHandler(c *gin.Context) {
 		}
 		var SubStruct requests.SubStatistics
 		SubErr := json.Unmarshal(message, &SubStruct)
+		ID := SubStruct.Id
 		if SubErr != nil {
 			logger.Error(SubErr)
 			goto END
@@ -172,19 +179,19 @@ func (h *AgentController) StatisticsHandler(c *gin.Context) {
 			{
 				goto END
 			}
-		case strings.EqualFold(SubStruct.Id, "01"): // 推送客户总量，今日交易总量(Rp)
+		case strings.EqualFold(ID, "01"): // 推送客户总量，今日交易总量(Rp)
 			{
 				// 开启协诚处理 推送客户总量，今日交易总量(Rp)
 				go h.PushStatistics(socketId, mt, ws, SubStruct.Sub)
 			}
 			break
-		case strings.EqualFold(SubStruct.Id, "03"): // 维持心跳
+		case strings.EqualFold(ID, "03"): // 维持心跳
 			{
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
 				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
+				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","msg":"pong"}`))
 				ws.Mux.Unlock()
 				if WriteMessageErr != nil {
 					logger.Error(WriteMessageErr)
@@ -217,7 +224,7 @@ END:
 const initTime = 1665504000 // 初始时间戳
 const costumer = 1524788    // 初始客户数据
 
-func (h *AgentController) PushStatistics(socketId string, messageType int, ws *wss.WsConn, SubBody requests.SubBody) {
+func (h *AgentController) PushStatistics(socketId string, messageType int, ws *wss.WsConn, SubBodyStr interface{}) {
 	logger.RequestId = socketId
 	currentTime := time.Now()
 	startTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 0, 0, 0, 0, currentTime.Location()).Unix()
@@ -225,9 +232,15 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 
 	SubKey := fmt.Sprintf("PushStatistics:%v:socket_request", socketId)
 	SubNation, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的国家
-	if SubNation == SubBody.Nation {         // 当前订阅的国家已存在
+	var SubBody requests.SubBody
+	err := mapstructure.Decode(SubBodyStr, &SubBody)
+	if err != nil {
+		logger.Error(err)
+		goto STOP
+	}
+	if SubNation == SubBody.Nation { // 当前订阅的国家已存在
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","data":"please no repeat sub"}`))
+		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","msg":"please no repeat sub"}`))
 		ws.Mux.Unlock()
 		logger.Error(errors.New(fmt.Sprintf("当前订阅的国家{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", SubNation, socketId)))
 		return
@@ -299,7 +312,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 			"data": result,
 		})
 		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
 			return
 		}

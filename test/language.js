@@ -1,6 +1,34 @@
 /**
  * null--表示当前语言去除这个文案
  */
+// 新增语言
+var tutorial = {
+    INSA:{
+        welcomeTitle: 'Selamat datang di Smart Trade!',
+        welcomeContent: 'Tutorial akan memandu Anda melalui langkah pertama di platform.<br />Harap pilih opsi yang paling sesuai pengalaman trading Anda.',
+        isNewUser: 'Saya Pemula Ajari saya dasar-dasarnya di sini',
+        isOldUser: 'Saya trader Coba trading',
+    },
+    EN:{
+        welcomeTitle: 'Welcome to Smart Trade!',
+        welcomeContent: 'The tutorial will guide you through your first steps on the platform.<br />Please, pick the option that describes your trading experience best.',
+        isNewUser: 'Never traded before Teach me the basics here',
+        isOldUser: 'Already traded Show me how it’s here',
+    },
+    MX:{
+        welcomeTitle: 'Welcome to Smart Trade!',
+        welcomeContent: 'The tutorial will guide you through your first steps on the platform.<br />Please, pick the option that describes your trading experience best.',
+        isNewUser: 'Never traded before Teach me the basics here',
+        isOldUser: 'Already traded Show me how it’s here',
+    },
+    CH:{
+        welcomeTitle: 'Welcome to Smart Trade!',
+        welcomeContent: 'The tutorial will guide you through your first steps on the platform.<br />Please, pick the option that describes your trading experience best.',
+        isNewUser: 'Never traded before Teach me the basics here',
+        isOldUser: 'Already traded Show me how it’s here',
+    }
+};
+
 // 公共
 var common = {
     INSA: {
@@ -773,7 +801,7 @@ var paymentInfo = {
             '4. Input nomor virtual account <span class="payCode"></span>, dan klik tombol kirim apabila telah sesuai',
             '5. Pilih Transfer Dana ke BCA Virtual Account',
             '6. Pilih Otorisasi Transaksi dan klik tombol setuju apabila telah sesuai',
-            '7. Input nomor respon KeyBCA',
+            '7. Input nomor respon KeyBCA'
         ],
         aldPay1Title: 'Bank Mandiri',
         aldPay1Channel: 'MANDIRI',
@@ -787,7 +815,7 @@ var paymentInfo = {
             '1. Pilih Transfer Bank',
             '2. Pilih Bank Mandiri (008)',
             '3. Masukkan 88017 diikuti dengan Nomor <span class="payCode"></span>',
-            '4. Lakukan Pembayaran',
+            '4. Lakukan Pembayaran'
         ],
         aldPay2Title: 'BRI',
         aldPay2Channel: 'BRI',
@@ -813,7 +841,7 @@ var paymentInfo = {
             '4. Masukkan nomor Virtual Account <span class="payCode"></span> Anda',
             '5. Masukkan password Internet Banking BRI',
             '6. Masukkan mToken Internet Banking BRI',
-            '7. Anda akan mendapatkan notifikasi pembayaran',
+            '7. Anda akan mendapatkan notifikasi pembayaran'
         ],
         aldPay3Title: 'BNI',
         aldPay3Channel: 'BNI',
@@ -836,7 +864,7 @@ var paymentInfo = {
             '1. Pilih Transaksi > Info & Administrasi Transfer > Atur Rekening Tujuan > Tambah Rekening Tujuan dan klik OK.',
             '2. Pilih Kode Network & Bank: Transfer Antar Rek. BNI. Masukkan nomor rekening dengan nomor Virtual Account Anda dan klik Lanjut. Isi data lainnya dan klik Lanjutkan.',
             '3. Cek detail konfirmasi. Pastikan Nama Rekening Tujuan adalah nama penerima Anda dan nominal transaksi sudah benar. Masukkan PIN BNI e-Secure Anda dan klik Proses.',
-            '4. Ikuti petunjuk hingga transaksi selesai',
+            '4. Ikuti petunjuk hingga transaksi selesai'
         ],
 
         aldPay4Title: 'Bank Permata / Permata Syariah',
@@ -864,14 +892,14 @@ var paymentInfo = {
             '3. Pilih "Virtual Account"',
             '4. Masukkan nomor Virtual Account <span class="payCode"></span> Anda',
             '5. Masukkan response code yang dikirim ke nomor ponsel Anda',
-            '6. Ikuti petunjuk hingga transaksi selesai',
+            '6. Ikuti petunjuk hingga transaksi selesai'
         ],
 
         aldPay5Title: 'DANA',
         aldPay5Channel: 'DANA',
         aldPay5Text: [
             'Bayar di halaman DANA',
-            'ID Transaksi: <span class="payCode"></span>',
+            'ID Transaksi: <span class="payCode"></span>'
         ],
 
         aldPay6Title: 'OVO',
@@ -881,7 +909,7 @@ var paymentInfo = {
             'ID Transaksi: <span class="payCode"></span>',
             'Anda akan menerima pesan pembayaran dari OVO. ',
             'Klik pesan dan selesaikan pembayaran. ',
-            'Setelah dibayar, klik "Cek Status Pembayaran"',
+            'Setelah dibayar, klik "Cek Status Pembayaran"'
         ],
 
         aldPay7Title: 'CIMB Niaga / CIMB Niaga Syariah',
@@ -956,7 +984,6 @@ var paymentInfo = {
             '• Input nominal pembayaran ',
             '• Apabila data sudah sesuai masukan otentikasi transaksi/Token',
 
-
             '<span class="under_line">3. ATM BERSAMA, ALTO & PRIMA  </span>',
             '• Pilih menu Transfer ',
             '• Pilih Transfer ke Bank Lain ',
@@ -966,7 +993,7 @@ var paymentInfo = {
             '    <b>Jika melalui ATM Prima : </b>',
             '    Masukan kode PermataBank(013)tekan BENAR, dilanjutkan dengan 16 digit kode bayar ',
             '• Input nominal pembayaran ',
-            '• Pada layar akan tampil konfirmasi Nama & Nominal Pembayaran',
+            '• Pada layar akan tampil konfirmasi Nama & Nominal Pembayaran'
         ],
 
         wypPay11Title: 'BRI VA',
@@ -1006,8 +1033,7 @@ var paymentInfo = {
             '<span class="under_line">6. MELALUI TELLER BRI </span>',
             '• Mengisi form sesuai ketentuan BANK BRI  ',
             '• Kasih form dan uang kepada teller  ',
-            '• Terima struk sebagai bukti pembayaran sudah sukses dilakukan ',
-
+            '• Terima struk sebagai bukti pembayaran sudah sukses dilakukan '
         ],
         wypPay12Title: 'CIMB VA',
         wypPay12Channel: 'CIMB_NIAGA',
@@ -1045,8 +1071,7 @@ var paymentInfo = {
             '• Input kode bank 022 ',
             '• Input nomor virtual account pada rekening tujuan ',
             '• Input nominal pembayaran ',
-            '• Konfirmasi dan proses pembayaran',
-
+            '• Konfirmasi dan proses pembayaran'
         ],
 
         wypPay13Title: 'MANDIRI VA',
@@ -1077,8 +1102,7 @@ var paymentInfo = {
             'c. Chanllenge code input ke Mandiri online, lalu klik Lanjut ',
             '• Apps : ',
             'a. Setelah muncul konfirmasi transaksi pilih Kirim ',
-            'b. Input MPIN (6 digit)',
-
+            'b. Input MPIN (6 digit)'
         ],
         wypPay14Title: 'BNI VA',
         wypPay14Channel: 'BNI',
@@ -1124,7 +1148,7 @@ var paymentInfo = {
             '• Input kode bank 009',
             '• Input nomor virtual account pada rekening tujuan',
             '• Input nominal pembayaran',
-            '• Konfirmasi dan proses pembayaran',
+            '• Konfirmasi dan proses pembayaran'
         ],
 
         cashyPay0Title: 'BRI VA',
@@ -1160,7 +1184,6 @@ var paymentInfo = {
             '2. Periksa data transaksi dan tekan "YA" ',
             'LANGKAH 3: TRANSAKSI BERHASIL ',
             '1. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit'
-
         ],
         cashyPay1Title: 'ATM Bersama VA',
         cashyPay1Channel: 'BERSAMA',
@@ -1179,7 +1202,7 @@ var paymentInfo = {
             '2. Pilih "Transfer ke Bank Lain',
             '3. Masukkan Kode Bank  dan nomor rekening virtual',
             '4. Masukkan Jumlah Pembayaran',
-            '5. Konfirmasi untuk menyelesaikan proses pembayaran',
+            '5. Konfirmasi untuk menyelesaikan proses pembayaran'
         ],
         cashyPay2Title: 'Permata VA',
         cashyPay2Channel: 'PERMATA',
@@ -1226,9 +1249,7 @@ var paymentInfo = {
             'LANGKAH 3: TRANSAKSI BERHASIL ',
             '1. Transaksi Anda telah selesai ',
             '2. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit'
-
         ],
-
 
         cashyPay3Title: 'Mandiri VA',
         cashyPay3Channel: 'MANDIRI',
@@ -1294,7 +1315,6 @@ var paymentInfo = {
             '1. Simpan bukti transaksi anda ',
             '2. Transaksi anda berhasil ',
             '3. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit '
-
         ],
         cashyPay4Title: 'AlfaGroup VA',
         cashyPay4Channel: 'ALFAGROUP',
@@ -1331,14 +1351,13 @@ var paymentInfo = {
             '6. Informasikan pada kasir jika anda ingin membayar dengan kombinasi/gabungan uang tunai dan Kartu Debit/Prepaid Card atau E-wallet.',
             '7. Konfirmasi pembayaran dengan memberikan uang tunai serta Kartu Debit/Prepaid atau informasi E-wallet pada kasir.',
             '8. Minta struk pembayaran sebagai bukti transaksi dari Alfamart.',
-            '9. Pembayaran Alfamart anda sudah selesai.',
+            '9. Pembayaran Alfamart anda sudah selesai.'
         ],
         cashyPay5Title: 'QRIS',
         cashyPay5Channel: 'QRIS',
         cashyPay5Text: [
             'QRIS dapat di-scan dan dibayar melalui semua aplikasi penyelenggara yang diberi izin oleh Bank Indonesia.'
         ]
-
     },
 
     EN: {
@@ -1375,7 +1394,7 @@ var paymentInfo = {
             '4. Enter the virtual account number <span class="payCode"></span>, click send after confirmation',
             '5. Select transfer to BCA virtual account',
             '6. Select transaction authorization, and click Agree after confirmation',
-            '7. Enter the response number of KeyBCA',
+            '7. Enter the response number of KeyBCA'
         ],
         aldPay1Title: 'Bank Mandiri',
         aldPay1Channel: 'MANDIRI',
@@ -1389,7 +1408,7 @@ var paymentInfo = {
             '1. Select Bank Transfer',
             '2. Select Bank Mandiri (008)',
             '3. Enter 88017 followed by the number <span class="payCode"></span>',
-            '4. Proceed your payment',
+            '4. Proceed your payment'
         ],
 
         aldPay2Title: 'BRI',
@@ -1416,7 +1435,7 @@ var paymentInfo = {
             '4. Enter your virtual account number <span class="payCode"></span>',
             '5. Enter password for Internet Banking',
             '6. Enter mToken (token) online banking',
-            '7. You will be notified of payment',
+            '7. You will be notified of payment'
         ],
         aldPay3Title: 'BNI',
         aldPay3Channel: 'BNI',
@@ -1439,7 +1458,7 @@ var paymentInfo = {
             '1. Select Transaction > Transfer Info & Administration > Set Destination Account > Add  Beneficiary Account and click OK.',
             '2. Select Network & Bank Code: Transfer Between BNI Accounts. Enter your Virtual Account number and click Next. Fill in the rest of the data and click Continue.',
             '3. Check the confirmation details. Make sure the beneficiary account and the transaction amount is correct. Enter your BNI e-Secure PIN and click Process.',
-            '4. Follow the instructions to complete the transaction',
+            '4. Follow the instructions to complete the transaction'
         ],
         aldPay4Title: 'Bank Permata / Permata Syariah',
         aldPay4Channel: 'PERMATA',
@@ -1466,13 +1485,13 @@ var paymentInfo = {
             '3. Select virtual account',
             '4. Enter your virtual number <span class="payCode"></span>',
             '5. Enter the response code sent to your mobile number',
-            '6. Follow the instructions to complete the transaction',
+            '6. Follow the instructions to complete the transaction'
         ],
         aldPay5Title: 'DANA',
         aldPay5Channel: 'DANA',
         aldPay5Text: [
             'Pay in DANA page',
-            'Transaction ID: <span class="payCode"></span>',
+            'Transaction ID: <span class="payCode"></span>'
         ],
         aldPay6Title: 'OVO',
         aldPay6Channel: 'OVO',
@@ -1481,7 +1500,7 @@ var paymentInfo = {
             'Transaction ID: <span class="payCode"></span>',
             'You will receive a payment message from OVO.',
             'Click order and complete payment. ',
-            "Click 'Check Payment Status' after paid.",
+            "Click 'Check Payment Status' after paid."
         ],
         aldPay7Title: 'CIMB Niaga / CIMB Niaga Syariah',
         aldPay7Channel: 'CIMB_NIAGA',
@@ -1510,7 +1529,7 @@ var paymentInfo = {
             '4. Select Debit Account',
             '5. Your number, virtual account name and payment amount will be displayed on the screen',
             '6. Select OK to confirm payment',
-            '7. Confirm the payment displayed on the screen',
+            '7. Confirm the payment displayed on the screen'
         ],
 
         wypPay9Title: 'ALFA Group',
@@ -1523,7 +1542,7 @@ var paymentInfo = {
             '5. Ask the cashier to select "no.1 PLASAMAL L- PLASAMALL Payment" ',
             '6. The cashier will ask for the payment code. Provide your payment code, e.g. 10013xxxxxxx. The cashier will confirm consumer data in the form of Merchant Name, Consumer Name, and Nominal. Make a payment to the cashier at the nominal amount specified ',
             '7. Receive receipt as proof of payment has been successfully carried out. Payment notification will be immediately accepted by the Merchant ',
-            '8. Done',
+            '8. Done'
         ],
         wypPay10Title: 'PERMATA VA',
         wypPay10Channel: 'PERMATA',
@@ -1546,7 +1565,7 @@ var paymentInfo = {
             '• Select the Transfer menu ',
             '• Choose Transfer to Other Bank If through ATM Bersama& Alto: Enter Permata Bank code (013) +16 digit pay code If via ATM Prima: Enter the PermataBank code (013) press BENAR, followed by the 16 digit pay code ',
             '• Input nominal payment ',
-            '• The payment name & nominal payment confirmation screen will appear',
+            '• The payment name & nominal payment confirmation screen will appear'
         ],
         wypPay11Title: 'BRI VA',
         wypPay11Channel: 'BRI',
@@ -1583,46 +1602,44 @@ var paymentInfo = {
             '<span class="under_line">6. BRI BY TELLER  </span>',
             '• Fill out the form according to BANK BRI regulations ',
             '• Give forms and money to teller ',
-            '• Receive the receipt as proof of successful payment',
-
+            '• Receive the receipt as proof of successful payment'
         ],
         wypPay12Title: 'CIMB VA',
         wypPay12Channel: 'CIMB_NIAGA',
         wypPay12Text: [
             '<span class="under_line">1. CIMB ATM </span>',
-            "• Transfer menu ",
-            "• Select Between CIMB NIAGA Accounts ",
-            "• Input nominal transfer ",
-            "• Input the virtual account number in the destination account ",
-            "• Confirmation and payment process ",
+            '• Transfer menu ',
+            '• Select Between CIMB NIAGA Accounts ',
+            '• Input nominal transfer ',
+            '• Input the virtual account number in the destination account ',
+            '• Confirmation and payment process ',
             '<span class="under_line">2. CIMB CLICKS • Transfer menu </span>',
-            "• Input nominal transfer ",
-            "• Select Other Account - Bank CIMB Niaga / Rekening Ponsel ",
+            '• Input nominal transfer ',
+            '• Select Other Account - Bank CIMB Niaga / Rekening Ponsel ',
             "• The recipient's account is filled with a virtual account number ",
-            "•Input MPIN ",
-            "• Confirmation and payment process ",
+            '•Input MPIN ',
+            '• Confirmation and payment process ',
             '<span class="under_line">3. GO MOBILE </span>',
-            "• Transfer menu ",
-            "• Select Transfer to Other CIMB Niaga Account ",
-            "• Input virtual account number and payment nominal ",
-            "• PIN input ",
-            "• Confirmation and payment process ",
+            '• Transfer menu ',
+            '• Select Transfer to Other CIMB Niaga Account ',
+            '• Input virtual account number and payment nominal ',
+            '• PIN input ',
+            '• Confirmation and payment process ',
             '<span class="under_line">4. OTHER INTERNET BANKING </span>',
-            "• Transfer menu ",
-            "• Choose Another Bank Account ",
-            "• Input the virtual account number in the destination account ",
-            "• Input nominal payment ",
-            "• Enter beneficiary bank input with CIMB Niaga ",
-            "• The type of transfer used is online / realtime ",
-            "• Confirmation and payment process ",
+            '• Transfer menu ',
+            '• Choose Another Bank Account ',
+            '• Input the virtual account number in the destination account ',
+            '• Input nominal payment ',
+            '• Enter beneficiary bank input with CIMB Niaga ',
+            '• The type of transfer used is online / realtime ',
+            '• Confirmation and payment process ',
             '<span class="under_line">5. OTHER BANK ATMs </span>',
-            "• Transfer menu ",
-            "• Choose Another Bank Account ",
-            "• Enter bank code 022 ",
-            "• Input the virtual account number in the destination account ",
-            "• Input nominal payment ",
-            "• Confirmation",
-
+            '• Transfer menu ',
+            '• Choose Another Bank Account ',
+            '• Enter bank code 022 ',
+            '• Input the virtual account number in the destination account ',
+            '• Input nominal payment ',
+            '• Confirmation'
         ],
 
         wypPay13Title: 'MANDIRI VA',
@@ -1647,10 +1664,8 @@ var paymentInfo = {
             'c. Chanllenge code input to Mandiri online, then click Continue ',
             '• Apps: ',
             'a. After the transaction confirmation appears Select Send ',
-            'b. Input MPIN (6 digits)',
-
-        ],
-
+            'b. Input MPIN (6 digits)'
+        ]
     },
     MX: {
         title: '',
@@ -1668,8 +1683,215 @@ var paymentInfo = {
             '5. Haga clic en "Continuar',
             '6. Confirme que los datos sean correctos y seleccione "Transferencia".',
             '7. Intoduzca su señal o contraseña para completar el pago.',
-            '8. La transferencia está completa.',
+            '8. La transferencia está completa.'
         ],
+        cashyPay0Title: 'BRI VA',
+        cashyPay0Channel: 'BRI',
+        cashyPay0Text: [
+            '<span class="under_line">1、Mobile Banking</span>',
+            'LANGKAH 1: MASUK KE AKUN ANDA ',
+            '1. Buka aplikasi BRI Mobile Banking, masukkan USER ID dan PIN anda ',
+            '2. Pilih "Pembayaran" dan pilih "Briva" ',
+            'LANGKAH 2: DETAIL PEMBAYARAN ',
+            '1. Masukkan Nomor Virtual Account anda dan jumlah yang ingin anda bayarkan ',
+            '2. Masukkan PIN Mobile Banking BRI ',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit',
+
+            '<span class="under_line">2、Internet Banking</span>',
+            'LANGKAH 1: MASUK KE AKUN ANDA',
+            '1. Buka situs <a href="https://ib.bri.co.id/ib-bri/"  target="_blank">https://ib.bri.co.id/ib-bri/</a> , dan masukkan USER ID dan PASSWORD anda ',
+            '2. Pilih "Pembayaran" dan pilih "Briva" ',
+            'LANGKAH 2: DETAIL PEMBAYARAN',
+            '1. Masukkan Nomor Virtual Account 92001988572642231 dan jumlah yang ingin anda bayarkan ',
+            '2. Masukkan password anda kemudian masukkan mToken internet banking ',
+            'LANGKAH 3: TRANSAKSI BERHASIL',
+            '1. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses in',
+
+            '<span class="under_line">3、ATM</span>',
+            'LANGKAH 1: TEMUKAN ATM TERDEKAT',
+            '1. Masukkan kartu, kemudian pilih bahasa dan masukkan PIN anda ',
+            '2. Pilih "Transaksi Lain" dan pilih "Pembayaran" ',
+            '3. Pilih menu "Lainnya" dan pilih "Briva" ',
+            'LANGKAH 2: DETAIL PEMBAYARAN',
+            '1. Masukkan Nomor Virtual Account dan jumlah yang ingin anda bayarkan ',
+            '2. Periksa data transaksi dan tekan "YA" ',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit'
+        ],
+        cashyPay1Title: 'ATM Bersama VA',
+        cashyPay1Channel: 'BERSAMA',
+        cashyPay1Text: [
+            '<span class="under_line">1、Internet Banking</span>',
+            'LANGKAH 1: MASUK KE AKUN ANDA',
+            '1. Masuk ke <a href="https://www.atmbersama.com/"  target="_blank">https://www.atmbersama.com/</a> ',
+            '2. Pilih "Transfer ke Bank Lain" ',
+            '3. Masukkan Kode Bank dan nomor rekening virtual',
+            '4. Masukkan Jumlah Pembayaran',
+            '5. Konfirmasi untuk menyelesaikan proses pembayaran',
+
+            '<span class="under_line">1、ATM</span>',
+            'LANGKAH 1: TEMUKAN ATM TERDEKAT ',
+            '1. Masukkan Kartu Debit Anda dengan logo "ATM Bersama" ',
+            '2. Pilih "Transfer ke Bank Lain',
+            '3. Masukkan Kode Bank  dan nomor rekening virtual',
+            '4. Masukkan Jumlah Pembayaran',
+            '5. Konfirmasi untuk menyelesaikan proses pembayaran'
+        ],
+        cashyPay2Title: 'Permata VA',
+        cashyPay2Channel: 'PERMATA',
+        cashyPay2Text: [
+            '<span class="under_line">1、Mobile Banking</span>',
+            'LANGKAH 1: MASUK KE AKUN ANDA ',
+            '1. Buka aplikasi PermataMobile Internet ',
+            '2. Masukkan User ID dan Password ',
+            'LANGKAH 2: DETAIL PEMBAYARAN ',
+            '1. Pilih "Pembayaran Tagihan" ',
+            '2. Pilih "Virtual Account" ',
+            '3. Masukkan Nomor Virtual Account Anda',
+            '4. Masukkan otentikasi transaksi/token ',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Transaksi Anda telah selesai ',
+            '2. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit',
+
+            '<span class="under_line">2、Internet Banking</span>',
+            'LANGKAH 1: MASUK KE AKUN ANDA ',
+            '1. Buka situs <a href="https://www.permatanet.com/"  target="_blank">https://www.permatanet.com/ </a> ',
+            '2. Masukkan User ID dan Password ',
+            'LANGKAH 2: DETAIL PEMBAYARAN ',
+            '1. Pilih "Pembayaran Tagihan" ',
+            '2. Pilih "Virtual Account" ',
+            '3. Masukk Nomor Virtual Account ',
+            '4. Periksa kembali detail pembayaran anda ',
+            '5. Masukkan otentikasi transaksi/token ',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Transaksi Anda telah selesai ',
+            '2. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit ',
+
+            '<span class="under_line">3、ATM </span>',
+            'LANGKAH 1: TEMUKAN ATM TERDEKAT',
+            '1. Masukkan kartu ATM Permata anda ',
+            '2. Masukkan PIN ',
+            'LANGKAH 2: DETAIL PEMBAYARAN ',
+            '1. Pilih menu "Transaksi Lainnya" ',
+            '2. Pilih menu "Pembayaran" ',
+            '3. Pilih menu "Pembayaran Lainnya" ',
+            '4. Pilih menu "Virtual Account" ',
+            '5. Masukkan Nomor Virtual Account',
+            '6. Lalu pilih rekening debet yang akan digunakan ',
+            '7. Konfirmasi detail transaksi anda ',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Transaksi Anda telah selesai ',
+            '2. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit'
+        ],
+
+        cashyPay3Title: 'Mandiri VA',
+        cashyPay3Channel: 'MANDIRI',
+        cashyPay3Text: [
+            '<span class="under_line">1、Mobile Banking</span>',
+            'Old Livin by Mandiri',
+            'LANGKAH 1: MASUK KE AKUN ANDA',
+            '1. Buka aplikasi Mandiri Online, masukkan USERNAME dan PASSWORD anda',
+            '2. Pilih "Bayar" ',
+            '3. Pilih "Multipayment" ',
+            'LANGKAH 2: DETAIL PEMBAYARAN ',
+            '1. Pilih "6 digit pertama Nomor Virtual Account" (untuk closed VA) sebagai penyedia jasa ',
+            '2. Masukkan Nomor Virtual Account ',
+            '3. Tekan Lanjut ',
+            '4. Tinjau dan konfirmasi detail transaksi anda, lalu tekan Konfirmasi ',
+            '5. Selesaikan transaksi dengan memasukkan MPIN anda ',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Setelah transaksi pembayaran Anda selesai, simpan bukti pembayaran ',
+            '2. Invoice ini akan diperbarui secara otomatis. Ini bisa memakan waktu hingga 5 menit',
+            'New Livin by Mandiri',
+            'LANGKAH 1: MASUK KE AKUN ANDA ',
+            '1. Buka aplikasi Livin by Mandiri, masukkan PASSWORD atau lakukan verifikasi wajah',
+            '2. Pilih "Bayar" ',
+            '3. Cari “6 digit pertama Nomor Virtual Account” (untuk Closed VA) ',
+            'LANGKAH 2: DETAIL PEMBAYARAN ',
+            '1. Pilih "6 digit pertama Nomor Virtual Account" (untuk closed VA) sebagai penyedia jasa ',
+            '2. Masukkan Nomor Virtual Account',
+            '3. Masukkan nominal yang ingin dibayarkan (Jika VA merupakan closed VA, maka nominal akan otomatis terisi) ',
+            '4. Tinjau dan konfirmasi detail transaksi anda, lalu tekan Konfirmasi ',
+            '5. Selesaikan transaksi dengan memasukkan MPIN anda ',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Setelah transaksi pembayaran Anda selesai, simpan bukti pembayaran ',
+            '2. Invoice ini akan diperbarui secara otomatis. Ini bisa memakan waktu hingga 5 menit',
+
+            '<span class="under_line">2、Internet Banking</span>',
+            'LANGKAH 1: MASUK KE AKUN ANDA ',
+            '1. Buka situs Mandiri Internet Banking <a href="https://ibank.bankmandiri.co.id"  target="_blank">https://ibank.bankmandiri.co.id</a>  ',
+            '2. Masuk menggunakan USER ID dan PASSWORD anda ',
+            '3. Buka halaman beranda, kemudian pilih "Pembayaran" ',
+            '4. Pilih "Multi Payment" ',
+            'LANGKAH 2: DETAIL PEMBAYARAN ',
+            '1. Pilih "6 digit pertama Nomor Virtual Account" (untuk closed VA)  sebagai penyedia jasa',
+            '2. Masukkan Nomor Virtual Account',
+            '3. Lalu pilih Lanjut ',
+            '4. Apabila semua detail benar tekan "KONFIRMASI" ',
+            '5. Masukkan PIN / Challenge Code Token ',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Setelah transaksi pembayaran Anda selesai, simpan bukti pembayaran ',
+            '2. Invoice ini akan diperbarui secara otomatis. Ini bisa memakan waktu hingga 5 menit ',
+
+            '<span class="under_line">3、ATM</span>',
+            'LANGKAH 1: TEMUKAN ATM TERDEKAT ',
+            '1. Masukkan ATM dan tekan "Bahasa Indonesia" ',
+            '2. Masukkan PIN, lalu tekan "Benar" ',
+            '3. Pilih "Pembayaran", lalu pilih "Multi Payment" ',
+            'LANGKAH 2: DETAIL PEMBAYARAN ',
+            '1. Masukkan kode perusahaan "6 digit pertama Nomor Virtual Account" untuk closed amount VA, lalu tekan "BENAR" ',
+            '2. Masukkan Nomor Virtual Account, lalu tekan "BENAR"',
+            '3. Untuk open amount VA, masukkan nominal yang ingin di transfer, lalu tekan "BENAR"',
+            '4. Informasi pelanggan akan ditampilkan, pilih nomor 1 sesuai dengan nominal pembayaran kemudian tekan "YA" ',
+            '5. Konfirmasi pembayaran akan muncul, tekan "YES", untuk melanjutkan',
+            'LANGKAH 3: TRANSAKSI BERHASIL ',
+            '1. Simpan bukti transaksi anda ',
+            '2. Transaksi anda berhasil ',
+            '3. Setelah transaksi anda selesai, invoice ini akan diupdate secara otomatis. Proses ini mungkin memakan waktu hingga 5 menit '
+        ],
+        cashyPay4Title: 'AlfaGroup VA',
+        cashyPay4Channel: 'ALFAGROUP',
+        cashyPay4Text: [
+            '<span class="under_line">Alfamart Group (Alfamart, Afamidi, Dan+Dan, Lawson).</span>',
+            'Pembayaran dengan uang tunai ',
+            '1. Kunjungi gerai Alfamart/Alfamidi/Lawson/DAN+DAN terdekat sebelum kode pembayaran kedaluwarsa.',
+            '2. Informasikan ke Kasir untuk melakukan pembayaran ke produk/servis anda dengan menyatakan nama Brand Anda.',
+            '3. Berikan informasi KODE PEMBAYARAN yang tertera di Aplikasi atau Website kepada kasir.',
+            '4. Jika anda memiliki barcode, dapat memberikan barcode tersebut ke kasir untuk di scan/pindai.',
+            '5. Pastikan jumlah pembayaran di tempat anda berbelanja sama dengan jumlah yang diberitahukan oleh kasir.',
+            '6 Informasikan pada kasir jika anda ingin membayar dengan uang tunai.',
+            '7. Konfirmasi pembayaran dengan memberikan uang tunai pada kasir.',
+            '8. Minta struk pembayaran sebagai bukti transaksi dari Alfamart.',
+            '9. Pembayaran Alfamart anda sudah selesai.',
+
+            ' Pembayaran dengan Kartu Debit/Prepaid/E-Wallet ',
+            '1. Kunjungi gerai Alfamart/Alfamidi/Lawson/DAN+DAN terdekat sebelum kode pembayaran kedaluwarsa.',
+            '2. Informasikan ke Kasir untuk melakukan pembayaran ke produk/servis anda dengan menyatakan nama Brand Anda.',
+            '3. Berikan informasi KODE PEMBAYARAN yang tertera di Aplikasi atau Website kepada kasir.',
+            '4. Jika anda memiliki barcode, dapat memberikan barcode tersebut ke kasir untuk di scan/pindai.',
+            '5. Pastikan jumlah pembayaran di tempat anda berbelanja sama dengan jumlah yang diberitahukan oleh kasir.',
+            '6. Informasikan pada kasir jika anda ingin membayar dengan Kartu Debit/Prepaid Card atau E-wallet.',
+            '7. Konfirmasi pembayaran dengan memberikan Kartu Debit/Prepaid atau informasi E-wallet pada kasir.',
+            '8. Minta struk pembayaran sebagai bukti transaksi dari Alfamart.',
+            '9. Pembayaran Alfamart anda sudah selesai.',
+
+            'Pembayaran gabungan uang tunai dan Kartu Debit/Prepaid/E-Wallet',
+            '1. Kunjungi gerai Alfamart/Alfamidi/Lawson/DAN+DAN terdekat sebelum kode pembayaran kedaluwarsa.',
+            '2. Informasikan ke Kasir untuk melakukan pembayaran ke produk/servis anda dengan menyatakan nama Brand Anda.',
+            '3. Berikan informasi KODE PEMBAYARAN yang tertera di Aplikasi atau Website kepada kasir.',
+            '4. Jika anda memiliki barcode, dapat memberikan barcode tersebut ke kasir untuk di scan/pindai.',
+            '5. Pastikan jumlah pembayaran di tempat anda berbelanja sama dengan jumlah yang diberitahukan oleh kasir.',
+            '6. Informasikan pada kasir jika anda ingin membayar dengan kombinasi/gabungan uang tunai dan Kartu Debit/Prepaid Card atau E-wallet.',
+            '7. Konfirmasi pembayaran dengan memberikan uang tunai serta Kartu Debit/Prepaid atau informasi E-wallet pada kasir.',
+            '8. Minta struk pembayaran sebagai bukti transaksi dari Alfamart.',
+            '9. Pembayaran Alfamart anda sudah selesai.'
+        ],
+        cashyPay5Title: 'QRIS',
+        cashyPay5Channel: 'QRIS',
+        cashyPay5Text: [
+            'QRIS dapat di-scan dan dibayar melalui semua aplikasi penyelenggara yang diberi izin oleh Bank Indonesia.'
+        ]
     }
 };
 // 充值信息
@@ -4032,9 +4254,9 @@ var tradePage = {
             Amount_mintrade: '交易金额不能低于:', //交易金额不能低于
             trade_max_tips: '您今天的真实交易次数已经超过', //您今天的真实交易次数已经超过100次
             Deposit: '充值',
-            buDown1: `Earn `,
-            buDown2: ` % profit after 1min`,
-            singleTransactionLimit: '单笔最高交易金额{currencySymbol} {money}'
+            buDown1: 'Earn ',
+            buDown2: ' % profit after 1min',
+            singleTransactionLimit: '单笔最高交易金额{currencySymbol} {money}',
         }
     },
 };

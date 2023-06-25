@@ -1,7 +1,9 @@
 package v3
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"goapi/app/models"
@@ -28,53 +30,53 @@ type TradeController struct {
 func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params requests.SubmitTradeParams) {
 	logger.RequestId = socketId
 	if params.Amounts <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if params.AmountType <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if len(params.AssetsId) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if len(params.TradingBeginDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if len(params.TradeEndDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if len(params.UpDownType) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if params.BeginAssetsPrice <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
 		return
 	}
 	if params.KlineTime <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
 		return
 	}
 	sysTime := time.Now()
 	// 请求超时拦截
 	if helpers.StringToInt64(params.TradingBeginDate) < sysTime.UnixMilli()-10000 && 3 != params.AmountType {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"RequestTimeout"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"RequestTimeout"}`)
 		return
 	}
 	// 时间超前拦截
 	if helpers.StringToInt64(params.TradingBeginDate) > sysTime.UnixMilli() && 3 != params.AmountType {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"PleaseCheckTheNetworkTime"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"PleaseCheckTheNetworkTime"}`)
 		return
 	}
 	// demo 订单只能同时存在五笔
 	var total int64
 	mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where("quiz_result", -1).Where("app_user_id", params.TradeOrderId).Count(&total)
 	if total >= 5 && 3 == params.AmountType {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"DemoLimit"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"DemoLimit"}`)
 		return
 	}
 	// 校验是否存在该交易点数据
@@ -83,40 +85,60 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		Raw(`SELECT COUNT(tkl.c_close) FROM t_kline_log tkl,t_trading_assets tta WHERE tkl.contract_code = tta.assets_code AND tkl.ts = ? AND tta.id = ? AND tkl.c_close = ?`,
 			params.KlineTime, params.AssetsId, params.BeginAssetsPrice).
 		Row().
-		Scan(&size).Error
+		Scan(&size)
 	if err != nil {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"校验是否存在该交易点数据"}`)
+		logger.Error(err)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"校验是否存在该交易点数据"}`)
 		return
 	}
 	if size == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"校验是否存在该交易点数据"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"校验是否存在该交易点数据"}`)
 		return
 	}
 	// 校验资产 资产已经休市，请更换其他资产
 	var asset models.TradingAssets
 	mysql.DB.Debug().Model(models.TradingAssets{}).Where("id", params.AssetsId).Find(&asset)
 	if asset.IsValid != 1 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"AssetClosed"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"AssetClosed"}`)
+		return
+	}
+	// 前端传递费率和数据库读取到的不一致
+	if asset.ReturnRate != params.ReturnRate {
+		logger.Info("returnRate不一致：", asset.ReturnRate, "---", params.ReturnRate)
+		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "参数错误：returnRate"))
 		return
 	}
 	var appUser models.AppUser
-	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AssetsId).Find(&appUser)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AppUserId).Find(&appUser)
 	// 进行交易规则校验，虚拟交易不进行校验
 	if params.AmountType != 3 {
 		ok, msg := tradeJuedge(appUser, params)
 		if ok {
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, msg))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, msg))
 			return
 		}
 	}
 	// 交易金额类型 1 余额 2 bonus 3 虚拟货币
+	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
+	marshal, err := json.Marshal(gin.H{
+		"id":  "07",
+		"msg": "ok",
+		"data": gin.H{
+			"tradeOrderId": orderId,
+		},
+	})
+	if err != nil {
+		logger.Error(err)
+		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "参数解析错误"))
+		return
+	}
 	switch params.AmountType {
 	case 1:
 		if appUser.Balance < params.Amounts {
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "余额不足"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "余额不足"))
 			return
 		}
-		ok := createTradingOrder(params, appUser, asset)
+		ok := createTradingOrder(socketId, ws, orderId, params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
@@ -128,15 +150,15 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
+			SocketResp(ws, websocket.TextMessage, string(marshal))
 		}
 		break
 	case 2:
 		if appUser.BonusBalance < params.Amounts {
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "bonus余额不足"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "bonus余额不足"))
 			return
 		}
-		ok := createTradingOrder(params, appUser, asset)
+		ok := createTradingOrder(socketId, ws, orderId, params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
@@ -148,16 +170,16 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
+			SocketResp(ws, websocket.TextMessage, string(marshal))
 		}
 		break
 	case 3:
 		if appUser.VirtualBalance < params.Amounts {
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","data":"%v"}`, "虚拟余额不足"))
+			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "虚拟余额不足"))
 			return
 		}
-		createVirtualTradingOrder(params, appUser, asset)
-		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"1000","data":"%v"}`, "ok"))
+		createVirtualTradingOrder(socketId, ws, orderId, params, appUser, asset)
+		SocketResp(ws, websocket.TextMessage, string(marshal))
 		break
 	default:
 		break
@@ -328,8 +350,7 @@ func DecisionAlgorithmInterface(a, b, calculateMethod int) bool {
 }
 
 // 创建真实交易订单
-func createTradingOrder(params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
-	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
+func createTradingOrder(socketId string, ws *wss.WsConn, orderId string, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
 	createOrder := new(models.TradingOrder)
 	createOrder.TradeOrderId = orderId
 	createOrder.Amounts = params.Amounts
@@ -406,12 +427,25 @@ func createTradingOrder(params requests.SubmitTradeParams, appUser models.AppUse
 	default:
 		break
 	}
+	// 开启协诚处理 下单开奖通知
+	go PushNotice(socketId, ws, requests.TradeOrderInfo{
+		TradeOrderId:        createOrder.TradeOrderId,
+		AppUserId:           createOrder.AppUserId,
+		AssetsCode:          createOrder.AssetsCode,
+		ItemCode:            createOrder.ItemCode,
+		TradeBeginTimestamp: fmt.Sprintf("%v", createOrder.TradeBeginTimestamp),
+		TradeEndTimestamp:   fmt.Sprintf("%v", createOrder.TradeEndTimestamp),
+		BeginAssetsPrice:    fmt.Sprintf("%v", createOrder.BeginAssetsPrice),
+		EndAssetsPrice:      fmt.Sprintf("%v", createOrder.EndAssetsPrice),
+		UpDownType:          createOrder.UpDownType,
+		Amounts:             fmt.Sprintf("%v", createOrder.Amounts),
+		IsDemo:              "0",
+	})
 	return true
 }
 
 // 创建虚拟交易订单
-func createVirtualTradingOrder(params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
-	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
+func createVirtualTradingOrder(socketId string, ws *wss.WsConn, orderId string, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
 	createOrder := new(models.TradingOrderVirtual)
 	createOrder.TradeOrderId = orderId
 	createOrder.Amounts = params.Amounts
@@ -459,6 +493,19 @@ func createVirtualTradingOrder(params requests.SubmitTradeParams, appUser models
 		logger.Error(err)
 		return false
 	}
+	go PushNotice(socketId, ws, requests.TradeOrderInfo{
+		TradeOrderId:        createOrder.TradeOrderId,
+		AppUserId:           createOrder.AppUserId,
+		AssetsCode:          createOrder.AssetsCode,
+		ItemCode:            createOrder.ItemCode,
+		TradeBeginTimestamp: fmt.Sprintf("%v", createOrder.TradeBeginTimestamp),
+		TradeEndTimestamp:   fmt.Sprintf("%v", createOrder.TradeEndTimestamp),
+		BeginAssetsPrice:    fmt.Sprintf("%v", createOrder.BeginAssetsPrice),
+		EndAssetsPrice:      fmt.Sprintf("%v", createOrder.EndAssetsPrice),
+		UpDownType:          createOrder.UpDownType,
+		Amounts:             fmt.Sprintf("%v", createOrder.Amounts),
+		IsDemo:              "1",
+	})
 	return true
 }
 

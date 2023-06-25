@@ -259,8 +259,6 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 		DB := mysql.DB
 		err := DB.Model(models.TradingAssets{}).
 			Where("item_code", config.GetString("app.item_code")).
-			Where("is_valid", 1).
-			//Where("is_show", 1).
 			Find(&PushRateData).Error
 		if err != nil {
 			logger.Error(err)
@@ -288,7 +286,7 @@ func PushRate(messageType int, ws *wss.WsConn, assetsCode string) {
 			goto END
 		}
 		// 5秒推送一次消息
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 3)
 		// 返回数据给用户
 	}
 END:

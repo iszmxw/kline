@@ -12,3 +12,12 @@ type Params struct {
 	Username    string   `json:"Username"`    // 用户名
 	Password    string   `json:"Password"`    // 密码
 }
+
+type MarketingEmailInfo struct {
+	Title        string `json:"title"`
+	Body         string `json:"body"`
+	Email        string `json:"email"`
+	Type         int    `json:"type"`
+	Nation       string `json:"nation"`        // 国家
+	LanguageCode string `json:"language_code"` // 语言编码
+}

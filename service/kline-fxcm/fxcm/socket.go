@@ -1,10 +1,8 @@
 package fxcm
 
 import (
-	"container/list"
 	"encoding/json"
 	"fmt"
-	socketio "github.com/graarh/golang-socketio"
 	"goapi/app/models"
 	"goapi/app/response"
 	"goapi/pkg/helpers"
@@ -13,7 +11,6 @@ import (
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-common"
-	"goapi/service/kline-common/source"
 	"goapi/service/kline-fxcm/fxcm/api"
 	"goapi/service/kline-fxcm/fxcm/config"
 	"goapi/service/kline-fxcm/fxcm/wsdata"
@@ -21,51 +18,13 @@ import (
 	"time"
 )
 
-func SocketFxcm(info KlineCommon.Info) {
-	wsClient := new(api.FXCM)
-	wsClient.Info = info
-	// 开启定时器30秒检测一次数据活跃状态
-	go wsClient.OnceReboot.Do(func() {
-		defer KlineCommon.KlineRecover("TickerReboot", config.KlineSource, info.Symbol)
-		ticker := time.NewTicker(30 * time.Second) // 每隔 30 秒检查一次
-		KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", config.KlineSource, info.ContractCode)
-		for range ticker.C {
-			status := source.CheckStatus(config.KlineSource, info.ContractCode)
-			if status == "4" { // 延迟过高关闭重启 status:qxbroker:market.Microsoft.index.1min
-				logger.Info(KeyStatus + "当前数据不健康正在重启中" + info.Symbol)
-				goto STOP
-			}
-		}
-	STOP:
-		// 关闭
-		ticker.Stop()
-		go SocketFxcm(info)
-	})
-	wsClient.List = list.New()
-	wsClient.CloseChanCallback = make(chan KlineCommon.Info, 20)
-	if err := wsClient.Start(); err != nil {
-		logger.Info(err)
-		wsClient.Close()
-		go SocketFxcm(info)
-		return
-	}
-
+func SocketFXcm(info KlineCommon.Info) {
+	callback := make(chan KlineCommon.Info, 1)
 	// 开始订阅
 	{
-		// 接收数据
-		if wsClient.Socket == nil {
-			go SocketFxcm(info)
-			return
-		}
-		err := wsClient.Socket.On(info.Symbol, func(c *socketio.Channel, args interface{}) {
-			var stream wsdata.DataStream
-			err := json.Unmarshal([]byte(args.(string)), &stream)
-			if err != nil {
-				logger.Error(err)
-				wsClient.CloseChanCallback <- info
-				return
-			}
-			logger.Info(stream)
+		logger.Info(info)
+		wsClient := new(api.WSPriceClient).Init("", KlineCommon.GetProxy(config.KlineSource), callback, info)
+		wsClient.SubPriceKLine(info, func(stream *wsdata.DataStream) {
 			stream.Symbol = info.ContractCode
 			SystemTs := time.Now().UnixMilli() // 开始时间 系統生成的Ts
 			// RequestId 定义为 Ts 时间戳
@@ -77,7 +36,7 @@ func SocketFxcm(info KlineCommon.Info) {
 						"r":    r,
 					})
 					// 关闭
-					wsClient.CloseChanCallback <- info
+					wsClient.Close()
 				}
 			}()
 			UpstreamTs := stream.Updated // 上游的ts
@@ -98,7 +57,7 @@ func SocketFxcm(info KlineCommon.Info) {
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)
-				wsClient.CloseChanCallback <- info
+				wsClient.Close()
 				return
 			}
 			// 收集数据缓存到redis
@@ -107,7 +66,7 @@ func SocketFxcm(info KlineCommon.Info) {
 			_, redisErr := redis.Client.Add(key, redisData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
-				wsClient.CloseChanCallback <- info
+				wsClient.Close()
 				return
 			}
 			// 当前数据源匹配就入库
@@ -168,29 +127,23 @@ func SocketFxcm(info KlineCommon.Info) {
 				}
 				logger.Info("0003"+data.Ch, lineLogRes)
 			}
-
-		})
-		if err != nil {
-			logger.Error(err)
-			wsClient.Close()
-		}
+		}, "")
 	}
 	select {
-	case Symbol, ok := <-wsClient.CloseChanCallback:
-		if ok {
-			wsClient.Close()
-			// 重启服务
-			logger.Info("重启", Symbol)
-			KlineCommon.RebootSocketLog(config.KlineSource, Symbol)
-			go SocketFxcm(Symbol)
-		} else {
-			logger.Info("!ok", "重启服务失败")
+	case msg, ok := <-callback:
+		if !ok {
+			logger.Info(ok)
+			return
 		}
+		logger.Info(msg)
+		// 重启服务
+		KlineCommon.RebootSocketLog(config.KlineSource, info)
+		go SocketFXcm(info)
 	}
 }
 
 // LogData 存入 kline_log 的数据
-func LogData(stream wsdata.DataStream, SystemTs int64) models.KlineLog {
+func LogData(stream *wsdata.DataStream, SystemTs int64) models.KlineLog {
 	var klineLog models.KlineLog
 	klineLog.ContractCode = strings.ReplaceAll(strings.ToUpper(stream.Symbol), "/", "-") // 合约代码 BTC-USD
 	klineLog.Ch = fmt.Sprintf("market.%v.index.1min", klineLog.ContractCode)             // kilne返回日期时间戳
@@ -218,7 +171,7 @@ func LogData(stream wsdata.DataStream, SystemTs int64) models.KlineLog {
 }
 
 // RedisData 缓存进redis的数据
-func RedisData(SystemTs int64, stream wsdata.DataStream) response.SubIndexKLineResponse {
+func RedisData(SystemTs int64, stream *wsdata.DataStream) response.SubIndexKLineResponse {
 	var data response.SubIndexKLineResponse
 	data.Ts = SystemTs                                                                             // 系統生成的Ts
 	data.TsDate = time.Unix(0, SystemTs*int64(time.Millisecond)).Format("2006-01-02 15:04:05.999") // 系統生成的Ts

@@ -22,6 +22,55 @@
 
 ## 打包编译
 
+- 打包docker镜像
+
+```shell
+# client 服务
+docker build -t iqoption-client -f Dockerfile.client.dockerfile .
+
+# 邮件服务
+docker build -t iqoption-email -f Dockerfile.email.dockerfile .
+
+# kline 服务
+docker build -t iqoption-kline -f Dockerfile.kline.dockerfile .
+
+# web 服务
+docker build -t iqoption-web -f Dockerfile.web.dockerfile .
+```
+
+- 上传docker镜像
+
+```shell
+# client 镜像
+docker tag iqoption-client iszmxw/iqoption-client:latest
+docker push iszmxw/iqoption-client:latest
+
+# 邮件服务
+docker tag iqoption-email iszmxw/iqoption-email:latest
+docker push iszmxw/iqoption-email:latest
+
+# web 服务
+docker tag iqoption-web iszmxw/iqoption-web:latest
+docker push iszmxw/iqoption-web:latest
+
+# kline 服务
+docker tag iqoption-kline iszmxw/iqoption-kline:latest
+docker push iszmxw/iqoption-kline:latest
+```
+
+
+- 运行 docker 镜像
+
+```shell
+# 运行 client
+docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/client:/home/yezhiming/binary/client/config -p 7104:7104 --name=xw-client --network="host" -d iszmxw/iqoption-client:latest
+# 运行 email
+docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/email:/home/yezhiming/binary/email/config -p 7107:7107 --name=xw-email --network="host" -d iszmxw/iqoption-email:latest
+# 运行 web
+docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/web:/home/yezhiming/binary/web/config -p 7105:7105 --name=xw-web --network="host" -d iszmxw/iqoption-web:latest
+# 运行 kline
+docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/kline:/home/yezhiming/binary/kline/config --name=xw-kline --network="host" -d iszmxw/iqoption-kline:latest
+```
 - 打包火币网socket服务
 
 ```shell

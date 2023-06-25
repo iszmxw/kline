@@ -35,7 +35,7 @@ func main() {
 	defer bootstrap.RedisClose()
 
 	vm := otto.New()
-	file, err := os.Open("D:\\www\\kline\\test\\language.js")
+	file, err := os.Open("./test/language.js")
 	if err != nil {
 		panic(err)
 	}
@@ -51,19 +51,19 @@ func main() {
 		logger.Error(err)
 		return
 	}
-	commonFunc(vm, "common")
-	newsPageFunc(vm, "newsPage")
-	newsPageInfoFunc(vm, "newsPageInfo")
-	bonusActivitiesFunc(vm, "bonusActivities")
-	paymentInfoFunc(vm, "inviteFriends")
-	paymentInfoFunc(vm, "tradingGuide")
-	paymentInfoFunc(vm, "lossReturn")
-	paymentInfoFunc(vm, "paymentInfo")
-	paymentInfoFunc(vm, "rechargeInfo")
-	paymentInfoFunc(vm, "troubleshoot")
-	termsOfServiceFunc(vm, "termsOfService")
-	paymentInfoFunc(vm, "userAgreement")
-	paymentInfoFunc(vm, "tradePage")
+	commonFunc(vm, "paymentInfo")
+	//newsPageFunc(vm, "newsPage")
+	//newsPageInfoFunc(vm, "newsPageInfo")
+	//bonusActivitiesFunc(vm, "bonusActivities")
+	//paymentInfoFunc(vm, "inviteFriends")
+	//paymentInfoFunc(vm, "tradingGuide")
+	//paymentInfoFunc(vm, "lossReturn")
+	//paymentInfoFunc(vm, "paymentInfo")
+	//paymentInfoFunc(vm, "rechargeInfo")
+	//paymentInfoFunc(vm, "troubleshoot")
+	//termsOfServiceFunc(vm, "termsOfService")
+	//paymentInfoFunc(vm, "userAgreement")
+	//paymentInfoFunc(vm, "tradePage")
 }
 
 func commonFunc(vm *otto.Otto, name string) {
@@ -208,6 +208,7 @@ func insertData(languageCode, key, val string) {
 		result.Sort = 0
 		result.Updater = "yezhiming"
 		result.UpdateDate = time.Now()
+		result.IsValid = "0"
 		err = DB.Model(models.LanguageShowApp{}).Create(&result).Error
 		if err != nil {
 			logger.Error(err)

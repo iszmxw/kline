@@ -72,7 +72,7 @@ func (h *NoticeController) StationLetterHandler(c *gin.Context) {
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
 				ws.Mux.Lock()
-				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","data":"pong"}`))
+				WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"03","msg":"pong"}`))
 				ws.Mux.Unlock()
 				if WriteMessageErr != nil {
 					logger.Error(WriteMessageErr)
@@ -106,7 +106,7 @@ func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.
 		if wssHeartBeating.IsDie(HeartBeatingKey) {
 			goto STOP
 		}
-		strInfo, err := redis.Client.DefaultGet(SubToken.Token)
+		strInfo, err := redis.Client.DefaultGet(fmt.Sprintf("Client:Token:%s", SubToken.Token))
 		if err != nil {
 			logger.Error(err)
 			goto STOP
@@ -123,7 +123,7 @@ func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.
 		logger.Info(user)
 		result := cmap.New().Items()
 		// 查询用户未读消息，展示小红点
-		err = mysql.DB.Debug().Model(models.OffMailSendLog{}).Where(
+		err = mysql.DB.Debug().Model(models.NoticeLog{}).Where(
 			map[string]interface{}{
 				"item_code":    config.GetString("app.item_code"),
 				"nation":       user.Nation,
@@ -132,7 +132,7 @@ func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.
 			Select("count(1) AS total").
 			Find(&result).Error
 		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
 			return
 		}
@@ -140,7 +140,7 @@ func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.
 		err = mapstructure.Decode(result, &NoticeInfo)
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
@@ -150,7 +150,7 @@ func (h *NoticeController) PushNotice(socketId string, messageType int, ws *wss.
 			"data": NoticeInfo,
 		})
 		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
 			return
 		}

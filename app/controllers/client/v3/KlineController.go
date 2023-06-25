@@ -41,6 +41,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
 	NoLogin := c.GetBool("NoLogin")
+	isVest := c.GetInt("isvest")
 	//go HeartBeatingWatch(ws, socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
@@ -62,12 +63,15 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		subInfo := SubStruct.Sub
 		ID := SubStruct.Id
 		// 检测登录权限
-		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09"}
+		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09", "11"}
 		for _, id := range needLoginIDs {
 			if ID == id {
 				// 需要登录
 				if NoLogin {
-					SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"token 无效"}`)
+					if isVest == 0 {
+						continue
+					}
+					SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"token 无效"}`)
 					return
 				}
 			}
@@ -109,10 +113,11 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		case strings.EqualFold(ID, "03"):
 			{
+				//logger.Info(SubStruct)
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(fmt.Sprintf("ws_index:%v:heart_beating_key", c.GetHeader("Sec-WebSocket-Key")), currentTime, 300) // 5分钟过期
-				SocketResp(ws, websocket.TextMessage, `{"id":"03","data":"pong"}`)
+				SocketResp(ws, websocket.TextMessage, `{"id":"03","msg":"pong"}`)
 			}
 			break
 		case strings.EqualFold(ID, "04"): // 下单开奖通知
@@ -144,6 +149,8 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
+				appUser, _ := c.Get("user")
+				params.AppUserId = appUser.(response.ClientUserBeans).AppUserId
 				go new(TradeController).SubmitTrade(socketId, ws, params)
 			}
 			break
@@ -176,7 +183,21 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
+				logger.Info(subInfo, params)
 				go StationLetterPushNotice(socketId, ws, params)
+			}
+			break
+		case strings.EqualFold(ID, "11"):
+			{
+				// 开启协诚处理 adjust 自然量，推广量检测
+				var params requests.AdjustCallBack // {"adid":"123456"}
+				err = mapstructure.Decode(subInfo, &params)
+				if err != nil {
+					logger.Error(err)
+					goto END
+				}
+				logger.Info(subInfo, params)
+				go AdjustCallBackNotice(socketId, ws, params)
 			}
 			break
 		default:
@@ -197,7 +218,7 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 	// 订阅 历史消息
 	if len(params.Symbol) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10401","data":"订阅历史消息条件参数缺失"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10401","msg":"订阅历史消息条件参数缺失"}`)
 		return
 	}
 	var Count = int64(3000) // 查询总条数默认获取3000条
@@ -208,21 +229,21 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 		Count = helpers.StringToInt64(params.Limit)
 	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10402","data":"beginDate 起始交易日期必填"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10402","msg":"beginDate 起始交易日期必填"}`)
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Info(helpers.StringToInt64(beginDate), time.Now().UnixMilli())
 		logger.Error(errors.New("越界查询"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10403","data":"越界查询 beginDate error"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10403","msg":"越界查询 beginDate error"}`)
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10404","data":"endDate 截止交易日期必填"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10404","msg":"endDate 截止交易日期必填"}`)
 		return
 	}
 	if len(symbol) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10405","data":"symbol 不能为空"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10405","msg":"symbol 不能为空"}`)
 		return
 	}
 	tips := fmt.Sprintf(
@@ -236,7 +257,7 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 	// 没有读取到 klineSource
 	if len(klineSource) == 0 {
 		logger.Error(errors.New("没有读取到 klineSource"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10406","data":"没有读取到 klineSource"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10406","msg":"没有读取到 klineSource"}`)
 		return
 	}
 	var data []response.KlineLog
@@ -254,7 +275,7 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 	err := KlineDB.Order("ts desc").Limit(int(Count)).Select("log_id,contract_code,ch,ts,mrid,c_open,c_close,high,low,amount,vol,c_count,ts_date,create_date,kline_source").Find(&data).Error
 	if err != nil {
 		logger.Error(err)
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 		return
 	}
 	if len(data) > 0 {
@@ -281,13 +302,13 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 		marshal, err := json.Marshal(data)
 		if err != nil {
 			logger.Error(err)
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			return
 		}
 		Zipresult, err := utils.Zip(marshal)
 		if err != nil {
 			logger.Error(err)
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			return
 		}
 		result, err = json.Marshal(gin.H{
@@ -304,7 +325,7 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 		})
 		if err != nil {
 			logger.Error(err)
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			return
 		}
 	} else {
@@ -322,7 +343,7 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 		})
 		if err != nil {
 			logger.Error(err)
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			return
 		}
 	}
@@ -342,7 +363,7 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 	// 订阅 历史消息
 	if len(params.Symbol) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10401","data":"订阅历史消息条件参数缺失"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10401","msg":"订阅历史消息条件参数缺失"}`)
 		return
 	}
 	var Count = int64(3000) // 查询总条数默认获取3000条
@@ -353,20 +374,20 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 		Count = helpers.StringToInt64(params.Limit)
 	}
 	if len(beginDate) <= 0 || helpers.StringToInt(beginDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10402","data":"beginDate 起始交易日期必填"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10402","msg":"beginDate 起始交易日期必填"}`)
 		return
 	}
 	if helpers.StringToInt64(beginDate) > time.Now().UnixMilli() {
 		logger.Error(errors.New("越界查询"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10403","data":"越界查询 beginDate error"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10403","msg":"越界查询 beginDate error"}`)
 		return
 	}
 	if len(endDate) <= 0 || helpers.StringToInt(endDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10404","data":"endDate 截止交易日期必填"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10404","msg":"endDate 截止交易日期必填"}`)
 		return
 	}
 	if len(symbol) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10405","data":"symbol 不能为空"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10405","msg":"symbol 不能为空"}`)
 		return
 	}
 	tips := fmt.Sprintf(
@@ -380,7 +401,7 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 	// 没有读取到 klineSource
 	if len(klineSource) == 0 {
 		logger.Error(errors.New("没有读取到 klineSource"))
-		SocketResp(ws, websocket.TextMessage, `{"id":"10406","data":"没有读取到 klineSource"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10406","msg":"没有读取到 klineSource"}`)
 		return
 	}
 	var data []response.KlineLogSimple
@@ -398,7 +419,7 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 	err := KlineDB.Order("ts desc").Limit(int(Count)).Select("ts,c_open,c_close,high,low").Find(&data).Error
 	if err != nil {
 		logger.Error(err)
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 		return
 	}
 	if len(data) > 0 {
@@ -434,13 +455,13 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 	marshal, err := json.Marshal(tempArr)
 	if err != nil {
 		logger.Error(err)
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 		return
 	}
 	Zipresult, err := utils.Zip(marshal)
 	if err != nil {
 		logger.Error(err)
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 		return
 	}
 	result, err = json.Marshal(gin.H{
@@ -456,7 +477,7 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 	})
 	if err != nil {
 		logger.Error(err)
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 		return
 	}
 	SocketResp(ws, websocket.TextMessage, string(result))
@@ -471,20 +492,20 @@ func PushMessage(socketId string, ws *wss.WsConn, params string) {
 	logger.RequestId = socketId
 	// 订阅的 market.ETH-USD.index.1min，没有值
 	if len(params) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"no sub"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"no sub"}`)
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
 		return
 	}
 	// 订阅的 ETH-USD，没有值
 	Sub := strings.Split(params, ".")
 	if len(Sub) < 2 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"sub error"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"sub error"}`)
 		logger.Error(errors.New("订阅的 market.ETH-USD.index.1min，没有值"))
 		return
 	}
 	AssetsCode := Sub[1]
 	if len(AssetsCode) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"no sub"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"no sub"}`)
 		logger.Error(errors.New("订阅的 ETH-USD，没有值"))
 		return
 	}
@@ -492,7 +513,7 @@ func PushMessage(socketId string, ws *wss.WsConn, params string) {
 	SubKey := fmt.Sprintf("ws_index:%v:socket_request", socketId)
 	SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 	if SubAssetsCode == AssetsCode {             // 当前订阅的资产已存
-		SocketResp(ws, websocket.TextMessage, `{"id":"10411","data":"please no repeat sub"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10411","msg":"please no repeat sub"}`)
 		logger.Error(errors.New(fmt.Sprintf("当前订阅的资产{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", AssetsCode, socketId)))
 		return
 	}
@@ -582,37 +603,37 @@ END:
 func PushNotice(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo) {
 	logger.RequestId = socketId
 	if len(params.AppUserId) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,AppUserId not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AppUserId not right"}`)
 		logger.Error(errors.New("err sub,AppUserId not right"))
 		return
 	}
 	if len(params.AssetsCode) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,AssetsCode not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AssetsCode not right"}`)
 		logger.Error(errors.New("err sub,AssetsCode not right"))
 		return
 	}
 	if len(params.TradeBeginTimestamp) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,TradeBeginTimestamp not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,TradeBeginTimestamp not right"}`)
 		logger.Error(errors.New("err sub,TradeBeginTimestamp not right"))
 		return
 	}
 	if len(params.BeginAssetsPrice) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,BeginAssetsPrice not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,BeginAssetsPrice not right"}`)
 		logger.Error(errors.New("err sub,BeginAssetsPrice not right"))
 		return
 	}
 	if len(params.UpDownType) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,UpDownType not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,UpDownType not right"}`)
 		logger.Error(errors.New("err sub,UpDownType not right"))
 		return
 	}
 	if len(params.Amounts) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,Amounts not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,Amounts not right"}`)
 		logger.Error(errors.New("err sub,Amounts not right"))
 		return
 	}
 	if len(params.IsDemo) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","data":"err sub,IsDemo not right"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,IsDemo not right"}`)
 		logger.Error(errors.New("err sub,IsDemo not right"))
 		return
 	}
@@ -719,7 +740,7 @@ STOP:
 func PushPopup(socketId string, ws *wss.WsConn, AppUserId string) {
 	logger.RequestId = socketId
 	if len(AppUserId) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10407","data":"PushPopup no sub"}`)
+		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"PushPopup no sub"}`)
 		logger.Error(errors.New("用户ID为空"))
 		return
 	}
@@ -791,16 +812,16 @@ func PushRate(socketId string, ws *wss.WsConn, params requests.SubNationInfo) {
 			Where("item_code", params.ItemCode).
 			Find(&PushRateData).Error
 		if err != nil {
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)
 			return
 		}
 		marshal, err := json.Marshal(gin.H{
-			"id":   "01",
+			"id":   "09",
 			"data": PushRateData,
 		})
 		if err != nil {
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)
 			return
 		}
@@ -813,7 +834,7 @@ func PushRate(socketId string, ws *wss.WsConn, params requests.SubNationInfo) {
 			goto END
 		}
 		// 5秒推送一次消息
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 3)
 		// 返回数据给用户
 	}
 END:
@@ -835,7 +856,7 @@ func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 			Where("app_user_id", AppUserId).
 			Find(&AppUser).Error
 		if err != nil {
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)
 			return
 		}
@@ -846,14 +867,14 @@ func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 			Select("count(1) AS hisTradingCount,sum(amounts) AS hisTradingAmounts").
 			Find(&result).Error
 		if err != nil {
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)
 			return
 		}
 		// map转struct
 		err = mapstructure.Decode(result, &HistoryTrading)
 		if err != nil {
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)
 			return
 		}
@@ -865,7 +886,7 @@ func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 			Where("is_start", "1").
 			Find(&ListAppItem).Error
 		if err != nil {
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)
 			return
 		}
@@ -885,7 +906,7 @@ func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 				if AppUser.VirtualBalance <= UserOperationRules.Value {
 					err = DB.Model(models.AppUser{}).Where("app_user_id", AppUserId).Update("virtual_balance", item.DemoBalance).Error
 					if err != nil {
-						SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+						SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 						logger.Error(err)
 						return
 					}
@@ -894,11 +915,11 @@ func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
 			}
 		}
 		marshal, err := json.Marshal(gin.H{
-			"id":   "02",
+			"id":   "08",
 			"data": AppUser,
 		})
 		if err != nil {
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","data":"no data"}`)
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)
 			return
 		}
@@ -938,13 +959,14 @@ func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.
 		if IsDie(HeartBeatingKey) {
 			goto STOP
 		}
-		strInfo, err := redis.Client.DefaultGet(SubToken.Token)
+		strInfo, err := redis.Client.DefaultGet(fmt.Sprintf("Client:Token:%s", SubToken.Token))
 		if err != nil {
 			logger.Error(err)
 			goto STOP
 		}
 		// json字符串数组,转换成切片
 		var user response.ClientUserBeans
+		var userInfo response.AppUser
 		var NoticeInfo response.NoticeInfo
 		multiErr := json.Unmarshal([]byte(strInfo), &user)
 		if multiErr != nil {
@@ -952,19 +974,29 @@ func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.
 			logger.Error(multiErr)
 			goto STOP
 		}
-		logger.Info(user)
+		err = mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", user.AppUserId).Find(&userInfo).Error
+		if err != nil {
+			logger.Error(errors.New("查询出错"))
+			logger.Error(err)
+			goto STOP
+		}
+		logger.Info(userInfo)
 		result := cmap.New().Items()
 		// 查询用户未读消息，展示小红点
-		err = mysql.DB.Debug().Model(models.OffMailSendLog{}).Where(
-			map[string]interface{}{
-				"item_code":    config.GetString("app.item_code"),
-				"nation":       user.Nation,
-				"decive_brand": SubToken.DeciveBrand,
-			}).Where("app_user_id = 'ALL' OR app_user_id = ?", user.AppUserId).
+		err = mysql.DB.Debug().Model(models.NoticeLog{}).
+			Joins(models.Prefix("left join $_notice on $_notice.mail_id=$_notice_log.mail_id")).
+			Where(map[string]interface{}{
+				models.Prefix("$_notice_log.item_code"):    config.GetString("app.item_code"),
+				models.Prefix("$_notice_log.nation"):       userInfo.Nation,
+				models.Prefix("$_notice_log.read_state"):   0,
+				models.Prefix("$_notice_log.decive_brand"): SubToken.DeciveBrand,
+			}).Where(models.Prefix("$_notice_log.app_user_id = 'ALL' OR $_notice_log.app_user_id = ?"), userInfo.AppUserId).
+			Where(models.Prefix("$_notice.send_time >= ?"), userInfo.CreateTs).
+			Where(models.Prefix("($_notice.send_time / 1000) >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(),INTERVAL 7 DAY))")).
 			Select("count(1) AS total").
 			Find(&result).Error
 		if err != nil {
-			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
 			return
 		}
@@ -972,17 +1004,17 @@ func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.
 		err = mapstructure.Decode(result, &NoticeInfo)
 		if err != nil {
 			ws.Mux.Lock()
-			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
 			ws.Mux.Unlock()
 			logger.Error(err)
 			return
 		}
 		marshal, err := json.Marshal(gin.H{
-			"id":   "02",
+			"id":   "10",
 			"data": NoticeInfo,
 		})
 		if err != nil {
-			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","data":"no data"}`))
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
 			return
 		}
@@ -1003,4 +1035,74 @@ STOP:
 	wss.WsClose(ws)
 END:
 	logger.Info("StationLetterPushNotice已经跳出协诚的循环推送")
+}
+
+// adjust 回调推送通知
+
+func AdjustCallBackNotice(socketId string, ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack) {
+	logger.RequestId = socketId
+	HeartBeatingKey := fmt.Sprintf("NoticeHeartBeatingKey:%v", socketId)
+	// {"adid":"123456"}
+	if len(AdjustCallBack.Adid) == 0 {
+		wss.WsClose(ws)
+		return
+	}
+	// 为了释放for死循环的资源
+	for !ws.IsClose {
+		if IsDie(HeartBeatingKey) {
+			goto STOP
+		}
+		isVerst := "A"
+		vestCheck := ""
+		var result []models.TAppUserAdjustCallbackData
+		// 查询用户未读消息，展示小红点
+		err := mysql.DB.Debug().Model(models.TAppUserAdjustCallbackData{}).Where("adid", AdjustCallBack.Adid).Find(&result).Error
+		if err != nil {
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		if len(result) == 0 {
+			vestCheck = "0"
+		} else {
+			vestCheck = "1"
+			for _, item := range result {
+				if !strings.EqualFold(item.Network, "Organic") || strings.EqualFold(item.IsOrganic, "0") {
+					isVerst = "B"
+				}
+			}
+		}
+		OK, _ := redis.Client.Get(fmt.Sprintf(":Client:iosVestAccount:ALL"))
+		if strings.EqualFold(OK, "ok") {
+			isVerst = "B"
+		}
+		marshal, err := json.Marshal(gin.H{
+			"id": "11",
+			"data": gin.H{
+				"vest":      isVerst,
+				"vestCheck": vestCheck,
+			},
+		})
+		if err != nil {
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		ws.Mux.Lock()
+		WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, marshal)
+		ws.Mux.Unlock()
+		if WriteMessageErr != nil {
+			wss.WsClose(ws)
+			// 跳出for关闭后面的推送
+			goto END
+		}
+		// 5秒推送一次消息
+		time.Sleep(time.Second * 5)
+		// 返回数据给用户
+	}
+STOP:
+	logger.Error(errors.New("AdjustCallBackNotice关闭Socket"))
+	wss.WsClose(ws)
+END:
+	logger.Info("AdjustCallBackNotice已经跳出协诚的循环推送")
 }

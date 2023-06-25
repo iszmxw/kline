@@ -1,0 +1,25 @@
+# 使用官方的 Golang 镜像作为基础镜像
+FROM golang:latest AS build
+
+# 创建一个工作目录
+WORKDIR /work
+
+# 将本地代码拷贝到容器中
+COPY . /work
+
+# 编译应用程序
+RUN GOOS=linux GOARCH=amd64 go build -o iqoption-web service/binary-web/main.go && \
+    mv iqoption-web binary/web
+
+
+# 运行阶段 使用简洁的作为基础镜像
+FROM ubuntu:latest
+
+# 将打包后的程序拷贝到容器中
+COPY --from=build /work/binary/web /home/yezhiming/binary/web
+
+# 暴露应用程序使用的端口
+EXPOSE 8080
+
+# 运行应用程序
+CMD ["/bin/bash"]

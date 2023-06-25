@@ -9,10 +9,11 @@ import (
 
 // 读取一条配置信息
 
-func GetOne(email string) (error, response.SystemEmailRoutingNode) {
+func GetOne(emailType int) (error, response.SystemEmailRoutingNode) {
 	var result response.SystemEmailRoutingNode
 	mysql.DB.Debug().Model(models.SystemEmailRoutingNode{}).Where(map[string]interface{}{
 		"valid": 1,
+		"type":  emailType,
 	}).Order("rate_fail asc").Limit(1).Find(&result)
 	if result.Id == 0 {
 		return errors.New("，数据库未找到相关渠道配置"), result
