@@ -63,7 +63,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		subInfo := SubStruct.Sub
 		ID := SubStruct.Id
 		// 检测登录权限
-		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09", "11"}
+		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09", "11", "12"}
 		for _, id := range needLoginIDs {
 			if ID == id {
 				// 需要登录
@@ -198,6 +198,14 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				}
 				logger.Info(subInfo, params)
 				go AdjustCallBackNotice(socketId, ws, params)
+			}
+			break
+		case strings.EqualFold(ID, "12"):
+			{
+				appUser, _ := c.Get("user")
+				AppUserId := appUser.(response.ClientUserBeans).AppUserId
+				// 开启协诚处理 Toast通知
+				go PushToast(socketId, ws, AppUserId)
 			}
 			break
 		default:
@@ -778,6 +786,55 @@ func PushPopup(socketId string, ws *wss.WsConn, AppUserId string) {
 		}
 		logger.Info(string(marshal))
 		time.Sleep(35 * time.Second) // 每隔35秒来一次推送
+	}
+STOP:
+	logger.Error(errors.New("PushPopup关闭Socket"))
+	wss.WsClose(ws)
+}
+
+// Toast 通知
+
+func PushToast(socketId string, ws *wss.WsConn, AppUserId string) {
+	logger.RequestId = socketId
+	if len(AppUserId) == 0 {
+		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"PushToast no sub"}`)
+		logger.Error(errors.New("用户ID为空"))
+		return
+	}
+	key := fmt.Sprintf("Toast:Queue:%v", AppUserId)
+	for !ws.IsClose {
+		push := redis.Client.RPop(key)
+		//logger.Info(key)
+		if len(push) == 0 {
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		var toastMsg response.ToastMsg
+		PopErr := json.Unmarshal([]byte(push), &toastMsg)
+		if PopErr != nil {
+			logger.Error(PopErr)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		marshal, err := json.Marshal(gin.H{
+			"id":   "12",
+			"data": toastMsg,
+		})
+		if err != nil {
+			logger.Error(err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		// 推送消息通知前端开奖结果
+		ws.Mux.Lock()
+		err = ws.Conn.WriteMessage(websocket.TextMessage, marshal)
+		ws.Mux.Unlock()
+		if err != nil {
+			logger.Error(err)
+			goto STOP
+		}
+		logger.Info(string(marshal))
+		time.Sleep(20 * time.Second) // 每隔20秒来一次推送
 	}
 STOP:
 	logger.Error(errors.New("PushPopup关闭Socket"))

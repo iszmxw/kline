@@ -16,3 +16,8 @@ type PopupMsg struct {
 	ExpireTs     int64  `json:"expire_ts"`     //模板到期时间
 	Remarks      string `json:"remarks"`       //备注
 }
+
+type ToastMsg struct {
+	Msg      string `json:"msg"`       // Toast 消息
+	CreateTs int64  `json:"create_ts"` // 创建时间
+}
