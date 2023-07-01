@@ -1,19 +1,19 @@
 package response
 
 type UserTradeMessage struct {
-	AppUserId            string `json:"app_user_id"`
-	IsNew                string `json:"is_new"`
-	BlackList            string `json:"black_list"`
-	TradingCount         int    `json:"trading_count"`
-	TradingAmounts       int    `json:"trading_amounts"`
-	RechargeAmounts      string `json:"recharge_amounts"`
-	RechargeCount        string `json:"recharge_count"`
-	RechargeTodayAmounts string `json:"recharge_today_amounts"`
-	RechargeTodayCount   string `json:"recharge_today_count"`
-	WithdrawAmounts      string `json:"withdraw_amounts"`
-	WithdrawCount        string `json:"withdraw_count"`
-	WithdrawTodayAmounts string `json:"withdraw_today_amounts"`
-	WithdrawTodayCount   string `json:"withdraw_today_count"`
-	HisTradingCount      string `json:"his_trading_count"`
-	HisTradingAmounts    string `json:"his_trading_amounts"`
+	AppUserId            string `json:"appUserId"`
+	IsNew                string `json:"isNew"`
+	BlackList            string `json:"blackList"`
+	TradingCount         int    `json:"tradingCount"`
+	TradingAmounts       int    `json:"tradingAmounts"`
+	RechargeAmounts      string `json:"rechargeAmounts"`
+	RechargeCount        string `json:"rechargeCount"`
+	RechargeTodayAmounts string `json:"rechargeTodayAmounts"`
+	RechargeTodayCount   string `json:"rechargeTodayCount"`
+	WithdrawAmounts      string `json:"withdrawAmounts"`
+	WithdrawCount        string `json:"withdrawCount"`
+	WithdrawTodayAmounts string `json:"withdrawTodayAmounts"`
+	WithdrawTodayCount   string `json:"withdrawTodayCount"`
+	HisTradingCount      string `json:"hisTradingCount"`
+	HisTradingAmounts    string `json:"hisTradingAmounts"`
 }

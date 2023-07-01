@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 	"goapi/app/models"
 	"goapi/app/requests"
-	"goapi/app/response"
 	goadjust "goapi/pkg/adjust"
 	"goapi/pkg/config"
 	"goapi/pkg/helpers"
@@ -196,83 +195,43 @@ func tradeJuedge(appUser models.AppUser, params requests.SubmitTradeParams) (boo
 		logger.Error(err)
 		return true, "交易规则未配置"
 	}
-	timeZone := strings.SplitAfter(appItem.TimeZone, "T")
-	var userTradeMessage response.UserTradeMessage
-	err = mysql.DB.Debug().Raw(`SELECT a.app_user_id AS 'appUserId' ,
-			       a.is_new AS 'isNew' ,
-			       a.black_list AS 'blackList' ,
-			       ifnull(b.tradingCount,0) as 'tradingCount',
-			       ifnull(b.tradingAmounts,0) as 'tradingAmounts',
-			       ifnull(c.rechargeAmounts,0) as 'rechargeAmounts',
-			       ifnull(c.rechargeCount,0) as 'rechargeCount',
-			       ifnull(c.rechargeTodayAmounts,0) as 'rechargeTodayAmounts',
-			       ifnull(c.rechargeTodayCount,0) as 'rechargeTodayCount',
-			       ifnull(d.withdrawAmounts,0) as 'withdrawAmounts',
-			       ifnull(d.withdrawCount,0) as 'withdrawCount',
-			       ifnull(d.withdrawTodayAmounts,0) as 'withdrawTodayAmounts',
-			       ifnull(d.withdrawTodayCount,0) as 'withdrawTodayCount',
-			       ifnull(e.hisTradingCount,0) as 'hisTradingCount',
-			       ifnull(e.hisTradingAmounts,0) as 'hisTradingAmounts'
-			FROM (
-				SELECT a.app_user_id,
-				       '1' AS 'biao',
-				       a.is_new,
-				       a.black_list
-				FROM t_app_user AS a
-				WHERE 1=1
-				AND a.app_user_id = ?
-				AND a.nation = ?
-			) AS a INNER JOIN
-			(
-				SELECT COUNT(1) AS 'tradingCount',
-				       SUM(a.amounts) AS 'tradingAmounts',
-				       '1' AS 'biao'
-				FROM t_trading_order AS a
-				WHERE 1=1
-				AND a.app_user_id = ?
-				AND DATE_FORMAT(CONVERT_TZ(a.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d')
-				AND a.amount_type = 1
-				AND a.nation = ?
-			) AS b ON a.biao = b.biao INNER JOIN
-			(
-				SELECT SUM(b.amount) AS 'rechargeAmounts',
-				       COUNT(1) AS 'rechargeCount',
-				       SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d') THEN b.amount ELSE 0 END ) AS 'rechargeTodayAmounts',
-				       SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d') THEN 1 ELSE 0 END ) AS 'rechargeTodayCount',
-				       '1' AS 'biao'
-				FROM t_recharge_order AS b
-				WHERE 1=1
-				AND b.app_user_id = ?
-				AND b.recharge_order_status = 1
-				AND b.nation = ?
-			) AS c ON a.biao = c.biao  INNER JOIN
-			(
-				SELECT SUM(b.amount) AS 'withdrawAmounts',
-				       COUNT(1) AS 'withdrawCount',
-				       SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d') THEN b.amount ELSE 0 END ) AS 'withdrawTodayAmounts',
-				       SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d') THEN 1 ELSE 0 END ) AS 'withdrawTodayCount',
-				       '1' AS 'biao'
-				FROM t_withdraw_order AS b
-				WHERE 1=1
-				AND b.app_user_id = ?
-				AND b.withdraw_order_status IN (1,2)
-					AND b.nation = ?
-			) AS d  ON a.biao = d.biao INNER JOIN
-			(
-				SELECT COUNT(1) AS 'hisTradingCount',
-				       SUM(a.amounts) AS 'hisTradingAmounts',
-				       '1' AS 'biao'
-				FROM t_trading_order AS a
-				WHERE 1=1
-				AND a.app_user_id = ?
-				AND a.amount_type = 1
-				AND a.nation = ?
-			) AS e ON a.biao = e.biao
-	`, appUser.AppUserId, appUser.Nation, appUser.AppUserId, timeZone, timeZone, appUser.Nation, timeZone, timeZone, timeZone, timeZone, appUser.AppUserId, appUser.Nation, timeZone, timeZone, timeZone, timeZone, appUser.AppUserId, appUser.Nation, appUser.AppUserId, appUser.Nation).
-		Row().
-		Scan(&userTradeMessage)
+	timeZoneArr := strings.SplitAfter(appItem.TimeZone, "T")
+	timeZone := timeZoneArr[1]
+	//var userTradeMessage response.UserTradeMessage
+	var userTradeMessage map[string]interface{}
+	err = mysql.DB.Debug().Raw(`SELECT a.app_user_id AS 'appUserId', a.is_new AS 'isNew', a.black_list AS 'blackList',
+ifnull(b.tradingCount, 0) AS 'tradingCount', ifnull(b.tradingAmounts, 0) AS 'tradingAmounts',
+ifnull(c.rechargeAmounts, 0) AS 'rechargeAmounts', ifnull(c.rechargeCount, 0) AS 'rechargeCount',
+ifnull(c.rechargeTodayAmounts, 0) AS 'rechargeTodayAmounts', ifnull(c.rechargeTodayCount, 0) AS 'rechargeTodayCount',
+ifnull(d.withdrawAmounts, 0) AS 'withdrawAmounts', ifnull(d.withdrawCount, 0) AS 'withdrawCount',
+ifnull(d.withdrawTodayAmounts, 0) AS 'withdrawTodayAmounts', ifnull(d.withdrawTodayCount, 0) AS 'withdrawTodayCount',
+ifnull(e.hisTradingCount, 0) AS 'hisTradingCount', ifnull(e.hisTradingAmounts, 0) AS 'hisTradingAmounts'
+FROM (SELECT a.app_user_id, '1' AS 'biao', a.is_new, a.black_list
+FROM t_app_user AS a
+WHERE 1=1 AND a.app_user_id = ? AND a.nation = ?) AS a
+INNER JOIN (SELECT COUNT(1) AS 'tradingCount', SUM(a.amounts) AS 'tradingAmounts', '1' AS 'biao'
+FROM t_trading_order AS a
+WHERE 1=1 AND a.app_user_id = ?
+AND DATE_FORMAT(CONVERT_TZ(a.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d')
+AND a.amount_type = 1 AND a.nation = ?) AS b ON a.biao = b.biao
+INNER JOIN (SELECT SUM(b.amount) AS 'rechargeAmounts', COUNT(1) AS 'rechargeCount',
+SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d') THEN b.amount ELSE 0 END ) AS 'rechargeTodayAmounts',
+SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d') THEN 1 ELSE 0 END ) AS 'rechargeTodayCount',
+'1' AS 'biao'
+FROM t_recharge_order AS b
+WHERE 1=1 AND b.app_user_id = ? AND b.recharge_order_status = 1 AND b.nation = ?) AS c ON a.biao = c.biao
+INNER JOIN (SELECT SUM(b.amount) AS 'withdrawAmounts', COUNT(1) AS 'withdrawCount',
+SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d') THEN b.amount ELSE 0 END ) AS 'withdrawTodayAmounts',
+SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', ?),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', ?),'%Y-%m-%d') THEN 1 ELSE 0 END ) AS 'withdrawTodayCount',
+'1' AS 'biao'
+FROM t_withdraw_order AS b
+WHERE 1=1 AND b.app_user_id = ? AND b.withdraw_order_status IN (1,2) AND b.nation = ?) AS d ON a.biao = d.biao
+INNER JOIN (SELECT COUNT(1) AS 'hisTradingCount', SUM(a.amounts) AS 'hisTradingAmounts', '1' AS 'biao'
+FROM t_trading_order AS a
+WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON a.biao = e.biao`, appUser.AppUserId, appUser.Nation, appUser.AppUserId, timeZone, timeZone, appUser.Nation, timeZone, timeZone, timeZone, timeZone, appUser.AppUserId, appUser.Nation, timeZone, timeZone, timeZone, timeZone, appUser.AppUserId, appUser.Nation, appUser.AppUserId, appUser.Nation).Scan(&userTradeMessage).Error
 	if err != nil {
-		return true, ""
+		logger.Error(err)
+		return true, err.Error()
 	}
 	// 查询用户交易规则
 	var userOperationRules []models.UserOperationRules
@@ -296,15 +255,18 @@ func tradeJuedge(appUser models.AppUser, params requests.SubmitTradeParams) (boo
 				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
 			}
 		}
+		logger.Info(fmt.Sprintf("%T", userTradeMessage))
+		logger.Info(userTradeMessage["tradingCount"])
+		logger.Info(userTradeMessage["tradingAmounts"])
 		// 最多交易次数限制，命中规则拦截
 		if strings.EqualFold("maxTradingTimes", item.RuleCode) {
-			if DecisionAlgorithmInterface(userTradeMessage.TradingCount, int(item.Value), item.CalculateMethod) {
+			if DecisionAlgorithmInterface(helpers.StringToInt(userTradeMessage["tradingCount"].(string)), int(item.Value), item.CalculateMethod) {
 				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
 			}
 		}
 		// 日交易总金额限制，命中规则拦截【不判断影响不大】
 		if strings.EqualFold("dayMaxTradingAmounts", item.RuleCode) {
-			if DecisionAlgorithmInterface(userTradeMessage.TradingAmounts, int(item.Value), item.CalculateMethod) {
+			if DecisionAlgorithmInterface(helpers.StringToInt(userTradeMessage["tradingAmounts"].(string)), int(item.Value), item.CalculateMethod) {
 				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
 			}
 		}
