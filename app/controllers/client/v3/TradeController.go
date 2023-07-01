@@ -260,13 +260,13 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 		logger.Info(userTradeMessage["tradingAmounts"])
 		// 最多交易次数限制，命中规则拦截
 		if strings.EqualFold("maxTradingTimes", item.RuleCode) {
-			if DecisionAlgorithmInterface(helpers.StringToInt(userTradeMessage["tradingCount"].(string)), int(item.Value), item.CalculateMethod) {
+			if DecisionAlgorithmInterface(int(userTradeMessage["tradingCount"].(int64)), int(item.Value), item.CalculateMethod) {
 				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
 			}
 		}
 		// 日交易总金额限制，命中规则拦截【不判断影响不大】
 		if strings.EqualFold("dayMaxTradingAmounts", item.RuleCode) {
-			if DecisionAlgorithmInterface(helpers.StringToInt(userTradeMessage["tradingAmounts"].(string)), int(item.Value), item.CalculateMethod) {
+			if DecisionAlgorithmInterface(int(userTradeMessage["tradingAmounts"].(float64)), int(item.Value), item.CalculateMethod) {
 				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
 			}
 		}
