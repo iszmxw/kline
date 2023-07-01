@@ -2,6 +2,7 @@ package v3
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -24,58 +25,81 @@ type TradeController struct {
 	BaseController
 }
 
+func getMessage(languageCode, nation, resultCode string) string {
+	var AppSelectEnum models.AppSelectEnum
+	var msg string
+	if len(languageCode) == 0 {
+		languageCode = "EN"
+	}
+	if len(nation) == 0 {
+		nation = "India"
+	}
+	if len(resultCode) == 0 {
+		resultCode = "ErrorRequest"
+	}
+	err := mysql.DB.Debug().Model(models.AppSelectEnum{}).
+		Where("language_code", languageCode).
+		Where("nation", nation).
+		Where("result_code", resultCode).Find(&AppSelectEnum).Error
+	if err != nil {
+		msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "Unknown Error")
+	}
+	msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, AppSelectEnum.Message)
+	return msg
+}
+
 // 提交下单
 
 func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params requests.SubmitTradeParams) {
 	logger.RequestId = socketId
 	if params.Amounts <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
 	}
 	if params.AmountType <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
 	}
 	if len(params.AssetsId) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
 	}
 	if len(params.TradingBeginDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
 	}
 	if len(params.TradeEndDate) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
 	}
 	if len(params.UpDownType) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
 	}
 	if params.BeginAssetsPrice <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
 	}
 	if params.KlineTime <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"ParamsCanNotBeNull"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
 	}
 	sysTime := time.Now()
 	// 请求超时拦截
 	if helpers.StringToInt64(params.TradingBeginDate) < sysTime.UnixMilli()-10000 && 3 != params.AmountType {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"RequestTimeout"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "RequestTimeout"))
 		return
 	}
 	// 时间超前拦截
 	if helpers.StringToInt64(params.TradingBeginDate) > sysTime.UnixMilli() && 3 != params.AmountType {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"PleaseCheckTheNetworkTime"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "PleaseCheckTheNetworkTime"))
 		return
 	}
 	// demo 订单只能同时存在五笔
 	var total int64
 	mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where("quiz_result", -1).Where("app_user_id", params.TradeOrderId).Count(&total)
 	if total >= 5 && 3 == params.AmountType {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"DemoLimit"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "DemoLimit"))
 		return
 	}
 	// 校验是否存在该交易点数据
@@ -87,24 +111,25 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		Scan(&size)
 	if err != nil {
 		logger.Error(err)
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"校验是否存在该交易点数据"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 		return
 	}
 	if size == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"校验是否存在该交易点数据"}`)
+		logger.Error(errors.New("校验是否存在该交易点数据"))
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 		return
 	}
 	// 校验资产 资产已经休市，请更换其他资产
 	var asset models.TradingAssets
 	mysql.DB.Debug().Model(models.TradingAssets{}).Where("id", params.AssetsId).Find(&asset)
 	if asset.IsValid != 1 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"AssetClosed"}`)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "AssetClosed"))
 		return
 	}
 	// 前端传递费率和数据库读取到的不一致
 	if asset.ReturnRate != params.ReturnRate {
-		logger.Info("returnRate不一致：", asset.ReturnRate, "---", params.ReturnRate)
-		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "参数错误：returnRate"))
+		logger.Info("参数错误：returnRate不一致：", asset.ReturnRate, "---", params.ReturnRate)
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 		return
 	}
 	var appUser models.AppUser
@@ -113,7 +138,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 	if params.AmountType != 3 {
 		ok, msg := tradeJuedge(appUser, params)
 		if ok {
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, msg))
+			SocketResp(ws, websocket.TextMessage, msg)
 			return
 		}
 	}
@@ -193,7 +218,8 @@ func tradeJuedge(appUser models.AppUser, params requests.SubmitTradeParams) (boo
 	err := mysql.DB.Debug().Model(models.AppItem{}).Where("item_code", appUser.ItemCode).Where("item_national_name", appUser.Nation).Find(&appItem).Error
 	if err != nil {
 		logger.Error(err)
-		return true, "交易规则未配置"
+		logger.Error(errors.New("交易规则未配置"))
+		return true, getMessage(params.LanguageCode, params.Nation, "FailOperate")
 	}
 	timeZoneArr := strings.SplitAfter(appItem.TimeZone, "T")
 	timeZone := timeZoneArr[1]
@@ -231,7 +257,7 @@ FROM t_trading_order AS a
 WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON a.biao = e.biao`, appUser.AppUserId, appUser.Nation, appUser.AppUserId, timeZone, timeZone, appUser.Nation, timeZone, timeZone, timeZone, timeZone, appUser.AppUserId, appUser.Nation, timeZone, timeZone, timeZone, timeZone, appUser.AppUserId, appUser.Nation, appUser.AppUserId, appUser.Nation).Scan(&userTradeMessage).Error
 	if err != nil {
 		logger.Error(err)
-		return true, err.Error()
+		return true, getMessage(params.LanguageCode, params.Nation, "FailOperate")
 	}
 	// 查询用户交易规则
 	var userOperationRules []models.UserOperationRules
@@ -246,13 +272,13 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 		// 最小交易金额限制，命中规则拦截
 		if strings.EqualFold("minTradingAmounts", item.RuleCode) {
 			if DecisionAlgorithmInterface(int(params.Amounts), int(item.Value), item.CalculateMethod) {
-				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
+				return true, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value)))
 			}
 		}
 		// 最大交易金额限制，命中规则拦截
 		if strings.EqualFold("maxTradingAmounts", item.RuleCode) {
 			if DecisionAlgorithmInterface(int(params.Amounts), int(item.Value), item.CalculateMethod) {
-				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
+				return true, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value)))
 			}
 		}
 		logger.Info(fmt.Sprintf("%T", userTradeMessage))
@@ -261,13 +287,13 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 		// 最多交易次数限制，命中规则拦截
 		if strings.EqualFold("maxTradingTimes", item.RuleCode) {
 			if DecisionAlgorithmInterface(int(userTradeMessage["tradingCount"].(int64)), int(item.Value), item.CalculateMethod) {
-				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
+				return true, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value)))
 			}
 		}
 		// 日交易总金额限制，命中规则拦截【不判断影响不大】
 		if strings.EqualFold("dayMaxTradingAmounts", item.RuleCode) {
 			if DecisionAlgorithmInterface(int(userTradeMessage["tradingAmounts"].(float64)), int(item.Value), item.CalculateMethod) {
-				return true, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value))
+				return true, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value)))
 			}
 		}
 	}
