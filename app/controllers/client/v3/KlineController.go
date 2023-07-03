@@ -52,6 +52,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			// 跳出for关闭后面的读取
 			goto END
 		}
+		logger.Info("message", string(message))
 		// 对数据进行切割，读取参数
 		// 如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
 		var SubStruct requests.SubParams
