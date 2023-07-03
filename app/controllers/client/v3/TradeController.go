@@ -617,6 +617,7 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 		"update_ts":     time.Now().UnixMilli(),
 		"bonus_balance": bonusBalance,
 	}).Error
+	logger.Info(bonusBalance, userBalance)
 	if err != nil {
 		logger.Error(err)
 		DB.Rollback()
