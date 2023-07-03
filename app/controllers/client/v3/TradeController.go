@@ -506,14 +506,14 @@ func createVirtualTradingOrder(socketId string, ws *wss.WsConn, orderId string, 
 
 type UserBalance struct {
 	Balance      float64 `json:"balance"`
-	BonusBalance float64 `json:"bonusBalance"`
+	BonusBalance float64 `json:"bonus_balance"`
 }
 
 func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, changeType int) bool {
 	DB := mysql.DB.Debug()
 	DB.Begin()
 	var userBalance UserBalance
-	err := DB.Raw(`SELECT balance,bonus_balance as bonusBalance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Scan(&userBalance).Error
+	err := DB.Raw(`SELECT balance,bonus_balance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Scan(&userBalance).Error
 	if err != nil {
 		logger.Error(err)
 		DB.Rollback()
@@ -569,7 +569,7 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 	DB := mysql.DB.Debug()
 	DB.Begin()
 	var userBalance UserBalance
-	err := DB.Raw(`SELECT balance,bonus_balance as bonusBalance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Scan(&userBalance).Error
+	err := DB.Raw(`SELECT balance,bonus_balance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Scan(&userBalance).Error
 	if err != nil {
 		logger.Error(err)
 		DB.Rollback()
