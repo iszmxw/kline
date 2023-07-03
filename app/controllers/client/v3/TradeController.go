@@ -175,6 +175,8 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
 			SocketResp(ws, websocket.TextMessage, string(marshal))
+		} else {
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 		}
 		break
 	case 2:
@@ -195,6 +197,8 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
 			SocketResp(ws, websocket.TextMessage, string(marshal))
+		} else {
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 		}
 		break
 	case 3:
@@ -339,6 +343,7 @@ func DecisionAlgorithmInterface(a, b, calculateMethod int) bool {
 
 // 创建真实交易订单
 func createTradingOrder(socketId string, ws *wss.WsConn, orderId string, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
+	Pass := true
 	createOrder := new(models.TradingOrder)
 	createOrder.TradeOrderId = orderId
 	createOrder.Amounts = params.Amounts
@@ -398,10 +403,10 @@ func createTradingOrder(socketId string, ws *wss.WsConn, orderId string, params 
 	// 变更用户余额
 	switch params.AmountType {
 	case 1:
-		UpdateUserBalance(orderId, appUser.AppUserId, "2", params.Amounts, 2)
+		Pass = UpdateUserBalance(orderId, appUser.AppUserId, "2", params.Amounts, 2)
 		break
 	case 2:
-		UpdateUserBonusBalance(orderId, appUser.AppUserId, "2", params.Amounts, 7)
+		Pass = UpdateUserBonusBalance(orderId, appUser.AppUserId, "2", params.Amounts, 7)
 		break
 	case 3:
 		err = mysql.DB.Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Updates(map[string]interface{}{
@@ -409,27 +414,29 @@ func createTradingOrder(socketId string, ws *wss.WsConn, orderId string, params 
 		}).Error
 		if err != nil {
 			logger.Error(err)
-			return false
+			Pass = false
 		}
 		break
 	default:
 		break
 	}
-	// 开启协诚处理 下单开奖通知
-	go PushNotice(socketId, ws, requests.TradeOrderInfo{
-		TradeOrderId:        createOrder.TradeOrderId,
-		AppUserId:           createOrder.AppUserId,
-		AssetsCode:          createOrder.AssetsCode,
-		ItemCode:            createOrder.ItemCode,
-		TradeBeginTimestamp: fmt.Sprintf("%v", createOrder.TradeBeginTimestamp),
-		TradeEndTimestamp:   fmt.Sprintf("%v", createOrder.TradeEndTimestamp),
-		BeginAssetsPrice:    fmt.Sprintf("%v", createOrder.BeginAssetsPrice),
-		EndAssetsPrice:      fmt.Sprintf("%v", createOrder.EndAssetsPrice),
-		UpDownType:          createOrder.UpDownType,
-		Amounts:             fmt.Sprintf("%v", createOrder.Amounts),
-		IsDemo:              "0",
-	})
-	return true
+	if Pass {
+		// 开启协诚处理 下单开奖通知
+		go PushNotice(socketId, ws, requests.TradeOrderInfo{
+			TradeOrderId:        createOrder.TradeOrderId,
+			AppUserId:           createOrder.AppUserId,
+			AssetsCode:          createOrder.AssetsCode,
+			ItemCode:            createOrder.ItemCode,
+			TradeBeginTimestamp: fmt.Sprintf("%v", createOrder.TradeBeginTimestamp),
+			TradeEndTimestamp:   fmt.Sprintf("%v", createOrder.TradeEndTimestamp),
+			BeginAssetsPrice:    fmt.Sprintf("%v", createOrder.BeginAssetsPrice),
+			EndAssetsPrice:      fmt.Sprintf("%v", createOrder.EndAssetsPrice),
+			UpDownType:          createOrder.UpDownType,
+			Amounts:             fmt.Sprintf("%v", createOrder.Amounts),
+			IsDemo:              "0",
+		})
+	}
+	return Pass
 }
 
 // 创建虚拟交易订单
@@ -502,7 +509,7 @@ type UserBalance struct {
 	BonusBalance float64 `json:"bonusBalance"`
 }
 
-func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, changeType int) {
+func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, changeType int) bool {
 	DB := mysql.DB.Debug()
 	DB.Begin()
 	var userBalance UserBalance
@@ -510,7 +517,7 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 	if err != nil {
 		logger.Error(err)
 		DB.Rollback()
-		return
+		return false
 	}
 	balance := userBalance.Balance
 	var changeBalance float64 = 0
@@ -538,16 +545,27 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 	appUserBalanceChangeLog.TimerBalance = userBalance.Balance
 	appUserBalanceChangeLog.CreateDate = time.Now()
 	appUserBalanceChangeLog.UpdateDate = time.Now()
-	DB.Model(models.AppUserBalanceChangeLog{}).Create(&appUserBalanceChangeLog)
-	DB.Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Updates(map[string]interface{}{
+	err = DB.Model(models.AppUserBalanceChangeLog{}).Create(&appUserBalanceChangeLog).Error
+	if err != nil {
+		logger.Error(err)
+		DB.Rollback()
+		return false
+	}
+	err = DB.Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Updates(map[string]interface{}{
 		"update_date": time.Now(),
 		"update_ts":   time.Now().UnixMilli(),
 		"balance":     balance,
-	})
+	}).Error
+	if err != nil {
+		logger.Error(err)
+		DB.Rollback()
+		return false
+	}
 	DB.Commit()
+	return true
 }
 
-func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64, changeType int) {
+func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64, changeType int) bool {
 	DB := mysql.DB.Debug()
 	DB.Begin()
 	var userBalance UserBalance
@@ -555,9 +573,9 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 	if err != nil {
 		logger.Error(err)
 		DB.Rollback()
-		return
+		return false
 	}
-	bonusBalance := userBalance.Balance
+	bonusBalance := userBalance.BonusBalance
 	var changeBalance float64 = 0
 	if strings.EqualFold("1", types) {
 		bonusBalance = bonusBalance + amount
@@ -571,7 +589,12 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 		logger.Info("UpdateUserBonusBalance")
 	}
 	var appUser models.AppUser
-	DB.Model(models.AppUser{}).Where("app_user_id", appUserId).Find(&appUser)
+	err = DB.Model(models.AppUser{}).Where("app_user_id", appUserId).Find(&appUser).Error
+	if err != nil {
+		logger.Error(err)
+		DB.Rollback()
+		return false
+	}
 	var appUserBalanceChangeLog models.AppUserBalanceChangeLog
 	appUserBalanceChangeLog.AppUserId = appUser.AppUserId
 	appUserBalanceChangeLog.ChangeBalance = changeBalance
@@ -583,11 +606,22 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 	appUserBalanceChangeLog.TimerBalance = userBalance.BonusBalance
 	appUserBalanceChangeLog.CreateDate = time.Now()
 	appUserBalanceChangeLog.UpdateDate = time.Now()
-	DB.Model(models.AppUserBalanceChangeLog{}).Create(&appUserBalanceChangeLog)
-	DB.Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Updates(map[string]interface{}{
+	err = DB.Model(models.AppUserBalanceChangeLog{}).Create(&appUserBalanceChangeLog).Error
+	if err != nil {
+		logger.Error(err)
+		DB.Rollback()
+		return false
+	}
+	err = DB.Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Updates(map[string]interface{}{
 		"update_date":   time.Now(),
 		"update_ts":     time.Now().UnixMilli(),
 		"bonus_balance": bonusBalance,
-	})
+	}).Error
+	if err != nil {
+		logger.Error(err)
+		DB.Rollback()
+		return false
+	}
 	DB.Commit()
+	return true
 }
