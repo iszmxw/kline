@@ -143,7 +143,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		}
 	}
 	// 交易金额类型 1 余额 2 bonus 3 虚拟货币
-	orderId := "G_" + strings.ReplaceAll(uuid.New().String(), "-", "")
+	orderId := fmt.Sprintf("%v%v", time.Now().Format("0060102"), uuid.New().ID())
 	marshal, err := json.Marshal(gin.H{
 		"id":  "07",
 		"msg": "ok",
@@ -153,13 +153,13 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 	})
 	if err != nil {
 		logger.Error(err)
-		SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "参数解析错误"))
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 		return
 	}
 	switch params.AmountType {
 	case 1:
 		if appUser.Balance < params.Amounts {
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "余额不足"))
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "InsufficientBalance"))
 			return
 		}
 		ok := createTradingOrder(socketId, ws, orderId, params, appUser, asset)
@@ -179,7 +179,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		break
 	case 2:
 		if appUser.BonusBalance < params.Amounts {
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "bonus余额不足"))
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "InsufficientBalance"))
 			return
 		}
 		ok := createTradingOrder(socketId, ws, orderId, params, appUser, asset)
@@ -199,7 +199,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		break
 	case 3:
 		if appUser.VirtualBalance < params.Amounts {
-			SocketResp(ws, websocket.TextMessage, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "虚拟余额不足"))
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "InsufficientBalance"))
 			return
 		}
 		createVirtualTradingOrder(socketId, ws, orderId, params, appUser, asset)
@@ -506,7 +506,7 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 	DB := mysql.DB.Debug()
 	DB.Begin()
 	var userBalance UserBalance
-	err := DB.Raw(`SELECT balance,bonus_balance as bonusBalance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Row().Scan(&userBalance)
+	err := DB.Raw(`SELECT balance,bonus_balance as bonusBalance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Scan(&userBalance).Error
 	if err != nil {
 		logger.Error(err)
 		DB.Rollback()
@@ -551,7 +551,7 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 	DB := mysql.DB.Debug()
 	DB.Begin()
 	var userBalance UserBalance
-	err := DB.Raw(`SELECT balance,bonus_balance as bonusBalance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Row().Scan(&userBalance)
+	err := DB.Raw(`SELECT balance,bonus_balance as bonusBalance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Scan(&userBalance).Error
 	if err != nil {
 		logger.Error(err)
 		DB.Rollback()
