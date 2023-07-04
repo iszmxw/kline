@@ -77,7 +77,8 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 						continue
 					}
 					SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"token error"}`)
-					return
+					time.Sleep(time.Second * 3)
+					goto END
 				}
 			}
 		}
@@ -312,23 +313,24 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 	}
 	var result []byte
 	if strings.EqualFold(params.Gzip, "1") {
-		marshal, err := json.Marshal(data)
-		if err != nil {
-			logger.Error(err)
+		marshal, errs := json.Marshal(data)
+		if errs != nil {
+			logger.Error(errs)
 			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			return
 		}
-		Zipresult, err := utils.Zip(marshal)
-		if err != nil {
-			logger.Error(err)
+		ZipResult, errs := utils.Zip(marshal)
+		if errs != nil {
+			logger.Error(errs)
 			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			return
 		}
+		logger.Info("ZipResult", "-OK")
 		result, err = json.Marshal(gin.H{
 			"id": "02",
 			"data": gin.H{
 				"gzip":          "1",
-				"HistKlineLogs": Zipresult,
+				"HistKlineLogs": ZipResult,
 				"beginDate":     time.Unix(helpers.StringToInt64(beginDate)/1000, 0).Format("2006-01-02 15:04:05"),
 				"endDate":       time.Unix(helpers.StringToInt64(endDate)/1000, 0).Format("2006-01-02 15:04:05"),
 				"klineSource":   klineSource,
