@@ -97,7 +97,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 	}
 	// demo 订单只能同时存在五笔
 	var total int64
-	mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where("quiz_result", -1).Where("app_user_id", params.TradeOrderId).Count(&total)
+	mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where("quiz_result", -1).Where("app_user_id", params.AppUserId).Count(&total)
 	if total >= 5 && 3 == params.AmountType {
 		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "DemoLimit"))
 		return
