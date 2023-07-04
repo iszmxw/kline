@@ -104,6 +104,45 @@ func Get(url, authorization string) (resp *Response, err error) {
 	return resp, nil
 }
 
+func Post(url, authorization string) (resp *Response, err error) {
+	request, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
+
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authorization))
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	buf := &bytes.Buffer{}
+	_, err = io.Copy(buf, response.Body)
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
+
+	switch {
+	case strings.HasPrefix(strings.TrimSpace(buf.String()), "Event failed"):
+		msg := strings.TrimSpace(buf.String())
+		return nil, errors.New(msg)
+	case strings.Contains(buf.String(), "Device not found"):
+		return nil, ErrDeviceNotFound
+	}
+
+	if err := json.NewDecoder(buf).Decode(&resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 // 提交 adjust 事件
 
 func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
@@ -186,7 +225,7 @@ func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
 		req.Add("callback_params", fmt.Sprintf(`{"userId":"%s"}`, eventParams.AppUserId))
 	}
 	u := adjustParams.Url + "?" + req.Encode()
-	resp, err := Get(u, adjustParams.Authorization)
+	resp, err := Post(u, adjustParams.Authorization)
 	if err != nil {
 		logger.Error(err)
 		return
