@@ -844,7 +844,7 @@ func PushToast(socketId string, ws *wss.WsConn, AppUserId string) {
 		time.Sleep(20 * time.Second) // 每隔20秒来一次推送
 	}
 STOP:
-	logger.Error(errors.New("PushPopup关闭Socket"))
+	logger.Error(errors.New("PushToast关闭Socket"))
 	wss.WsClose(ws)
 }
 
