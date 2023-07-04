@@ -71,12 +71,13 @@ type FlowJson struct {
 func Get(url, authorization string) (resp *Response, err error) {
 	client := &http.Client{}
 	//提交请求
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("POST", url, nil)
 	// 增加header选项
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", authorization))
 	if err != nil {
-		panic(err)
+		logger.Error(err)
+		return
 	}
 	//处理返回结果
 	response, _ := client.Do(request)
@@ -85,7 +86,8 @@ func Get(url, authorization string) (resp *Response, err error) {
 	defer func(Body io.ReadCloser) {
 		err = Body.Close()
 		if err != nil {
-			panic(err)
+			logger.Error(err)
+			return
 		}
 	}(response.Body)
 	switch {
@@ -113,7 +115,7 @@ func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
 		return
 	}
 	accountCode := ""
-	if len(eventParams.EventBindId) > 0 && strings.Contains(strings.ToLower(eventParams.DeviceBrand), "apple") {
+	if len(eventParams.DeviceBrand) > 0 && strings.Contains(strings.ToLower(eventParams.DeviceBrand), "apple") {
 		accountCode = "apple"
 	} else {
 		accountCode = "android"
@@ -186,6 +188,7 @@ func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
 	u := adjustParams.Url + "?" + req.Encode()
 	resp, err := Get(u, adjustParams.Authorization)
 	if err != nil {
+		logger.Error(err)
 		return
 	}
 	// 保存请求 adjust 结果信息
@@ -203,12 +206,14 @@ func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
 		Adid:       adid,
 		Status:     0,
 	}
-	if len(resp.Status) > 0 {
-		createData.Status = 1
-		createData.ResultMessage = resp.Status
-	} else if len(resp.Error) > 0 {
-		createData.Status = 0
-		createData.ResultMessage = resp.Error
+	if resp != nil {
+		if len(resp.Status) > 0 {
+			createData.Status = 1
+			createData.ResultMessage = resp.Status
+		} else if len(resp.Error) > 0 {
+			createData.Status = 0
+			createData.ResultMessage = resp.Error
+		}
 	}
 	err = mysql.DB.Debug().Model(models.AppUserAdjustSendLog{}).Create(&createData).Error
 	if err != nil {

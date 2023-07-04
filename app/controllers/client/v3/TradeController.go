@@ -164,7 +164,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		}
 		ok := createTradingOrder(socketId, ws, orderId, params, appUser, asset)
 		if ok {
-			goadjust.SubmitEvent(goadjust.EventParams{
+			go goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
 				AppUserId:        appUser.AppUserId,
 				IsRepeatedSubmit: "0",
@@ -186,7 +186,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		}
 		ok := createTradingOrder(socketId, ws, orderId, params, appUser, asset)
 		if ok {
-			goadjust.SubmitEvent(goadjust.EventParams{
+			go goadjust.SubmitEvent(goadjust.EventParams{
 				EventName:        "trade",
 				AppUserId:        appUser.AppUserId,
 				IsRepeatedSubmit: "0",
