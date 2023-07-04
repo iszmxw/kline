@@ -15,6 +15,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	wss "goapi/pkg/websocket"
+	"goapi/service/binary-monitoring/pkg"
 	"strings"
 	"time"
 )
@@ -129,8 +130,10 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 	// 前端传递费率和数据库读取到的不一致
 	if asset.ReturnRate != params.ReturnRate {
 		logger.Info("参数错误：returnRate不一致：", asset.ReturnRate, "---", params.ReturnRate)
-		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
-		return
+		// 发送通知
+		pkg.Notice("下单风控检测出现 returnRate 不一致，详细信息", asset, params)
+		//SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
+		//return
 	}
 	var appUser models.AppUser
 	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AppUserId).Find(&appUser)
