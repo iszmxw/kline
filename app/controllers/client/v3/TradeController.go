@@ -431,7 +431,7 @@ func createTradingOrder(socketId string, ws *wss.WsConn, orderId string, params 
 	}
 	if Pass {
 		// 开启协诚处理 下单开奖通知
-		go PushNotice(socketId, ws, requests.TradeOrderInfo{
+		go PushNoticePlus(socketId, ws, requests.TradeOrderInfo{
 			TradeOrderId:        createOrder.TradeOrderId,
 			AppUserId:           createOrder.AppUserId,
 			AssetsCode:          createOrder.AssetsCode,
@@ -497,7 +497,7 @@ func createVirtualTradingOrder(socketId string, ws *wss.WsConn, orderId string, 
 		logger.Error(err)
 		return false
 	}
-	go PushNotice(socketId, ws, requests.TradeOrderInfo{
+	go PushNoticePlus(socketId, ws, requests.TradeOrderInfo{
 		TradeOrderId:        createOrder.TradeOrderId,
 		AppUserId:           createOrder.AppUserId,
 		AssetsCode:          createOrder.AssetsCode,

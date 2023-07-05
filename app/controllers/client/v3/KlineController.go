@@ -16,6 +16,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
+	"goapi/service/binary-monitoring/pkg"
 	"strings"
 	"time"
 
@@ -139,7 +140,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
-				go PushNotice(socketId, ws, params)
+				go PushNoticePlus(socketId, ws, params)
 			}
 			break
 		case strings.EqualFold(ID, "06"): // 弹窗通知
@@ -752,6 +753,160 @@ func PushNotice(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo)
 STOP:
 	logger.Error(errors.New("交割结果通知结束，关闭定时器"))
 	ticker.Stop()
+}
+
+func PushNoticePlus(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo) {
+	logger.RequestId = socketId
+	if len(params.AppUserId) == 0 {
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AppUserId not right"}`)
+		logger.Error(errors.New("err sub,AppUserId not right"))
+		return
+	}
+	if len(params.AssetsCode) == 0 {
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AssetsCode not right"}`)
+		logger.Error(errors.New("err sub,AssetsCode not right"))
+		return
+	}
+	if len(params.TradeBeginTimestamp) <= 0 {
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,TradeBeginTimestamp not right"}`)
+		logger.Error(errors.New("err sub,TradeBeginTimestamp not right"))
+		return
+	}
+	if len(params.BeginAssetsPrice) == 0 {
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,BeginAssetsPrice not right"}`)
+		logger.Error(errors.New("err sub,BeginAssetsPrice not right"))
+		return
+	}
+	if len(params.UpDownType) == 0 {
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,UpDownType not right"}`)
+		logger.Error(errors.New("err sub,UpDownType not right"))
+		return
+	}
+	if len(params.Amounts) == 0 {
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,Amounts not right"}`)
+		logger.Error(errors.New("err sub,Amounts not right"))
+		return
+	}
+	if len(params.IsDemo) == 0 {
+		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,IsDemo not right"}`)
+		logger.Error(errors.New("err sub,IsDemo not right"))
+		return
+	}
+	if len(params.ItemCode) == 0 {
+		params.ItemCode = config.GetString("app.item_code")
+	}
+	// 获取交易资产的小数点位数
+	var TradingAssets models.TradingAssets
+	err := mysql.DB.Debug().Model(models.TradingAssets{}).
+		Where("item_code", params.ItemCode).
+		Where("assets_code", params.AssetsCode).
+		Find(&TradingAssets).Error
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	if TradingAssets.Id <= 0 {
+		logger.Error(errors.New("查询错误"))
+		return
+	}
+	beginAssetsPrice, err := helpers.FormatFloat(helpers.StrToFloat64(params.BeginAssetsPrice), TradingAssets.PointNumber)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	// 开启定时器，60 秒后查询结果进行通知
+	timer := time.NewTimer(time.Second * 59)  // 创建一个 59s 的定时器
+	ticker := time.NewTicker(1 * time.Second) // 每秒检查一次
+	defer func() {
+		ticker.Stop()
+		timer.Stop() // 关闭定时器释放资源
+		if errs := recover(); errs != nil {
+			logger.Error(fmt.Errorf("%v", errs))
+			pkg.Notice("PushNoticePlus 出现错误请留意")
+		}
+	}()
+	for {
+		select {
+		case <-timer.C: // 定时器时间到期
+			goto STOP
+		case <-ticker.C: // 每秒检查一次
+			if params.IsDemo == "1" { // 如果是 demo 订单，就走demo表查询
+				var TradingOrderVirtual models.TradingOrderVirtual
+				err := mysql.DB.Debug().Model(models.TradingOrderVirtual{}).
+					Where("app_user_id", params.AppUserId).
+					Where("assets_code", params.AssetsCode).
+					Where("trade_begin_timestamp", params.TradeBeginTimestamp).
+					Where("begin_assets_price", beginAssetsPrice).
+					Where("up_down_type", params.UpDownType).
+					Where("amounts", params.Amounts).
+					Find(&TradingOrderVirtual).Error
+				if err != nil {
+					logger.Error(err)
+					continue
+				}
+				if TradingOrderVirtual.QuizResult == -1 {
+					// 未出结果跳过
+					continue
+				}
+				// 结束值
+				if TradingOrderVirtual.EndAssetsPrice > 0 {
+					params.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
+					params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
+					params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrderVirtual.TradeEndTimestamp)
+					marshal, errs := json.Marshal(gin.H{
+						"id":   "04",
+						"data": params,
+					})
+					if errs != nil {
+						logger.Error(errs)
+						continue
+					}
+					// 推送消息通知前端开奖结果
+					SocketResp(ws, websocket.TextMessage, string(marshal))
+					logger.Info(string(marshal))
+					goto STOP
+				}
+			} else {
+				var TradingOrder models.TradingOrder
+				err := mysql.DB.Debug().Model(models.TradingOrder{}).
+					Where("app_user_id", params.AppUserId).
+					Where("assets_code", params.AssetsCode).
+					Where("trade_begin_timestamp", params.TradeBeginTimestamp).
+					Where("begin_assets_price", beginAssetsPrice).
+					Where("up_down_type", params.UpDownType).
+					Where("amounts", params.Amounts).
+					Find(&TradingOrder).Error
+				if err != nil {
+					logger.Error(err)
+					continue
+				}
+				if TradingOrder.QuizResult == -1 {
+					// 未出结果跳过
+					continue
+				}
+				// 结束值
+				if TradingOrder.EndAssetsPrice > 0 {
+					params.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
+					params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
+					params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrder.TradeEndTimestamp)
+					marshal, errs := json.Marshal(gin.H{
+						"id":   "04",
+						"data": params,
+					})
+					if errs != nil {
+						logger.Error(errs)
+						continue
+					}
+					// 推送消息通知前端开奖结果
+					SocketResp(ws, websocket.TextMessage, string(marshal))
+					logger.Info(string(marshal))
+					goto STOP
+				}
+			}
+		}
+	}
+STOP:
+	logger.Error(errors.New("交割结果通知结束，关闭定时器"))
 }
 
 // 弹窗通知
