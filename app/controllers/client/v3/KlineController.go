@@ -123,6 +123,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		case strings.EqualFold(ID, "03"):
 			{
+				appUser, _ := c.Get("user")
+				appUserId := appUser.(response.ClientUserBeans).AppUserId
+				// 监控消息通知
+				go PushNoticePlus(socketId, ws, appUserId)
 				//logger.Info(SubStruct)
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
