@@ -1,6 +1,7 @@
 package wss
 
 import (
+	"container/list"
 	"errors"
 	"goapi/app/models"
 	"goapi/pkg/logger"
@@ -29,6 +30,7 @@ type WsConn struct {
 	IsClose         bool         // 是否关闭
 	AppUserId       string       // 用户 ID
 	IsNotice        bool         // 订单结果通知
+	List            *list.List
 }
 
 func GetSocket(c *gin.Context) (*WsConn, error) {
@@ -54,6 +56,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 			false,
 			"",
 			false,
+			list.New(),
 		}, nil
 	} else {
 		return nil, errors.New("不是socket請求")

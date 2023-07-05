@@ -16,10 +16,12 @@ func init() {
 			"password": config.Env("DB_PASSWORD", "root"),
 			"prefix":   config.Env("DB_PREFIX", "root"),
 			"charset":  "utf8mb4",
-			// 连接池配置
-			"max_idle_connections": config.Env("DB_MAX_IDLE_CONNECTIONS", 100),
-			"max_open_connections": config.Env("DB_MAX_OPEN_CONNECTIONS", 25),
-			"max_life_seconds":     config.Env("DB_MAX_LIFE_SECONDS", 5*60),
+			// 最大空闲连接数
+			"max_idle_connections": config.Env("DB_MAX_IDLE_CONNECTIONS", 500),
+			// 最大打开连接数
+			"max_open_connections": config.Env("DB_MAX_OPEN_CONNECTIONS", 500),
+			// 最大寿命秒
+			"max_life_seconds": config.Env("DB_MAX_LIFE_SECONDS", 60),
 		},
 	})
 }
