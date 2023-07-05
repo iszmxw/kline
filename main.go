@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"goapi/bootstrap"
@@ -40,7 +41,14 @@ func main() {
 	flag.Parse()
 	// 初始化 SQL
 	logger.Info("初始化 SQL")
-	bootstrap.SetupDB()
+	DB := bootstrap.SetupDB()
+	// 关闭数据库链接
+	defer func(s *sql.DB) {
+		err := s.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(DB)
 	// 初始化 Redis
 	logger.Info("初始化 Redis")
 	db := conf.GetInt("redis.db")

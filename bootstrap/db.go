@@ -1,13 +1,14 @@
 package bootstrap
 
 import (
+	"database/sql"
 	"goapi/pkg/config"
 	"goapi/pkg/mysql"
 	"time"
 )
 
 // SetupDB 初始化数据库和 ORM
-func SetupDB() {
+func SetupDB() *sql.DB {
 	// 建立数据库连接池
 	db := mysql.ConnectDB()
 
@@ -18,10 +19,13 @@ func SetupDB() {
 	sqlDB.SetMaxOpenConns(config.GetInt("database.mysql.max_open_connections"))
 	// 设置最大空闲连接数
 	sqlDB.SetMaxIdleConns(config.GetInt("database.mysql.max_idle_connections"))
-	// 设置每个链接的过期时间
+	// 设置每个链接的过期时间，最大生命周期为
 	sqlDB.SetConnMaxLifetime(time.Duration(config.GetInt("database.mysql.max_life_seconds")) * time.Second)
+	// 设置连接的最大空闲时间为1分钟
+	sqlDB.SetConnMaxIdleTime(time.Duration(config.GetInt("database.mysql.max_life_seconds")) * time.Second)
 	//// 创建和维护数据表结构
 	//migration(db)
+	return sqlDB
 }
 
 //// 自动迁移

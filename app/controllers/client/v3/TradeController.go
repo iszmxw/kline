@@ -14,6 +14,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/redis"
 	wss "goapi/pkg/websocket"
 	"goapi/service/binary-monitoring/pkg"
 	"strings"
@@ -95,6 +96,30 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "PleaseCheckTheNetworkTime"))
 		return
 	}
+
+	// 双重锁
+	l := ws.List.Back()
+	if l != nil {
+		ws.List.Remove(l)
+		up := l.Value.(int64)
+		sysT := sysTime.UnixMilli()
+		if sysT-up < 300 {
+			msg := fmt.Sprintf("检测到用户【%s】频繁下单,klineTime=%v", params.AppUserId, params.KlineTime)
+			logger.Info(msg)
+			pkg.Notice(msg)
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
+			return
+		}
+	}
+	ws.List.PushFront(sysTime.UnixMilli())
+	ok, _ := redis.Client.SelectDbSetNx(config.GetInt("redis.db"), fmt.Sprintf("SubmitTrade:%v", sysTime.UnixMilli()/100), "suo", 10)
+	if !ok {
+		pkg.Notice(fmt.Sprintf("检测到用户【%s】频繁下单,klineTime=%v", params.AppUserId, params.KlineTime))
+		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
+		return
+	}
+	// 双重锁
+
 	// demo 订单只能同时存在五笔
 	if 3 == params.AmountType {
 		var total int64
@@ -145,7 +170,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AppUserId).Find(&appUser)
 	// 进行交易规则校验，虚拟交易不进行校验
 	if params.AmountType != 3 {
-		ok, msg := tradeJuedge(appUser, params)
+		ok, msg := tradeJudge(appUser, params)
 		if ok {
 			SocketResp(ws, websocket.TextMessage, msg)
 			return
@@ -183,6 +208,8 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
+			// 休息两百毫秒再返回
+			time.Sleep(time.Millisecond * 200)
 			SocketResp(ws, websocket.TextMessage, string(marshal))
 		} else {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
@@ -205,6 +232,8 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
+			// 休息两百毫秒再返回
+			time.Sleep(time.Millisecond * 200)
 			SocketResp(ws, websocket.TextMessage, string(marshal))
 		} else {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
@@ -216,6 +245,8 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			return
 		}
 		createVirtualTradingOrder(orderId, params, appUser, asset)
+		// 休息一百毫秒再返回
+		time.Sleep(time.Millisecond * 100)
 		SocketResp(ws, websocket.TextMessage, string(marshal))
 		break
 	default:
@@ -225,7 +256,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 
 // 交易规则判断
 
-func tradeJuedge(appUser models.AppUser, params requests.SubmitTradeParams) (bool, string) {
+func tradeJudge(appUser models.AppUser, params requests.SubmitTradeParams) (bool, string) {
 	// 获取用户所在国家的时区
 	var appItem models.AppItem
 	err := mysql.DB.Debug().Model(models.AppItem{}).Where("item_code", appUser.ItemCode).Where("item_national_name", appUser.Nation).Find(&appItem).Error
@@ -236,7 +267,6 @@ func tradeJuedge(appUser models.AppUser, params requests.SubmitTradeParams) (boo
 	}
 	timeZoneArr := strings.SplitAfter(appItem.TimeZone, "T")
 	timeZone := timeZoneArr[1]
-	//var userTradeMessage response.UserTradeMessage
 	var userTradeMessage map[string]interface{}
 	err = mysql.DB.Debug().Raw(`SELECT a.app_user_id AS 'appUserId', a.is_new AS 'isNew', a.black_list AS 'blackList',
 ifnull(b.tradingCount, 0) AS 'tradingCount', ifnull(b.tradingAmounts, 0) AS 'tradingAmounts',
