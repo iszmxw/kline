@@ -19,7 +19,6 @@ type Group struct {
 	AgentController
 	PromoteController
 	ConfigController
-	TradeController
 }
 
 // 响应消息

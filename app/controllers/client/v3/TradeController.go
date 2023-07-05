@@ -23,7 +23,6 @@ import (
 // 交易模块
 
 type TradeController struct {
-	BaseController
 }
 
 func getMessage(languageCode, nation, resultCode string) string {
@@ -97,19 +96,26 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		return
 	}
 	// demo 订单只能同时存在五笔
-	var total int64
-	mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where("quiz_result", -1).Where("app_user_id", params.AppUserId).Count(&total)
-	if total >= 5 && 3 == params.AmountType {
-		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "DemoLimit"))
-		return
+	if 3 == params.AmountType {
+		var total int64
+		err := mysql.DB.Debug().
+			Raw(`SELECT COUNT(1) FROM t_trading_order_virtual tov WHERE tov.quiz_result = -1 AND tov.app_user_id = ?`, params.AppUserId).
+			Scan(&total).Error
+		if err != nil {
+			logger.Error(err)
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
+			return
+		}
+		if total >= 5 {
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "DemoLimit"))
+			return
+		}
 	}
 	// 校验是否存在该交易点数据
 	var size int64
 	err := mysql.DB.Debug().
-		Raw(`SELECT COUNT(tkl.c_close) FROM t_kline_log tkl,t_trading_assets tta WHERE tkl.contract_code = tta.assets_code AND tkl.ts = ? AND tta.id = ? AND tkl.c_close = ?`,
-			params.KlineTime, params.AssetsId, params.BeginAssetsPrice).
-		Row().
-		Scan(&size)
+		Raw(`SELECT COUNT(tkl.c_close) FROM t_kline_log tkl,t_trading_assets tta WHERE tkl.contract_code = tta.assets_code AND tkl.ts = ? AND tta.id = ? AND tkl.c_close = ?`, params.KlineTime, params.AssetsId, params.BeginAssetsPrice).
+		Scan(&size).Error
 	if err != nil {
 		logger.Error(err)
 		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
@@ -266,6 +272,9 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 		logger.Error(err)
 		return true, getMessage(params.LanguageCode, params.Nation, "FailOperate")
 	}
+	logger.Info(fmt.Sprintf("%T", userTradeMessage))
+	logger.Info(userTradeMessage["tradingCount"])
+	logger.Info(userTradeMessage["tradingAmounts"])
 	// 查询用户交易规则
 	var userOperationRules []models.UserOperationRules
 	mysql.DB.Debug().Model(models.UserOperationRules{}).
@@ -288,9 +297,6 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 				return true, fmt.Sprintf(`{"id":"10409","msg":"%v"}`, strings.ReplaceAll(item.ValueTips, "[value]", fmt.Sprintf("[%v]", item.Value)))
 			}
 		}
-		logger.Info(fmt.Sprintf("%T", userTradeMessage))
-		logger.Info(userTradeMessage["tradingCount"])
-		logger.Info(userTradeMessage["tradingAmounts"])
 		// 最多交易次数限制，命中规则拦截
 		if strings.EqualFold("maxTradingTimes", item.RuleCode) {
 			if DecisionAlgorithmInterface(int(userTradeMessage["tradingCount"].(int64)), int(item.Value), item.CalculateMethod) {
