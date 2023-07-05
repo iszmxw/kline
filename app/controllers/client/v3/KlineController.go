@@ -16,7 +16,6 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
-	"goapi/service/binary-monitoring/pkg"
 	"strings"
 	"time"
 
@@ -134,13 +133,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(ID, "04"): // 下单开奖通知
 			{
 				// 开启协诚处理 下单开奖通知
-				var params requests.TradeOrderInfo
-				err = mapstructure.Decode(subInfo, &params)
-				if err != nil {
-					logger.Error(err)
-					goto END
-				}
-				go PushNoticePlus(socketId, ws, params)
+				appUser, _ := c.Get("user")
+				appUserId := appUser.(response.ClientUserBeans).AppUserId
+				// 监控消息通知
+				go PushNoticePlus(socketId, ws, appUserId)
 			}
 			break
 		case strings.EqualFold(ID, "06"): // 弹窗通知
@@ -163,6 +159,8 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				appUser, _ := c.Get("user")
 				params.AppUserId = appUser.(response.ClientUserBeans).AppUserId
 				go Trade.SubmitTrade(socketId, ws, params)
+				// 监控消息通知
+				go PushNoticePlus(socketId, ws, params.AppUserId)
 			}
 			break
 		case strings.EqualFold(ID, "08"):
@@ -615,298 +613,58 @@ END:
 	logger.Error(errors.New("PushMessage已经跳出协诚的循环推送"))
 }
 
-// 下单结果通知
-
-func PushNotice(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo) {
+func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 	logger.RequestId = socketId
-	if len(params.AppUserId) == 0 {
+	if len(appUserId) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AppUserId not right"}`)
 		logger.Error(errors.New("err sub,AppUserId not right"))
 		return
 	}
-	if len(params.AssetsCode) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AssetsCode not right"}`)
-		logger.Error(errors.New("err sub,AssetsCode not right"))
+	// 上锁是否已经订阅通知
+	if ws.IsNotice {
+		// 防止重复动作
 		return
 	}
-	if len(params.TradeBeginTimestamp) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,TradeBeginTimestamp not right"}`)
-		logger.Error(errors.New("err sub,TradeBeginTimestamp not right"))
-		return
-	}
-	if len(params.BeginAssetsPrice) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,BeginAssetsPrice not right"}`)
-		logger.Error(errors.New("err sub,BeginAssetsPrice not right"))
-		return
-	}
-	if len(params.UpDownType) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,UpDownType not right"}`)
-		logger.Error(errors.New("err sub,UpDownType not right"))
-		return
-	}
-	if len(params.Amounts) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,Amounts not right"}`)
-		logger.Error(errors.New("err sub,Amounts not right"))
-		return
-	}
-	if len(params.IsDemo) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,IsDemo not right"}`)
-		logger.Error(errors.New("err sub,IsDemo not right"))
-		return
-	}
-	if len(params.ItemCode) == 0 {
-		params.ItemCode = config.GetString("app.item_code")
-	}
-	// 获取交易资产的小数点位数
-	var TradingAssets models.TradingAssets
-	mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("item_code", params.ItemCode).
-		Where("assets_code", params.AssetsCode).
-		Find(&TradingAssets)
-	if TradingAssets.Id <= 0 {
-		logger.Error(errors.New("查询错误"))
-		return
-	}
-	beginAssetsPrice, err := helpers.FormatFloat(helpers.StrToFloat64(params.BeginAssetsPrice), TradingAssets.PointNumber)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	// 开启定时器，60 秒后查询结果进行通知
-	time.Sleep(time.Second * 59)              // 等待大约1分钟后开始查询结果
-	ticker := time.NewTicker(1 * time.Second) // 每秒检查一次
-	times := 1
-	for range ticker.C {
-		if ws.IsClose {
-			goto STOP
-		}
-		if times >= 20 { // 防止用户已经离开，超过 20 秒后还没查到就结束进程
-			goto STOP
-		}
-		times++
-		if params.IsDemo == "1" { // 如果是 demo 订单，就走demo表查询
-			var TradingOrderVirtual models.TradingOrderVirtual
-			mysql.DB.Debug().Model(models.TradingOrderVirtual{}).
-				Where("app_user_id", params.AppUserId).
-				Where("assets_code", params.AssetsCode).
-				Where("trade_begin_timestamp", params.TradeBeginTimestamp).
-				Where("begin_assets_price", beginAssetsPrice).
-				Where("up_down_type", params.UpDownType).
-				Where("amounts", params.Amounts).
-				Find(&TradingOrderVirtual)
-			if TradingOrderVirtual.QuizResult == -1 {
-				// 未出结果跳过
+	ws.IsNotice = true
+	go func(ws *wss.WsConn) {
+		key := fmt.Sprintf("Notice:Order:Result:Queue:%v", appUserId)
+		for !ws.IsClose {
+			push := redis.Client.RPop(key)
+			if len(push) == 0 {
+				time.Sleep(1 * time.Second)
 				continue
 			}
-			// 结束值
-			if TradingOrderVirtual.EndAssetsPrice > 0 {
-				params.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
-				params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
-				params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrderVirtual.TradeEndTimestamp)
-				marshal, errs := json.Marshal(gin.H{
-					"id":   "04",
-					"data": params,
-				})
-				if errs != nil {
-					logger.Error(errs)
-					continue
-				}
-				// 推送消息通知前端开奖结果
-				SocketResp(ws, websocket.TextMessage, string(marshal))
-				logger.Info(string(marshal))
-				goto STOP
-			}
-		} else {
-			var TradingOrder models.TradingOrder
-			mysql.DB.Debug().Model(models.TradingOrder{}).
-				Where("app_user_id", params.AppUserId).
-				Where("assets_code", params.AssetsCode).
-				Where("trade_begin_timestamp", params.TradeBeginTimestamp).
-				Where("begin_assets_price", beginAssetsPrice).
-				Where("up_down_type", params.UpDownType).
-				Where("amounts", params.Amounts).
-				Find(&TradingOrder)
-			if TradingOrder.QuizResult == -1 {
-				// 未出结果跳过
+			var orderData requests.TradeOrderInfo
+			PopErr := json.Unmarshal([]byte(push), &orderData)
+			if PopErr != nil {
+				logger.Error(PopErr)
+				time.Sleep(1 * time.Second)
 				continue
 			}
-			// 结束值
-			if TradingOrder.EndAssetsPrice > 0 {
-				params.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
-				params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
-				params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrder.TradeEndTimestamp)
-				marshal, errs := json.Marshal(gin.H{
-					"id":   "04",
-					"data": params,
-				})
-				if errs != nil {
-					logger.Error(errs)
-					continue
-				}
-				// 推送消息通知前端开奖结果
-				SocketResp(ws, websocket.TextMessage, string(marshal))
-				logger.Info(string(marshal))
+			marshal, err := json.Marshal(gin.H{
+				"id":   "04",
+				"data": orderData,
+			})
+			if err != nil {
+				logger.Error(err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			// 推送消息通知前端开奖结果
+			ws.Mux.Lock()
+			err = ws.Conn.WriteMessage(websocket.TextMessage, marshal)
+			ws.Mux.Unlock()
+			if err != nil {
+				logger.Error(err)
 				goto STOP
 			}
+			logger.Info(string(marshal))
+			time.Sleep(1 * time.Second) // 每隔 1 秒来一次推送
 		}
-	}
-STOP:
-	logger.Error(errors.New("交割结果通知结束，关闭定时器"))
-	ticker.Stop()
-}
-
-func PushNoticePlus(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo) {
-	logger.RequestId = socketId
-	if len(params.AppUserId) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AppUserId not right"}`)
-		logger.Error(errors.New("err sub,AppUserId not right"))
-		return
-	}
-	if len(params.AssetsCode) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AssetsCode not right"}`)
-		logger.Error(errors.New("err sub,AssetsCode not right"))
-		return
-	}
-	if len(params.TradeBeginTimestamp) <= 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,TradeBeginTimestamp not right"}`)
-		logger.Error(errors.New("err sub,TradeBeginTimestamp not right"))
-		return
-	}
-	if len(params.BeginAssetsPrice) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,BeginAssetsPrice not right"}`)
-		logger.Error(errors.New("err sub,BeginAssetsPrice not right"))
-		return
-	}
-	if len(params.UpDownType) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,UpDownType not right"}`)
-		logger.Error(errors.New("err sub,UpDownType not right"))
-		return
-	}
-	if len(params.Amounts) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,Amounts not right"}`)
-		logger.Error(errors.New("err sub,Amounts not right"))
-		return
-	}
-	if len(params.IsDemo) == 0 {
-		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,IsDemo not right"}`)
-		logger.Error(errors.New("err sub,IsDemo not right"))
-		return
-	}
-	if len(params.ItemCode) == 0 {
-		params.ItemCode = config.GetString("app.item_code")
-	}
-	// 获取交易资产的小数点位数
-	var TradingAssets models.TradingAssets
-	err := mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("item_code", params.ItemCode).
-		Where("assets_code", params.AssetsCode).
-		Find(&TradingAssets).Error
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	if TradingAssets.Id <= 0 {
-		logger.Error(errors.New("查询错误"))
-		return
-	}
-	beginAssetsPrice, err := helpers.FormatFloat(helpers.StrToFloat64(params.BeginAssetsPrice), TradingAssets.PointNumber)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	// 开启定时器，60 秒后查询结果进行通知
-	timer := time.NewTimer(time.Second * 59)  // 创建一个 59s 的定时器
-	ticker := time.NewTicker(1 * time.Second) // 每秒检查一次
-	defer func() {
-		ticker.Stop()
-		timer.Stop() // 关闭定时器释放资源
-		if errs := recover(); errs != nil {
-			logger.Error(fmt.Errorf("%v", errs))
-			pkg.Notice("PushNoticePlus 出现错误请留意")
-		}
-	}()
-	for {
-		select {
-		case <-timer.C: // 定时器时间到期
-			goto STOP
-		case <-ticker.C: // 每秒检查一次
-			if params.IsDemo == "1" { // 如果是 demo 订单，就走demo表查询
-				var TradingOrderVirtual models.TradingOrderVirtual
-				err := mysql.DB.Debug().Model(models.TradingOrderVirtual{}).
-					Where("app_user_id", params.AppUserId).
-					Where("assets_code", params.AssetsCode).
-					Where("trade_begin_timestamp", params.TradeBeginTimestamp).
-					Where("begin_assets_price", beginAssetsPrice).
-					Where("up_down_type", params.UpDownType).
-					Where("amounts", params.Amounts).
-					Find(&TradingOrderVirtual).Error
-				if err != nil {
-					logger.Error(err)
-					continue
-				}
-				if TradingOrderVirtual.QuizResult == -1 {
-					// 未出结果跳过
-					continue
-				}
-				// 结束值
-				if TradingOrderVirtual.EndAssetsPrice > 0 {
-					params.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
-					params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
-					params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrderVirtual.TradeEndTimestamp)
-					marshal, errs := json.Marshal(gin.H{
-						"id":   "04",
-						"data": params,
-					})
-					if errs != nil {
-						logger.Error(errs)
-						continue
-					}
-					// 推送消息通知前端开奖结果
-					SocketResp(ws, websocket.TextMessage, string(marshal))
-					logger.Info(string(marshal))
-					goto STOP
-				}
-			} else {
-				var TradingOrder models.TradingOrder
-				err := mysql.DB.Debug().Model(models.TradingOrder{}).
-					Where("app_user_id", params.AppUserId).
-					Where("assets_code", params.AssetsCode).
-					Where("trade_begin_timestamp", params.TradeBeginTimestamp).
-					Where("begin_assets_price", beginAssetsPrice).
-					Where("up_down_type", params.UpDownType).
-					Where("amounts", params.Amounts).
-					Find(&TradingOrder).Error
-				if err != nil {
-					logger.Error(err)
-					continue
-				}
-				if TradingOrder.QuizResult == -1 {
-					// 未出结果跳过
-					continue
-				}
-				// 结束值
-				if TradingOrder.EndAssetsPrice > 0 {
-					params.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
-					params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
-					params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrder.TradeEndTimestamp)
-					marshal, errs := json.Marshal(gin.H{
-						"id":   "04",
-						"data": params,
-					})
-					if errs != nil {
-						logger.Error(errs)
-						continue
-					}
-					// 推送消息通知前端开奖结果
-					SocketResp(ws, websocket.TextMessage, string(marshal))
-					logger.Info(string(marshal))
-					goto STOP
-				}
-			}
-		}
-	}
-STOP:
-	logger.Error(errors.New("交割结果通知结束，关闭定时器"))
+	STOP:
+		logger.Error(errors.New("PushNoticePlus 关闭Socket"))
+		wss.WsClose(ws)
+	}(ws)
 }
 
 // 弹窗通知

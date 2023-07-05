@@ -28,6 +28,7 @@ type WsConn struct {
 	Mux             sync.RWMutex // 锁
 	IsClose         bool         // 是否关闭
 	AppUserId       string       // 用户 ID
+	IsNotice        bool         // 订单结果通知
 }
 
 func GetSocket(c *gin.Context) (*WsConn, error) {
@@ -52,6 +53,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 			sync.RWMutex{},
 			false,
 			"",
+			false,
 		}, nil
 	} else {
 		return nil, errors.New("不是socket請求")
@@ -74,6 +76,7 @@ func WsClose(ws *WsConn) {
 			logger.Error(closeErr)
 		} else {
 			ws.IsClose = true
+			ws.IsNotice = false
 		}
 		ws.Mux.Unlock()
 		logger.Info("关闭成功")
