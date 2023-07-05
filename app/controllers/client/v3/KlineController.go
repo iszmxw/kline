@@ -663,7 +663,7 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 				goto STOP
 			}
 			logger.Info(string(marshal))
-			time.Sleep(1 * time.Second) // 每隔 1 秒来一次推送
+			time.Sleep(200 * time.Millisecond) // 每隔 1 秒来一次推送
 		}
 	STOP:
 		logger.Error(errors.New("PushNoticePlus 关闭Socket"))
