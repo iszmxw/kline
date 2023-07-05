@@ -31,6 +31,8 @@ type KlineController struct {
 	BaseController
 }
 
+var Trade = new(TradeController)
+
 // WsIndexHandler socket 负责转发redis缓存的socket数据
 func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	ws, err := wss.GetSocket(c)
@@ -55,7 +57,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			// 跳出for关闭后面的读取
 			goto END
 		}
-		logger.Info("message", string(message))
+		if string(message) != `{"id":"03","sub":""}` {
+			logger.Info("message", string(message))
+		}
 		// 对数据进行切割，读取参数
 		// 如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
 		var SubStruct requests.SubParams
@@ -157,7 +161,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				}
 				appUser, _ := c.Get("user")
 				params.AppUserId = appUser.(response.ClientUserBeans).AppUserId
-				go new(TradeController).SubmitTrade(socketId, ws, params)
+				go Trade.SubmitTrade(socketId, ws, params)
 			}
 			break
 		case strings.EqualFold(ID, "08"):
@@ -278,10 +282,7 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 	ch := fmt.Sprintf("market.%s.index.%s", strings.ToUpper(symbol), "1min")
 	DB := mysql.DB.Debug()
 	// 一次取出历史记录最新三千条
-	KlineDB := DB.Model(models.KlineLog{}).
-		Where("ch", ch).
-		Where("ts >= ?", beginDate).
-		Where("ts <= ?", endDate)
+	KlineDB := DB.Model(models.KlineLog{}).Where("ch", ch).Where("ts >= ?", beginDate).Where("ts <= ?", endDate)
 	KlineDB.Count(&Count)
 	if Count > 10000 {
 		Count = 10000
@@ -675,6 +676,9 @@ func PushNotice(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo)
 	ticker := time.NewTicker(1 * time.Second) // 每秒检查一次
 	times := 1
 	for range ticker.C {
+		if ws.IsClose {
+			goto STOP
+		}
 		if times >= 20 { // 防止用户已经离开，超过 20 秒后还没查到就结束进程
 			goto STOP
 		}
@@ -698,12 +702,12 @@ func PushNotice(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo)
 				params.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
 				params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
 				params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrderVirtual.TradeEndTimestamp)
-				marshal, err := json.Marshal(gin.H{
+				marshal, errs := json.Marshal(gin.H{
 					"id":   "04",
 					"data": params,
 				})
-				if err != nil {
-					logger.Error(err)
+				if errs != nil {
+					logger.Error(errs)
 					continue
 				}
 				// 推送消息通知前端开奖结果
@@ -730,12 +734,12 @@ func PushNotice(socketId string, ws *wss.WsConn, params requests.TradeOrderInfo)
 				params.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
 				params.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
 				params.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrder.TradeEndTimestamp)
-				marshal, err := json.Marshal(gin.H{
+				marshal, errs := json.Marshal(gin.H{
 					"id":   "04",
 					"data": params,
 				})
-				if err != nil {
-					logger.Error(err)
+				if errs != nil {
+					logger.Error(errs)
 					continue
 				}
 				// 推送消息通知前端开奖结果
