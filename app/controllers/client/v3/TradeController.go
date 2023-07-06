@@ -14,7 +14,6 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	"goapi/pkg/redis"
 	wss "goapi/pkg/websocket"
 	"goapi/service/binary-monitoring/pkg"
 	"strings"
@@ -103,7 +102,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		ws.List.Remove(l)
 		up := l.Value.(int64)
 		sysT := sysTime.UnixMilli()
-		if sysT-up < 300 {
+		if sysT-up < 100 {
 			msg := fmt.Sprintf("检测到用户【%s】频繁下单,klineTime=%v", params.AppUserId, params.KlineTime)
 			logger.Info(msg)
 			pkg.Notice(msg)
@@ -111,13 +110,13 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			return
 		}
 	}
-	ws.List.PushFront(sysTime.UnixMilli())
-	ok, _ := redis.Client.SelectDbSetNx(config.GetInt("redis.db"), fmt.Sprintf("SubmitTrade:%v", sysTime.UnixMilli()/100), "suo", 10)
-	if !ok {
-		pkg.Notice(fmt.Sprintf("检测到用户【%s】频繁下单,klineTime=%v", params.AppUserId, params.KlineTime))
-		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
-		return
-	}
+	//ws.List.PushFront(sysTime.UnixMilli())
+	//ok, _ := redis.Client.SelectDbSetNx(config.GetInt("redis.db"), fmt.Sprintf("SubmitTrade:%v", sysTime.UnixMilli()/100), "suo", 10)
+	//if !ok {
+	//	pkg.Notice(fmt.Sprintf("检测到用户【%s】频繁下单,klineTime=%v", params.AppUserId, params.KlineTime))
+	//	SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
+	//	return
+	//}
 	// 双重锁
 
 	// demo 订单只能同时存在五笔
@@ -209,7 +208,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
 			// 休息两百毫秒再返回
-			time.Sleep(time.Millisecond * 200)
+			//time.Sleep(time.Millisecond * 200)
 			SocketResp(ws, websocket.TextMessage, string(marshal))
 		} else {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
@@ -233,7 +232,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 				DeviceBrand:      appUser.DeciveBrand,
 			}, appUser.Nation, "adjust")
 			// 休息两百毫秒再返回
-			time.Sleep(time.Millisecond * 200)
+			//time.Sleep(time.Millisecond * 200)
 			SocketResp(ws, websocket.TextMessage, string(marshal))
 		} else {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
@@ -246,7 +245,7 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 		}
 		createVirtualTradingOrder(orderId, params, appUser, asset)
 		// 休息一百毫秒再返回
-		time.Sleep(time.Millisecond * 100)
+		//time.Sleep(time.Millisecond * 100)
 		SocketResp(ws, websocket.TextMessage, string(marshal))
 		break
 	default:
@@ -520,8 +519,7 @@ type UserBalance struct {
 }
 
 func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, changeType int) bool {
-	DB := mysql.DB.Debug()
-	DB.Begin()
+	DB := mysql.DB.Begin().Debug()
 	var userBalance UserBalance
 	err := DB.Raw(`SELECT balance,bonus_balance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Scan(&userBalance).Error
 	if err != nil {
@@ -576,8 +574,7 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 }
 
 func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64, changeType int) bool {
-	DB := mysql.DB.Debug()
-	DB.Begin()
+	DB := mysql.DB.Debug().Begin()
 	var userBalance UserBalance
 	err := DB.Raw(`SELECT balance,bonus_balance FROM t_app_user WHERE app_user_id = ? FOR UPDATE`, appUserId).Scan(&userBalance).Error
 	if err != nil {
