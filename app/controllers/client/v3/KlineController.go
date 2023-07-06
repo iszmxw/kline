@@ -124,9 +124,11 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(ID, "03"):
 			{
 				appUser, _ := c.Get("user")
-				appUserId := appUser.(response.ClientUserBeans).AppUserId
-				// 监控消息通知
-				go PushNoticePlus(socketId, ws, appUserId)
+				if appUser != nil {
+					appUserId := appUser.(response.ClientUserBeans).AppUserId
+					// 监控消息通知
+					go PushNoticePlus(socketId, ws, appUserId)
+				}
 				//logger.Info(SubStruct)
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
@@ -138,6 +140,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			{
 				// 开启协诚处理 下单开奖通知
 				appUser, _ := c.Get("user")
+				if appUser == nil {
+					return
+				}
 				appUserId := appUser.(response.ClientUserBeans).AppUserId
 				// 监控消息通知
 				go PushNoticePlus(socketId, ws, appUserId)
@@ -146,6 +151,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(ID, "06"): // 弹窗通知
 			{
 				appUser, _ := c.Get("user")
+				if appUser == nil {
+					return
+				}
 				AppUserId := appUser.(response.ClientUserBeans).AppUserId
 				// 开启协诚处理 弹窗通知
 				go PushPopup(socketId, ws, AppUserId)
@@ -171,6 +179,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			{
 				// 开启协诚处理推送余额
 				appUser, _ := c.Get("user")
+				if appUser == nil {
+					return
+				}
 				AppUserId := appUser.(response.ClientUserBeans).AppUserId
 				go PushUserInfo(socketId, ws, AppUserId)
 			}
@@ -216,6 +227,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(ID, "12"):
 			{
 				appUser, _ := c.Get("user")
+				if appUser == nil {
+					return
+				}
 				AppUserId := appUser.(response.ClientUserBeans).AppUserId
 				// 开启协诚处理 Toast通知
 				go PushToast(socketId, ws, AppUserId)
