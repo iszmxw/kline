@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"goapi/pkg/helpers"
+	"io"
 	"log"
 	"net"
 )
@@ -37,14 +39,19 @@ type Mql5 struct {
 
 func main() {
 	// 创建TCP监听
-	listener, err := net.Listen("tcp", ":7777")
+	listener, err := net.Listen("tcp", ":7104")
 	if err != nil {
 		log.Fatal("Error starting the server: ", err)
 	}
 
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+			log.Fatal("Error listener.Close: ", err)
+		}
+	}(listener)
 
-	fmt.Println("Server started. Listening on port 7777...")
+	fmt.Println("Server started. Listening on port 7104...")
 
 	// 处理接收到的连接
 	for {
@@ -60,28 +67,36 @@ func main() {
 
 // 处理Socket连接
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
-
-	// 处理接收到的数据
-	buffer := make([]byte, 3060)
-	for {
-		n, err := conn.Read(buffer)
+	defer func(conn net.Conn) {
+		err := conn.Close()
 		if err != nil {
-			return
+			log.Fatal("Error conn.Close: ", err)
 		}
-
-		// 处理接收到的数据
-		data := buffer[:n]
-		if len(data) > 0 {
-			var mql5 Mql5
-			err = json.Unmarshal(data, &mql5)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
+	}(conn)
+	reader := bufio.NewReader(conn)
+	for {
+		data, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				fmt.Println("Connection closed by client")
+				break
 			}
-
-			fmt.Println(helpers.Decimal((mql5.Bid+mql5.Ask)/2, 5), mql5)
+			fmt.Println("Error reading data:", err)
+			break
 		}
-		//fmt.Println("Received data:", string(data))
+
+		go processData(data)
+	}
+}
+
+func processData(data []byte) {
+	var mql5 Mql5
+	err := json.Unmarshal(data, &mql5)
+	if err != nil {
+		fmt.Println("Error unmarshalling data:", err)
+		return
+	}
+	if mql5.Name == "USDJPY" {
+		fmt.Println(helpers.Decimal((mql5.Bid+mql5.Ask)/2, 5), mql5)
 	}
 }
