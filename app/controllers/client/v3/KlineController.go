@@ -35,6 +35,7 @@ var Trade = new(TradeController)
 
 // WsIndexHandler socket 负责转发redis缓存的socket数据
 func (h *KlineController) WsIndexHandler(c *gin.Context) {
+	var AppUserId string
 	ws, err := wss.GetSocket(c)
 	if err != nil {
 		logger.Error(err)
@@ -46,6 +47,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	isVest := c.GetString("isvest")
 	if len(isVest) == 0 {
 		isVest = "0"
+	}
+	AppUserId = c.Query("userId")
+	ws.AppUserId = AppUserId
+	if len(ws.AppUserId) > 0 {
+		redis.Client.SAdd("onlineUsers", ws.AppUserId)
+		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", ws.AppUserId).Update("online", 1)
 	}
 	//go HeartBeatingWatch(ws, socketId)
 	// 为了释放for死循环的资源
