@@ -656,14 +656,14 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 		for !ws.IsClose {
 			push := redis.Client.RPop(key)
 			if len(push) == 0 {
-				time.Sleep(1 * time.Second)
+				time.Sleep(200 * time.Millisecond)
 				continue
 			}
 			var orderData requests.TradeOrderInfo
 			PopErr := json.Unmarshal([]byte(push), &orderData)
 			if PopErr != nil {
 				logger.Error(PopErr)
-				time.Sleep(1 * time.Second)
+				time.Sleep(200 * time.Millisecond)
 				continue
 			}
 			marshal, err := json.Marshal(gin.H{
@@ -672,7 +672,7 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 			})
 			if err != nil {
 				logger.Error(err)
-				time.Sleep(1 * time.Second)
+				time.Sleep(200 * time.Millisecond)
 				continue
 			}
 			// 推送消息通知前端开奖结果
