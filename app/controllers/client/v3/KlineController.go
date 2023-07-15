@@ -177,6 +177,8 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				}
 				appUser, _ := c.Get("user")
 				params.AppUserId = appUser.(response.ClientUserBeans).AppUserId
+				params.LanguageCode = c.Query("languageCode")
+				params.Nation = c.Query("nation")
 				go Trade.SubmitTrade(socketId, ws, params)
 				// 监控消息通知
 				go PushNoticePlus(socketId, ws, params.AppUserId)
