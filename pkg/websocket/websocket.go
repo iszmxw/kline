@@ -29,6 +29,7 @@ type WsConn struct {
 	Mux             sync.RWMutex // 锁
 	IsClose         bool         // 是否关闭
 	AppUserId       string       // 用户 ID
+	OnceNotice      sync.Once    // 通知方法
 	List            *list.List
 }
 
@@ -54,6 +55,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 			sync.RWMutex{},
 			false,
 			"",
+			sync.Once{},
 			list.New(),
 		}, nil
 	} else {
