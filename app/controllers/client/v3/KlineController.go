@@ -648,12 +648,6 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 		logger.Error(errors.New("err sub,AppUserId not right"))
 		return
 	}
-	// 上锁是否已经订阅通知
-	if ws.IsNotice {
-		// 防止重复动作
-		return
-	}
-	ws.IsNotice = true
 	for !ws.IsClose {
 		key := fmt.Sprintf("Notice:Order:Result:Queue:%v", appUserId)
 		num, _ := redis.Client.LLen(key)
