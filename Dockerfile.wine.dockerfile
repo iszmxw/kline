@@ -1,65 +1,47 @@
-FROM --platform=linux/amd64 ubuntu:20.04
+# Run MetaTrader in a container.
+#
+# Copyright (c) 2022 tick <tickelton@gmail.com>
+#
+# SPDX-License-Identifier:     ISC
+#
+# docker run \
+#	--net host \
+#	-v /tmp/.X11-unix:/tmp/.X11-unix \
+#	-e DISPLAY \
+#	-v $METATRADER_HOST_PATH:/MetaTrader \
+#	--name mt \
+#	tickelton/mt
 
-ENV DEBIAN_FRONTEND noninteractive
+# Base docker image.
+FROM --platform=linux/amd64 ubuntu:focal
 
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends \
-        software-properties-common \
-        ca-certificates \
-        language-pack-en \
-        language-pack-zh-han* \
-        locales \
-        locales-all \
-        wget
+ADD https://dl.winehq.org/wine-builds/winehq.key /winehq.key
+
+# Disable interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Wine
-RUN dpkg --add-architecture i386 && \
-    mkdir -pm755 /etc/apt/keyrings && \
-    wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key && \
-    wget -nc -P /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/$(lsb_release -sc)/winehq-$(lsb_release -sc).sources && \
-    apt-get update -y && \
-    # Wine 7.0 stable has some issues with some games I tested
-    # Use Wine 7.11 staging instead
-    apt-get install -y --install-recommends winehq-staging
+RUN apt-get update && \
+	apt-get install -y gnupg apt-utils && \
+	echo "deb http://dl.winehq.org/wine-builds/ubuntu/ focal main" >> /etc/apt/sources.list && \
+	apt-key add /winehq.key && \
+	mv /winehq.key /usr/share/keyrings/winehq-archive.key && \
+	dpkg --add-architecture i386 && \
+	apt-get update && \
+	apt-get install -y -q --install-recommends winehq-devel && \
+	rm -rf /var/lib/apt/lists/* /winehq.key
 
-# GStreamer plugins
-RUN apt-get update -y && \
-    apt-get install -y --install-recommends \
-        gstreamer1.0-libav:i386 \
-        gstreamer1.0-plugins-bad:i386 \
-        gstreamer1.0-plugins-base:i386 \
-        gstreamer1.0-plugins-good:i386 \
-        gstreamer1.0-plugins-ugly:i386 \
-        gstreamer1.0-pulseaudio:i386
+# Add wine user.
+# NOTE: You might need to change the UID/GID so the
+# wine user has write access to your MetaTrader
+# directory at $METATRADER_HOST_PATH.
+RUN groupadd -g 1000 wine \
+	&& useradd -g wine -u 1000 wine \
+	&& mkdir -p /home/wine/.wine && chown -R wine:wine /home/wine
 
-# Install dependencies for display scaling
-RUN apt-get update -y && \
-    apt-get install -y --install-recommends \
-        build-essential \
-        bc \
-        git \
-        xpra \
-        xvfb \
-        python3 \
-        python3-pip
+# Run MetaTrader as non privileged user.
+USER wine
 
-# Install OpenGL acceleration for display scaling
-RUN pip3 install PyOpenGL==3.1.5 PyOpenGL_accelerate==3.1.5
-
-# Install display scaling script
-RUN cd /tmp && \
-    git clone https://github.com/kaueraal/run_scaled.git && \
-    cp /tmp/run_scaled/run_scaled /usr/local/bin/
-
-# Install missing fonts for Chinese
-RUN apt-get update -y && \
-    apt-get install -y --install-recommends \
-        fonts-wqy-microhei
-
-# Install driver for Intel HD graphics
-RUN apt-get -y install libgl1-mesa-glx libgl1-mesa-dri
-
-ENV LC_ALL zh_CN.UTF-8
-ENV LANG zh_CN.UTF-8
-# Make sure the terminal is still English
-ENV LANGUAGE en_US.UTF-8
+# Autorun MetaTrader Terminal.
+ENTRYPOINT [ "wine" ]
+CMD [ "/MetaTrader/terminal64.exe", "/portable" ]

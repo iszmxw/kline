@@ -243,7 +243,10 @@ func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params re
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "InsufficientBalance"))
 			return
 		}
-		createVirtualTradingOrder(orderId, params, appUser, asset)
+		ok := createVirtualTradingOrder(orderId, params, appUser, asset)
+		if appUser.AppUserId == "1D4EC741F33" {
+			pkg.Notice("DEMO----1D4EC741F33--成功下单--"+orderId, ok)
+		}
 		// 休息一百毫秒再返回
 		//time.Sleep(time.Millisecond * 100)
 		SocketResp(ws, websocket.TextMessage, string(marshal))
@@ -381,6 +384,9 @@ func DecisionAlgorithmInterface(a, b, calculateMethod int) bool {
 
 // 创建真实交易订单
 func createTradingOrder(orderId string, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
+	if appUser.AppUserId == "1D4EC741F33" {
+		pkg.Notice("真实下单-1D4EC741F33--成功下单", orderId)
+	}
 	Pass := true
 	createOrder := new(models.TradingOrder)
 	createOrder.TradeOrderId = orderId
