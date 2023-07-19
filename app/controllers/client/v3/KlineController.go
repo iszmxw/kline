@@ -16,6 +16,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
+	"goapi/service/binary-monitoring/pkg"
 	"strings"
 	"time"
 
@@ -653,20 +654,26 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 		return
 	}
 	ws.IsNotice = true
-	go func(ws *wss.WsConn) {
+	for !ws.IsClose {
 		key := fmt.Sprintf("Notice:Order:Result:Queue:%v", appUserId)
-		for !ws.IsClose {
-			push := redis.Client.RPop(key)
-			if len(push) == 0 {
-				time.Sleep(200 * time.Millisecond)
-				continue
-			}
+		num, _ := redis.Client.LLen(key)
+		if num <= 0 {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		push := redis.Client.RPop(key)
+		if len(push) <= 0 {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		go func(ws *wss.WsConn, push string) {
 			var orderData requests.TradeOrderInfo
 			PopErr := json.Unmarshal([]byte(push), &orderData)
 			if PopErr != nil {
 				logger.Error(PopErr)
+				pkg.Notice("672-错误：", PopErr.Error())
 				time.Sleep(200 * time.Millisecond)
-				continue
+				return
 			}
 			marshal, err := json.Marshal(gin.H{
 				"id":   "04",
@@ -674,24 +681,28 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 			})
 			if err != nil {
 				logger.Error(err)
+				pkg.Notice("682-错误：", err.Error())
 				time.Sleep(200 * time.Millisecond)
-				continue
+				return
 			}
 			// 推送消息通知前端开奖结果
 			ws.Mux.Lock()
 			err = ws.Conn.WriteMessage(websocket.TextMessage, marshal)
 			ws.Mux.Unlock()
 			if err != nil {
+				logger.Error(errors.New("PushNoticePlus 关闭Socket"))
+				wss.WsClose(ws)
 				logger.Error(err)
-				goto STOP
+				pkg.Notice("689-错误：", err.Error())
+				return
 			}
 			logger.Info(string(marshal))
+			if appUserId == "1D4EC741F33" {
+				pkg.Notice("通知-1D4EC741F33--04订单结果--", push)
+			}
 			time.Sleep(200 * time.Millisecond) // 每隔 1 秒来一次推送
-		}
-	STOP:
-		logger.Error(errors.New("PushNoticePlus 关闭Socket"))
-		wss.WsClose(ws)
-	}(ws)
+		}(ws, push)
+	}
 }
 
 // 弹窗通知
