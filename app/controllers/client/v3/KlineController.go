@@ -645,16 +645,6 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 	}
 	// 只执行一次
 	ws.OnceNotice.Do(func() {
-		// 检测是否安全期内
-		yes, err := redis.Client.SelectDbSetNx(15, fmt.Sprintf("PushNoticePlus:%s", ws.SecWebSocketKey), "suo", 60*60*2)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-		if !yes {
-			logger.Info("失败")
-			return
-		}
 		for !ws.IsClose {
 			key := fmt.Sprintf("Notice:Order:Result:Queue:%v", appUserId)
 			num, _ := redis.Client.LLen(key)
@@ -672,7 +662,6 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 				PopErr := json.Unmarshal([]byte(push), &orderData)
 				if PopErr != nil {
 					logger.Error(PopErr)
-					pkg.Notice("672-错误：", PopErr.Error())
 					time.Sleep(200 * time.Millisecond)
 					return
 				}
@@ -682,7 +671,6 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 				})
 				if err != nil {
 					logger.Error(err)
-					pkg.Notice("682-错误：", err.Error())
 					time.Sleep(200 * time.Millisecond)
 					return
 				}
@@ -694,13 +682,9 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 					logger.Error(errors.New("PushNoticePlus 关闭Socket"))
 					wss.WsClose(ws)
 					logger.Error(err)
-					pkg.Notice("689-错误：", err.Error())
 					return
 				}
 				logger.Info(string(marshal))
-				if appUserId == "1D4EC741F33" {
-					pkg.Notice(ws.SecWebSocketKey+"******通知-1D4EC741F33--04订单结果--", push)
-				}
 				time.Sleep(200 * time.Millisecond) // 每隔 1 秒来一次推送
 			}(ws, push)
 		}
