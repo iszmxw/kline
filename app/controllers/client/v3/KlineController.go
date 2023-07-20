@@ -51,6 +51,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 	AppUserId = c.Query("userId")
 	ws.AppUserId = AppUserId
+	ws.SecWebSocketKey = socketId
 	if len(ws.AppUserId) > 0 {
 		redis.Client.SAdd("onlineUsers", ws.AppUserId)
 		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", ws.AppUserId).Update("online", 1)
@@ -131,13 +132,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			break
 		case strings.EqualFold(ID, "03"):
 			{
-				appUser, _ := c.Get("user")
-				if appUser != nil {
-					appUserId := appUser.(response.ClientUserBeans).AppUserId
-					// 监控消息通知
-					go PushNoticePlus(socketId, ws, appUserId)
-				}
-				//logger.Info(SubStruct)
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(fmt.Sprintf("ws_index:%v:heart_beating_key", c.GetHeader("Sec-WebSocket-Key")), currentTime, 300) // 5分钟过期
@@ -152,8 +146,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					return
 				}
 				appUserId := appUser.(response.ClientUserBeans).AppUserId
+				fmt.Println(appUserId)
 				// 监控消息通知
-				go PushNoticePlus(socketId, ws, appUserId)
+				//go PushNoticePlus(socketId, ws, appUserId)
 			}
 			break
 		case strings.EqualFold(ID, "06"): // 弹窗通知
@@ -650,6 +645,16 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 	}
 	// 只执行一次
 	ws.OnceNotice.Do(func() {
+		// 检测是否安全期内
+		yes, err := redis.Client.SelectDbSetNx(15, fmt.Sprintf("PushNoticePlus:%s", ws.SecWebSocketKey), "suo", 60*60*2)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		if !yes {
+			logger.Info("失败")
+			return
+		}
 		for !ws.IsClose {
 			key := fmt.Sprintf("Notice:Order:Result:Queue:%v", appUserId)
 			num, _ := redis.Client.LLen(key)
@@ -694,7 +699,7 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 				}
 				logger.Info(string(marshal))
 				if appUserId == "1D4EC741F33" {
-					pkg.Notice("通知-1D4EC741F33--04订单结果--", push)
+					pkg.Notice(ws.SecWebSocketKey+"******通知-1D4EC741F33--04订单结果--", push)
 				}
 				time.Sleep(200 * time.Millisecond) // 每隔 1 秒来一次推送
 			}(ws, push)
@@ -725,6 +730,9 @@ func PushPopup(socketId string, ws *wss.WsConn, AppUserId string) {
 			logger.Error(PopErr)
 			time.Sleep(2 * time.Second)
 			continue
+		}
+		if popData.Name == "TopRank" {
+			pkg.Notice("消费消息-"+AppUserId+"--TopRank", push)
 		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "06",

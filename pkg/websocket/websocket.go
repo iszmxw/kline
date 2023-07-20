@@ -30,6 +30,7 @@ type WsConn struct {
 	IsClose         bool         // 是否关闭
 	AppUserId       string       // 用户 ID
 	OnceNotice      sync.Once    // 通知方法
+	SecWebSocketKey string       // SecWebSocketKey
 	List            *list.List
 }
 
@@ -56,6 +57,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 			false,
 			"",
 			sync.Once{},
+			"---",
 			list.New(),
 		}, nil
 	} else {
