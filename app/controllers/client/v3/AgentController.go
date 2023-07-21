@@ -155,12 +155,13 @@ func (h *AgentController) StatisticsHandler(c *gin.Context) {
 	}
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
+	ws.SecWebSocketKey = socketId
 	HeartBeatingKey := fmt.Sprintf("StatisticsHeartBeatingKey:%v", socketId)
 	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
-		mt, message, ReadMessageErr := ws.Conn.ReadMessage()
+		_, message, ReadMessageErr := ws.Conn.ReadMessage()
 		if ReadMessageErr != nil {
 			logger.Error(ReadMessageErr)
 			// 跳出for关闭后面的读取
@@ -181,7 +182,7 @@ func (h *AgentController) StatisticsHandler(c *gin.Context) {
 		case strings.EqualFold(ID, "01"): // 推送客户总量，今日交易总量(Rp)
 			{
 				// 开启协诚处理 推送客户总量，今日交易总量(Rp)
-				go h.PushStatistics(socketId, mt, ws, SubStruct.Sub)
+				go h.PushStatistics(ws, SubStruct.Sub)
 			}
 			break
 		case strings.EqualFold(ID, "03"): // 维持心跳
@@ -223,12 +224,11 @@ END:
 const initTime = 1665504000 // 初始时间戳
 const costumer = 1524788    // 初始客户数据
 
-func (h *AgentController) PushStatistics(socketId string, messageType int, ws *wss.WsConn, SubBodyStr interface{}) {
-	logger.RequestId = socketId
+func (h *AgentController) PushStatistics(ws *wss.WsConn, SubBodyStr interface{}) {
+	logger.RequestId = ws.SecWebSocketKey
 	currentTime := time.Now()
 	startTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 0, 0, 0, 0, currentTime.Location()).Unix()
-	HeartBeatingKey := fmt.Sprintf("StatisticsHeartBeatingKey:%v", socketId)
-	SubKey := fmt.Sprintf("PushStatistics:%v:socket_request", socketId)
+	SubKey := fmt.Sprintf("PushStatistics:%v:socket_request", ws.SecWebSocketKey)
 	SubNation, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的国家
 	var SubBody requests.SubBody
 	err := mapstructure.Decode(SubBodyStr, &SubBody)
@@ -238,18 +238,15 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 	}
 	if SubNation == SubBody.Nation { // 当前订阅的国家已存在
 		ws.Mux.Lock()
-		_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10411","msg":"please no repeat sub"}`))
+		_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10411","msg":"please no repeat sub"}`))
 		ws.Mux.Unlock()
-		logger.Error(errors.New(fmt.Sprintf("当前订阅的国家{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", SubNation, socketId)))
+		logger.Error(errors.New(fmt.Sprintf("当前订阅的国家{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", SubNation, ws.SecWebSocketKey)))
 		return
 	}
 	_, _ = redis.Client.Add(SubKey, SubBody.Nation, 60*60*4) // 当前请求正在订阅的资产，4小时失效
 
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		if IsDie(HeartBeatingKey) {
-			goto STOP
-		}
 		if len(SubBody.Nation) == 0 {
 			goto STOP
 		}
@@ -266,7 +263,7 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 		HisSubNation, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的国家
 		if len(HisSubNation) > 0 {
 			if HisSubNation != SubBody.Nation { // 关闭释放掉历史的订阅
-				logger.Error(errors.New(fmt.Sprintf("国家【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", HisSubNation, SubBody.Nation, socketId)))
+				logger.Error(errors.New(fmt.Sprintf("国家【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", HisSubNation, SubBody.Nation, ws.SecWebSocketKey)))
 				goto END
 			}
 		}
@@ -310,12 +307,12 @@ func (h *AgentController) PushStatistics(socketId string, messageType int, ws *w
 			"data": result,
 		})
 		if err != nil {
-			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
 			return
 		}
 		ws.Mux.Lock()
-		WriteMessageErr := ws.Conn.WriteMessage(messageType, marshal)
+		WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, marshal)
 		ws.Mux.Unlock()
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)

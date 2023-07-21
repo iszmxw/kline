@@ -50,6 +50,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		isVest = "0"
 	}
 	AppUserId = c.Query("userId")
+	appUser, _ := c.Get("user")
+	if appUser != nil {
+		AppUserId = appUser.(response.ClientUserBeans).AppUserId
+	}
 	ws.AppUserId = AppUserId
 	ws.SecWebSocketKey = socketId
 	if len(ws.AppUserId) > 0 {
@@ -104,7 +108,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			{
 				// 开启协诚处理推送消息
 				params := subInfo.(string)
-				go PushMessage(socketId, ws, params)
+				go PushMessage(ws, params)
 			}
 		case strings.EqualFold(ID, "02"):
 			{
@@ -115,7 +119,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
-				go PushHistory(socketId, ws, params, c)
+				go PushHistory(ws, params, c)
 			}
 			break
 		case strings.EqualFold(ID, "05"):
@@ -127,7 +131,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
-				go PushZipHistory(socketId, ws, params, c)
+				go PushZipHistory(ws, params, c)
 			}
 			break
 		case strings.EqualFold(ID, "03"):
@@ -141,25 +145,14 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(ID, "04"): // 下单开奖通知
 			{
 				// 开启协诚处理 下单开奖通知
-				appUser, _ := c.Get("user")
-				if appUser == nil {
-					return
-				}
-				appUserId := appUser.(response.ClientUserBeans).AppUserId
-				fmt.Println(appUserId)
 				// 监控消息通知
-				//go PushNoticePlus(socketId, ws, appUserId)
+				//go PushNoticePlus( ws)
 			}
 			break
 		case strings.EqualFold(ID, "06"): // 弹窗通知
 			{
-				appUser, _ := c.Get("user")
-				if appUser == nil {
-					return
-				}
-				AppUserId := appUser.(response.ClientUserBeans).AppUserId
 				// 开启协诚处理 弹窗通知
-				go PushPopup(socketId, ws, AppUserId)
+				go PushPopup(ws)
 			}
 			break
 		case strings.EqualFold(ID, "07"): // 下单接口
@@ -171,26 +164,20 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
-				appUser, _ := c.Get("user")
-				params.AppUserId = appUser.(response.ClientUserBeans).AppUserId
+				params.AppUserId = AppUserId
 				params.LanguageCode = c.Query("languageCode")
 				params.Nation = c.Query("nation")
-				go Trade.SubmitTrade(socketId, ws, params)
+				go Trade.SubmitTrade(ws, params)
 				// 只执行一次 监控消息通知
 				ws.OnceNotice.Do(func() {
-					go PushNoticePlus(socketId, ws, params.AppUserId)
+					go PushNoticePlus(ws)
 				})
 			}
 			break
 		case strings.EqualFold(ID, "08"):
 			{
 				// 开启协诚处理推送余额
-				appUser, _ := c.Get("user")
-				if appUser == nil {
-					return
-				}
-				AppUserId := appUser.(response.ClientUserBeans).AppUserId
-				go PushUserInfo(socketId, ws, AppUserId)
+				go PushUserInfo(ws)
 			}
 			break
 		case strings.EqualFold(ID, "09"):
@@ -202,7 +189,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					logger.Error(err)
 					goto END
 				}
-				go PushRate(socketId, ws, params)
+				go PushRate(ws, params)
 			}
 			break
 		case strings.EqualFold(ID, "10"):
@@ -215,7 +202,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					goto END
 				}
 				logger.Info(subInfo, params)
-				go StationLetterPushNotice(socketId, ws, params)
+				go StationLetterPushNotice(ws, params)
 			}
 			break
 		case strings.EqualFold(ID, "11"):
@@ -228,18 +215,13 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					goto END
 				}
 				logger.Info(subInfo, params)
-				go AdjustCallBackNotice(socketId, ws, params)
+				go AdjustCallBackNotice(ws, params)
 			}
 			break
 		case strings.EqualFold(ID, "12"):
 			{
-				appUser, _ := c.Get("user")
-				if appUser == nil {
-					return
-				}
-				AppUserId := appUser.(response.ClientUserBeans).AppUserId
 				// 开启协诚处理 Toast通知
-				go PushToast(socketId, ws, AppUserId)
+				go PushToast(ws)
 			}
 			break
 		default:
@@ -254,9 +236,9 @@ END:
 
 // 推送socket消息
 
-func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c *gin.Context) {
+func PushHistory(ws *wss.WsConn, params requests.SubHistory, c *gin.Context) {
 	timeStart := time.Now().UnixMilli()
-	logger.RequestId = socketId
+	logger.RequestId = ws.SecWebSocketKey
 	// 订阅 历史消息
 	if len(params.Symbol) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
@@ -397,9 +379,9 @@ func PushHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c 
 
 // 推送 zipSocket 消息
 
-func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory, c *gin.Context) {
+func PushZipHistory(ws *wss.WsConn, params requests.SubHistory, c *gin.Context) {
 	timeStart := time.Now().UnixMilli()
-	logger.RequestId = socketId
+	logger.RequestId = ws.SecWebSocketKey
 	// 订阅 历史消息
 	if len(params.Symbol) == 0 {
 		logger.Error(errors.New("订阅历史消息条件参数缺失"))
@@ -528,8 +510,8 @@ func PushZipHistory(socketId string, ws *wss.WsConn, params requests.SubHistory,
 	logger.Info(fmt.Sprintf("历史记录查询耗时：%v ms", time.Now().UnixMilli()-timeStart))
 }
 
-func PushMessage(socketId string, ws *wss.WsConn, params string) {
-	logger.RequestId = socketId
+func PushMessage(ws *wss.WsConn, params string) {
+	logger.RequestId = ws.SecWebSocketKey
 	// 订阅的 market.ETH-USD.index.1min，没有值
 	if len(params) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"no sub"}`)
@@ -550,11 +532,11 @@ func PushMessage(socketId string, ws *wss.WsConn, params string) {
 		return
 	}
 	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
-	SubKey := fmt.Sprintf("ws_index:%v:socket_request", socketId)
+	SubKey := fmt.Sprintf("ws_index:%v:socket_request", ws.SecWebSocketKey)
 	SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 	if SubAssetsCode == AssetsCode {             // 当前订阅的资产已存
 		SocketResp(ws, websocket.TextMessage, `{"id":"10411","msg":"please no repeat sub"}`)
-		logger.Error(errors.New(fmt.Sprintf("当前订阅的资产{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", AssetsCode, socketId)))
+		logger.Error(errors.New(fmt.Sprintf("当前订阅的资产{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", AssetsCode, ws.SecWebSocketKey)))
 		return
 	}
 	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4) // 当前请求正在订阅的资产，4小时失效
@@ -563,7 +545,7 @@ func PushMessage(socketId string, ws *wss.WsConn, params string) {
 		HisSubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
 		if len(HisSubAssetsCode) > 0 {
 			if HisSubAssetsCode != AssetsCode { // 关闭释放掉历史的订阅
-				logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", AssetsCode, SubAssetsCode, socketId)))
+				logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", AssetsCode, SubAssetsCode, ws.SecWebSocketKey)))
 				goto END
 			}
 		}
@@ -638,8 +620,9 @@ END:
 	logger.Error(errors.New("PushMessage已经跳出协诚的循环推送"))
 }
 
-func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
-	logger.RequestId = socketId
+func PushNoticePlus(ws *wss.WsConn) {
+	logger.RequestId = ws.SecWebSocketKey
+	appUserId := ws.AppUserId
 	if len(appUserId) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10410","msg":"err sub,AppUserId not right"}`)
 		logger.Error(errors.New("err sub,AppUserId not right"))
@@ -692,8 +675,9 @@ func PushNoticePlus(socketId string, ws *wss.WsConn, appUserId string) {
 
 // 弹窗通知
 
-func PushPopup(socketId string, ws *wss.WsConn, AppUserId string) {
-	logger.RequestId = socketId
+func PushPopup(ws *wss.WsConn) {
+	AppUserId := ws.AppUserId
+	logger.RequestId = ws.SecWebSocketKey
 	if len(AppUserId) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"PushPopup no sub"}`)
 		logger.Error(errors.New("用户ID为空"))
@@ -744,8 +728,9 @@ STOP:
 
 // Toast 通知
 
-func PushToast(socketId string, ws *wss.WsConn, AppUserId string) {
-	logger.RequestId = socketId
+func PushToast(ws *wss.WsConn) {
+	logger.RequestId = ws.SecWebSocketKey
+	AppUserId := ws.AppUserId
 	if len(AppUserId) == 0 {
 		SocketResp(ws, websocket.TextMessage, `{"id":"10407","msg":"PushToast no sub"}`)
 		logger.Error(errors.New("用户ID为空"))
@@ -793,9 +778,9 @@ STOP:
 
 // 推送Rate socket消息
 
-func PushRate(socketId string, ws *wss.WsConn, params requests.SubNationInfo) {
+func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 	// 2 小时内一个长连接禁止重复订阅相同的 topic
-	checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:01", socketId)
+	checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:01", ws.SecWebSocketKey)
 	if redis.Client.CheckExist(checkMsg) {
 		logger.Info("该订阅已存在，请勿重新订阅")
 		return
@@ -850,9 +835,10 @@ END:
 
 // 查询用户系信息
 
-func PushUserInfo(socketId string, ws *wss.WsConn, AppUserId string) {
+func PushUserInfo(ws *wss.WsConn) {
+	AppUserId := ws.AppUserId
 	// 2 小时内一个长连接禁止重复订阅相同的 topic
-	onceRequest := fmt.Sprintf("ws_return_rate:%v:socket_request:02", socketId)
+	onceRequest := fmt.Sprintf("ws_return_rate:%v:socket_request:02", ws.SecWebSocketKey)
 	nums := redis.Client.Incr(onceRequest) // 不允许重复请求
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
@@ -953,9 +939,8 @@ END:
 
 // 小红点消息通知
 
-func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.SubToken) {
-	logger.RequestId = socketId
-	HeartBeatingKey := fmt.Sprintf("NoticeHeartBeatingKey:%v", socketId)
+func StationLetterPushNotice(ws *wss.WsConn, SubToken requests.SubToken) {
+	logger.RequestId = ws.SecWebSocketKey
 	// {"token":"123456","decive_brand":"apple"}
 	if len(SubToken.Token) == 0 {
 		wss.WsClose(ws)
@@ -963,9 +948,6 @@ func StationLetterPushNotice(socketId string, ws *wss.WsConn, SubToken requests.
 	}
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		if IsDie(HeartBeatingKey) {
-			goto STOP
-		}
 		strInfo, err := redis.Client.DefaultGet(fmt.Sprintf("Client:Token:%s", SubToken.Token))
 		if err != nil {
 			logger.Error(err)
@@ -1046,9 +1028,8 @@ END:
 
 // adjust 回调推送通知
 
-func AdjustCallBackNotice(socketId string, ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack) {
-	logger.RequestId = socketId
-	HeartBeatingKey := fmt.Sprintf("NoticeHeartBeatingKey:%v", socketId)
+func AdjustCallBackNotice(ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack) {
+	logger.RequestId = ws.SecWebSocketKey
 	// {"adid":"123456"}
 	if len(AdjustCallBack.Adid) == 0 {
 		wss.WsClose(ws)
@@ -1056,9 +1037,6 @@ func AdjustCallBackNotice(socketId string, ws *wss.WsConn, AdjustCallBack reques
 	}
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		if IsDie(HeartBeatingKey) {
-			goto STOP
-		}
 		isVerst := "A"
 		vestCheck := ""
 		var result []models.TAppUserAdjustCallbackData
@@ -1067,7 +1045,7 @@ func AdjustCallBackNotice(socketId string, ws *wss.WsConn, AdjustCallBack reques
 		if err != nil {
 			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
-			return
+			continue
 		}
 		if len(result) == 0 {
 			vestCheck = "0"
@@ -1093,7 +1071,7 @@ func AdjustCallBackNotice(socketId string, ws *wss.WsConn, AdjustCallBack reques
 		if err != nil {
 			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
 			logger.Error(err)
-			return
+			continue
 		}
 		ws.Mux.Lock()
 		WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, marshal)
@@ -1107,9 +1085,8 @@ func AdjustCallBackNotice(socketId string, ws *wss.WsConn, AdjustCallBack reques
 		time.Sleep(time.Second * 5)
 		// 返回数据给用户
 	}
-STOP:
+END:
 	logger.Error(errors.New("AdjustCallBackNotice关闭Socket"))
 	wss.WsClose(ws)
-END:
 	logger.Info("AdjustCallBackNotice已经跳出协诚的循环推送")
 }
