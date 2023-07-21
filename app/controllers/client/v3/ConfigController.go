@@ -11,6 +11,9 @@ import (
 	"goapi/pkg/redis"
 	"goapi/service/binary-monitoring/pkg"
 	"golang.org/x/text/unicode/norm"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -87,4 +90,47 @@ func (h *ConfigController) CheckLanguage(c *gin.Context) {
 		}(result)
 	}
 	echo.Success(c, result, "ok")
+}
+
+// 清除 adId
+
+func (h *ConfigController) DelAdId(c *gin.Context) {
+	AdId := c.Query("adid")
+	DB := mysql.DB.Debug()
+	var list []models.TAppUserAdjustCallbackData
+	err := DB.Model(models.TAppUserAdjustCallbackData{}).
+		Where("adid", AdId).
+		Delete(&list).Error
+	if err != nil {
+		logger.Error(err)
+	}
+	res := delAdId(AdId)
+	echo.Success(c, res, "ok")
+}
+
+func delAdId(adId string) string {
+	url := "https://api.adjust.com/device_service/api/v1/forget_device"
+	method := "POST"
+	payload := strings.NewReader("app_token=tiwyto5q38jk&adid=" + adId)
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, payload)
+	if err != nil {
+		logger.Error(err)
+		return err.Error()
+	}
+	req.Header.Add("Authorization", "Token token=ygMaBirkbgfB97ADsFMn")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	res, err := client.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return err.Error()
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		logger.Error(err)
+		return err.Error()
+	}
+	return string(body)
 }
