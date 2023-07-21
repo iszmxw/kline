@@ -55,6 +55,7 @@ func Client() gin.HandlerFunc {
 		case "/app/v3/config/setKlineToken.json":
 		case "/app/v3/config/checkLanguage.json":
 		case "/app/v3/notice/siteLetterNotification.json":
+		case "/app/v3/config/delAdId.json":
 			// 继续往下面执行
 			c.Next()
 			break
