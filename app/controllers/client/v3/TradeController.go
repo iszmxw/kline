@@ -50,8 +50,8 @@ func getMessage(languageCode, nation, resultCode string) string {
 
 // 提交下单
 
-func (h *TradeController) SubmitTrade(socketId string, ws *wss.WsConn, params requests.SubmitTradeParams) {
-	logger.RequestId = socketId
+func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTradeParams) {
+	logger.RequestId = ws.SecWebSocketKey
 	if params.Amounts <= 0 {
 		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
 		return
