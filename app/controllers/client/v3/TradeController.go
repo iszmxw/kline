@@ -399,6 +399,7 @@ func createTradingOrder(orderId string, params requests.SubmitTradeParams, appUs
 		return false
 	}
 	createOrder.BeginAssetsPrice = beginAssetsPrice
+	createOrder.EndAssetsPrice = nil
 	createOrder.CreateDate = time.Now()
 	createOrder.UpdateDate = time.Now()
 	createOrder.CreateTs = time.Now().UnixMilli()
@@ -480,6 +481,7 @@ func createVirtualTradingOrder(orderId string, params requests.SubmitTradeParams
 		return false
 	}
 	createOrder.BeginAssetsPrice = beginAssetsPrice
+	createOrder.EndAssetsPrice = nil
 	createOrder.CreateDate = time.Now()
 	createOrder.UpdateDate = time.Now()
 	createOrder.CreateTs = time.Now().UnixMilli()

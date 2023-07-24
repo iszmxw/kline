@@ -15,7 +15,7 @@ type TradingOrder struct {
 	AssetsName          string    `json:"assets_name"`                                              //资产名称
 	AssetsLogoUrl       string    `json:"assets_logo_url"`                                          //资产logo的URL
 	BeginAssetsPrice    float64   `json:"begin_assets_price"`                                       //起始资产指数值
-	EndAssetsPrice      float64   `json:"end_assets_price"`                                         //截止资产指数值
+	EndAssetsPrice      *float64  `json:"end_assets_price"`                                         //截止资产指数值
 	TradeBeginDate      time.Time `json:"trade_begin_date"`                                         //交易起始日期
 	TradeEndDate        time.Time `json:"trade_end_date"`                                           //交易截止日期
 	QuizResult          int       `json:"quiz_result"`                                              //竞猜结果 1对 0 错 -1未检出结果 2 结果检出中

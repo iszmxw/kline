@@ -771,7 +771,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 				continue
 			}
 			// 结束值
-			if TradingOrderVirtual.EndAssetsPrice > 0 {
+			if TradingOrderVirtual.EndAssetsPrice != nil && *TradingOrderVirtual.EndAssetsPrice > 0 {
 				TradeOrderInfo.TradeOrderId = fmt.Sprintf("%v", TradingOrderVirtual.TradeOrderId)
 				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrderVirtual.EndAssetsPrice)
 				TradeOrderInfo.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrderVirtual.TradeEndTimestamp)
@@ -805,7 +805,7 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 				continue
 			}
 			// 结束值
-			if TradingOrder.EndAssetsPrice > 0 {
+			if TradingOrder.EndAssetsPrice != nil && *TradingOrder.EndAssetsPrice > 0 {
 				TradeOrderInfo.TradeOrderId = fmt.Sprintf("%v", TradingOrder.TradeOrderId)
 				TradeOrderInfo.EndAssetsPrice = fmt.Sprintf("%v", TradingOrder.EndAssetsPrice)
 				TradeOrderInfo.TradeEndTimestamp = fmt.Sprintf("%v", TradingOrder.TradeEndTimestamp)
