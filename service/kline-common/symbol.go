@@ -31,9 +31,9 @@ func GetData(service string) []Info {
 	case "hsb":
 		CodeData = Hsb()
 		break
-	//case "mql5":
-	//	CodeData = Mql5()
-	//	break
+	case "mql5":
+		CodeData = Mql5()
+		break
 	case "fxcm":
 		CodeData = Fxcm()
 		break
@@ -183,7 +183,24 @@ func Hsb() []Info {
 func Mql5() []Info {
 	var CodeData []Info
 	CodeData = append(CodeData,
-		Info{ID: 153080, MarketId: 8, Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{Symbol: "USDJPY", Desc: "美元/日元", ContractCode: "USD-JPY"},
+		Info{Symbol: "EURUSD", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{Symbol: "GBPUSD", Desc: "英镑/美元", ContractCode: "GBP-USD"},
+		Info{Symbol: "AUDCAD", Desc: "澳大利亚元/加拿大元", ContractCode: "AUD-CAD"},
+		Info{Symbol: "CADJPY", Desc: "加拿大元/日元", ContractCode: "CAD-JPY"},
+		Info{Symbol: "EURAUD", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
+		Info{Symbol: "USDCAD", Desc: "美元/加拿大元", ContractCode: "USD-CAD"},
+		Info{Symbol: "AUDJPY", Desc: "澳大利亚元/日元", ContractCode: "AUD-JPY"},
+		Info{Symbol: "AUDCHF", Desc: "澳大利亚元/瑞士法郎", ContractCode: "AUD-CHF"},
+		Info{Symbol: "GBPAUD", Desc: "英镑/澳大利亚元", ContractCode: "GBP-AUD"},
+		Info{Symbol: "AUDUSD", Desc: "澳大利亚元/美元", ContractCode: "AUD-USD"},
+		Info{Symbol: "CADCHF", Desc: "澳大利亚元/美元", ContractCode: "CAD-CHF"},
+		Info{Symbol: "EURGBP", Desc: "澳大利亚元/美元", ContractCode: "EUR-GBP"},
+		Info{Symbol: "EURJPY", Desc: "澳大利亚元/美元", ContractCode: "EUR-JPY"},
+		Info{Symbol: "GBPJPY", Desc: "澳大利亚元/美元", ContractCode: "GBP-JPY"},
+		Info{Symbol: "NUZ/USD", Desc: "澳大利亚元/美元", ContractCode: "NUZ-USD"},
+		//Info{Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
+		//Info{Symbol: "XAG/USD", Desc: "伦敦银", ContractCode: "SILVER"},
 	)
 	return CodeData
 }
