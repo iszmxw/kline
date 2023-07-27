@@ -95,7 +95,7 @@ func (ws *WebSocketOp) connServer() bool {
 	}
 	logger.Info(ws.Symbol + "WebSocket connected")
 	ws.RequestId = 1
-	go ws.sendLogin("4f25a5faaf82ab0add73788e6f06e708")
+	go ws.sendLogin("406404326a9f20d0d72bcf5676120300")
 	go ws.readLoop()
 	go ws.DoHand()
 	return true
@@ -140,7 +140,7 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 		break
 	case strings.Contains(resp.Name, `authenticated`): // authenticated
 		{
-			logger.Info(resp.Msg)
+			logger.Info(resp)
 			if resp.Msg.(bool) {
 				ws.IsLogin = true
 				logger.Info("开始订阅")
@@ -237,8 +237,8 @@ func (ws *WebSocketOp) sendLogin(Ssid string) {
 	ws.mutex.Lock()
 	loginData := wsdata.SendLogin{
 		Name:      "authenticate",
-		RequestId: fmt.Sprintf("%v_1293630387", time.Now().UnixMilli()),
-		LocalTime: 10417,
+		RequestId: fmt.Sprintf("%v_739168024", time.Now().UnixMilli()/1000),
+		LocalTime: 18081,
 		Msg: wsdata.Login{
 			Ssid:            Ssid,
 			Protocol:        3,
