@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"goapi/pkg/logger"
 	NoticeMail "goapi/pkg/notice/mail"
+	"goapi/pkg/redis"
+	"goapi/service/binary-monitoring/pkg"
 	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-iqoption/iqoption/config"
@@ -50,6 +52,7 @@ type WebSocketOp struct {
 	IsLogin           bool   // 是否已经 Login
 	IsReboot          bool   // 是否已 Reboot
 	Description       string // 描述
+	Ssid              string // 登录token
 }
 
 func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
@@ -95,7 +98,11 @@ func (ws *WebSocketOp) connServer() bool {
 	}
 	logger.Info(ws.Symbol + "WebSocket connected")
 	ws.RequestId = 1
-	go ws.sendLogin("406404326a9f20d0d72bcf5676120300")
+	Ssid, _ := redis.Client.Get("token:iqoption")
+	if len(Ssid) == 0 {
+		Ssid = "406404326a9f20d0d72bcf5676120300"
+	}
+	go ws.sendLogin(Ssid)
 	go ws.readLoop()
 	go ws.DoHand()
 	return true
@@ -145,6 +152,8 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				ws.IsLogin = true
 				logger.Info("开始订阅")
 				go ws.SendMsg()
+			} else {
+				pkg.Notice(fmt.Printf("IqOption 数据源登录失败当前的 Ssid【%s】", ws.Ssid))
 			}
 		}
 		break
@@ -246,6 +255,7 @@ func (ws *WebSocketOp) sendLogin(Ssid string) {
 			ClientSessionId: "",
 		},
 	}
+	ws.Ssid = Ssid
 	ws.RequestId = ws.RequestId + 1
 	marshal, err := json.Marshal(loginData)
 	if err != nil {
