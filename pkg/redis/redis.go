@@ -15,7 +15,8 @@ var Client *Redis
 
 // Redis 对象
 type Redis struct {
-	mutex      sync.Mutex    // 锁
+	mutex      sync.Mutex    // 锁，只有一个goroutine能够获取锁并执行
+	RwMutex    sync.RWMutex  // 读写锁，允许多个goroutine读，一个写
 	Client     *redis.Client // 客户端
 	expireTime int           // 过期时间
 	DefaultDB  int           // 默认数据库，用于切换操作后，在还原回来
@@ -157,29 +158,29 @@ func (rdb *Redis) Delete(key string) bool {
 }
 
 func (rdb *Redis) Get(key string) (string, error) {
-	defer rdb.mutex.Unlock()
-	rdb.mutex.Lock()
+	rdb.RwMutex.Lock()
 	value, err := rdb.Client.Get(Set(key)).Result()
+	defer rdb.RwMutex.Unlock()
 	return value, err
 }
 
 func (rdb *Redis) DefaultGet(key string) (string, error) {
-	defer rdb.mutex.Unlock()
-	rdb.mutex.Lock()
+	defer rdb.RwMutex.Unlock()
+	rdb.RwMutex.Lock()
 	value, err := rdb.Client.Get(Set(key)).Result()
 	return value, err
 }
 
 func (rdb *Redis) WebGet(key string) (string, error) {
-	defer rdb.mutex.Unlock()
-	rdb.mutex.Lock()
+	defer rdb.RwMutex.Unlock()
+	rdb.RwMutex.Lock()
 	value, err := rdb.Client.Get(key).Result()
 	return value, err
 }
 
 func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
-	defer rdb.mutex.Unlock()
-	rdb.mutex.Lock()
+	defer rdb.RwMutex.Unlock()
+	rdb.RwMutex.Lock()
 	pipe := rdb.Client.Pipeline()
 	pipe.Do("select", db)
 	_, _ = pipe.Get(Set(key)).Result()
