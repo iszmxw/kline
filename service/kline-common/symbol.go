@@ -198,7 +198,7 @@ func Mql5() []Info {
 		Info{Symbol: "EURGBP", Desc: "澳大利亚元/美元", ContractCode: "EUR-GBP"},
 		Info{Symbol: "EURJPY", Desc: "澳大利亚元/美元", ContractCode: "EUR-JPY"},
 		Info{Symbol: "GBPJPY", Desc: "澳大利亚元/美元", ContractCode: "GBP-JPY"},
-		Info{Symbol: "NUZ/USD", Desc: "澳大利亚元/美元", ContractCode: "NUZ-USD"},
+		Info{Symbol: "NUZUSD", Desc: "澳大利亚元/美元", ContractCode: "NUZ-USD"},
 		//Info{Symbol: "XAU/USD", Desc: "伦敦金", ContractCode: "GOLD"},
 		//Info{Symbol: "XAG/USD", Desc: "伦敦银", ContractCode: "SILVER"},
 	)
