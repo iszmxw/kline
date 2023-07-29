@@ -6,10 +6,9 @@ import (
 	"goapi/config"
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
-	"golang.org/x/text/unicode/norm"
-	"reflect"
+	"goapi/pkg/redis"
+	KlineCommon "goapi/service/kline-common"
 	"time"
-	"unicode/utf8"
 )
 
 func init() {
@@ -19,24 +18,6 @@ func init() {
 	config.Initialize()
 	// 定义日志目录
 	logger.Init("test")
-}
-func isAllChinese(s string) bool {
-	// 将字符串规范化为NFC格式
-	s = norm.NFC.String(s)
-
-	// 遍历字符串的每个字符
-	for len(s) > 0 {
-		// 读取第一个字符
-		r, size := utf8.DecodeRuneInString(s)
-		// 如果字符不是中文字符，则返回false
-		if r < 0x4e00 || r > 0x9fff {
-			return false
-		}
-		// 去除已经读取的字符
-		s = s[size:]
-	}
-	// 所有字符都是中文字符，则返回true
-	return true
 }
 
 func main() {
@@ -49,13 +30,15 @@ func main() {
 	db := conf.GetInt("redis.db")
 	bootstrap.SetupRedis(db)
 	defer bootstrap.RedisClose()
-
-	arr := []string{"apple", "banana", "orange"}
-	str := "apple"
-
-	if reflect.DeepEqual(arr, []string{str}) {
-		fmt.Println("Array is equal to", str)
-	} else {
-		fmt.Println("Array is not equal to", str)
+	for true {
+		go func() {
+			SystemTs := time.Now().UnixMilli()
+			// 插针后的数据缓存到另外一张表
+			RecoverSource, _ := redis.Client.Get(fmt.Sprintf("recover_source:%v", "test"))
+			if len(RecoverSource) == 0 {
+				logger.Info(KlineCommon.ConsumeTime(SystemTs, time.Now().UnixMilli()), SystemTs, "---", time.Now().UnixMilli())
+				return
+			}
+		}()
 	}
 }
