@@ -1039,7 +1039,7 @@ func AdjustCallBackNotice(ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack
 	queryCount := 1
 	for !ws.IsClose {
 		isVerst := "A"
-		vestCheck := "0"
+		vestCheck := "0"     // 0-无数据 1-有数据
 		if queryCount <= 5 { // 共查旬五次
 			respQueryAdId := goadjust.QueryAdId(AdjustCallBack.Adid)
 			if respQueryAdId == nil {
@@ -1049,6 +1049,7 @@ func AdjustCallBackNotice(ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack
 			}
 			if !strings.EqualFold(respQueryAdId.TrackerName, "Organic") {
 				isVerst = "B"
+				vestCheck = "1"
 			}
 		} else { // 然后查询数据库
 			var result []models.TAppUserAdjustCallbackData
@@ -1093,7 +1094,9 @@ func AdjustCallBackNotice(ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack
 			wss.WsClose(ws)
 			// 跳出for关闭后面的推送
 			goto CLOSE
-		} else {
+		}
+		// 一段发现是B面就不在查询
+		if strings.EqualFold(isVerst, "B") {
 			goto END
 		}
 		// 5秒推送一次消息
