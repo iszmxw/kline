@@ -7,6 +7,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
+	goadjust "goapi/pkg/adjust"
 	"goapi/pkg/config"
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
@@ -1035,24 +1036,37 @@ func AdjustCallBackNotice(ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack
 		return
 	}
 	// 为了释放for死循环的资源
+	queryCount := 1
 	for !ws.IsClose {
 		isVerst := "A"
-		vestCheck := ""
-		var result []models.TAppUserAdjustCallbackData
-		// 查询用户未读消息，展示小红点
-		err := mysql.DB.Debug().Model(models.TAppUserAdjustCallbackData{}).Where("adid", AdjustCallBack.Adid).Find(&result).Error
-		if err != nil {
-			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
-			logger.Error(err)
-			continue
-		}
-		if len(result) == 0 {
-			vestCheck = "0"
-		} else {
-			vestCheck = "1"
-			for _, item := range result {
-				if !strings.EqualFold(item.Network, "Organic") || strings.EqualFold(item.IsOrganic, "0") {
-					isVerst = "B"
+		vestCheck := "0"
+		if queryCount <= 5 { // 共查旬五次
+			respQueryAdId := goadjust.QueryAdId(AdjustCallBack.Adid)
+			if respQueryAdId == nil {
+				queryCount++
+				time.Sleep(time.Millisecond * 100)
+				continue
+			}
+			if !strings.EqualFold(respQueryAdId.TrackerName, "Organic") {
+				isVerst = "B"
+			}
+		} else { // 然后查询数据库
+			var result []models.TAppUserAdjustCallbackData
+			// 查询用户未读消息，展示小红点
+			err := mysql.DB.Debug().Model(models.TAppUserAdjustCallbackData{}).Where("adid", AdjustCallBack.Adid).Find(&result).Error
+			if err != nil {
+				_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
+				logger.Error(err)
+				continue
+			}
+			if len(result) == 0 {
+				vestCheck = "0"
+			} else {
+				vestCheck = "1"
+				for _, item := range result {
+					if !strings.EqualFold(item.Network, "Organic") || strings.EqualFold(item.IsOrganic, "0") {
+						isVerst = "B"
+					}
 				}
 			}
 		}
@@ -1078,14 +1092,17 @@ func AdjustCallBackNotice(ws *wss.WsConn, AdjustCallBack requests.AdjustCallBack
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)
 			// 跳出for关闭后面的推送
+			goto CLOSE
+		} else {
 			goto END
 		}
 		// 5秒推送一次消息
 		time.Sleep(time.Second * 5)
 		// 返回数据给用户
 	}
-END:
-	logger.Error(errors.New("AdjustCallBackNotice关闭Socket"))
+CLOSE:
 	wss.WsClose(ws)
+	logger.Error(errors.New("AdjustCallBackNotice关闭Socket"))
+END:
 	logger.Info("AdjustCallBackNotice已经跳出协诚的循环推送")
 }
