@@ -698,9 +698,6 @@ func PushPopup(ws *wss.WsConn) {
 			time.Sleep(2 * time.Second)
 			continue
 		}
-		//if popData.Name == "TopRank" {
-		//	pkg.Notice("消费消息-"+AppUserId+"--TopRank", push)
-		//}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "06",
 			"data": popData,
