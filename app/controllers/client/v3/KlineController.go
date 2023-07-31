@@ -145,8 +145,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		case strings.EqualFold(ID, "04"): // 下单开奖通知
 			{
 				// 开启协诚处理 下单开奖通知
-				// 监控消息通知
-				//go PushNoticePlus( ws)
+				// 只执行一次 监控消息通知
+				ws.OnceNotice.Do(func() {
+					go PushNoticePlus(ws)
+				})
 			}
 			break
 		case strings.EqualFold(ID, "06"): // 弹窗通知
