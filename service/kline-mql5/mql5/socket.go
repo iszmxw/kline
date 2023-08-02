@@ -67,7 +67,7 @@ func SocketMql5(info KlineCommon.Info, mql5 wsdata.Mql5) {
 	// 插针后的数据缓存到另外一张表
 	RecoverSource, _ := redis.Client.Get(fmt.Sprintf("recover_source:%v", info.ContractCode))
 	if len(RecoverSource) == 0 {
-		logger.Info(KlineCommon.ConsumeTime(SystemTs, time.Now().UnixMilli()), SystemTs, "---", time.Now().UnixMilli())
+		logger.Info(KlineCommon.ConsumeTime(SystemTs, time.Now().UnixMilli()))
 		return
 	}
 	if kconfig.KlineSource == RecoverSource {

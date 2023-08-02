@@ -50,6 +50,13 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				// 清除 adId
 				config.Any("/delAdId.json", ClientV3Group.ConfigController.DelAdId)
 			}
+
+			// 其他接口
+			other := V3Route.Group("/other")
+			{
+				// 生产队列数据
+				other.Any("/pushList.json", ClientV3Group.OtherController.PushList)
+			}
 		}
 
 	}
