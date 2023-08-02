@@ -1,5 +1,6 @@
 package main
 
+import "C"
 import (
 	"bufio"
 	"bytes"
@@ -12,6 +13,7 @@ import (
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
 	"goapi/pkg/pprof"
+	"goapi/pkg/redis"
 	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-mql5/mql5"
 	kconfig "goapi/service/kline-mql5/mql5/config"
@@ -54,8 +56,10 @@ func main() {
 		}
 	}(listener)
 	logger.Info("服务已启动，等待接收数据")
-	C1 := Init()
-	go SubPriceKLine(C1)
+	CodeData := KlineCommon.GetData(kconfig.KlineSource)
+	for _, obj := range CodeData {
+		go SubPriceKLine(obj)
+	}
 	// 处理接收到的连接
 	var tempDelay time.Duration
 	for {
@@ -80,12 +84,12 @@ func main() {
 		}
 		tempDelay = 0
 		// 在新的goroutine中处理连接
-		handleConnection(rw, C1)
+		handleConnection(rw)
 	}
 }
 
 // 处理Socket连接
-func handleConnection(conn net.Conn, Client *Client) {
+func handleConnection(conn net.Conn) {
 	defer func(conn net.Conn) {
 		err := conn.Close()
 		if err != nil {
@@ -112,30 +116,13 @@ func handleConnection(conn net.Conn, Client *Client) {
 			continue
 		}
 		info := checkExists(mql5data.Name)
-		if len(info.Symbol) <= 0 {
+		if len(info.ContractCode) <= 0 {
 			continue
 		}
-		list := &wsdata.LinkedList{}
-		// 入队数据
+		pushKey := fmt.Sprintf("%s:%s", "list-mql5", info.ContractCode)
 		bytesData := bytes.Trim(message, "\x00")
-		list.Enqueue(bytesData)
-		Client.SubTopicMap[info.Symbol] = &info
-		Client.LinkedList[info.Symbol] = list
+		_, _ = redis.Client.Lpush(pushKey, string(bytesData))
 	}
-}
-
-type Client struct {
-	SubTopicMap map[string]*KlineCommon.Info  // 订阅历史
-	IsSub       map[string]bool               // 是否已经订阅了
-	LinkedList  map[string]*wsdata.LinkedList // 订阅历史
-}
-
-func Init() *Client {
-	C1 := new(Client)
-	C1.IsSub = make(map[string]bool)
-	C1.SubTopicMap = make(map[string]*KlineCommon.Info)
-	C1.LinkedList = make(map[string]*wsdata.LinkedList)
-	return C1
 }
 
 func checkExists(code string) KlineCommon.Info {
@@ -150,35 +137,19 @@ func checkExists(code string) KlineCommon.Info {
 	return info
 }
 
-func SubPriceKLine(C *Client) {
+func SubPriceKLine(info KlineCommon.Info) {
+	pushKey := fmt.Sprintf("%s:%s", "list-mql5", info.ContractCode)
 	for {
-		for key, val := range C.SubTopicMap {
-			if C.IsSub[key] {
-				time.Sleep(time.Millisecond * 500)
-				continue
-			}
-			C.IsSub[key] = true
-			logger.Info(key, val)
-			go func() {
-				for {
-					for s, u := range C.LinkedList {
-						if u == nil || u.Length == 0 {
-							continue
-						}
-						bytesData := u.Dequeue().([]byte)
-						logger.Info(s, string(bytesData))
-						info := checkExists(s)
-						var mql5data wsdata.Mql5
-						err := json.Unmarshal(bytesData, &mql5data)
-						if err != nil {
-							logger.Error(err)
-							continue
-						}
-						go mql5.SocketMql5(info, mql5data)
-					}
-					time.Sleep(time.Second)
-				}
-			}()
+		data := redis.Client.RPop(pushKey)
+		if len(data) <= 0 {
+			time.Sleep(time.Millisecond * 300)
 		}
+		var mql5data wsdata.Mql5
+		err := json.Unmarshal([]byte(data), &mql5data)
+		if err != nil {
+			time.Sleep(time.Millisecond * 300)
+			continue
+		}
+		mql5.SocketMql5(info, mql5data)
 	}
 }
