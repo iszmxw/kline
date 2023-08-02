@@ -9,103 +9,16 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
-	"goapi/service/kline-common"
+	KlineCommon "goapi/service/kline-common"
 	kconfig "goapi/service/kline-mql5/mql5/config"
 	"goapi/service/kline-mql5/mql5/wsdata"
-	"reflect"
 	"time"
 )
 
-type CallbackFunc struct {
-	fun   interface{}
-	param reflect.Type
-}
-
-type WebSocketOp struct {
-	ReadChan    chan []byte              // 读消息管道
-	SystemTs    int64                    // 时间戳
-	SubTopicMap map[string]*CallbackFunc // 订阅历史
-}
-
-func (ws *WebSocketOp) Init() {
-	ws.ReadChan = make(chan []byte)
-	ws.SubTopicMap = make(map[string]*CallbackFunc)
-}
-
-// 通用订阅
-func (ws *WebSocketOp) sub(info KlineCommon.Info, fun interface{}, param reflect.Type) {
-	var mi *CallbackFunc = nil
-	if _, found := ws.SubTopicMap[info.Symbol]; found {
-		logger.Info(found)
-		mi = new(CallbackFunc).Init(fun, param)
-		ws.SubTopicMap[info.Symbol] = mi
-		return
-	}
-	mi = new(CallbackFunc).Init(fun, param)
-	ws.SubTopicMap[info.Symbol] = mi
-}
-
-func (wsOp *CallbackFunc) Init(fun interface{}, param reflect.Type) *CallbackFunc {
-	wsOp.fun = fun
-	wsOp.param = param
-	return wsOp
-}
-
-func (ws *WebSocketOp) runFunction(mi *CallbackFunc, data []byte) {
-	param := reflect.New(mi.param).Interface()
-	err := json.Unmarshal(data, &param)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	args := make([]reflect.Value, 1)
-	args[0] = reflect.ValueOf(param)
-	fun := reflect.ValueOf(mi.fun)
-	fun.Call(args)
-}
-
-func (ws *WebSocketOp) Send(msg []byte) {
-	ws.ReadChan <- msg
-}
-
-func (ws *WebSocketOp) Read() {
-	for {
-		select {
-		case msg, ok := <-ws.ReadChan:
-			if !ok {
-				goto ERR
-			}
-			ws.SystemTs = time.Now().UnixMilli()
-			ws.SocketMql5(msg)
-		}
-	}
-ERR:
-	logger.Info("读取结束")
-}
-
-func (ws *WebSocketOp) SocketMql5(data []byte) {
-	var mql5 wsdata.Mql5
-	err := json.Unmarshal(data, &mql5)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	CodeData := KlineCommon.GetData(kconfig.KlineSource)
-	var info KlineCommon.Info
-	for _, obj := range CodeData {
-		if mql5.Name == obj.Symbol {
-			info = obj
-		}
-	}
-	if len(info.ContractCode) > 0 { // 系統生成的Ts
-		go ws.SubPriceKLine(info, mql5)
-	}
-}
-
-func (ws *WebSocketOp) SubPriceKLine(info KlineCommon.Info, mql5 wsdata.Mql5) {
-	logger.RequestId = fmt.Sprintf("%v@%v", ws.SystemTs, mql5.Name) // RequestId 定义为 Ts 时间戳
+func SocketMql5(info KlineCommon.Info, mql5 wsdata.Mql5) {
 	SystemTs := time.Now().UnixMilli()
-	UpstreamTs := mql5.TimeMsc // 上游的ts
+	logger.RequestId = fmt.Sprintf("%v@%v", SystemTs, mql5.Name) // RequestId 定义为 Ts 时间戳
+	UpstreamTs := mql5.TimeMsc                                   // 上游的ts
 	TimeDiff := SystemTs - UpstreamTs
 	if TimeDiff >= 30*1000 {
 		logger.Info("时差大于30秒直接不存储，认为数据源不健康")
