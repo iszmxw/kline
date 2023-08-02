@@ -126,6 +126,25 @@ func (rdb *Redis) Lpush(key string, values ...interface{}) (bool, error) {
 	return true, nil
 }
 
+func (rdb *Redis) LPushDb(db int, key string, values ...interface{}) (bool, error) {
+	defer rdb.mutex.Unlock()
+	rdb.mutex.Lock()
+	pipe := rdb.Client.Pipeline()
+	pipe.Do("select", db)
+	key = Set(key)
+	err := pipe.LPush(key, values...).Err()
+	if err != nil {
+		pipe.Do("select", rdb.DefaultDB)
+		fmt.Println("设置key失败")
+		return false, err
+	}
+	pipe.Do("select", rdb.DefaultDB)
+	cmderArr, err := pipe.Exec()
+	strMap := GetCmdResult(cmderArr)
+	_, _ = strMap[1].(*redis.IntCmd)
+	return true, err
+}
+
 func (rdb *Redis) Rpush(key string, values ...interface{}) (bool, error) {
 	_, err := rdb.Client.RPush(Set(key), values...).Result()
 	if err != nil {

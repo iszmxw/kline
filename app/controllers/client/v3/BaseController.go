@@ -19,6 +19,7 @@ type Group struct {
 	AgentController
 	PromoteController
 	ConfigController
+	OtherController
 }
 
 // 响应消息
