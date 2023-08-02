@@ -9,6 +9,7 @@ import (
 	"goapi/pkg/pprof"
 	"goapi/pkg/redis"
 	KlineCommon "goapi/service/kline-common"
+	"goapi/service/kline-common/heartbeat"
 	"goapi/service/kline-mql5/mql5"
 	kconfig "goapi/service/kline-mql5/mql5/config"
 	"goapi/service/kline-mql5/mql5/wsdata"
@@ -32,9 +33,19 @@ func main() {
 	bootstrap.SetupRedis(15)
 	defer bootstrap.RedisClose()
 	CodeData := KlineCommon.GetData(kconfig.KlineSource)
-	for _, obj := range CodeData {
-		logger.Info(obj)
-		go SubPriceKLine(obj)
+	// 启动监控，监控数据源活跃状态，设置参数每个30秒检测一次
+	go heartbeat.Start(30, kconfig.KlineSource, CodeData)
+	start := "ok"
+	for {
+		if start == "ok" {
+			start = "no"
+			logger.Info(CodeData)
+			for _, obj := range CodeData {
+				logger.Info("缓存 " + obj.Symbol)
+				go SubPriceKLine(obj)
+			}
+		}
+		time.Sleep(time.Second)
 	}
 }
 
