@@ -137,23 +137,23 @@ func AllowKlineSource() map[string]interface{} {
 	data := cmap.New().Items()
 	data["ETH-USD"] = []string{"huobi", "binance"}
 	data["BTC-USD"] = []string{"huobi", "binance"}
-	data["EUR-USD"] = []string{"hsb", "fxcm", "iqoption"}
-	data["GBP-USD"] = []string{"hsb", "fxcm", "iqoption"}
-	data["AUD-CAD"] = []string{"fxcm", "iqoption"}
-	data["USD-JPY"] = []string{"hsb", "fxcm", "iqoption"}
+	data["EUR-USD"] = []string{"hsb", "fxcm", "iqoption", "mql5"}
+	data["GBP-USD"] = []string{"hsb", "fxcm", "iqoption", "mql5"}
+	data["AUD-CAD"] = []string{"fxcm", "iqoption", "mql5"}
+	data["USD-JPY"] = []string{"hsb", "fxcm", "iqoption", "mql5"}
 	data["GOLD"] = []string{"hsb", "fxcm", "iqoption"}
 	data["SILVER"] = []string{"hsb", "fxcm", "iqoption"}
-	data["CAD-JPY"] = []string{"fxcm"}
-	data["EUR-AUD"] = []string{"hsb", "fxcm", "iqoption"}
-	data["USD-CAD"] = []string{"hsb", "fxcm", "iqoption"}
-	data["AUD-CHF"] = []string{"fxcm", "iqoption"}
-	data["AUD-JPY"] = []string{"hsb", "fxcm"}
-	data["GBP-AUD"] = []string{"hsb", "fxcm"}
-	data["AUD-USD"] = []string{"iqoption"}
-	data["CAD-CHF"] = []string{"iqoption"}
-	data["EUR-GBP"] = []string{"iqoption"}
-	data["EUR-JPY"] = []string{"iqoption"}
-	data["GBP-JPY"] = []string{"iqoption"}
+	data["CAD-JPY"] = []string{"fxcm", "mql5"}
+	data["EUR-AUD"] = []string{"hsb", "fxcm", "iqoption", "mql5"}
+	data["USD-CAD"] = []string{"hsb", "fxcm", "iqoption", "mql5"}
+	data["AUD-CHF"] = []string{"fxcm", "iqoption", "mql5"}
+	data["AUD-JPY"] = []string{"hsb", "fxcm", "mql5"}
+	data["GBP-AUD"] = []string{"hsb", "fxcm", "mql5"}
+	data["AUD-USD"] = []string{"iqoption", "mql5"}
+	data["CAD-CHF"] = []string{"iqoption", "mql5"}
+	data["EUR-GBP"] = []string{"iqoption", "mql5"}
+	data["EUR-JPY"] = []string{"iqoption", "mql5"}
+	data["GBP-JPY"] = []string{"iqoption", "mql5"}
 	data["NZD-USD"] = []string{"iqoption"}
 	data["COPPER"] = []string{"iqoption"}
 	data["wheat"] = []string{"iqoption"}
@@ -178,5 +178,5 @@ func AllowKlineSource() map[string]interface{} {
 // 所有的数据源
 
 func GetSource() []string {
-	return []string{"binance", "huobi", "hsb", "fxcm", "iqoption"}
+	return []string{"binance", "huobi", "hsb", "fxcm", "iqoption", "mql5"}
 }
