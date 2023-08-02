@@ -119,13 +119,15 @@ func checkExists(code string) KlineCommon.Info {
 // 转发数据
 
 func Forward(index, item string) {
-	serves := []string{
-		"http://47.242.235.4:7104",
-	}
-	for _, HOST := range serves {
-		baseURL := HOST + "/app/v3/other/pushList.json"
-		go pushToClient(baseURL, index, item)
-	}
+	//serves := []string{
+	//	"http://47.242.235.4:7104",
+	//}
+	//for _, HOST := range serves {
+	//	baseURL := HOST + "/app/v3/other/pushList.json"
+	//	go pushToClient(baseURL, index, item)
+	//}
+	baseURL := "http://47.242.235.4:7104/app/v3/other/pushList.json"
+	go pushToClient(baseURL, index, item)
 }
 
 func pushToClient(baseURL, index, item string) {
