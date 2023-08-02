@@ -42,8 +42,8 @@ func SocketMql5(info KlineCommon.Info, mql5 wsdata.Mql5) {
 		return
 	}
 	// 当前数据源匹配就入库
-	//KlineSource := response.KlineSource(info.ContractCode)
-	if true {
+	KlineSource := response.KlineSource(info.ContractCode)
+	if kconfig.KlineSource == KlineSource {
 		var KlineData models.KlineLog
 		mysql.DB.
 			Model(models.KlineLog{}).
