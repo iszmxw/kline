@@ -134,3 +134,18 @@ func delAdId(adId string) string {
 	}
 	return string(body)
 }
+
+func (h *ConfigController) Iqoption(c *gin.Context) {
+	Token := c.Query("token")
+	if len(Token) > 0 {
+		_, err := redis.Client.SelectDbAdd(15, "token:iqoption", Token, 0)
+		if err != nil {
+			echo.Error(c, "Failed", "操作失败"+err.Error())
+			return
+		}
+	} else {
+		echo.Error(c, "Failed", "操作失败,token不能为空")
+		return
+	}
+	echo.Success(c, nil, "ok")
+}
