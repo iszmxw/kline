@@ -153,7 +153,14 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 				logger.Info("开始订阅")
 				go ws.SendMsg()
 			} else {
-				pkg.Notice(fmt.Printf("IqOption 数据源登录失败当前的 Ssid【%s】", ws.Ssid))
+				ok, lockErr := redis.Client.SelectDbSetNx(15, "lock:notice", ws.Ssid, 60*10)
+				if lockErr != nil {
+					logger.Error(lockErr)
+					return
+				}
+				if ok {
+					pkg.Notice(fmt.Sprintf("IqOption 数据源登录失败当前的 Ssid【%s】", ws.Ssid))
+				}
 			}
 		}
 		break
