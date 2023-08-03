@@ -18,7 +18,8 @@ import (
 func SocketMql5(info KlineCommon.Info, mql5 wsdata.Mql5) {
 	SystemTs := time.Now().UnixMilli()
 	logger.RequestId = fmt.Sprintf("%v@%v", SystemTs, mql5.Name) // RequestId 定义为 Ts 时间戳
-	UpstreamTs := mql5.TimeMsc                                   // 上游的ts
+	mql5.TimeMsc = mql5.TimeMsc - 60*60*3*1000                   // 上游的ts 减去三个小时的时差得到印尼的时间戳
+	UpstreamTs := mql5.TimeMsc
 	TimeDiff := SystemTs - UpstreamTs
 	if TimeDiff >= 30*1000 {
 		logger.Info("时差大于30秒直接不存储，认为数据源不健康")
