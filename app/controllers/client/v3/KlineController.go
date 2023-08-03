@@ -84,6 +84,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		subInfo := SubStruct.Sub
 		ID := SubStruct.Id
 		// 检测登录权限
+		// ios 01,02,11 放开
 		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09", "11", "12"}
 		for _, id := range needLoginIDs {
 			if ID == id {
