@@ -49,6 +49,8 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				config.Any("/checkLanguage.json", ClientV3Group.ConfigController.CheckLanguage)
 				// 清除 adId
 				config.Any("/delAdId.json", ClientV3Group.ConfigController.DelAdId)
+				// iqoption 的登录 token 设置
+				config.Any("/iqoption.json", ClientV3Group.ConfigController.Iqoption)
 			}
 
 			// 其他接口
