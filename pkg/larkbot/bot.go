@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"goapi/pkg/utils"
 	"net/http"
 )
 
@@ -33,6 +34,8 @@ func NewClient(token string) *Client {
 }
 
 func (c *Client) SendMessage(text string) error {
+	Serve := fmt.Sprintf("当前的服务器IP：【%s】\n\n\n", utils.ServeIp())
+	text = Serve + text
 	msg := &Message{
 		MsgType: "text",
 		Content: struct {
