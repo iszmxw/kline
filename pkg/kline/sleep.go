@@ -70,6 +70,11 @@ func TickerCheckTodaySleep(isTicker bool) {
 			// 检测是否开始智能启用停止功能，如果开启了才往下执行
 			ok, _ := redis.Client.SelectDbGet(0, "SmartStartStop:"+item.AssetsCode)
 			if !strings.EqualFold("1", ok) {
+				isLock, _ := redis.Client.SelectDbGet(0, "SmartStartStop:lock:"+item.AssetsCode)
+				if !strings.EqualFold("lock", isLock) {
+					// 开启智能启停
+					_, _ = redis.Client.SelectDbAdd(0, "SmartStartStop:"+item.AssetsCode, "1", 0)
+				}
 				logger.Info("跳过检查", item.AssetsCode)
 				continue
 			}
