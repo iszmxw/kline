@@ -1,6 +1,7 @@
 package v3
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/kline"
 	"goapi/pkg/logger"
+	"goapi/pkg/mongodb"
 	"goapi/pkg/mysql"
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
@@ -140,6 +142,8 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				// 处理心跳数据
 				currentTime := time.Now().Format("2006-01-02 15:04:05")
 				_, _ = redis.Client.Add(fmt.Sprintf("ws_index:%v:heart_beating_key", c.GetHeader("Sec-WebSocket-Key")), currentTime, 300) // 5分钟过期
+				// 收集延迟信息
+				go DelayCheck(c, ws, subInfo)
 				SocketResp(ws, websocket.TextMessage, `{"id":"03","msg":"pong"}`)
 			}
 			break
@@ -1108,4 +1112,37 @@ CLOSE:
 	logger.Error(errors.New("AdjustCallBackNotice关闭Socket"))
 END:
 	logger.Info("AdjustCallBackNotice已经跳出协诚的循环推送")
+}
+
+// 延迟检测和收集
+
+func DelayCheck(ctx *gin.Context, ws *wss.WsConn, subInfo interface{}) {
+	var params requests.DelayTimestamp
+	err := mapstructure.Decode(subInfo, &params)
+	if err != nil {
+		logger.Error(err)
+	} else {
+		// 如果延迟大于 300 毫秒则上报给服务器，收集用户网络
+		if params.DelayTimestamp > 300 {
+			headers, _ := json.Marshal(ctx.Request.Header)
+			delayInfo := requests.DelayInfo{
+				AppUserId:           ws.AppUserId,
+				Ip:                  ctx.ClientIP(),
+				Url:                 ctx.Request.URL.String(),
+				Origin:              ctx.GetHeader("Origin"),
+				SecWebSocketKey:     ctx.GetHeader("Sec-WebSocket-Key"),
+				UserAgent:           ctx.GetHeader("User-Agent"),
+				Header:              string(headers),
+				DelayTimestamp:      params.DelayTimestamp,
+				OccurrenceTimestamp: params.OccurrenceTimestamp,
+				CreateTimestamp:     time.Now().UnixMilli(),
+			}
+			collection := mongodb.MgoCli.Database("smo").Collection("tb_delay_statistics")
+			//插入某一条数据
+			_, err = collection.InsertOne(context.TODO(), delayInfo)
+			if err != nil {
+				logger.Error(err)
+			}
+		}
+	}
 }

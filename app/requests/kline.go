@@ -49,3 +49,21 @@ type SubParams struct {
 	Sub interface{} `json:"sub"`
 	Id  string      `json:"id"`
 }
+
+type DelayTimestamp struct {
+	DelayTimestamp      int `json:"delayTimestamp"`      // 延迟时间戳
+	OccurrenceTimestamp int `json:"occurrenceTimestamp"` // 发生时间戳
+}
+
+type DelayInfo struct {
+	AppUserId           string `bson:"appUserId" json:"appUserId"`
+	Ip                  string `bson:"ip" json:"ip"`
+	Url                 string `bson:"url" json:"url"`
+	Origin              string `bson:"origin" json:"origin"`
+	SecWebSocketKey     string `bson:"secWebSocketKey" json:"secWebSocketKey"`
+	UserAgent           string `bson:"userAgent" json:"userAgent"`
+	Header              string `bson:"header" json:"header"`
+	DelayTimestamp      int    `bson:"delayTimestamp" json:"delayTimestamp"`
+	OccurrenceTimestamp int    `bson:"occurrenceTimestamp" json:"occurrenceTimestamp"`
+	CreateTimestamp     int64  `bson:"createTimestamp" json:"createTimestamp"`
+}
