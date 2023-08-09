@@ -54,6 +54,7 @@ func main() {
 	db := conf.GetInt("redis.db")
 	bootstrap.SetupRedis(db)
 	defer bootstrap.RedisClose()
+	bootstrap.SetupMongoDB()
 	// 初始化路由绑定
 	logger.Info("加载 client 路由")
 	router := bootstrap.SetupRoute()
