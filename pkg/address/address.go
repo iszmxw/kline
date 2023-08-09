@@ -152,24 +152,35 @@ func LimitAddress(ip string) bool {
     *
 */
 func GetMessageByIp(ip string) Address {
+	redisKey := fmt.Sprintf("%s:%s", "userIp", ip)
 	var address Address
-	url := fmt.Sprintf("http://ip-api.com/json/%v", ip)
-	Client := new(http.Client)
-	response, err := Client.Get(url)
-	if err != nil {
-		logger.Error(err)
-		return address
+	var body []byte
+	ipInfo, _ := redis.Client.Get(redisKey)
+	if len(ipInfo) > 0 && len(ip) > 0 {
+		body = []byte(ipInfo)
+	} else {
+		url := fmt.Sprintf("http://ip-api.com/json/%v", ip)
+		Client := new(http.Client)
+		response, err := Client.Get(url)
+		if err != nil {
+			redis.Client.Delete(redisKey)
+			logger.Error(err)
+			return address
+		}
+		if response.StatusCode != 200 {
+			return address
+		}
+		body, err = ioutil.ReadAll(response.Body)
+		if err != nil {
+			redis.Client.Delete(redisKey)
+			logger.Error(err)
+			return address
+		}
+		_, _ = redis.Client.Add(redisKey, string(body), 60*60)
 	}
-	if response.StatusCode != 200 {
-		return address
-	}
-	body, err := ioutil.ReadAll(response.Body)
+	err := json.Unmarshal(body, &address)
 	if err != nil {
-		logger.Error(err)
-		return address
-	}
-	err = json.Unmarshal(body, &address)
-	if err != nil {
+		redis.Client.Delete(redisKey)
 		logger.Error(err)
 	}
 	return address
