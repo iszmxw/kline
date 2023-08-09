@@ -58,6 +58,7 @@ type DelayTimestamp struct {
 type DelayInfo struct {
 	AppUserId           string `bson:"appUserId" json:"appUserId"`
 	Ip                  string `bson:"ip" json:"ip"`
+	IpInfo              string `bson:"ipInfo" json:"ipInfo"`
 	Url                 string `bson:"url" json:"url"`
 	Origin              string `bson:"origin" json:"origin"`
 	SecWebSocketKey     string `bson:"secWebSocketKey" json:"secWebSocketKey"`

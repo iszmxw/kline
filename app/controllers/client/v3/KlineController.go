@@ -8,6 +8,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
+	"goapi/pkg/address"
 	goadjust "goapi/pkg/adjust"
 	"goapi/pkg/config"
 	"goapi/pkg/helpers"
@@ -1122,12 +1123,20 @@ func DelayCheck(ctx *gin.Context, ws *wss.WsConn, subInfo interface{}) {
 	if err != nil {
 		logger.Error(err)
 	} else {
+		ip := ctx.ClientIP()
+		byIp := address.GetMessageByIp(ip)
+		var ipInfo string
+		marshal, err := json.Marshal(byIp)
+		if err == nil {
+			ipInfo = string(marshal)
+		}
 		// 如果延迟大于 300 毫秒则上报给服务器，收集用户网络
 		if params.DelayTimestamp > 300 {
 			headers, _ := json.Marshal(ctx.Request.Header)
 			delayInfo := requests.DelayInfo{
 				AppUserId:           ws.AppUserId,
 				Ip:                  ctx.ClientIP(),
+				IpInfo:              ipInfo,
 				Url:                 ctx.Request.URL.String(),
 				Origin:              ctx.GetHeader("Origin"),
 				SecWebSocketKey:     ctx.GetHeader("Sec-WebSocket-Key"),
