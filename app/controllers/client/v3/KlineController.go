@@ -88,7 +88,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		ID := SubStruct.Id
 		// 检测登录权限
 		// ios 01,02,11 放开
-		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09", "11", "12"}
+		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09", "11", "12", "13"}
 		for _, id := range needLoginIDs {
 			if ID == id {
 				// 需要登录
@@ -211,6 +211,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				}
 				logger.Info(subInfo, params)
 				go StationLetterPushNotice(ws, params)
+				go HistoryOpinionsPushNotice(ws, params)
 			}
 			break
 		case strings.EqualFold(ID, "11"):
@@ -1018,7 +1019,7 @@ func StationLetterPushNotice(ws *wss.WsConn, SubToken requests.SubToken) {
 		if WriteMessageErr != nil {
 			wss.WsClose(ws)
 			// 跳出for关闭后面的推送
-			goto END
+			goto STOP
 		}
 		// 5秒推送一次消息
 		time.Sleep(time.Second * 5)
@@ -1027,8 +1028,88 @@ func StationLetterPushNotice(ws *wss.WsConn, SubToken requests.SubToken) {
 STOP:
 	logger.Error(errors.New("StationLetterPushNotice关闭Socket"))
 	wss.WsClose(ws)
-END:
-	logger.Info("StationLetterPushNotice已经跳出协诚的循环推送")
+}
+
+// 历史反馈推送
+
+func HistoryOpinionsPushNotice(ws *wss.WsConn, SubToken requests.SubToken) {
+	logger.RequestId = ws.SecWebSocketKey
+	// {"token":"123456","decive_brand":"apple"}
+	if len(SubToken.Token) == 0 {
+		wss.WsClose(ws)
+		return
+	}
+	// 为了释放for死循环的资源
+	for !ws.IsClose {
+		strInfo, err := redis.Client.DefaultGet(fmt.Sprintf("Client:Token:%s", SubToken.Token))
+		if err != nil {
+			logger.Error(err)
+			goto STOP
+		}
+		// json字符串数组,转换成切片
+		var user response.ClientUserBeans
+		var userInfo response.AppUser
+		var NoticeInfo response.NoticeInfo
+		multiErr := json.Unmarshal([]byte(strInfo), &user)
+		if multiErr != nil {
+			logger.Error(errors.New("转换出错"))
+			logger.Error(multiErr)
+			goto STOP
+		}
+		err = mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", user.AppUserId).Find(&userInfo).Error
+		if err != nil {
+			logger.Error(errors.New("查询出错"))
+			logger.Error(err)
+			goto STOP
+		}
+		logger.Info(userInfo)
+		result := cmap.New().Items()
+		// 查询用户未读消息，展示小红点
+		err = mysql.DB.Debug().Model(models.AppUserOpinions{}).
+			Where(map[string]interface{}{
+				"nation":      userInfo.Nation,
+				"is_read":     0,
+				"app_user_id": userInfo.AppUserId,
+			}).
+			Select("count(1) AS total").
+			Find(&result).Error
+		if err != nil {
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		// map转struct
+		err = mapstructure.Decode(result, &NoticeInfo)
+		if err != nil {
+			ws.Mux.Lock()
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
+			ws.Mux.Unlock()
+			logger.Error(err)
+			return
+		}
+		marshal, err := json.Marshal(gin.H{
+			"id":   "13",
+			"data": NoticeInfo,
+		})
+		if err != nil {
+			_ = ws.Conn.WriteMessage(websocket.TextMessage, []byte(`{"id":"10409","msg":"no data"}`))
+			logger.Error(err)
+			return
+		}
+		ws.Mux.Lock()
+		WriteMessageErr := ws.Conn.WriteMessage(websocket.TextMessage, marshal)
+		ws.Mux.Unlock()
+		if WriteMessageErr != nil {
+			// 跳出for关闭后面的推送
+			goto STOP
+		}
+		// 5秒推送一次消息
+		time.Sleep(time.Second * 5)
+		// 返回数据给用户
+	}
+STOP:
+	logger.Error(errors.New("HistoryOpinionsPushNotice关闭Socket"))
+	wss.WsClose(ws)
 }
 
 // adjust 回调推送通知
