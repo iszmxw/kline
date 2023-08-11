@@ -13,6 +13,7 @@ import (
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-iqoption/iqoption/config"
 	"goapi/service/kline-iqoption/iqoption/wsdata"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -159,6 +160,17 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 					return
 				}
 				if ok {
+					credentials := []Credentials{
+						{Username: "iszmxw@yopmail.com", Password: "y9cmiRA8dN6XvBt"},
+						{Username: "iqoptionsmo@yopmail.com", Password: "Snz_WK4BifM/_7W"},
+						{Username: "user3", Password: "pass3"},
+					}
+					rand.Seed(time.Now().UnixNano())
+					randomIndex := rand.Intn(len(credentials))
+					randomCredentials := credentials[randomIndex]
+					fmt.Println(randomCredentials)
+					IqToken := GetIqToken(randomCredentials.Username, randomCredentials.Password)
+					_, _ = redis.Client.SelectDbAdd(15, "token:iqoption", IqToken, 0)
 					pkg.Notice(fmt.Sprintf("IqOption 数据源登录失败当前的 Ssid【%s】", ws.Ssid))
 				}
 			}
