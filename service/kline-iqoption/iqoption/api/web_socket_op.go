@@ -163,7 +163,9 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 					credentials := []Credentials{
 						{Username: "iszmxw@yopmail.com", Password: "y9cmiRA8dN6XvBt"},
 						{Username: "iqoptionsmo@yopmail.com", Password: "Snz_WK4BifM/_7W"},
-						{Username: "user3", Password: "pass3"},
+						{Username: "iqoptionsmt@yopmail.com", Password: "m!Q5zp2yxh%.RDV"},
+						{Username: "iqoptionios@yopmail.com", Password: "6y*Z@2@YuSN!G2G"},
+						{Username: "iqoptiontest@yopmail.com", Password: "C%9CFgz4cV#Qqu%"},
 					}
 					rand.Seed(time.Now().UnixNano())
 					randomIndex := rand.Intn(len(credentials))
