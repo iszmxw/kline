@@ -172,7 +172,10 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 					randomCredentials := credentials[randomIndex]
 					fmt.Println(randomCredentials)
 					IqToken := GetIqToken(randomCredentials.Username, randomCredentials.Password)
-					_, _ = redis.Client.SelectDbAdd(15, "token:iqoption", IqToken, 0)
+					if len(IqToken) > 0 {
+						_, _ = redis.Client.SelectDbAdd(15, "token:iqoption", IqToken, 0)
+						pkg.Notice(fmt.Sprintf("IqOption 重新登录 Ssid【%s】", IqToken))
+					}
 					pkg.Notice(fmt.Sprintf("IqOption 数据源登录失败当前的 Ssid【%s】", ws.Ssid))
 				}
 			}
