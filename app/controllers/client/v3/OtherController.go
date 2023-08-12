@@ -43,13 +43,13 @@ type Test struct {
 func (h *OtherController) Mongo(c *gin.Context) {
 	name := c.Query("name")
 	value := c.Query("value")
-	if len(value) > 0 && len(name) > 0 {
+	if len(name) > 0 && len(value) > 0 {
 		delayInfo := Test{
 			Name:            name,
 			Value:           value,
 			CreateTimestamp: time.Now().UnixMilli(),
 		}
-		collection := mongodb.MgoCli.Database("smo").Collection("tb_delay_statistics")
+		collection := mongodb.MgoCli.Database("smo").Collection("tb_test")
 		//插入某一条数据
 		inst, err := collection.InsertOne(context.TODO(), delayInfo)
 		if err != nil {
