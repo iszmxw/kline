@@ -58,6 +58,7 @@ func Client() gin.HandlerFunc {
 		case "/app/v3/config/delAdId.json":
 		case "/app/v3/config/iqoption.json":
 		case "/app/v3/other/pushList.json":
+		case "/app/v3/other/mongo.json":
 			// 继续往下面执行
 			c.Next()
 			break

@@ -58,6 +58,8 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			{
 				// 生产队列数据
 				other.Any("/pushList.json", ClientV3Group.OtherController.PushList)
+				// 测试mongo
+				other.Any("/mongo.json", ClientV3Group.OtherController.Mongo)
 			}
 		}
 
