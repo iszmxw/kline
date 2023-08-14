@@ -13,6 +13,7 @@ import (
 	kconfig "goapi/service/kline-mql5/mql5/config"
 	"goapi/service/kline-mql5/mql5/wsdata"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -133,6 +134,15 @@ func Forward(index, item string) {
 	//go pushToClient(baseURL, index, item)
 }
 
+type Res struct {
+	Code int `json:"code"`
+	Data struct {
+		Result bool `json:"result"`
+	} `json:"data"`
+	Msg   string `json:"msg"`
+	ReqId string `json:"reqId"`
+}
+
 func pushToClient(baseURL, index, item string) {
 	params := url.Values{}
 	params.Set("index", index)
@@ -143,7 +153,22 @@ func pushToClient(baseURL, index, item string) {
 		logger.Error(err)
 		return
 	}
-	logger.Info(response, params)
+	if response.StatusCode != 200 {
+		logger.Info(response.Status, "-----", urls)
+		return
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	var res Res
+	err = json.Unmarshal(body, &res)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	logger.Info(res)
 	defer func(Body io.ReadCloser) {
 		err = Body.Close()
 		if err != nil {
