@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"goapi/pkg/config"
 	"goapi/pkg/echo"
 	"goapi/pkg/logger"
 	"goapi/pkg/mongodb"
 	"goapi/pkg/redis"
+	"strings"
 	"time"
 )
 
@@ -49,7 +51,7 @@ func (h *OtherController) Mongo(c *gin.Context) {
 			Value:           value,
 			CreateTimestamp: time.Now().UnixMilli(),
 		}
-		collection := mongodb.MgoCli.Database("smo").Collection("tb_test")
+		collection := mongodb.MgoCli.Database(strings.ToLower(config.GetString("app.item_code"))).Collection("tb_test")
 		//插入某一条数据
 		inst, err := collection.InsertOne(context.TODO(), delayInfo)
 		if err != nil {
