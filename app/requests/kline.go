@@ -56,6 +56,7 @@ type DelayTimestamp struct {
 }
 
 type DelayInfo struct {
+	ItemCode            string `bson:"itemCode" json:"itemCode"`
 	AppUserId           string `bson:"appUserId" json:"appUserId"`
 	Ip                  string `bson:"ip" json:"ip"`
 	IpInfo              string `bson:"ipInfo" json:"ipInfo"`
