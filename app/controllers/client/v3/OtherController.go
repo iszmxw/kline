@@ -9,7 +9,6 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mongodb"
 	"goapi/pkg/redis"
-	"strings"
 	"time"
 )
 
@@ -37,6 +36,7 @@ func (h *OtherController) PushList(c *gin.Context) {
 }
 
 type Test struct {
+	ItemCode        string `bson:"itemCode" json:"itemCode"`
 	Name            string `bson:"name" json:"name"`
 	Value           string `bson:"value" json:"value"`
 	CreateTimestamp int64  `bson:"createTimestamp" json:"createTimestamp"`
@@ -47,11 +47,12 @@ func (h *OtherController) Mongo(c *gin.Context) {
 	value := c.Query("value")
 	if len(name) > 0 && len(value) > 0 {
 		delayInfo := Test{
+			ItemCode:        config.GetString("app.item_code"),
 			Name:            name,
 			Value:           value,
 			CreateTimestamp: time.Now().UnixMilli(),
 		}
-		collection := mongodb.MgoCli.Database(strings.ToLower(config.GetString("app.item_code"))).Collection("tb_test")
+		collection := mongodb.MgoCli.Database("smo").Collection("tb_test")
 		//插入某一条数据
 		inst, err := collection.InsertOne(context.TODO(), delayInfo)
 		if err != nil {

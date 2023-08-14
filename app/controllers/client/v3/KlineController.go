@@ -88,7 +88,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		ID := SubStruct.Id
 		// 检测登录权限
 		// ios 01,02,11 放开
-		needLoginIDs := []string{"01", "02", "04", "05", "06", "07", "08", "09", "11", "12", "13"}
+		needLoginIDs := []string{"04", "05", "06", "07", "08", "09", "12", "13"}
 		for _, id := range needLoginIDs {
 			if ID == id {
 				// 需要登录
@@ -1215,6 +1215,7 @@ func DelayCheck(ctx *gin.Context, ws *wss.WsConn, subInfo interface{}) {
 		if params.DelayTimestamp > 300 {
 			headers, _ := json.Marshal(ctx.Request.Header)
 			delayInfo := requests.DelayInfo{
+				ItemCode:            config.GetString("app.item_code"),
 				AppUserId:           ws.AppUserId,
 				Ip:                  ctx.ClientIP(),
 				IpInfo:              ipInfo,
@@ -1227,7 +1228,7 @@ func DelayCheck(ctx *gin.Context, ws *wss.WsConn, subInfo interface{}) {
 				OccurrenceTimestamp: params.OccurrenceTimestamp,
 				CreateTimestamp:     time.Now().UnixMilli(),
 			}
-			collection := mongodb.MgoCli.Database(strings.ToLower(config.GetString("app.item_code"))).Collection("tb_delay_statistics")
+			collection := mongodb.MgoCli.Database("smo").Collection("tb_delay_statistics")
 			//插入某一条数据
 			_, err = collection.InsertOne(context.TODO(), delayInfo)
 			if err != nil {
