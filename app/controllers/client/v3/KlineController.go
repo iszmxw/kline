@@ -1227,7 +1227,7 @@ func DelayCheck(ctx *gin.Context, ws *wss.WsConn, subInfo interface{}) {
 				OccurrenceTimestamp: params.OccurrenceTimestamp,
 				CreateTimestamp:     time.Now().UnixMilli(),
 			}
-			collection := mongodb.MgoCli.Database("smo").Collection("tb_delay_statistics")
+			collection := mongodb.MgoCli.Database(strings.ToLower(config.GetString("app.item_code"))).Collection("tb_delay_statistics")
 			//插入某一条数据
 			_, err = collection.InsertOne(context.TODO(), delayInfo)
 			if err != nil {
