@@ -24,16 +24,19 @@ func AddressLimit() gin.HandlerFunc {
 			c.Next()
 		} else {
 			// 正式环境检测
-			if config.GetBool("app.address_limit") && address.LimitAddress(c.ClientIP()) {
-				ok, _ := redis.Client.SelectDbSetNx(config.GetInt("redis.db"), "lock:app.address_limit:%s", c.ClientIP(), 60*10)
+			ip := c.ClientIP()
+			if config.GetBool("app.address_limit") && address.LimitAddress(ip) {
+				ok, _ := redis.Client.SelectDbSetNx(config.GetInt("redis.db"), fmt.Sprintf("lock:app.address_limit:%s", ip), ip, 60*10)
 				if ok {
-					byIp := address.GetMessageByIp(c.ClientIP())
+					byIp := address.GetMessageByIp(ip)
 					var ipInfo string
 					marshal, err := json.Marshal(byIp)
 					if err == nil {
 						ipInfo = string(marshal)
 					}
-					pkg.Notice(fmt.Sprintf("ip 限制 用户ip不允许访问或者不在白名单ip内【%s】,用户的ip详细信息【%s】", c.ClientIP(), ipInfo))
+					msg := fmt.Sprintf("ip 限制 用户ip不允许访问或者不在白名单ip内【%s】,用户的ip详细信息【%s】", ip, ipInfo)
+					logger.Info(msg)
+					pkg.Notice(msg)
 				}
 				echo.Error(c, "CountryLimitUse", "")
 				c.Abort()
