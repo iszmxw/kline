@@ -3,6 +3,7 @@ package v2
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"goapi/app/response"
 	"goapi/pkg/address"
@@ -11,18 +12,32 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
+	"goapi/service/binary-monitoring/pkg"
 )
 
 // AddressLimit 地区限制
 func AddressLimit() gin.HandlerFunc {
 	/** 您所在的地区限制使用 */
 	return func(c *gin.Context) {
-		logger.Info(c.ClientIP())
-		if c.FullPath() == "/app/v3/config/setKlineToken.json" {
+		ip := c.ClientIP()
+		logger.Info(ip)
+		if c.FullPath() == "/app/v2/config/setKlineToken.json" {
 			c.Next()
 		} else {
 			// 正式环境检测
-			if config.GetBool("app.address_limit") && address.LimitAddress(c.ClientIP()) {
+			if config.GetBool("app.address_limit") && address.LimitAddress(ip) {
+				ok, _ := redis.Client.SelectDbSetNx(config.GetInt("redis.db"), fmt.Sprintf("lock:app.address_limit:%s", ip), ip, 60*10)
+				if ok {
+					byIp := address.GetMessageByIp(ip)
+					var ipInfo string
+					marshal, err := json.Marshal(byIp)
+					if err == nil {
+						ipInfo = string(marshal)
+					}
+					msg := fmt.Sprintf("ip 限制 用户ip不允许访问或者不在白名单ip内【%s】,用户的ip详细信息【%s】", ip, ipInfo)
+					logger.Info(msg)
+					pkg.Notice(msg)
+				}
 				echo.Error(c, "CountryLimitUse", "")
 				c.Abort()
 				return
