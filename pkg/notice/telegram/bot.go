@@ -5,6 +5,8 @@ import (
 	conf "goapi/pkg/config"
 	"goapi/pkg/larkbot"
 	"goapi/pkg/logger"
+	"goapi/pkg/redis"
+	"goapi/pkg/utils"
 	"strings"
 )
 
@@ -15,6 +17,11 @@ const (
 )
 
 func Notice(info map[string]interface{}) {
+	key := utils.Md5(fmt.Sprintf("%s%s", info["title"], info["content"]))
+	ok, _ := redis.Client.SelectDbSetNx(conf.GetInt("redis.db"), fmt.Sprintf("lock:errNotice:%s", key), key, 60*3)
+	if !ok {
+		return
+	}
 	text := strings.ReplaceAll(fmt.Sprintf(
 		`
 【标题】：
