@@ -63,6 +63,8 @@ type DelayInfo struct {
 	ReceiveTimestamp int    `bson:"receiveTimestamp" json:"receiveTimestamp"` // 接收时间
 	ItemCode         string `bson:"itemCode" json:"itemCode"`
 	AppUserId        string `bson:"appUserId" json:"appUserId"`
+	Nation           string `bson:"nation" json:"nation"`
+	City             string `bson:"city" json:"city"`
 	Ip               string `bson:"ip" json:"ip"`
 	IpInfo           string `bson:"ipInfo" json:"ipInfo"`
 	Url              string `bson:"url" json:"url"`
