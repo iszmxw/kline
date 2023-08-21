@@ -1215,18 +1215,19 @@ func DelayCheck(ctx *gin.Context, ws *wss.WsConn, subInfo interface{}) {
 		if params.DelayTimestamp > 300 {
 			headers, _ := json.Marshal(ctx.Request.Header)
 			delayInfo := requests.DelayInfo{
-				ItemCode:            config.GetString("app.item_code"),
-				AppUserId:           ws.AppUserId,
-				Ip:                  ctx.ClientIP(),
-				IpInfo:              ipInfo,
-				Url:                 ctx.Request.URL.String(),
-				Origin:              ctx.GetHeader("Origin"),
-				SecWebSocketKey:     ctx.GetHeader("Sec-WebSocket-Key"),
-				UserAgent:           ctx.GetHeader("User-Agent"),
-				Header:              string(headers),
-				DelayTimestamp:      params.DelayTimestamp,
-				OccurrenceTimestamp: params.OccurrenceTimestamp,
-				CreateTimestamp:     time.Now().UnixMilli(),
+				CreateTimestamp:  time.Now().UnixMilli(),
+				DelayTimestamp:   params.DelayTimestamp,
+				SendTimestamp:    params.SendTimestamp,
+				ReceiveTimestamp: params.ReceiveTimestamp,
+				ItemCode:         config.GetString("app.item_code"),
+				AppUserId:        ws.AppUserId,
+				Ip:               ctx.ClientIP(),
+				IpInfo:           ipInfo,
+				Url:              ctx.Request.URL.String(),
+				Origin:           ctx.GetHeader("Origin"),
+				SecWebSocketKey:  ctx.GetHeader("Sec-WebSocket-Key"),
+				UserAgent:        ctx.GetHeader("User-Agent"),
+				Header:           string(headers),
 			}
 			collection := mongodb.MgoCli.Database("smo").Collection("tb_delay_statistics")
 			//插入某一条数据
