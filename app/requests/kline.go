@@ -51,21 +51,23 @@ type SubParams struct {
 }
 
 type DelayTimestamp struct {
-	DelayTimestamp      int `json:"delayTimestamp"`      // 延迟时间戳
-	OccurrenceTimestamp int `json:"occurrenceTimestamp"` // 发生时间戳
+	DelayTimestamp   int `json:"delayTimestamp"`   // 延迟时间戳
+	SendTimestamp    int `json:"sendTimestamp"`    // 发生时间戳
+	ReceiveTimestamp int `json:"receiveTimestamp"` // 接收时间
 }
 
 type DelayInfo struct {
-	ItemCode            string `bson:"itemCode" json:"itemCode"`
-	AppUserId           string `bson:"appUserId" json:"appUserId"`
-	Ip                  string `bson:"ip" json:"ip"`
-	IpInfo              string `bson:"ipInfo" json:"ipInfo"`
-	Url                 string `bson:"url" json:"url"`
-	Origin              string `bson:"origin" json:"origin"`
-	SecWebSocketKey     string `bson:"secWebSocketKey" json:"secWebSocketKey"`
-	UserAgent           string `bson:"userAgent" json:"userAgent"`
-	Header              string `bson:"header" json:"header"`
-	DelayTimestamp      int    `bson:"delayTimestamp" json:"delayTimestamp"`
-	OccurrenceTimestamp int    `bson:"occurrenceTimestamp" json:"occurrenceTimestamp"`
-	CreateTimestamp     int64  `bson:"createTimestamp" json:"createTimestamp"`
+	CreateTimestamp  int64  `bson:"createTimestamp" json:"createTimestamp"`
+	DelayTimestamp   int    `bson:"delayTimestamp" json:"delayTimestamp"`
+	SendTimestamp    int    `bson:"sendTimestamp" json:"sendTimestamp"`       // 发生时间戳
+	ReceiveTimestamp int    `bson:"receiveTimestamp" json:"receiveTimestamp"` // 接收时间
+	ItemCode         string `bson:"itemCode" json:"itemCode"`
+	AppUserId        string `bson:"appUserId" json:"appUserId"`
+	Ip               string `bson:"ip" json:"ip"`
+	IpInfo           string `bson:"ipInfo" json:"ipInfo"`
+	Url              string `bson:"url" json:"url"`
+	Origin           string `bson:"origin" json:"origin"`
+	SecWebSocketKey  string `bson:"secWebSocketKey" json:"secWebSocketKey"`
+	UserAgent        string `bson:"userAgent" json:"userAgent"`
+	Header           string `bson:"header" json:"header"`
 }
