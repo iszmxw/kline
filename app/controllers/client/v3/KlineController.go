@@ -1221,6 +1221,8 @@ func DelayCheck(ctx *gin.Context, ws *wss.WsConn, subInfo interface{}) {
 				ReceiveTimestamp: params.ReceiveTimestamp,
 				ItemCode:         config.GetString("app.item_code"),
 				AppUserId:        ws.AppUserId,
+				Nation:           byIp.Country,
+				City:             byIp.City,
 				Ip:               ctx.ClientIP(),
 				IpInfo:           ipInfo,
 				Url:              ctx.Request.URL.String(),
