@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"goapi/app/response"
 	"goapi/pkg/address"
@@ -11,6 +12,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
+	"goapi/service/binary-monitoring/pkg"
 )
 
 // AddressLimit 地区限制
@@ -23,6 +25,16 @@ func AddressLimit() gin.HandlerFunc {
 		} else {
 			// 正式环境检测
 			if config.GetBool("app.address_limit") && address.LimitAddress(c.ClientIP()) {
+				ok, _ := redis.Client.SelectDbSetNx(config.GetInt("redis.db"), "lock:app.address_limit:%s", c.ClientIP(), 60*10)
+				if ok {
+					byIp := address.GetMessageByIp(c.ClientIP())
+					var ipInfo string
+					marshal, err := json.Marshal(byIp)
+					if err == nil {
+						ipInfo = string(marshal)
+					}
+					pkg.Notice(fmt.Sprintf("ip 限制 用户ip不允许访问或者不在白名单ip内【%s】,用户的ip详细信息【%s】", c.ClientIP(), ipInfo))
+				}
 				echo.Error(c, "CountryLimitUse", "")
 				c.Abort()
 				return
