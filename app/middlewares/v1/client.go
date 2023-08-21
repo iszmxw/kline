@@ -19,12 +19,12 @@ import (
 func AddressLimit() gin.HandlerFunc {
 	/** 您所在的地区限制使用 */
 	return func(c *gin.Context) {
-		logger.Info(c.ClientIP())
+		ip := c.ClientIP()
+		logger.Info(ip)
 		if c.FullPath() == "/app/v2/config/setKlineToken.json" {
 			c.Next()
 		} else {
 			// 正式环境检测
-			ip := c.ClientIP()
 			if config.GetBool("app.address_limit") && address.LimitAddress(ip) {
 				ok, _ := redis.Client.SelectDbSetNx(config.GetInt("redis.db"), fmt.Sprintf("lock:app.address_limit:%s", ip), ip, 60*10)
 				if ok {
