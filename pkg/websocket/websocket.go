@@ -31,6 +31,7 @@ type WsConn struct {
 	AppUserId       string       // 用户 ID
 	OnceNotice      sync.Once    // 通知方法
 	SecWebSocketKey string       // SecWebSocketKey
+	Ip              string       // 用户的ip
 	List            *list.List
 }
 
@@ -58,6 +59,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 			"",
 			sync.Once{},
 			"---",
+			"127.0.0.1",
 			list.New(),
 		}, nil
 	} else {
@@ -75,6 +77,9 @@ func WsClose(ws *WsConn) {
 		if len(ws.AppUserId) > 0 {
 			redis.Client.SRem("onlineUsers", ws.AppUserId)
 			mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", ws.AppUserId).Update("online", 0)
+		}
+		if len(ws.Ip) > 0 {
+			redis.Client.SRem("onlineConnect", ws.Ip)
 		}
 		closeErr := ws.Conn.Close()
 		if closeErr != nil {

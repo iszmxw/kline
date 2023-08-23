@@ -59,8 +59,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 	ws.AppUserId = AppUserId
 	ws.SecWebSocketKey = socketId
+	ws.Ip = c.ClientIP()
 	if len(ws.AppUserId) > 0 {
 		redis.Client.SAdd("onlineUsers", ws.AppUserId)
+		redis.Client.SAdd("onlineConnect", ws.Ip)
 		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", ws.AppUserId).Update("online", 1)
 	}
 	//go HeartBeatingWatch(ws, socketId)
