@@ -156,6 +156,7 @@ func (h *AgentController) StatisticsHandler(c *gin.Context) {
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
 	ws.SecWebSocketKey = socketId
+	ws.Ip = c.ClientIP()
 	HeartBeatingKey := fmt.Sprintf("StatisticsHeartBeatingKey:%v", socketId)
 	_, _ = redis.Client.Add(HeartBeatingKey, time.Now().Format("2006-01-02 15:04:05"), 300) // 5分钟过期
 	// 为了释放for死循环的资源
