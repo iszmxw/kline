@@ -52,7 +52,7 @@ type SubParams struct {
 
 type DelayTimestamp struct {
 	DelayTimestamp   int `json:"delayTimestamp"`   // 延迟时间戳
-	SendTimestamp    int `json:"sendTimestamp"`    // 发生时间戳
+	SendTimestamp    int `json:"sendTimestamp"`    // 发送时间戳
 	ReceiveTimestamp int `json:"receiveTimestamp"` // 接收时间
 }
 
