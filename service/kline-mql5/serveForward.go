@@ -121,7 +121,7 @@ func checkExists(code string) KlineCommon.Info {
 
 func Forward(index, item string) {
 	serves := []string{
-		"http://47.242.235.4:7104",
+		"http://47.243.109.20:7104",
 		"https://goclientio.smosignal.com",
 		"https://huobiapi.smooption.com",
 		"https://goclient.smarttradess.com",

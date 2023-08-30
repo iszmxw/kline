@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"goapi/pkg/config"
-	"log"
+	"goapi/pkg/logger"
 )
 
 var MgoCli *mongo.Client
@@ -26,12 +26,12 @@ func initEngine() {
 	// 连接到MongoDB
 	MgoCli, err = mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err)
 	}
 	// 检查连接
 	err = MgoCli.Ping(context.TODO(), nil)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err)
 	}
 }
 
