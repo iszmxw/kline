@@ -48,11 +48,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	socketId := c.GetHeader("Sec-WebSocket-Key")
 	logger.RequestId = socketId
 	NoLogin := c.GetBool("NoLogin")
-	isVest := c.GetString("isvest")
+	isVest, _ := c.GetQuery("isvest")
+	confuse, _ := c.GetQuery("confuse")
 	if len(isVest) == 0 {
 		isVest = "0"
 	}
-	AppUserId = c.Query("userId")
+	AppUserId, _ = c.GetQuery("userId")
 	appUser, _ := c.Get("user")
 	if appUser != nil {
 		AppUserId = appUser.(response.ClientUserBeans).AppUserId
@@ -75,8 +76,9 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			// 跳出for关闭后面的读取
 			goto END
 		}
-		if string(message) != `{"id":"03","sub":""}` {
-			logger.Info("message", string(message))
+		// 检测参数是否开启了混淆处理
+		if strings.EqualFold("1", confuse) {
+			logger.Info("1212")
 		}
 		// 对数据进行切割，读取参数
 		// 如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
