@@ -19,14 +19,20 @@ import (
 这段代码的作用是将给定的字符串进行加密，加密规则是将字符映射表中的字符替换成对应的加密字符。
 */
 var (
-	encoding = "aIbkczdZefgrhijJlEmDnCoLpWqTstuvwAxMyPBGFHKQNVOSRYUX"
-	charList = []string{
+	encoding            = "ajbWcfdReQgIhpiqkzlKmwnFoErMsHtUuvxNyGALBYCZDVJXOPST"
+	encodingToLowerCase = "aubzcndteifygohvjpkqlrmswx"
+	charList            = []string{
 		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
 		"p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D",
 		"E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
 		"T", "U", "V", "W", "X", "Y", "Z",
 	}
-	charMap = map[byte]byte{}
+	charListToLowerCase = []string{
+		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
+		"p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	}
+	charMap            = map[byte]byte{}
+	charMapToLowerCase = map[byte]byte{}
 )
 
 func getRandomEncryption() string {
@@ -38,6 +44,20 @@ func getRandomEncryption() string {
 		nextChar := charList[random]
 		charList = append(charList[:0], charList[1:]...)
 		charList = append(charList[:random-1], charList[random:]...)
+		enc.WriteString(first + nextChar)
+	}
+	return enc.String()
+}
+
+func getRandomEncryptionToLowerCase() string {
+	enc := strings.Builder{}
+	length := len(charListToLowerCase) / 2
+	for i := 0; i < length; i++ {
+		first := charListToLowerCase[0]
+		random := rand.Intn(len(charListToLowerCase)-1) + 1
+		nextChar := charListToLowerCase[random]
+		charListToLowerCase = append(charListToLowerCase[:0], charListToLowerCase[1:]...)
+		charListToLowerCase = append(charListToLowerCase[:random-1], charListToLowerCase[random:]...)
 		enc.WriteString(first + nextChar)
 	}
 	return enc.String()
@@ -70,14 +90,29 @@ func getEncryptionString(str string) string {
 	return enc.String()
 }
 
+func getEncryptionToLowerCase(str string) string {
+	if len(charMapToLowerCase) == 0 {
+		charMapToLowerCase = getRandomEncryptionMap(encodingToLowerCase)
+	}
+	enc := strings.Builder{}
+	for _, c := range str {
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
+			enc.WriteByte(charMapToLowerCase[byte(c)])
+		} else {
+			enc.WriteRune(c)
+		}
+	}
+	return enc.String()
+}
+
 func main() {
-	//str := "iszmxw"
-	enc := getRandomEncryption()
-	res := getEncryptionString("itemCode")
-	hsfDnLZf := getEncryptionString("hsfDnLZf")
-	iszmxw := getEncryptionString("iszmxw")
-	htcDMA := getEncryptionString("htcDMA")
-	fmt.Println(res, iszmxw)
-	fmt.Println(hsfDnLZf, htcDMA)
-	fmt.Println(enc)
+	str := "itemCode" //qUQwZERQ
+	fmt.Println(getRandomEncryption())
+	fmt.Println(getRandomEncryptionToLowerCase())
+	fmt.Println(getEncryptionString("path"))
+	fmt.Println(getEncryptionString("itemCode"))
+	fmt.Println(getEncryptionString("qUQwZERQ"))
+	fmt.Println(getEncryptionToLowerCase("itemcode"))
+	fmt.Println(getEncryptionToLowerCase("edisngti"))
+	fmt.Println(str)
 }
