@@ -33,6 +33,7 @@ type WsConn struct {
 	SecWebSocketKey string       // SecWebSocketKey
 	Ip              string       // 用户的ip
 	List            *list.List
+	Confuse         string //是否开启参数混淆
 }
 
 func GetSocket(c *gin.Context) (*WsConn, error) {
@@ -61,6 +62,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 			"---",
 			"127.0.0.1",
 			list.New(),
+			"0",
 		}, nil
 	} else {
 		return nil, errors.New("不是socket請求")

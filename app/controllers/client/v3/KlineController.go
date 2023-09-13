@@ -37,6 +37,20 @@ type KlineController struct {
 
 var Trade = new(TradeController)
 
+func conversionData(data map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, val := range data {
+		vType := fmt.Sprintf("%T", val)
+		if vType == "map[string]interface {}" {
+			tempRes := conversionData(val.(map[string]interface{}))
+			result[utils.GetEncryptionString(key)] = tempRes
+		} else {
+			result[utils.GetEncryptionString(key)] = val
+		}
+	}
+	return result
+}
+
 // WsIndexHandler socket 负责转发redis缓存的socket数据
 func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	var AppUserId string
@@ -49,7 +63,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	logger.RequestId = socketId
 	NoLogin := c.GetBool("NoLogin")
 	isVest, _ := c.GetQuery("isvest")
-	confuse, _ := c.GetQuery("confuse")
+	ws.Confuse, _ = c.GetQuery("confuse")
 	if len(isVest) == 0 {
 		isVest = "0"
 	}
@@ -77,8 +91,17 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 			goto END
 		}
 		// 检测参数是否开启了混淆处理
-		if strings.EqualFold("1", confuse) {
-			logger.Info("1212")
+		if strings.EqualFold("1", ws.Confuse) {
+			tempMap := make(map[string]interface{})
+			err = json.Unmarshal(message, &tempMap)
+			if err != nil {
+				logger.Error(err)
+				// 跳出for关闭后面的读取
+				goto END
+			}
+			result := conversionData(tempMap)
+			message, _ = json.Marshal(result)
+			logger.Info(string(message))
 		}
 		// 对数据进行切割，读取参数
 		// 如果请求的是 "market.ETH-USD.index.1min" ,订阅这条信息，然后再返回
