@@ -1,12 +1,14 @@
 package v3
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
 	wss "goapi/pkg/websocket"
 	"goapi/pkg/xtime"
+	"strings"
 	"time"
 )
 
@@ -25,6 +27,17 @@ type Group struct {
 // 响应消息
 
 func SocketResp(ws *wss.WsConn, messageType int, msg string) {
+	if strings.EqualFold("1", ws.Confuse) {
+		tempMap := make(map[string]interface{})
+		err := json.Unmarshal([]byte(msg), &tempMap)
+		if err != nil {
+			logger.Error(err)
+			wss.WsClose(ws)
+		}
+		result := conversionData(tempMap)
+		message, _ := json.Marshal(result)
+		msg = string(message)
+	}
 	ws.Mux.Lock()
 	WriteMessageErr := ws.Conn.WriteMessage(messageType, []byte(msg))
 	ws.Mux.Unlock()
