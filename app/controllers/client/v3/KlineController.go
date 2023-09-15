@@ -833,19 +833,27 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 			params.Nation = "Indonesia"
 		}
 		var PushRateData []response.PushRateData
+		DB := mysql.DB
+		err := DB.Model(models.TradingAssets{}).
+			Where("item_code", params.ItemCode).
+			Find(&PushRateData).Error
+		if err != nil {
+			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
+			logger.Error(err)
+			return
+		}
 		if "IOS" == params.ItemCode {
-			// IOS和smo的数据保持一致
-			PushRateData = smo.GetPushRateData("SMO", params.Nation)
-		} else {
-			DB := mysql.DB
-			err := DB.Model(models.TradingAssets{}).
-				Where("item_code", params.ItemCode).
-				Find(&PushRateData).Error
-			if err != nil {
-				SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
-				logger.Error(err)
-				return
+			// IOS 和 SMO 的数据保持一致，但是数据的 状态 还是按照自己爬取的数据源来决定
+			PushRateData2 := smo.GetPushRateData("SMO", params.Nation)
+			for i := 0; i < len(PushRateData2); i++ {
+				for j := 0; j < len(PushRateData); j++ {
+					if PushRateData2[i].AssetsCode == PushRateData[j].AssetsCode {
+						PushRateData2[i].AssetsStatus = PushRateData[j].AssetsStatus
+						break // 找到匹配的AssetsCode后可以跳出内部循环
+					}
+				}
 			}
+			PushRateData = PushRateData2
 		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "09",
