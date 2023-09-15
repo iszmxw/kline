@@ -848,6 +848,8 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 			for i := 0; i < len(PushRateData2); i++ {
 				for j := 0; j < len(PushRateData); j++ {
 					if PushRateData2[i].AssetsCode == PushRateData[j].AssetsCode {
+						PushRateData2[i].IsValid = PushRateData[j].IsValid
+						PushRateData2[i].IsShow = PushRateData[j].IsShow
 						PushRateData2[i].AssetsStatus = PushRateData[j].AssetsStatus
 						break // 找到匹配的AssetsCode后可以跳出内部循环
 					}
