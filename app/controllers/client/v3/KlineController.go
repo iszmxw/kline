@@ -835,7 +835,7 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 		var PushRateData []response.PushRateData
 		if "IOS" == params.ItemCode {
 			// IOS和smo的数据保持一致
-			PushRateData = smo.GetPushRateData(params.ItemCode, params.Nation)
+			PushRateData = smo.GetPushRateData("SMO", params.Nation)
 		} else {
 			DB := mysql.DB
 			err := DB.Model(models.TradingAssets{}).
