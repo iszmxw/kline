@@ -18,6 +18,7 @@ import (
 	"goapi/pkg/mysql"
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
+	"goapi/pkg/smo"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
 	"strings"
@@ -832,14 +833,19 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 			params.Nation = "Indonesia"
 		}
 		var PushRateData []response.PushRateData
-		DB := mysql.DB
-		err := DB.Model(models.TradingAssets{}).
-			Where("item_code", params.ItemCode).
-			Find(&PushRateData).Error
-		if err != nil {
-			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
-			logger.Error(err)
-			return
+		if "IOS" == params.ItemCode {
+			// IOS和smo的数据保持一致
+			PushRateData = smo.GetPushRateData(params.ItemCode, params.Nation)
+		} else {
+			DB := mysql.DB
+			err := DB.Model(models.TradingAssets{}).
+				Where("item_code", params.ItemCode).
+				Find(&PushRateData).Error
+			if err != nil {
+				SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
+				logger.Error(err)
+				return
+			}
 		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "09",
