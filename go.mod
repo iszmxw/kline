@@ -3,7 +3,7 @@ module goapi
 go 1.18
 
 require (
-	github.com/360EntSecGroup-Skylar/excelize v1.4.1
+	github.com/atotto/clipboard v0.1.4
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/forgoer/openssl v1.4.0
 	github.com/gin-contrib/pprof v1.4.0
@@ -24,7 +24,6 @@ require (
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/opesun/goquery v0.0.0-20160908163916-0d77e43213cd
 	github.com/orcaman/concurrent-map v1.0.0
-	github.com/robertkrimen/otto v0.2.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/cast v1.5.0
@@ -57,7 +56,6 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.24.2 // indirect
@@ -82,7 +80,6 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
