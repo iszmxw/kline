@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
+	"goapi/pkg/redis"
+	kconfig "goapi/service/kline-binomo/binomo/config"
 	"goapi/service/kline-binomo/binomo/wsdata"
 	KlineCommon "goapi/service/kline-common"
 	"net/http"
@@ -15,8 +17,10 @@ import (
 
 func WsInit() *WsClient {
 	wc := new(WsClient)
-	wc.DeviceId = "ba96afbe95990cefec98a94200bb3545"
-	wc.AuthToken = "d98d908d-744a-4b4c-b3a0-1fbe4f2ed993"
+	//wc.DeviceId = "ba96afbe95990cefec98a94200bb3545"
+	//wc.AuthToken = "d98d908d-744a-4b4c-b3a0-1fbe4f2ed993"
+	wc.DeviceId, _ = redis.Client.Get(fmt.Sprintf("token:%s:DeviceId", kconfig.KlineSource))
+	wc.AuthToken, _ = redis.Client.Get(fmt.Sprintf("token:%s:AuthToken", kconfig.KlineSource))
 	wc.SubTopicMap = make(map[string]*CallbackFunc)
 	wc.List = list.New()
 	return wc
