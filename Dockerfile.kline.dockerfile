@@ -14,6 +14,7 @@ RUN GOOS=linux GOARCH=amd64 go build -o iqoption-go-binance service/kline-binanc
     GOOS=linux GOARCH=amd64 go build -o iqoption-go-huobi service/kline-huobi/main.go && \
     GOOS=linux GOARCH=amd64 go build -o iqoption-go-mql5 service/kline-mql5/main.go && \
     GOOS=linux GOARCH=amd64 go build -o iqoption-go-iqoption service/kline-iqoption/main.go && \
+    GOOS=linux GOARCH=amd64 go build -o iqoption-go-binomo service/kline-binomo/main.go && \
     # 打包 binary-monitoring 插针服务
     GOOS=linux GOARCH=amd64 go build -o iqoption-go-monitoring service/binary-monitoring/main.go && \
     mv iqoption-go-* binary/kline
