@@ -4,5 +4,6 @@
 ./iqoption-go-huobi --APP_PORT=03 >/dev/null 2>error_huobi.log &
 ./iqoption-go-mql5 --APP_PORT=06 >/dev/null 2>error_mql5.log &
 ./iqoption-go-iqoption --APP_PORT=07 >/dev/null 2>error_iqoption.log &
+./iqoption-go-binomo --APP_PORT=07 >/dev/null 2>error_binomo.log &
 ./iqoption-go-monitoring --APP_PORT=08 >/dev/null 2>error_monitoring.log &
 wait
