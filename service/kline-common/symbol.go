@@ -40,6 +40,9 @@ func GetData(service string) []Info {
 	case "iqoption":
 		CodeData = Iqoption()
 		break
+	case "binomo":
+		CodeData = Binomo()
+		break
 	default:
 		break
 	}
@@ -260,6 +263,40 @@ func Iqoption() []Info {
 		Info{ID: 969, Symbol: "BRENT", Desc: "布伦特油", ContractCode: "BRENT"},
 		Info{ID: 1485, Symbol: "NGAS", Desc: "天然气", ContractCode: "NGAS"},
 		Info{ID: 1487, Symbol: "XAG/USD", Desc: "伦敦银", ContractCode: "SILVER"},
+	)
+	return CodeData
+}
+
+func Binomo() []Info {
+	var CodeData []Info
+	CodeData = append(CodeData,
+		// OTC 标识符
+		Info{ID: 241, Symbol: "Z-GBP/USD", Desc: "英镑/美元", ContractCode: "GBP-USD-OTC"},
+		Info{ID: 299, Symbol: "Z-USD/JPY", Desc: "欧元/美元", ContractCode: "USD-JPY-OTC"},
+		Info{ID: 235, Symbol: "Z-EUR/USD", Desc: "欧元/美元", ContractCode: "EUR-USD-OTC"},
+		Info{ID: 244, Symbol: "Z-AUD/CAD", Desc: "澳元/加拿大元", ContractCode: "AUD-CAD-OTC"},
+		Info{ID: 237, Symbol: "Z-GBP/JPY", Desc: "澳元/加拿大元", ContractCode: "GBP-JPY-OTC"},
+		Info{ID: 302, Symbol: "Z-EUR/CAD", Desc: "澳大利亚元/美元", ContractCode: "EUR-CAD-OTC"},
+		// 非 OTC
+		Info{ID: 187, Symbol: "EURO", Desc: "欧元/美元", ContractCode: "EUR-USD"},
+		Info{ID: 214, Symbol: "EUR/AUD-AFX-CFH2", Desc: "欧元/澳大利亚元", ContractCode: "EUR-AUD"},
+		Info{ID: 224, Symbol: "USD/CAD", Desc: "欧元/澳大利亚元", ContractCode: "USD-CAD"},
+		Info{ID: 209, Symbol: "USD/JPY", Desc: "欧元/澳大利亚元", ContractCode: "USD-JPY"},
+		Info{ID: 206, Symbol: "AUD/CAD", Desc: "欧元/澳大利亚元", ContractCode: "AUD-CAD"},
+		Info{ID: 232, Symbol: "XAU/USD-HSFX", Desc: "伦敦金", ContractCode: "GOLD"},
+		Info{ID: 205, Symbol: "AUD/USD", Desc: "澳大利亚元/美元", ContractCode: "AUD-USD"},
+		Info{ID: 218, Symbol: "CAD/CHF", Desc: "澳大利亚元/美元", ContractCode: "CAD-CHF"},
+		Info{ID: 225, Symbol: "EUR/GBP", Desc: "澳大利亚元/美元", ContractCode: "EUR-GBP"},
+		Info{ID: 223, Symbol: "EUR/JPY", Desc: "澳大利亚元/美元", ContractCode: "EUR-JPY"},
+		Info{ID: 207, Symbol: "GBP/JPY", Desc: "澳大利亚元/美元", ContractCode: "GBP-JPY"},
+		Info{ID: 208, Symbol: "NZD/USD", Desc: "澳大利亚元/美元", ContractCode: "NZD-USD"},
+		Info{ID: 217, Symbol: "USD/CHF", Desc: "美元/瑞士", ContractCode: "USD/CHF"},
+		Info{ID: 248, Symbol: "INTC", Desc: "因特尔", ContractCode: "Intel"},
+		Info{ID: 255, Symbol: "MSFT", Desc: "微软", ContractCode: "Microsoft"},
+		Info{ID: 264, Symbol: "TSLA", Desc: "特斯拉", ContractCode: "Tesla"},
+		Info{ID: 312, Symbol: "NFLX", Desc: "网飞", ContractCode: "Netflix"},
+		Info{ID: 226, Symbol: "AAPL", Desc: "苹果", ContractCode: "Apple"},
+		Info{ID: 231, Symbol: "XAG/USD-AFX", Desc: "伦敦银", ContractCode: "SILVER"},
 	)
 	return CodeData
 }
