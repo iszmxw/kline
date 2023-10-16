@@ -9,6 +9,7 @@ services:
       CONFIG_FILE: ./config
     volumes:
       - /home/yezhiming/binary/client:/home/yezhiming/binary/client/config
+      - /home/yezhiming/binary/logs:/home/yezhiming/binary/client/logs
     ports:
       - "7104:7104"
     network_mode: "host"
@@ -21,6 +22,7 @@ services:
       CONFIG_FILE: ./config
     volumes:
       - /home/yezhiming/binary/email:/home/yezhiming/binary/email/config
+      - /home/yezhiming/binary/logs:/home/yezhiming/binary/email/logs
     ports:
       - "7107:7107"
     network_mode: "host"
@@ -33,6 +35,7 @@ services:
       CONFIG_FILE: ./config
     volumes:
       - /home/yezhiming/binary/web:/home/yezhiming/binary/web/config
+      - /home/yezhiming/binary/logs:/home/yezhiming/binary/web/logs
     ports:
       - "7105:7105"
     network_mode: "host"
@@ -45,4 +48,5 @@ services:
       CONFIG_FILE: ./config
     volumes:
       - /home/yezhiming/binary/kline:/home/yezhiming/binary/kline/config
+      - /home/yezhiming/binary/logs:/home/yezhiming/binary/kline/logs
     network_mode: "host"
