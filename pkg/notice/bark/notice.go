@@ -15,8 +15,8 @@ func icon() string {
 }
 
 func Notice(title, bodys string) {
-	go send(config.GetString("bark.key.mac"), title, bodys)    // 发往 mac
-	go send(config.GetString("bark.key.iphone"), title, bodys) // 发往 iPhone
+	go send(config.GetString("bark.keyMac"), title, bodys) // 发往 mac
+	go send(config.GetString("bark.Iphone"), title, bodys) // 发往 iPhone
 }
 
 func send(appKey, title, bodys string) {

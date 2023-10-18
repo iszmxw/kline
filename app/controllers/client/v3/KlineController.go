@@ -16,6 +16,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mongodb"
 	"goapi/pkg/mysql"
+	"goapi/pkg/notice/bark"
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/pkg/smo"
@@ -694,6 +695,8 @@ func PushNoticePlus(ws *wss.WsConn) {
 				time.Sleep(200 * time.Millisecond)
 				return
 			}
+			// bark 通知
+			bark.Notice("04", string(marshal))
 			// 推送消息通知前端开奖结果
 			ws.Mux.Lock()
 			err = ws.Conn.WriteMessage(websocket.TextMessage, marshal)
