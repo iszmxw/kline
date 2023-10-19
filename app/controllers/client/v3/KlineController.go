@@ -666,6 +666,7 @@ func PushNoticePlus(ws *wss.WsConn) {
 		logger.Error(errors.New("err sub,AppUserId not right"))
 		return
 	}
+	ip := helpers.IP()
 	for !ws.IsClose {
 		key := fmt.Sprintf("Notice:Order:Result:Queue:%v", appUserId)
 		num, _ := redis.Client.LLen(key)
@@ -695,18 +696,19 @@ func PushNoticePlus(ws *wss.WsConn) {
 				time.Sleep(200 * time.Millisecond)
 				return
 			}
-			// bark 通知
-			bark.Notice("04", string(marshal))
 			// 推送消息通知前端开奖结果
 			ws.Mux.Lock()
 			err = ws.Conn.WriteMessage(websocket.TextMessage, marshal)
 			ws.Mux.Unlock()
 			if err != nil {
+				bark.Notice(fmt.Sprintf("%s, 通知失败，订单号：%s", ip, orderData.TradeOrderId), err.Error())
 				logger.Error(errors.New("PushNoticePlus 关闭Socket"))
 				wss.WsClose(ws)
 				logger.Error(err)
 				return
 			}
+			// bark 通知
+			bark.Notice(fmt.Sprintf("%s,订单号：%s", ip, orderData.TradeOrderId), string(marshal))
 			logger.Info(string(marshal))
 			time.Sleep(200 * time.Millisecond) // 每隔 1 秒来一次推送
 		}(ws, push)

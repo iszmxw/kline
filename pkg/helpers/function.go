@@ -4,6 +4,8 @@ package helpers
 
 import (
 	"github.com/google/uuid"
+	"goapi/pkg/logger"
+	"os/exec"
 	"strings"
 )
 
@@ -23,4 +25,16 @@ func GetUUID11() string {
 	arr := strings.Split(res, "-")
 	str := arr[0] + arr[1]
 	return string([]rune(str)[:11])
+}
+
+func IP() string {
+	// 查询当前服务器ip
+	res, err := exec.Command("curl", "ip.sb").Output()
+	if err != nil {
+		logger.Info("执行命令出错：", err.Error())
+		// 未知
+		return "Unknown"
+	}
+	ip := strings.Trim(string(res), "\n\n")
+	return ip
 }

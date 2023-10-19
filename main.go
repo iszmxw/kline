@@ -7,10 +7,9 @@ import (
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
+	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/notice/bark"
-	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -65,14 +64,7 @@ func main() {
 	// 启动路由
 	logger.Info("启动路由")
 	logger.Info(fmt.Sprintf("当前环境:%v", *AppPort))
-	// 查询当前服务器ip
-	res, err := exec.Command("curl", "ip.sb").Output()
-	if err != nil {
-		fmt.Println("执行命令出错：", err)
-		return
-	}
-	ip := strings.Trim(string(res), "\n\n")
 	// bark 通知
-	bark.Notice(ip, "xw-client 启动成功")
+	bark.Notice(helpers.IP(), "xw-client 启动成功")
 	_ = router.Run(fmt.Sprintf(":%v", *AppPort))
 }
