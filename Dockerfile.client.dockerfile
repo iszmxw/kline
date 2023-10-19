@@ -24,6 +24,9 @@ COPY --from=build /work/binary/client /home/yezhiming/binary/client
 # 创建配置文件挂载目录
 RUN mkdir -p /home/yezhiming/binary/client/config
 
+# 安装curl
+RUN apk --no-cache add curl
+
 # 暴露应用程序使用的端口
 EXPOSE 7104
 
