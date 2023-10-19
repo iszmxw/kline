@@ -65,6 +65,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	logger.RequestId = socketId
 	NoLogin := c.GetBool("NoLogin")
 	isVest, _ := c.GetQuery("isvest")
+	Uuid, _ := c.GetQuery("uuid")
 	ws.Confuse, _ = c.GetQuery("confuse")
 	if len(isVest) == 0 {
 		isVest = "0"
@@ -76,6 +77,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	}
 	ws.AppUserId = AppUserId
 	ws.SecWebSocketKey = socketId
+	ws.Uuid = Uuid
 	ws.Ip = c.ClientIP()
 	if len(ws.AppUserId) > 0 {
 		redis.Client.SAdd("onlineUsers", ws.AppUserId)
@@ -701,14 +703,14 @@ func PushNoticePlus(ws *wss.WsConn) {
 			err = ws.Conn.WriteMessage(websocket.TextMessage, marshal)
 			ws.Mux.Unlock()
 			if err != nil {
-				bark.Notice(fmt.Sprintf("%s, 通知失败，用户%s,订单号：%s", ip, appUserId, orderData.TradeOrderId), err.Error())
+				bark.Notice(fmt.Sprintf("%s-%s, 通知失败，用户%s,订单号：%s", ip, ws.Uuid, appUserId, orderData.TradeOrderId), err.Error())
 				logger.Error(errors.New("PushNoticePlus 关闭Socket"))
 				wss.WsClose(ws)
 				logger.Error(err)
 				return
 			}
 			// bark 通知
-			bark.Notice(fmt.Sprintf("%s,用户%s,订单号：%s", ip, appUserId, orderData.TradeOrderId), string(marshal))
+			bark.Notice(fmt.Sprintf("%s-%s,用户%s,订单号：%s", ip, ws.Uuid, appUserId, orderData.TradeOrderId), string(marshal))
 			logger.Info(string(marshal))
 			time.Sleep(200 * time.Millisecond) // 每隔 1 秒来一次推送
 		}(ws, push)
