@@ -9,7 +9,7 @@ import (
 	conf "goapi/pkg/config"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
-	"goapi/pkg/notice/bark"
+	"goapi/pkg/notice/gotify"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -65,6 +65,6 @@ func main() {
 	logger.Info("启动路由")
 	logger.Info(fmt.Sprintf("当前环境:%v", *AppPort))
 	// bark 通知
-	bark.Notice(helpers.IP(), "xw-client 启动成功")
+	gotify.Notice(helpers.IP(), "xw-client 启动成功")
 	_ = router.Run(fmt.Sprintf(":%v", *AppPort))
 }
