@@ -17,6 +17,7 @@ import (
 	"goapi/pkg/mongodb"
 	"goapi/pkg/mysql"
 	"goapi/pkg/notice/bark"
+	"goapi/pkg/notice/gotify"
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/pkg/smo"
@@ -703,7 +704,7 @@ func PushNoticePlus(ws *wss.WsConn) {
 			err = ws.Conn.WriteMessage(websocket.TextMessage, marshal)
 			ws.Mux.Unlock()
 			if err != nil {
-				bark.Notice(fmt.Sprintf("%s-%s, 通知失败，用户%s,订单号：%s", ip, ws.Uuid, appUserId, orderData.TradeOrderId), err.Error())
+				gotify.Notice(fmt.Sprintf("%s-%s, 通知失败，用户%s,订单号：%s", ip, ws.Uuid, appUserId, orderData.TradeOrderId), err.Error())
 				logger.Error(errors.New("PushNoticePlus 关闭Socket"))
 				wss.WsClose(ws)
 				logger.Error(err)
