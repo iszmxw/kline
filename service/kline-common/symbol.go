@@ -19,9 +19,9 @@ func GetData(service string) []Info {
 	case "binance":
 		CodeData = Binance()
 		break
-	//case "raceoption":
-	//	CodeData = RaceOption()
-	//	break
+	case "raceoption":
+		CodeData = RaceOption()
+		break
 	//case "qxbroker":
 	//	CodeData = QxBroker()
 	//	break
