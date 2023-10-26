@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
+	"goapi/pkg/notice/bark"
 	"goapi/pkg/notice/mail"
+	"goapi/pkg/redis"
 	"goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/config"
 	"goapi/service/kline-olymptrade/olymptrade/utils/zip"
@@ -15,6 +18,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 )
 
 type closeChanCallback chan struct{}
@@ -42,12 +46,13 @@ type WebSocketOp struct {
 	Symbol            string                   // 订阅的币种
 }
 
-func (ws *WebSocketOp) open(path, host, session string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
+func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback closeChanCallback) bool {
 	if host == "" {
 		ws.host = config.LinearSwapDefaultHost
 	}
 	ws.host = host
-	ws.session = session
+	token, _ := redis.Client.SelectDbGet(conf.GetInt("redis.db"), config.RedisKey)
+	ws.session = token
 	ws.proxy = proxy
 	ws.path = path
 	ws.closeChan = make(chan byte, 1)
@@ -67,7 +72,7 @@ func (ws *WebSocketOp) connServer() bool {
 	}
 	ws.conn, _, err = dialer.Dial(wssUrl, http.Header{
 		"Origin": {"https://olymptrade.com"},
-		"Cookie": {ws.session},
+		"Cookie": {fmt.Sprintf("access_token=%s", ws.session)},
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
@@ -202,7 +207,12 @@ func (ws *WebSocketOp) readLoop() {
 	for {
 		msgType, buf, err := ws.conn.ReadMessage()
 		if err != nil {
-			logger.Info(err.Error())
+			if strings.Contains(err.Error(), "invalid_token") {
+				ok, _ := redis.Client.SelectDbSetNx(conf.GetInt("redis.db"), config.RedisKey+":lock", time.Now().String(), 60*10)
+				if ok {
+					bark.Notice("olymptrade", "token过期啦，请登录网站set一下token")
+				}
+			}
 			goto ERR
 		}
 		var message []byte
