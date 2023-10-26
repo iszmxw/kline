@@ -14,11 +14,11 @@ type WSPriceClient struct {
 	WebSocketOp
 }
 
-func (wsIx *WSPriceClient) Init(host, session string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
+func (wsIx *WSPriceClient) Init(host string, proxy *url.URL, callback closeChanCallback) *WSPriceClient {
 	if host == "" {
 		host = config.LinearSwapDefaultHost
 	}
-	wsIx.open("/otp", host, session, proxy, callback)
+	wsIx.open("/otp", host, proxy, callback)
 	return wsIx
 }
 
