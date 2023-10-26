@@ -25,9 +25,9 @@ func GetData(service string) []Info {
 	//case "qxbroker":
 	//	CodeData = QxBroker()
 	//	break
-	//case "olymptrade":
-	//	CodeData = OlyMpTrade()
-	//	break
+	case "olymptrade":
+		CodeData = OlyMpTrade()
+		break
 	case "hsb":
 		CodeData = Hsb()
 		break

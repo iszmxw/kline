@@ -29,15 +29,7 @@ func SocketOlymptrade(info KlineCommon.Info) {
 	}
 	// 开始订阅
 	if StartSub {
-		// 必须传入登录session
-		_, session := new(api.SocketSession).GetToken(false)
-		for len(session) == 0 {
-			// 不断获取 session ，直到取到为止
-			_, session = new(api.SocketSession).GetToken(false)
-			time.Sleep(time.Second * 3) // 休息 3 秒
-		}
-		time.Sleep(time.Second * 5) // 休息 5 秒
-		wsmkClient := new(api.WSPriceClient).Init("", session, KlineCommon.GetProxy(config.KlineSource), callback)
+		wsmkClient := new(api.WSPriceClient).Init("", KlineCommon.GetProxy(config.KlineSource), callback)
 		wsmkClient.SubPriceKLine(info, func(resp *wsdata.SubPriceKLineResponse) {
 			defer func() {
 				if r := recover(); r != nil {
