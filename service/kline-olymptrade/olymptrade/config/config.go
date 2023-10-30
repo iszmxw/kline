@@ -10,5 +10,6 @@ const ServiceLog = "kline-olymptrade"
 // KlineSource 来源
 const KlineSource = "olymptrade"
 
-// RedisKey olymptrade登录的token
-const RedisKey = "kline:token:olymptrade"
+// RefreshToken olymptrade 登录的token
+const RefreshToken = "kline:token:olymptrade:RefreshToken"
+const AccessToken = "kline:token:olymptrade:AccessToken"
