@@ -210,7 +210,6 @@ func (ws *WebSocketOp) readLoop() {
 			if strings.Contains(err.Error(), "invalid_token") {
 				ok, _ := redis.Client.SelectDbSetNx(conf.GetInt("redis.db"), config.AccessToken+":lock", time.Now().String(), 60*10)
 				if ok {
-					bark.Notice("olymptrade", "token过期啦，请登录网站set一下token")
 					RefreshToken()
 				}
 			}
@@ -306,6 +305,7 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 // 维护登录状态，定时刷新 Token
 
 func RefreshToken() {
+	bark.Notice("olymptrade", "token过期啦，开始准备自动刷新 Token")
 	refreshToken, _ := redis.Client.SelectDbGet(conf.GetInt("redis.db"), config.RefreshToken)
 	accessToken, _ := redis.Client.SelectDbGet(conf.GetInt("redis.db"), config.AccessToken)
 	u := "https://gw.olymptrade.com/api/token/renew/web/v1"
