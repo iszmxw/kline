@@ -36,9 +36,6 @@ docker build -t iqoption-kline -f Dockerfile.kline.dockerfile .
 
 # web 服务
 docker build -t iqoption-web -f Dockerfile.web.dockerfile .
-
-# wine 服务
-docker build -t iqoption-wine -f Dockerfile.wine.dockerfile .
 ```
 
 - 上传docker镜像
