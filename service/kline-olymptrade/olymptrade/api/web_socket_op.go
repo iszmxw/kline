@@ -51,7 +51,7 @@ func (ws *WebSocketOp) open(path, host string, proxy *url.URL, closeChanCallback
 		ws.host = config.LinearSwapDefaultHost
 	}
 	ws.host = host
-	token, _ := redis.Client.SelectDbGet(conf.GetInt("redis.db"), config.RedisKey)
+	token, _ := redis.Client.SelectDbGet(conf.GetInt("redis.db"), config.AccessToken)
 	ws.session = token
 	ws.proxy = proxy
 	ws.path = path
@@ -208,9 +208,10 @@ func (ws *WebSocketOp) readLoop() {
 		msgType, buf, err := ws.conn.ReadMessage()
 		if err != nil {
 			if strings.Contains(err.Error(), "invalid_token") {
-				ok, _ := redis.Client.SelectDbSetNx(conf.GetInt("redis.db"), config.RedisKey+":lock", time.Now().String(), 60*10)
+				ok, _ := redis.Client.SelectDbSetNx(conf.GetInt("redis.db"), config.AccessToken+":lock", time.Now().String(), 60*10)
 				if ok {
 					bark.Notice("olymptrade", "token过期啦，请登录网站set一下token")
+					RefreshToken()
 				}
 			}
 			goto ERR
@@ -300,4 +301,66 @@ func (ws *WebSocketOp) sub(subReq []byte, ch string, fun interface{}, param refl
 	mi = new(CallbackFunc).Init(fun, param)
 	ws.SubTopicMap[ch] = mi
 	return ws.SendMsg(subReq)
+}
+
+// 维护登录状态，定时刷新 Token
+
+func RefreshToken() {
+	refreshToken, _ := redis.Client.SelectDbGet(conf.GetInt("redis.db"), config.RefreshToken)
+	accessToken, _ := redis.Client.SelectDbGet(conf.GetInt("redis.db"), config.AccessToken)
+	u := "https://gw.olymptrade.com/api/token/renew/web/v1"
+	method := "POST"
+	payload := strings.NewReader(``)
+	client := &http.Client{}
+	req, err := http.NewRequest(method, u, payload)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	req.Header.Add("content-type", "application/json")
+	req.Header.Add("cookie", fmt.Sprintf("refresh_token=%s;access_token=%s;", refreshToken, accessToken))
+	req.Header.Add("x-cid-app", "web@OlympTrade@2023.4.21019@21019")
+	req.Header.Add("x-cid-ver", "1")
+	res, err := client.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	defer res.Body.Close()
+	// 获取 Cookie
+	cookies := res.Cookies()
+	if len(cookies) <= 0 {
+		return
+	}
+	i := 0
+	for _, cookie := range cookies {
+		if len(cookie.Value) <= 0 {
+			continue
+		}
+		if strings.EqualFold(cookie.Name, "access_token") {
+			if !strings.EqualFold(cookie.Value, accessToken) {
+				// set accessToken
+				_, err = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), config.AccessToken, cookie.Value, 3600*24*3)
+				if err != nil {
+					logger.Error(err)
+					return
+				}
+				i++
+			}
+		}
+		if strings.EqualFold(cookie.Name, "refresh_token") {
+			if !strings.EqualFold(cookie.Value, refreshToken) {
+				// set refreshToken
+				_, err = redis.Client.SelectDbAdd(conf.GetInt("redis.db"), config.RefreshToken, cookie.Value, 3600*24*3)
+				if err != nil {
+					logger.Error(err)
+					return
+				}
+				i++
+			}
+		}
+	}
+	if i >= 2 {
+		bark.Notice("olymptrade", "刷新 Token 成功")
+	}
 }
