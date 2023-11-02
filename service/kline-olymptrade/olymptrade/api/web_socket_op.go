@@ -8,7 +8,6 @@ import (
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
 	"goapi/pkg/notice/bark"
-	"goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/kline-common"
 	"goapi/service/kline-olymptrade/olymptrade/config"
@@ -76,10 +75,6 @@ func (ws *WebSocketOp) connServer() bool {
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		NoticeMail.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name":  config.KlineSource + "==>" + ws.Symbol,
-			"proxy": ws.proxy,
-		})
 		logger.Error(err)
 		ws.Close()
 		return false

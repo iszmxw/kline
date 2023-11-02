@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"goapi/pkg/logger"
-	"goapi/pkg/notice/mail"
 	"goapi/service/kline-binance/binance/config"
 	"goapi/service/kline-binance/binance/utils/zip"
 	"net/http"
@@ -73,10 +72,6 @@ func (ws *WebSocketOp) connServer() bool {
 	ws.conn, response, err = dialer.Dial(wssUrl, nil)
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf(ws.Symbol+"WebSocket connected error: %s", err)))
-		NoticeMail.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name":  config.KlineSource + "==>" + ws.Symbol,
-			"proxy": ws.proxy,
-		})
 		logger.Info(response)
 		logger.Error(err)
 		time.Sleep(time.Second * 5)

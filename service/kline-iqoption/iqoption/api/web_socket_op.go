@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"goapi/pkg/logger"
-	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	"goapi/service/binary-monitoring/pkg"
 	KlineCommon "goapi/service/kline-common"
@@ -89,10 +88,6 @@ func (ws *WebSocketOp) connServer() bool {
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		NoticeMail.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name":  config.KlineSource + "==>" + ws.Symbol,
-			"proxy": ws.proxy,
-		})
 		logger.Error(err)
 		ws.Close(1)
 		return false

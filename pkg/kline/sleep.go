@@ -6,7 +6,6 @@ import (
 	"goapi/app/response"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
-	"goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	tradeSleepFxcm "goapi/service/kline-fxcm/fxcm/config/trade_sleep"
 	tradeSleepHsb "goapi/service/kline-hsb/hsb/config/trade_sleep"
@@ -83,19 +82,13 @@ func TickerCheckTodaySleep(isTicker bool) {
 				status := GetSourceStatus(response.KlineSource(data.AssetsCode), data.AssetsCode)
 				if 1 != status {
 					if data.AssetsStatus == 1 || data.IsValid == 1 {
-						go NoticeMail.Notice("msgAssetSleep", map[string]interface{}{
-							"assets_code": data.AssetsCode,
-							"msg":         fmt.Sprintf("%v,结束交易准备开始休市", data.AssetsCode),
-						})
+						logger.Info(fmt.Sprintf("%v,结束交易准备开始休市", data.AssetsCode))
 						UpdateSleep("kline-system", data.AssetsCode, "2", "0")
 					}
 					logger.Info(data.AssetsCode + "休市中")
 				} else {
 					if data.AssetsStatus == 2 || data.IsValid == 0 {
-						go NoticeMail.Notice("msgAssetSleep", map[string]interface{}{
-							"assets_code": data.AssetsCode,
-							"msg":         fmt.Sprintf("%v,休市完毕，准备开市交易", data.AssetsCode),
-						})
+						logger.Info(fmt.Sprintf("%v,休市完毕，准备开市交易", data.AssetsCode))
 						UpdateSleep("kline-system", data.AssetsCode, "1", "1")
 					}
 					logger.Info(data.AssetsCode + "开市中")

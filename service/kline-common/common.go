@@ -2,9 +2,7 @@ package KlineCommon
 
 import (
 	"fmt"
-	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
-	"goapi/pkg/notice/mail"
 	"goapi/pkg/notice/telegram"
 	"goapi/pkg/redis"
 	"runtime/debug"
@@ -57,22 +55,7 @@ func ConsumeTime(start, finish int64) string {
 func RebootSocketLog(Source string, info Info) {
 	// 记录重连次数 连接
 	timeKey := fmt.Sprintf("connect:%v:%v:time", Source, info.Symbol)
-	// 记录重连次数 连接
-	timeStr, _ := redis.Client.Get(timeKey)
-	var lastRuntime int64
-	if len(timeStr) > 0 {
-		// 上次运行时间
-		UnixMilli := helpers.StringToInt64(timeStr)
-		// 上次
-		lastRuntime = time.Now().UnixMilli() - UnixMilli
-	}
 	num := redis.Client.Incr(fmt.Sprintf("connect:%v:%v:num", Source, info.Symbol))
 	_, _ = redis.Client.Add(timeKey, time.Now().UnixMilli(), 0)
 	logger.Info(fmt.Sprintf("%v:已关闭正在第【%v】次重新启动Goroutine", info.Symbol, num))
-	go NoticeMail.Notice("msgRebootSocket", map[string]interface{}{
-		"service":     Source,
-		"symbol":      info.Symbol,
-		"num":         num,
-		"lastRuntime": lastRuntime,
-	})
 }

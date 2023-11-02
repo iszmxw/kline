@@ -5,12 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"goapi/app/models"
-	"goapi/app/response"
-	"goapi/pkg/kline"
 	"goapi/pkg/logger"
-	"goapi/pkg/mysql"
-	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
 	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-common/source"
@@ -92,10 +87,6 @@ func (ws *WebSocketOp) connServer() bool {
 	})
 	if err != nil {
 		logger.Error(errors.New(fmt.Sprintf("WebSocket connected error: %s", err)))
-		NoticeMail.Notice("msgSocketNetworkAnomaly", map[string]interface{}{
-			"name":  config.KlineSource + "==>" + ws.Symbol,
-			"proxy": ws.proxy,
-		})
 		logger.Error(err)
 		ws.Close(1)
 		return false
@@ -245,37 +236,6 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 									)), data,
 								)
 							}
-						} else {
-							for _, item := range arr {
-								if strings.EqualFold(item.([]interface{})[1].(string), ws.Symbol) { // 维护当前币种的利润率
-									if response.KlineSource(ws.ContractCode) == config.KlineSource { // 当前的数据源权限，使用当前数据源的利润率
-										logger.Info(item)
-										logger.Info(fmt.Sprintf("当前币种为：%v,运行状态：【%v】利润 - 1分钟为：%v,利润 - 5分钟以上：%v", ws.ContractCode, item.([]interface{})[14], item.([]interface{})[18], item.([]interface{})[19]))
-										// 利润率处理 最低20% 最高75%
-										status := item.([]interface{})[14].(bool)
-										if status == false {
-											// 休市状态 数据源休市控制权，以及状态维护
-											//// 当前数据源匹配就入库
-											//if response.KlineSource(ws.ContractCode) == config.KlineSource {
-											//	go kline.UpdateSleep(config.KlineSource, ws.ContractCode)
-											//}
-										}
-										rate := item.([]interface{})[18].(float64)
-										if rate > 75 {
-											rate = 75
-										}
-										if rate < 20 {
-											rate = 20
-										}
-										if kline.AutoRateWhitelistCheck(ws.ContractCode) {
-											logger.Error(errors.New(fmt.Sprintf("白名单资产[%v]，无需自动变化赔率", ws.ContractCode)))
-											return
-										} else {
-											go ws.UpdateRate(ws.ContractCode, rate/100)
-										}
-									}
-								}
-							}
 						}
 					}
 					break
@@ -291,63 +251,6 @@ func (ws *WebSocketOp) msgHand(message []byte) {
 			}
 		}
 		break
-	}
-}
-
-func (ws *WebSocketOp) UpdateRate(ContractCode string, returnRate float64) {
-	defer KlineCommon.KlineRecover("UpdateRate", config.KlineSource, ws.Symbol)
-	// 修改费率
-	var assetsList []response.TradingAssets
-	err := mysql.DB.Model(models.TradingAssets{}).
-		Where("assets_code", ContractCode).
-		Where("is_valid", 1).
-		Where("is_show", 1).
-		Where("is_whitelist", 0).
-		Find(&assetsList).Error
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	for _, TradingAssets := range assetsList {
-		if TradingAssets.Id == 0 {
-			return
-		}
-		tips := fmt.Sprintf("%v=>系统历史赔率：%v，该时间段的最终赔率：%v", TradingAssets.AssetsCode, TradingAssets.ReturnRate, returnRate)
-		logger.Info(tips)
-		// 当前资产赔率和此次预测一样，无需修改
-		if TradingAssets.ReturnRate == returnRate {
-			logger.Info(fmt.Sprintf("%v：当前资产赔率和历史赔率一样，无需修改", TradingAssets.AssetsCode))
-		} else {
-			// 赔率变动通知
-			//NoticeMail.Notice("msgRateChange", map[string]interface{}{
-			//	"service": config.KlineSource,
-			//	"tips":    tips,
-			//})
-			DB := mysql.DB
-			err = DB.Model(models.TradingAssets{}).
-				Where("assets_code", ContractCode).
-				Where("is_valid", 1).
-				Where("is_show", 1).
-				Updates(map[string]interface{}{"update_date": time.Now(), "updater": "kline-system", "return_rate": returnRate}).Error
-			if err != nil {
-				logger.Error(err)
-				return
-			}
-			// 记录修改历史记录
-			var TradingAssetsLog models.TradingAssetsLog
-			TradingAssetsLog.ItemCode = TradingAssets.ItemCode
-			TradingAssetsLog.AssetsCode = ContractCode
-			TradingAssetsLog.CreateDate = time.Now()
-			TradingAssetsLog.ReturnRateHistory = TradingAssets.ReturnRate
-			TradingAssetsLog.ReturnRateNow = returnRate
-			TradingAssetsLog.KlineSource = config.KlineSource
-			err = DB.Model(TradingAssetsLog).Create(&TradingAssetsLog).Error
-			if err != nil {
-				logger.Error(err)
-				return
-			}
-		}
-
 	}
 }
 
