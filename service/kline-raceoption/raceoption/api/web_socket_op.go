@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"goapi/pkg/kline/otc"
 	"goapi/pkg/logger"
-	NoticeMail "goapi/pkg/notice/mail"
 	KlineCommon "goapi/service/kline-common"
 	"goapi/service/kline-common/source"
 	"goapi/service/kline-raceoption/raceoption/config"
@@ -238,10 +237,6 @@ func (ws *WebSocketOp) Close() {
 			close(ws.writeChan)
 			close(ws.closeChan)
 			ws.closeChanCallback <- struct{}{}
-			go NoticeMail.Notice("msgSocketClose", map[string]interface{}{
-				"name":        config.KlineSource + "==>" + ws.Symbol,
-				"description": ws.Description,
-			})
 			if ws.conn != nil {
 				err := ws.conn.Close()
 				if err != nil {

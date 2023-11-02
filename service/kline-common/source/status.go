@@ -52,10 +52,7 @@ func CheckStatus(Source, ContractCode string) string {
 			}
 			// 最终结果
 			if status == "4" {
-				//NoticeMail.Notice("msgHeartbeatAnomaly", map[string]interface{}{
-				//	"name": Source,
-				//	"msg":  tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse),
-				//})
+				logger.Info(tips(Source, ContractCode, SystemTs, diff, SubIndexKLineResponse))
 			}
 		}
 	}
