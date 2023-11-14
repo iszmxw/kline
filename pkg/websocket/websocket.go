@@ -35,6 +35,7 @@ type WsConn struct {
 	List            *list.List
 	Confuse         string //是否开启参数混淆
 	Uuid            string //前端传递过来的Uuid
+	ItemCode        string //前端传递过来的ItemCode
 }
 
 func GetSocket(c *gin.Context) (*WsConn, error) {
@@ -64,6 +65,7 @@ func GetSocket(c *gin.Context) (*WsConn, error) {
 			"127.0.0.1",
 			list.New(),
 			"0",
+			"",
 			"",
 		}, nil
 	} else {

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
-	"goapi/pkg/config"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"io"
@@ -55,6 +54,7 @@ type EventParams struct {
 	Email            string `json:"email"`            // 邮箱
 	FlowJsonString   string `json:"flowJsonString"`   // 第三方参数json
 	DeviceBrand      string `json:"deviceBrand"`      // 用户设备品牌
+	ItemCode         string `json:"ItemCode"`         // itemCode
 }
 
 type AdjustParams struct {
@@ -162,7 +162,7 @@ func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
 	}
 	var collaboratorParams models.CollaboratorParams
 	mysql.DB.Debug().Model(models.CollaboratorParams{}).Where(map[string]interface{}{
-		"item_code":    config.GetString("app.item_code"),
+		"item_code":    eventParams.ItemCode,
 		"partner_code": partnerCode,
 		"account_code": accountCode,
 		"nation":       nation,
@@ -175,7 +175,7 @@ func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
 	mysql.DB.Debug().Model(models.SystemApiRule{}).Where(map[string]interface{}{
 		"is_start":  "1",
 		"rule_code": "SEND_ADJUST_HIDDEN_RULE",
-		"item_code": config.GetString("app.item_code"),
+		"item_code": eventParams.ItemCode,
 		"api_code":  accountCode,
 		"nation":    nation,
 	}).Find(&systemApiRule)
@@ -233,7 +233,7 @@ func SubmitEvent(eventParams EventParams, nation, partnerCode string) {
 	}
 	// 保存请求 adjust 结果信息
 	createData := models.AppUserAdjustSendLog{
-		ItemCode:   config.GetString("app.item_code"),
+		ItemCode:   eventParams.ItemCode,
 		AppUserId:  eventParams.AppUserId,
 		EventName:  eventParams.EventName,
 		CreateDate: time.Now(),

@@ -37,7 +37,7 @@ func init() {
 
 func main() {
 	// pprof 分析
-	pprof.Debug(":6071")
+	pprof.Debug(":6072")
 	// 创建TCP监听
 	listener, err := net.Listen("tcp", ":5555")
 	if err != nil {
