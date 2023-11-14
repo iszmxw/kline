@@ -405,7 +405,7 @@ func createTradingOrder(orderId string, params requests.SubmitTradeParams, appUs
 	createOrder.CreateTs = time.Now().UnixMilli()
 	createOrder.UpdateTs = time.Now().UnixMilli()
 	createOrder.IsValid = 1
-	createOrder.ItemCode = config.GetString("app.item_code")
+	createOrder.ItemCode = appUser.ItemCode
 	createOrder.QuizResult = -1
 	switch params.AmountType {
 	case 1:
