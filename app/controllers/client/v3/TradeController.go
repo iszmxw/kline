@@ -10,7 +10,6 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	goadjust "goapi/pkg/adjust"
-	"goapi/pkg/config"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
@@ -206,6 +205,7 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 				Email:            appUser.Email,
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
+				ItemCode:         ws.ItemCode,
 			}, appUser.Nation, "adjust")
 			// 休息两百毫秒再返回
 			//time.Sleep(time.Millisecond * 200)
@@ -230,6 +230,7 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 				Email:            appUser.Email,
 				FlowJsonString:   appUser.FlowJson,
 				DeviceBrand:      appUser.DeciveBrand,
+				ItemCode:         ws.ItemCode,
 			}, appUser.Nation, "adjust")
 			// 休息两百毫秒再返回
 			//time.Sleep(time.Millisecond * 200)
@@ -487,7 +488,7 @@ func createVirtualTradingOrder(orderId string, params requests.SubmitTradeParams
 	createOrder.CreateTs = time.Now().UnixMilli()
 	createOrder.UpdateTs = time.Now().UnixMilli()
 	createOrder.IsValid = 1
-	createOrder.ItemCode = config.GetString("app.item_code")
+	createOrder.ItemCode = appUser.ItemCode
 	createOrder.QuizResult = -1
 	createOrder.RealCostAmounts = 0
 	createOrder.EqualReturnAmounts = 0

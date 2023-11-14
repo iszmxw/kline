@@ -78,6 +78,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	ws.AppUserId = AppUserId
 	ws.SecWebSocketKey = socketId
 	ws.Uuid = Uuid
+	var AppUser response.AppUser
+	mysql.DB.Model(models.AppUser{}).Where("app_user_id", AppUserId).Find(&AppUser)
+	ws.ItemCode = AppUser.ItemCode
+	if len(ws.ItemCode) == 0 {
+		ws.ItemCode = config.GetString("app.item_code")
+	}
 	ws.Ip = c.ClientIP()
 	if len(ws.AppUserId) > 0 {
 		redis.Client.SAdd("onlineUsers", ws.AppUserId)
@@ -834,7 +840,7 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		if len(params.ItemCode) <= 0 {
-			params.ItemCode = config.GetString("app.item_code")
+			params.ItemCode = ws.ItemCode
 		}
 		if len(params.Nation) <= 0 {
 			params.Nation = "Indonesia"
@@ -931,7 +937,7 @@ func PushUserInfo(ws *wss.WsConn) {
 		AppUser.HisTradingAmounts = HistoryTrading.HisTradingAmounts // 历史交易金额
 		var ListAppItem []models.AppItem
 		err = DB.Model(models.AppItem{}).
-			Where("item_code", config.GetString("app.item_code")).
+			Where("item_code", ws.ItemCode).
 			Where("is_start", "1").
 			Find(&ListAppItem).Error
 		if err != nil {
@@ -1031,7 +1037,7 @@ func StationLetterPushNotice(ws *wss.WsConn, SubToken requests.SubToken) {
 		err = mysql.DB.Debug().Model(models.NoticeLog{}).
 			Joins(models.Prefix("left join $_notice on $_notice.mail_id=$_notice_log.mail_id")).
 			Where(map[string]interface{}{
-				models.Prefix("$_notice_log.item_code"):    config.GetString("app.item_code"),
+				models.Prefix("$_notice_log.item_code"):    ws.ItemCode,
 				models.Prefix("$_notice_log.nation"):       userInfo.Nation,
 				models.Prefix("$_notice_log.read_state"):   0,
 				models.Prefix("$_notice_log.decive_brand"): SubToken.DeciveBrand,
@@ -1269,7 +1275,7 @@ func DelayCheck(ctx *gin.Context, ws *wss.WsConn, subInfo interface{}) {
 				DelayTimestamp:   params.DelayTimestamp,
 				SendTimestamp:    params.SendTimestamp,
 				ReceiveTimestamp: params.ReceiveTimestamp,
-				ItemCode:         config.GetString("app.item_code"),
+				ItemCode:         ws.ItemCode,
 				AppUserId:        ws.AppUserId,
 				Nation:           byIp.Country,
 				City:             byIp.City,
