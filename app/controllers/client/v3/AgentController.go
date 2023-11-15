@@ -300,6 +300,22 @@ func (h *AgentController) PushStatistics(ws *wss.WsConn, SubBodyStr interface{})
 				return
 			}
 		}
+		if strings.EqualFold(SubBody.Nation, "Brazil") {
+			min = 30
+			max = 50
+			randTradeAmount := int64(rand.Intn(max-min) + min)
+			num, _ := redis.Client.Get(IndiaKeyTradeAmount)
+			if len(num) == 0 {
+				tradeAmount = randTradeAmount
+			} else {
+				tradeAmount = randTradeAmount + helpers.StringToInt64(num)
+			}
+			_, err := redis.Client.Add(IndiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+		}
 		result["tradeAmount"] = tradeAmount // 最终交易数量
 		result["nation"] = SubBody.Nation   // 国家
 		// 查询用户未读消息，展示小红点
