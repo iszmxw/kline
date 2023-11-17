@@ -255,8 +255,7 @@ func (h *AgentController) PushStatistics(ws *wss.WsConn, SubBodyStr interface{})
 		timeIncr := (time.Now().Unix() - initTime) / 10
 		result["endCostumer"] = costumer + timeIncr // 最终客户数
 		// 读取 redis 缓存
-		IndiaKeyTradeAmount := fmt.Sprintf("%s:India:tradeAmount", time.Now().Format("2006-01-02"))
-		IndonesiaKeyTradeAmount := fmt.Sprintf("%s:Indonesia:tradeAmount", time.Now().Format("2006-01-02"))
+		KeyTradeAmount := fmt.Sprintf("%s:%s:tradeAmount", time.Now().Format("2006-01-02"), SubBody.Nation)
 		var tradeAmount int64
 		var min int
 		var max int
@@ -271,50 +270,26 @@ func (h *AgentController) PushStatistics(ws *wss.WsConn, SubBodyStr interface{})
 		if strings.EqualFold(SubBody.Nation, "Indonesia") {
 			min = 4000
 			max = 7000
-			randTradeAmount := int64(rand.Intn(max-min) + min)
-			num, _ := redis.Client.Get(IndonesiaKeyTradeAmount)
-			if len(num) == 0 {
-				tradeAmount = randTradeAmount
-			} else {
-				tradeAmount = randTradeAmount + helpers.StringToInt64(num)
-			}
-			_, err := redis.Client.Add(IndonesiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
-			if err != nil {
-				logger.Error(err)
-				return
-			}
 		}
 		if strings.EqualFold(SubBody.Nation, "India") {
 			min = 500
 			max = 800
-			randTradeAmount := int64(rand.Intn(max-min) + min)
-			num, _ := redis.Client.Get(IndiaKeyTradeAmount)
-			if len(num) == 0 {
-				tradeAmount = randTradeAmount
-			} else {
-				tradeAmount = randTradeAmount + helpers.StringToInt64(num)
-			}
-			_, err := redis.Client.Add(IndiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
-			if err != nil {
-				logger.Error(err)
-				return
-			}
 		}
 		if strings.EqualFold(SubBody.Nation, "Brazil") {
 			min = 30
 			max = 50
-			randTradeAmount := int64(rand.Intn(max-min) + min)
-			num, _ := redis.Client.Get(IndiaKeyTradeAmount)
-			if len(num) == 0 {
-				tradeAmount = randTradeAmount
-			} else {
-				tradeAmount = randTradeAmount + helpers.StringToInt64(num)
-			}
-			_, err := redis.Client.Add(IndiaKeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
-			if err != nil {
-				logger.Error(err)
-				return
-			}
+		}
+		randTradeAmount := int64(rand.Intn(max-min) + min)
+		num, _ := redis.Client.Get(KeyTradeAmount)
+		if len(num) == 0 {
+			tradeAmount = randTradeAmount
+		} else {
+			tradeAmount = randTradeAmount + helpers.StringToInt64(num)
+		}
+		_, err = redis.Client.Add(KeyTradeAmount, tradeAmount, 86400-int(time.Now().Unix()-startTime))
+		if err != nil {
+			logger.Error(err)
+			return
 		}
 		result["tradeAmount"] = tradeAmount // 最终交易数量
 		result["nation"] = SubBody.Nation   // 国家
