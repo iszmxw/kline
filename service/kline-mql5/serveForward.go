@@ -169,7 +169,9 @@ func pushToClient(baseURL, index, item string) {
 		logger.Error(err)
 		return
 	}
-	logger.Info(res)
+	if res.Code != 1 {
+		logger.Info(res)
+	}
 	defer func(Body io.ReadCloser) {
 		err = Body.Close()
 		if err != nil {
