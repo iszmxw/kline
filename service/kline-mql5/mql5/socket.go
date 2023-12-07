@@ -18,7 +18,7 @@ import (
 func SocketMql5(info KlineCommon.Info, mql5 wsdata.Mql5) {
 	SystemTs := time.Now().UnixMilli()
 	logger.RequestId = fmt.Sprintf("%v@%v", SystemTs, mql5.Name) // RequestId 定义为 Ts 时间戳
-	mql5.TimeMsc = mql5.TimeMsc - 60*60*3*1000                   // 上游的ts 减去三个小时的时差得到印尼的时间戳
+	//mql5.TimeMsc = mql5.TimeMsc - 60*60*3*1000                   // 上游的ts 减去三个小时的时差得到印尼的时间戳
 	UpstreamTs := mql5.TimeMsc
 	TimeDiff := SystemTs - UpstreamTs
 	if TimeDiff >= 30*1000 {
