@@ -47,6 +47,8 @@ GOOS=linux GOARCH=amd64 go build -o $appBuildDir/activity/binary-go-activity ser
 
 # 13、打包 kline-mql5 K线图socket采集服务
 GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-go-mql5 service/kline-mql5/main.go
+# mql5 转发服务，将 mql5 数据转发到不同的服务器
+GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/serveForward service/kline-mql5/serveForward.go
 
 ## 3、打包 新浪 K线图采集服务
 #GOOS=linux GOARCH=amd64 go build -o $appBuildDir/kline/binary-sinaService service/kline-sina/main.go
