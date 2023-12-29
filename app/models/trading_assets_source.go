@@ -9,7 +9,6 @@ import (
 
 type TradingAssetsSource struct {
 	Id              int                `json:"id"`               //数据源表主键ID
-	ItemCode        string             `json:"item_code"`        //应用编码
 	AssetsCode      string             `json:"assets_code"`      //资产编码
 	KlineSource     string             `json:"kline_source"`     //k线来源,数据源
 	SubscribeSymbol string             `json:"subscribe_symbol"` //数据源对应的订阅符号
