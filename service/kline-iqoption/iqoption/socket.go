@@ -57,21 +57,22 @@ func SocketIqoption(info KlineCommon.Info) {
 				return
 			}
 			data := RedisData(SystemTs, UpstreamTs, resp)
-			data.Ch = fmt.Sprintf("market.%v.index.1min", info.ContractCode)
-			logger.Info(data)
+			data.Ch = config.ChKey(info.ContractCode)
 			redisData, err := json.Marshal(data) //转换成JSON返回的是byte[]
 			if err != nil {
 				logger.Error(err)
 				return
 			}
 			// 收集数据缓存到redis
-			key := fmt.Sprintf("%v:%v", config.KlineSource, data.Ch)
+			key := config.SubKey(info.ContractCode)
 			logger.Info("0001"+data.Ch, data)
 			_, redisErr := redis.Client.Add(key, redisData, 0)
 			if redisErr != nil {
 				logger.Error(redisErr)
 				return
 			}
+			listKey := config.ListKey(info.ContractCode)
+			_, _ = redis.Client.Lpush(listKey, data.Tick.Close)
 			// 当前数据源匹配就入库
 			KlineSource := response.KlineSource(info.ContractCode)
 			logger.Info(KlineSource, info.ContractCode)

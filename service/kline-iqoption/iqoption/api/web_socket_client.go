@@ -1,11 +1,13 @@
 package api
 
 import (
+	"goapi/pkg/redis"
 	"goapi/service/kline-common"
 	"goapi/service/kline-iqoption/iqoption/config"
 	"goapi/service/kline-iqoption/iqoption/wsdata"
 	"net/url"
 	"reflect"
+	"strconv"
 )
 
 type WSPriceClient struct {
@@ -28,4 +30,24 @@ func (wsIx *WSPriceClient) SubPriceKLine(info KlineCommon.Info, callbackFun OnSu
 	}
 	fun := callbackFun // 方法
 	wsIx.sub(info, fun, reflect.TypeOf(wsdata.SubPriceKLineResponse{}))
+}
+
+// 从 Redis 中获取 List 数据
+
+func GetListData(key string) []float64 {
+	// 使用 LRANGE 命令获取 List 数据
+	stringList, err := redis.Client.LRange(key, 0, -1).Result()
+	if err != nil {
+		return nil
+	}
+	// 将字符串列表转换为 float64 列表
+	var floatList []float64
+	for _, str := range stringList {
+		num, err := strconv.ParseFloat(str, 64)
+		if err != nil {
+			return nil
+		}
+		floatList = append(floatList, num)
+	}
+	return floatList
 }

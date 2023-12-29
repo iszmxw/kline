@@ -210,6 +210,16 @@ func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
 	return value, err
 }
 
+func (rdb *Redis) LRange(key string, start, stop int64) *redis.StringSliceCmd {
+	cmd := redis.NewStringSliceCmd(
+		"lrange",
+		Set(key),
+		start,
+		stop,
+	)
+	return cmd
+}
+
 func (rdb *Redis) SelectDbAdd(db int, key string, value interface{}, exTime int) (bool, error) {
 	defer rdb.mutex.Unlock()
 	rdb.mutex.Lock()
