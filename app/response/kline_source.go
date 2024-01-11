@@ -1,6 +1,7 @@
 package response
 
 import (
+	"encoding/json"
 	"fmt"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
@@ -172,6 +173,11 @@ func AllowKlineSource() map[string]interface{} {
 	data["EUR-JPY-OTC"] = []string{"iqoption"}
 	data["USD-CHF-OTC"] = []string{"iqoption"}
 	data["EUR-GBP-OTC"] = []string{"iqoption"}
+	// java 服务读取了相关的缓存，每次更改后，请记得更新 redis 缓存
+	marshal, _ := json.Marshal(data)
+	if len(string(marshal)) > 0 {
+		_, _ = redis.Client.SelectDbAdd(0, fmt.Sprintf("AllowKlineSource:%v", "1"), string(marshal), -1)
+	}
 	return data
 }
 
