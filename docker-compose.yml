@@ -13,6 +13,12 @@ services:
     ports:
       - "7104:7104"
     network_mode: "host"
+    # 日志记录文件数量和文件大小
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   xw-email:
     image: iszmxw/iqoption-email:latest
@@ -26,6 +32,12 @@ services:
     ports:
       - "7107:7107"
     network_mode: "host"
+    # 日志记录文件数量和文件大小
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   xw-web:
     image: iszmxw/iqoption-web:latest
@@ -39,6 +51,12 @@ services:
     ports:
       - "7105:7105"
     network_mode: "host"
+    # 日志记录文件数量和文件大小
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   xw-kline:
     image: iszmxw/iqoption-kline:latest
@@ -50,3 +68,9 @@ services:
       - /home/yezhiming/binary/kline:/home/yezhiming/binary/kline/config
       - /home/yezhiming/binary/logs:/home/yezhiming/binary/kline/logs
     network_mode: "host"
+    # 日志记录文件数量和文件大小
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
