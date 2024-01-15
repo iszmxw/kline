@@ -31,8 +31,7 @@ func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
 		Config.Any("/AllowKlineSource.json", WebV1Group.KlineController.AllowKlineSource)
 		// 【E34】 获取当前币种可以设置的数据源 todo 已经迁移到 java 服务
 		Config.Any("/KlineSourceList.json", WebV1Group.KlineController.KlineSourceList)
-
-		// 【E34】 设置 KlineSource 信息
+		// 【E34】 设置 KlineSource 信息 todo 已经迁移到 java 服务
 		Config.Any("/setKlineSource.json", WebV1Group.KlineController.SetKlineSourceHandler)
 		// 【E35】 查看所有 KlineSource 配置
 		Config.Any("/getAllKlineSource.json", WebV1Group.KlineController.GetAllKlineSourceHandler)
