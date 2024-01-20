@@ -25,7 +25,7 @@ type TradeController struct {
 }
 
 func getMessage(languageCode, nation, resultCode string) string {
-	var AppSelectEnum models.AppSelectEnum
+	var MultiLanguageShow models.TMultiLanguageShow
 	var msg string
 	if len(languageCode) == 0 {
 		languageCode = "EN"
@@ -36,14 +36,13 @@ func getMessage(languageCode, nation, resultCode string) string {
 	if len(resultCode) == 0 {
 		resultCode = "ErrorRequest"
 	}
-	err := mysql.DB.Debug().Model(models.AppSelectEnum{}).
+	err := mysql.DB.Debug().Model(models.TMultiLanguageShow{}).
 		Where("language_code", languageCode).
-		Where("nation", nation).
-		Where("result_code", resultCode).Find(&AppSelectEnum).Error
+		Where("show_column", resultCode).Find(&MultiLanguageShow).Error
 	if err != nil {
 		msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "Unknown Error")
 	}
-	msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, AppSelectEnum.Message)
+	msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, MultiLanguageShow.ShowWord)
 	return msg
 }
 
