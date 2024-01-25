@@ -355,7 +355,7 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 }
 
 func getBonusTradeRule(appUser models.AppUser) string {
-	DB := mysql.DB.Debug().Begin()
+	DB := mysql.DB.Debug()
 	var rule models.BonusRule
 	err := DB.
 		Raw(`SELECT
