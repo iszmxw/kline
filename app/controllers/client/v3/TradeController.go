@@ -43,6 +43,10 @@ func getMessage(languageCode, nation, resultCode string) string {
 		msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "Unknown Error")
 	}
 	msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, MultiLanguageShow.ShowWord)
+	//错误需弹窗
+	if resultCode == "rechargeTradeBonus" || resultCode == "BonusBalanceTradeLack" {
+		msg = fmt.Sprintf(`{"id":"%v","msg":"%v"}`, MultiLanguageShow.Code, MultiLanguageShow.ShowWord)
+	}
 	return msg
 }
 
@@ -218,6 +222,13 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "InsufficientBalance"))
 			return
 		}
+		//调用bonus弹窗过滤规则
+
+		result := getBonusTradeRule(appUser)
+		logger.Info("bonus规则限制返回: %v", result)
+		if len(result) > 0 {
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, result))
+		}
 		ok := createTradingOrder(orderId, params, appUser, asset)
 		if ok {
 			goadjust.SubmitEvent(goadjust.EventParams{
@@ -341,6 +352,38 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 	}
 	// 动态统计数据
 	return false, ""
+}
+
+func getBonusTradeRule(appUser models.AppUser) string {
+	DB := mysql.DB.Debug().Begin()
+	var rule models.BonusRule
+	err := DB.
+		Raw(`SELECT
+			SUM(CASE WHEN tt.amount_type = 1 THEN amount ELSE 0 END) AS realAmounts,
+			SUM(CASE WHEN tt.amount_type = 2 THEN amount ELSE 0 END) AS bonusAmounts,
+			IFNULL(SUM(tr.amount), 0) AS rechargeAmounts
+		FROM
+			t_trading_order tt
+				INNER JOIN t_recharge_order tr ON tt.app_user_id = tr.app_user_id
+		WHERE
+			tt.app_user_id = ?
+		  AND tt.nation = ?
+		  AND tt.item_code = ?
+		  AND tr.status = '02'
+		  AND tr.nation = ?
+		  AND tr.item_code = ?`, appUser.AppUserId, appUser.Nation, appUser.ItemCode, appUser.Nation, appUser.ItemCode).
+		Scan(&rule).Error
+	if err != nil {
+		logger.Error(err)
+		return "FailOperate"
+	}
+	if rule.RechargeAmounts == 0 {
+		return "rechargeTradeBonus"
+	}
+	if rule.BonusAmounts <= rule.RealAmounts {
+		return "BonusBalanceTradeLack"
+	}
+	return ""
 }
 
 // 决策运算算法工具类
