@@ -228,6 +228,7 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 		logger.Info("bonus规则限制返回: %v", result)
 		if len(result) > 0 {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, result))
+			return
 		}
 		ok := createTradingOrder(orderId, params, appUser, asset)
 		if ok {
