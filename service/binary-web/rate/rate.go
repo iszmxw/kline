@@ -34,7 +34,7 @@ func Get(currency string) float64 {
 		logger.Error(err)
 		return 0
 	}
-	result := x.Find(".result__BigRate-sc-1bsijpp-1.iGrAod").Text()
+	result := x.Find("p.result__BigRate-sc-1bsijpp-1").Text()
 	if len(result) > 0 {
 		arr := strings.Split(result, " ")
 		if len(arr[0]) == 0 {
