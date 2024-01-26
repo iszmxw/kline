@@ -360,9 +360,9 @@ func getBonusTradeRule(appUser models.AppUser) string {
 	var rule models.BonusRule
 	err := DB.
 		Raw(`SELECT
-			SUM(CASE WHEN tt.amount_type = 1 THEN amount ELSE 0 END) AS realAmounts,
-			SUM(CASE WHEN tt.amount_type = 2 THEN amount ELSE 0 END) AS bonusAmounts,
-			IFNULL(SUM(tr.amount), 0) AS rechargeAmounts
+			SUM(CASE WHEN tt.amount_type = 1 THEN amount ELSE 0 END) AS real_amounts,
+			SUM(CASE WHEN tt.amount_type = 2 THEN amount ELSE 0 END) AS bonus_amounts,
+			IFNULL(SUM(tr.amount), 0) AS recharge_amounts
 		FROM
 			t_trading_order tt
 				INNER JOIN t_recharge_order tr ON tt.app_user_id = tr.app_user_id
