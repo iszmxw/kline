@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/requests"
 	goadjust "goapi/pkg/adjust"
@@ -24,9 +25,23 @@ import (
 type TradeController struct {
 }
 
-func getMessage(languageCode, nation, resultCode string) string {
+func getMessage(args ...string) string {
+	result := cmap.New().Items()
+	result["id"] = "10409"
+	result["msg"] = "Unknown Error"
+	defaultMsg := `{"id":"10409","msg":"Unknown Error"}`
+	var languageCode, nation, resultCode string
+	// 提取 languageCode, nation, resultCode 参数
+	if len(args) > 0 { // 第一个参数
+		languageCode = args[0]
+	}
+	if len(args) > 1 { // 第二个参数
+		nation = args[1]
+	}
+	if len(args) > 2 { // 第三个参数
+		resultCode = args[2]
+	}
 	var MultiLanguageShow models.TMultiLanguageShow
-	var msg string
 	if len(languageCode) == 0 {
 		languageCode = "EN"
 	}
@@ -40,14 +55,23 @@ func getMessage(languageCode, nation, resultCode string) string {
 		Where("language_code", languageCode).
 		Where("show_column", resultCode).Find(&MultiLanguageShow).Error
 	if err != nil {
-		msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, "Unknown Error")
+		logger.Error(err)
+		return defaultMsg
 	}
-	msg = fmt.Sprintf(`{"id":"10409","msg":"%v"}`, MultiLanguageShow.ShowWord)
+	result["msg"] = MultiLanguageShow.ShowWord
 	//错误需弹窗
 	if resultCode == "rechargeTradeBonus" || resultCode == "BonusBalanceTradeLack" {
-		msg = fmt.Sprintf(`{"id":"%v","msg":"%v"}`, MultiLanguageShow.Code, MultiLanguageShow.ShowWord)
+		result["id"] = MultiLanguageShow.Code
+		result["msg"] = MultiLanguageShow.ShowWord
 	}
-	return msg
+	// 将 Map 转换为 JSON 格式
+	jsonData, err := json.Marshal(result)
+	if err != nil {
+		logger.Error(err)
+		return defaultMsg
+	}
+	// 返回 JSON 数据
+	return string(jsonData)
 }
 
 // 提交下单
