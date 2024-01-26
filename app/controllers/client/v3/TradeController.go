@@ -30,8 +30,8 @@ func getMessage(args ...string) string {
 	result["id"] = "10409"
 	result["msg"] = "Unknown Error"
 	defaultMsg := `{"id":"10409","msg":"Unknown Error"}`
-	var languageCode, nation, resultCode string
-	// 提取 languageCode, nation, resultCode 参数
+	var languageCode, nation, resultCode, msgData string
+	// 提取 languageCode, nation, resultCode,replaceData 参数
 	if len(args) > 0 { // 第一个参数
 		languageCode = args[0]
 	}
@@ -41,6 +41,10 @@ func getMessage(args ...string) string {
 	if len(args) > 2 { // 第三个参数
 		resultCode = args[2]
 	}
+	if len(args) > 3 { // 第四个参数
+		msgData = args[3]
+	}
+
 	var MultiLanguageShow models.TMultiLanguageShow
 	if len(languageCode) == 0 {
 		languageCode = "EN"
@@ -63,6 +67,7 @@ func getMessage(args ...string) string {
 	if resultCode == "rechargeTradeBonus" || resultCode == "BonusBalanceTradeLack" {
 		result["id"] = MultiLanguageShow.Code
 		result["msg"] = MultiLanguageShow.ShowWord
+		result["data"] = msgData
 	}
 	// 将 Map 转换为 JSON 格式
 	jsonData, err := json.Marshal(result)
@@ -248,10 +253,10 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 		}
 		//调用bonus弹窗过滤规则
 
-		result := getBonusTradeRule(appUser)
+		result, replaceData := getBonusTradeRule(appUser)
 		logger.Info("bonus规则限制返回: %v", result)
 		if len(result) > 0 {
-			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, result))
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, result, replaceData))
 			return
 		}
 		ok := createTradingOrder(orderId, params, appUser, asset)
@@ -379,7 +384,7 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 	return false, ""
 }
 
-func getBonusTradeRule(appUser models.AppUser) string {
+func getBonusTradeRule(appUser models.AppUser) (string, string) {
 	DB := mysql.DB.Debug()
 	var rule models.BonusRule
 	err := DB.
@@ -400,16 +405,18 @@ func getBonusTradeRule(appUser models.AppUser) string {
 		Scan(&rule).Error
 	if err != nil {
 		logger.Error(err)
-		return "FailOperate"
+		return "FailOperate", ""
 	}
 	logger.Info("查询结果：", rule)
 	if rule.RechargeAmounts == 0 {
-		return "rechargeTradeBonus"
+		return "rechargeTradeBonus", ""
 	}
 	if rule.BonusAmounts > rule.RealAmounts {
-		return "BonusBalanceTradeLack"
+		var bonusTradeAmount = rule.RealAmounts - rule.BonusAmounts
+		var msgData = fmt.Sprintf(`{"bonusTradeAmount":"%f","userBalance":"%f"}`, bonusTradeAmount, appUser.Balance)
+		return "BonusBalanceTradeLack", msgData
 	}
-	return ""
+	return "", ""
 }
 
 // 决策运算算法工具类
