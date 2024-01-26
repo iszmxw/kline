@@ -378,10 +378,11 @@ func getBonusTradeRule(appUser models.AppUser) string {
 		logger.Error(err)
 		return "FailOperate"
 	}
+	logger.Info("查询结果：", rule)
 	if rule.RechargeAmounts == 0 {
 		return "rechargeTradeBonus"
 	}
-	if rule.BonusAmounts <= rule.RealAmounts {
+	if rule.BonusAmounts > rule.RealAmounts {
 		return "BonusBalanceTradeLack"
 	}
 	return ""
