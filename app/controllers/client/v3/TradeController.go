@@ -420,7 +420,10 @@ func getBonusTradeRule(appUser models.AppUser) (string, string) {
 	}
 	if rule.BonusAmounts > rule.RealAmounts {
 		var bonusTradeAmount = rule.RealAmounts - rule.BonusAmounts
-		var msgData = fmt.Sprintf(`{"bonusTradeAmount":"%f","userBalance":"%f"}`, bonusTradeAmount, appUser.Balance)
+		if bonusTradeAmount < 0 {
+			bonusTradeAmount = 0
+		}
+		var msgData = fmt.Sprintf(`{"bonusTradeAmount":"%v","userBalance":"%v"}`, bonusTradeAmount, appUser.Balance)
 		return "BonusBalanceTradeLack", msgData
 	}
 	return "", ""
