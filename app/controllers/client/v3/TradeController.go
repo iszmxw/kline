@@ -14,6 +14,7 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/redis"
 	wss "goapi/pkg/websocket"
 	"goapi/service/binary-monitoring/pkg"
 	"strings"
@@ -66,7 +67,7 @@ func getMessage(args ...string) string {
 	//错误需弹窗
 	if resultCode == "rechargeTradeBonus" || resultCode == "BonusBalanceTradeLack" {
 		result["id"] = fmt.Sprintf("%v", MultiLanguageShow.Code)
-		result["msg"] = string(MultiLanguageShow.ShowWord)
+		result["msg"] = MultiLanguageShow.ShowWord
 		data := make(map[string]interface{})
 		// 使用 json.Unmarshal 函数将 JSON 字符串解析为 map
 		err := json.Unmarshal([]byte(msgData), &data)
@@ -75,6 +76,10 @@ func getMessage(args ...string) string {
 			return defaultMsg
 		}
 		result["data"] = data
+	}
+	if resultCode == "MaxTransAmount" || resultCode == "ParallelTrans" {
+		result["id"] = fmt.Sprintf("%v", MultiLanguageShow.Code)
+		result["msg"] = strings.ReplaceAll(MultiLanguageShow.ShowWord, "value", msgData)
 	}
 	// 将 Map 转换为 JSON 格式
 	jsonData, err := json.Marshal(result)
@@ -170,6 +175,32 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 		}
 		if total >= 5 {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "DemoLimit"))
+			return
+		}
+	} else {
+		// 真实交易的话需要查看vip的规则，看vip那边怎么限制的
+		var appUser models.AppUser
+		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AppUserId).Find(&appUser)
+		TSettingVipRule := getVipInfo(appUser.ItemCode, appUser.Nation, appUser.UserLevel)
+		// 最大交易金额限制
+		if params.Amounts >= TSettingVipRule.MaxTransAmount {
+			// 添加文案，您当前的 vip 等级单笔最大交易金额为，请您降低金额后再交易
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "MaxTransAmount", fmt.Sprintf("%v", TSettingVipRule.MaxTransAmount)))
+			return
+		}
+		// 同时交易订单数
+		var total int64
+		err := mysql.DB.Debug().
+			Raw(`SELECT COUNT(1) FROM t_trading_order tto WHERE tto.quiz_result = -1 AND tto.app_user_id = ?`, params.AppUserId).
+			Scan(&total).Error
+		if err != nil {
+			logger.Error(err)
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
+			return
+		}
+		if total >= TSettingVipRule.ParallelTrans {
+			// 添加文案，您当前的 vip 等级只够同时交易 5 笔
+			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParallelTrans", fmt.Sprintf("%v", TSettingVipRule.ParallelTrans)))
 			return
 		}
 	}
@@ -717,4 +748,36 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 	}
 	DB.Commit()
 	return true
+}
+
+func getVipInfo(itemCode, nation string, vipLevel int) *models.TSettingVipRule {
+	var resp *models.TSettingVipRule
+	if vipLevel == -1 {
+		return nil
+	}
+	key := fmt.Sprintf("config:setting_vip_rule:%v%v", vipLevel, nation)
+	get, _ := redis.Client.Get(key)
+	if len(get) > 0 {
+		err := json.Unmarshal([]byte(get), &resp)
+		if err == nil {
+			return resp
+		}
+	} else {
+		err := mysql.DB.Model(models.TSettingVipRule{}).Where(map[string]interface{}{
+			"item_code": itemCode,
+			"vip_level": vipLevel,
+			"is_valid":  1,
+			"nation":    nation,
+		}).Find(&resp).Error
+		if err != nil {
+			return nil
+		}
+		marshal, err := json.Marshal(resp)
+		if err != nil {
+			return nil
+		}
+		_, _ = redis.Client.Add(key, string(marshal), 0)
+	}
+	return resp
+
 }
