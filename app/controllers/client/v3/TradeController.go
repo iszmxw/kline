@@ -65,9 +65,16 @@ func getMessage(args ...string) string {
 	result["msg"] = MultiLanguageShow.ShowWord
 	//错误需弹窗
 	if resultCode == "rechargeTradeBonus" || resultCode == "BonusBalanceTradeLack" {
-		result["id"] = MultiLanguageShow.Code
-		result["msg"] = MultiLanguageShow.ShowWord
-		result["data"] = msgData
+		result["id"] = fmt.Sprintf("%v", MultiLanguageShow.Code)
+		result["msg"] = string(MultiLanguageShow.ShowWord)
+		data := make(map[string]interface{})
+		// 使用 json.Unmarshal 函数将 JSON 字符串解析为 map
+		err := json.Unmarshal([]byte(msgData), &data)
+		if err != nil {
+			logger.Info("解析 JSON 失败:", err)
+			return defaultMsg
+		}
+		result["data"] = data
 	}
 	// 将 Map 转换为 JSON 格式
 	jsonData, err := json.Marshal(result)
