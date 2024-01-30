@@ -183,7 +183,7 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AppUserId).Find(&appUser)
 		TSettingVipRule := GetVipInfo(appUser.ItemCode, appUser.Nation, appUser.UserLevel)
 		// 最大交易金额限制
-		if params.Amounts >= TSettingVipRule.MaxTransAmount {
+		if params.Amounts > TSettingVipRule.MaxTransAmount {
 			// 添加文案，您当前的 vip 等级单笔最大交易金额为，请您降低金额后再交易
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "MaxTransAmount", fmt.Sprintf("%v", TSettingVipRule.MaxTransAmount)))
 			return
@@ -198,7 +198,7 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 			return
 		}
-		if total >= TSettingVipRule.ParallelTrans {
+		if total > TSettingVipRule.ParallelTrans {
 			// 添加文案，您当前的 vip 等级只够同时交易 5 笔
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParallelTrans", fmt.Sprintf("%v", TSettingVipRule.ParallelTrans)))
 			return
