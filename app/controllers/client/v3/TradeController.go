@@ -181,7 +181,7 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 		// 真实交易的话需要查看vip的规则，看vip那边怎么限制的
 		var appUser models.AppUser
 		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", params.AppUserId).Find(&appUser)
-		TSettingVipRule := getVipInfo(appUser.ItemCode, appUser.Nation, appUser.UserLevel)
+		TSettingVipRule := GetVipInfo(appUser.ItemCode, appUser.Nation, appUser.UserLevel)
 		// 最大交易金额限制
 		if params.Amounts >= TSettingVipRule.MaxTransAmount {
 			// 添加文案，您当前的 vip 等级单笔最大交易金额为，请您降低金额后再交易
@@ -753,7 +753,7 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 	return true
 }
 
-func getVipInfo(itemCode, nation string, vipLevel int) *models.TSettingVipRule {
+func GetVipInfo(itemCode, nation string, vipLevel int) *models.TSettingVipRule {
 	var resp *models.TSettingVipRule
 	if vipLevel == -1 {
 		return nil
