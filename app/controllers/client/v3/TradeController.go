@@ -68,14 +68,17 @@ func getMessage(args ...string) string {
 	if resultCode == "rechargeTradeBonus" || resultCode == "BonusBalanceTradeLack" {
 		result["id"] = fmt.Sprintf("%v", MultiLanguageShow.Code)
 		result["msg"] = MultiLanguageShow.ShowWord
-		data := make(map[string]interface{})
 		// 使用 json.Unmarshal 函数将 JSON 字符串解析为 map
-		err := json.Unmarshal([]byte(msgData), &data)
-		if err != nil {
-			logger.Info("解析 JSON 失败:", err)
-			return defaultMsg
+		if len(msgData) > 0 {
+			data := make(map[string]interface{})
+			err := json.Unmarshal([]byte(msgData), &data)
+			if err != nil {
+				logger.Info("msgData", msgData)
+				logger.Info("解析 JSON 失败:", err)
+				return defaultMsg
+			}
+			result["data"] = data
 		}
-		result["data"] = data
 	}
 	if resultCode == "MaxTransAmount" || resultCode == "ParallelTrans" {
 		result["id"] = fmt.Sprintf("%v", MultiLanguageShow.Code)
@@ -447,6 +450,7 @@ func getBonusTradeRule(appUser models.AppUser) (string, string) {
 	}
 	logger.Info("查询结果：", rule)
 	if rule.RechargeAmounts == 0 {
+		logger.Error(errors.New("充值金额为零"))
 		return "rechargeTradeBonus", ""
 	}
 	if rule.BonusAmounts > rule.RealAmounts {
