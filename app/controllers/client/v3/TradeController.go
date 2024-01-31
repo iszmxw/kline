@@ -294,7 +294,7 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 		}
 		//调用bonus弹窗过滤规则
 
-		result, replaceData := getBonusTradeRule(appUser)
+		result, replaceData := GetBonusTradeRule(appUser)
 		logger.Info("bonus规则限制返回: %v", result)
 		if len(result) > 0 {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, result, replaceData))
@@ -425,24 +425,30 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 	return false, ""
 }
 
-func getBonusTradeRule(appUser models.AppUser) (string, string) {
+func GetBonusTradeRule(appUser models.AppUser) (string, string) {
 	DB := mysql.DB.Debug()
 	var rule models.BonusRule
 	err := DB.
 		Raw(`SELECT
-			SUM(CASE WHEN tt.amount_type = 1 THEN amount ELSE 0 END) AS real_amounts,
-			SUM(CASE WHEN tt.amount_type = 2 THEN amount ELSE 0 END) AS bonus_amounts,
-			IFNULL(SUM(tr.amount), 0) AS recharge_amounts
-		FROM
-			t_trading_order tt
-				INNER JOIN t_recharge_order tr ON tt.app_user_id = tr.app_user_id
-		WHERE
-			tt.app_user_id = ?
-		  AND tt.nation = ?
-		  AND tt.item_code = ?
-		  AND tr.status = '02'
-		  AND tr.nation = ?
-		  AND tr.item_code = ?`, appUser.AppUserId, appUser.Nation, appUser.ItemCode, appUser.Nation, appUser.ItemCode).
+					(SELECT COALESCE(SUM(tr.amount), 0) 
+					 FROM t_recharge_order tr 
+					 WHERE tr.app_user_id = ?
+					   AND tr.status = '02'
+					   AND tr.nation = ?
+					   AND tr.item_code = ?) AS recharge_amounts,
+					(SELECT COALESCE(SUM(CASE WHEN tt.amount_type = 1 THEN tt.amounts ELSE 0 END), 0) AS real_amounts
+					 FROM t_trading_order tt
+					 WHERE tt.app_user_id = ?
+					   AND tt.nation = ?
+					   AND tt.item_code = ?) AS real_amounts,
+					(SELECT COALESCE(SUM(CASE WHEN tt.amount_type = 2 THEN tt.amounts ELSE 0 END), 0) AS bonus_amounts
+					 FROM t_trading_order tt
+					 WHERE tt.app_user_id = ?
+					   AND tt.nation = ?
+					   AND tt.item_code = ?) AS bonus_amounts;`,
+			appUser.AppUserId, appUser.Nation, appUser.ItemCode,
+			appUser.AppUserId, appUser.Nation, appUser.ItemCode,
+			appUser.AppUserId, appUser.Nation, appUser.ItemCode).
 		Scan(&rule).Error
 	if err != nil {
 		logger.Error(err)
