@@ -459,7 +459,7 @@ func GetBonusTradeRule(appUser models.AppUser) (string, string) {
 		logger.Error(errors.New("充值金额为零"))
 		return "rechargeTradeBonus", ""
 	}
-	if rule.BonusAmounts > rule.RealAmounts {
+	if rule.BonusAmounts >= rule.RealAmounts {
 		var bonusTradeAmount = rule.RealAmounts - rule.BonusAmounts
 		if bonusTradeAmount < 0 {
 			bonusTradeAmount = 0
