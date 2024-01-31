@@ -53,6 +53,49 @@ func (t *TimeNormal) Scan(v interface{}) error {
 	return fmt.Errorf("can not convert %v to timestamp", v)
 }
 
+type TimeUnixMilli struct { // 内嵌方式（推荐）
+	time.Time
+}
+
+func (t *TimeUnixMilli) MarshalJSON() ([]byte, error) {
+	value, err := t.Value()
+	if err != nil || value == nil {
+		return json.Marshal(nil)
+	}
+	return json.Marshal(t.UnixMilli())
+}
+
+func (t *TimeUnixMilli) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	var timestamp int64
+	if err := json.Unmarshal(data, &timestamp); err != nil {
+		return err
+	}
+	t.Time = time.UnixMilli(timestamp)
+	return nil
+}
+
+// Value insert timestamp into mysql need this function.
+func (t *TimeUnixMilli) Value() (driver.Value, error) {
+	var zeroTime time.Time
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
+		return nil, nil
+	}
+	return t.Time, nil
+}
+
+// Scan value time.Time
+func (t *TimeUnixMilli) Scan(v interface{}) error {
+	value, ok := v.(time.Time)
+	if ok {
+		*t = TimeUnixMilli{Time: value}
+		return nil
+	}
+	return fmt.Errorf("can not convert %v to timestamp", v)
+}
+
 // 获取本周几的开始时间
 
 func GetThisWeekStartTime(start string) time.Time {
