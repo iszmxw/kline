@@ -294,7 +294,7 @@ func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTrad
 		}
 		//调用bonus弹窗过滤规则
 
-		result, replaceData := GetBonusTradeRule(appUser)
+		result, replaceData := GetBonusTradeRule(appUser, params.Amounts)
 		logger.Info("bonus规则限制返回: %v", result)
 		if len(result) > 0 {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, result, replaceData))
@@ -425,7 +425,7 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 	return false, ""
 }
 
-func GetBonusTradeRule(appUser models.AppUser) (string, string) {
+func GetBonusTradeRule(appUser models.AppUser, amonuts float64) (string, string) {
 	DB := mysql.DB.Debug()
 	var rule models.BonusRule
 	err := DB.
@@ -459,8 +459,16 @@ func GetBonusTradeRule(appUser models.AppUser) (string, string) {
 		logger.Error(errors.New("充值金额为零"))
 		return "rechargeTradeBonus", ""
 	}
+	var bonusTradeAmount = rule.RealAmounts - rule.BonusAmounts
 	if rule.BonusAmounts >= rule.RealAmounts {
-		var bonusTradeAmount = rule.RealAmounts - rule.BonusAmounts
+		if bonusTradeAmount < 0 {
+			bonusTradeAmount = 0
+		}
+		var msgData = fmt.Sprintf(`{"bonusTradeAmount":"%v","userBalance":"%v"}`, bonusTradeAmount, appUser.Balance)
+		return "BonusBalanceTradeLack", msgData
+	}
+	//可交易bonus < 交易金额
+	if bonusTradeAmount < amonuts {
 		if bonusTradeAmount < 0 {
 			bonusTradeAmount = 0
 		}
