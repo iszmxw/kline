@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# 设置脚本在任何命令返回非零退出码时立即退出
+set -e
+
+# 检查是否提供了镜像名称作为参数
+if [ -z "$1" ]; then
+  echo "请提供镜像名称作为参数。示例："
+  echo " client/web/email/kline"
+  exit 1
+fi
+
+# 设置变量
+IMAGE_NAME="iqoption-$1"
+IMAGE_TAG="latest"
+REMOTE_IMAGE="47.243.109.20:5000/$IMAGE_NAME:$IMAGE_TAG"
+DOCKERFILE="Dockerfile.$1.dockerfile"
+
+# 打包镜像
+build_image() {
+  echo -e "\033[35m打包开始...\033[0m"
+  docker build -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+  echo -e "\033[35m镜像打包完成...\033[0m"
+}
+
+# 添加标签
+tag_image() {
+  echo -e "\033[35m添加标签开始...\033[0m"
+  docker tag "$IMAGE_NAME" "$REMOTE_IMAGE"
+  echo -e "\033[35m添加标签完成...\033[0m"
+}
+
+# 上传镜像
+push_image() {
+  echo -e "\033[35m上传客户端镜像...\033[0m"
+  docker push "$REMOTE_IMAGE"
+  echo -e "\033[35m上传成功...\033[0m"
+}
+
+# 休息片刻
+rest() {
+  echo -e "\033[35m休息片刻 3s ...\033[0m"
+  sleep 3
+}
+
+# 获取当前目录和本机 IP 地址
+get_info() {
+  CURRENT_DIR=$(pwd)
+  LOCAL_IP=$(curl -s ip.sb)
+
+  echo "当前目录: $CURRENT_DIR"
+  echo "本机 IP 地址: $LOCAL_IP"
+}
+
+# 执行构建、标记、推送镜像以及获取信息
+build_image
+tag_image
+rest
+push_image
+get_info
