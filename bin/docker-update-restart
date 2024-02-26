@@ -11,7 +11,7 @@ if [ -z "$1" ]; then
 fi
 
 # 设置变量
-SERVICE_NAME="$1"
+SERVICE_NAME="xw-$1"
 BINARY_DIR="/home/yezhiming/binary"
 
 # 设置工作目录
