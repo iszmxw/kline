@@ -2,7 +2,7 @@ version: '3'
 
 services:
   xw-client:
-    image: iszmxw/iqoption-client:latest
+    image: hub.ssmartoption.com/iqoption-client:latest
     container_name: xw-client
     restart: always
     environment:
@@ -21,7 +21,7 @@ services:
         max-file: "3"
 
   xw-email:
-    image: iszmxw/iqoption-email:latest
+    image: hub.ssmartoption.com/iqoption-email:latest
     container_name: xw-email
     restart: always
     environment:
@@ -40,7 +40,7 @@ services:
         max-file: "3"
 
   xw-web:
-    image: iszmxw/iqoption-web:latest
+    image: hub.ssmartoption.com/iqoption-web:latest
     container_name: xw-web
     restart: always
     environment:
@@ -59,7 +59,7 @@ services:
         max-file: "3"
 
   xw-kline:
-    image: iszmxw/iqoption-kline:latest
+    image: hub.ssmartoption.com/iqoption-kline:latest
     container_name: xw-kline
     restart: always
     environment:
