@@ -13,7 +13,7 @@ fi
 # 设置变量
 IMAGE_NAME="iqoption-$1"
 IMAGE_TAG="latest"
-REMOTE_IMAGE="47.243.109.20:5000/$IMAGE_NAME:$IMAGE_TAG"
+REMOTE_IMAGE="127.0.0.1:5000/$IMAGE_NAME:$IMAGE_TAG"
 DOCKERFILE="Dockerfile.$1.dockerfile"
 
 # 打包镜像
