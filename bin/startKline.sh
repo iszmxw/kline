@@ -1,0 +1,11 @@
+#!/bin/bash
+./iqoption-go-binance --APP_PORT=01 >/dev/null 2>error_binance.log &
+./iqoption-go-hsb --APP_PORT=02 >/dev/null 2>error_hsb.log &
+./iqoption-go-huobi --APP_PORT=03 >/dev/null 2>error_huobi.log &
+./iqoption-go-mql5 --APP_PORT=04 >/dev/null 2>error_mql5.log &
+./iqoption-go-iqoption --APP_PORT=05 >/dev/null 2>error_iqoption.log &
+./iqoption-go-binomo --APP_PORT=06 >/dev/null 2>error_binomo.log &
+./iqoption-go-olymptrade --APP_PORT=07 >/dev/null 2>error_binomo.log &
+./iqoption-go-raceoption --APP_PORT=08 >/dev/null 2>error_binomo.log &
+./iqoption-go-monitoring --APP_PORT=09 >/dev/null 2>error_monitoring.log &
+wait
