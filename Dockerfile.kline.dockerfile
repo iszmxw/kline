@@ -33,6 +33,9 @@ WORKDIR /home/yezhiming/binary/kline
 # 将打包后的程序拷贝到容器中
 COPY --from=build /work/binary/kline /home/yezhiming/binary/kline
 
+# 复制启动脚本到容器
+COPY bin/startKline.sh /home/yezhiming/binary/kline/startKline.sh
+
 # 创建配置文件挂载目录
 RUN mkdir -p /home/yezhiming/binary/kline/config
 
