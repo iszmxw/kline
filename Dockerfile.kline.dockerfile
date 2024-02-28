@@ -19,7 +19,8 @@ RUN GOOS=linux GOARCH=amd64 go build -o iqoption-go-binance service/kline-binanc
     GOOS=linux GOARCH=amd64 go build -o iqoption-go-raceoption service/kline-raceoption/main.go && \
     # 打包 binary-monitoring 插针服务
     GOOS=linux GOARCH=amd64 go build -o iqoption-go-monitoring service/binary-monitoring/main.go && \
-    mv iqoption-go-* binary/kline
+    mv iqoption-go-* binary/kline && \
+    mv bin/startKline.sh binary/kline
 
 # 运行阶段 使用简洁的作为基础镜像
 FROM --platform=linux/amd64 alpine:latest
@@ -32,9 +33,6 @@ WORKDIR /home/yezhiming/binary/kline
 
 # 将打包后的程序拷贝到容器中
 COPY --from=build /work/binary/kline /home/yezhiming/binary/kline
-
-# 复制启动脚本到容器
-COPY bin/startKline.sh /home/yezhiming/binary/kline/startKline.sh
 
 # 创建配置文件挂载目录
 RUN mkdir -p /home/yezhiming/binary/kline/config
