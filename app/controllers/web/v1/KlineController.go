@@ -567,7 +567,7 @@ func (h *KlineController) KlineSourceList(c *gin.Context) {
 	// 设置分页参数
 	table = table.
 		Select(models.Prefix("$_trading_assets_source.*,$_trading_assets.assets_name,$_trading_assets.assets_logo_url,$_trading_assets.sort")).
-		Joins(models.Prefix("right join $_trading_assets on $_trading_assets.assets_code=$_trading_assets_source.assets_code  AND $_trading_assets.item_code=$_trading_assets_source.item_code")).
+		Joins(models.Prefix("right join $_trading_assets on $_trading_assets.assets_code=$_trading_assets_source.assets_code")).
 		Order(models.Prefix("$_trading_assets.sort asc")).
 		Offset(int(pageList.Offset)).
 		Limit(int(pageList.PageSize))
