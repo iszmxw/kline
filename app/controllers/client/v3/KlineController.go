@@ -53,6 +53,22 @@ func conversionData(data map[string]interface{}) map[string]interface{} {
 	return result
 }
 
+func SubRepeatLock(ws *wss.WsConn, ID string) bool {
+	// 08 和 09 连接上 socket 后只允许订阅一次
+	allow := []string{"08", "09"}
+	if !helpers.InArray(ID, allow) {
+		return false
+	}
+	// 检查是否已经订阅过
+	if ws.Subscriptions[ID] {
+		logger.Error(errors.New("请勿重复订阅"))
+		return true
+	} else {
+		ws.Subscriptions[ID] = true
+	}
+	return false
+}
+
 // WsIndexHandler socket 负责转发redis缓存的socket数据
 func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	var AppUserId string
@@ -139,6 +155,10 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 					goto END
 				}
 			}
+		}
+		if SubRepeatLock(ws, ID) {
+			// 用户重复订阅进行跳过
+			continue
 		}
 		switch true {
 		case ws.IsClose:
@@ -578,20 +598,18 @@ func PushMessage(ws *wss.WsConn, params string) {
 		return
 	}
 	// 检测该握手是否已经有一个订阅，如果有，则通知结束上一个订阅结束，然后再开启新的订阅
-	SubKey := fmt.Sprintf("ws_index:%v:socket_request", ws.SecWebSocketKey)
-	SubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
-	if SubAssetsCode == AssetsCode {             // 当前订阅的资产已存
+	if ws.SubAssetsCode == AssetsCode { // 当前订阅的资产已存
 		SocketResp(ws, websocket.TextMessage, `{"id":"10411","msg":"please no repeat sub"}`)
 		logger.Error(errors.New(fmt.Sprintf("当前订阅的资产{%v}已存在请勿重复订阅，本次请求SOCKETID==%v", AssetsCode, ws.SecWebSocketKey)))
 		return
 	}
-	_, _ = redis.Client.Add(SubKey, AssetsCode, 60*60*4) // 当前请求正在订阅的资产，4小时失效
+	ws.SubAssetsCode = AssetsCode
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
-		HisSubAssetsCode, _ := redis.Client.Get(SubKey) // 当前请求正在订阅的资产
+		HisSubAssetsCode := ws.SubAssetsCode
 		if len(HisSubAssetsCode) > 0 {
 			if HisSubAssetsCode != AssetsCode { // 关闭释放掉历史的订阅
-				logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", AssetsCode, SubAssetsCode, ws.SecWebSocketKey)))
+				logger.Error(errors.New(fmt.Sprintf("资产【%v】结束订阅，正在订阅的是【%v】本次请求SOCKETID==%v", AssetsCode, ws.SubAssetsCode, ws.SecWebSocketKey)))
 				goto END
 			}
 		}
@@ -826,17 +844,6 @@ STOP:
 // 推送Rate socket消息
 
 func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
-	// 2 小时内一个长连接禁止重复订阅相同的 topic
-	checkMsg := fmt.Sprintf("ws_return_rate:%v:socket_request:01", ws.SecWebSocketKey)
-	if redis.Client.CheckExist(checkMsg) {
-		logger.Info("该订阅已存在，请勿重新订阅")
-		return
-	}
-	_, redisAddErr := redis.Client.Add(checkMsg, "subInfo", 30*60) // 半个小时内不允许重复请求
-	if redisAddErr != nil {
-		logger.Error(redisAddErr)
-		return
-	}
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		if len(params.ItemCode) <= 0 {
@@ -899,9 +906,6 @@ END:
 
 func PushUserInfo(ws *wss.WsConn) {
 	AppUserId := ws.AppUserId
-	// 2 小时内一个长连接禁止重复订阅相同的 topic
-	onceRequest := fmt.Sprintf("ws_return_rate:%v:socket_request:02", ws.SecWebSocketKey)
-	nums := redis.Client.Incr(onceRequest) // 不允许重复请求
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		var AppUser response.AppUser
@@ -988,12 +992,6 @@ func PushUserInfo(ws *wss.WsConn) {
 		}
 		// 3秒推送一次消息
 		time.Sleep(time.Second * 3)
-		// 返回数据给用户
-		if nums > 1 {
-			nums = redis.Client.Decr(onceRequest) // 不允许重复请求
-			logger.Info("该订阅已存在，重复执行一次后销毁")
-			goto END
-		}
 	}
 END:
 	logger.Info("已经跳出协诚的循环推送")
