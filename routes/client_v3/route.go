@@ -61,6 +61,32 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				// 测试mongo
 				other.Any("/mongo.json", ClientV3Group.OtherController.Mongo)
 			}
+			// TODO:: 新接口开发中
+			// 用户
+			user := V3Route.Group("/user")
+			{
+				// 注册
+				user.Any("/register.json", ClientV3Group.UserController.RegisterHandler)
+				// 登录
+				user.Any("/login.json", ClientV3Group.UserController.LoginHandler)
+				// 退出
+				user.Any("/logout.json", ClientV3Group.UserController.LogoutHandler)
+				// 修改密码
+				user.Any("/changePassword.json", ClientV3Group.UserController.ChangePasswordHandler)
+				// 注销
+				user.Any("/cancelingAccount.json", ClientV3Group.UserController.CancelingAccountHandler)
+			}
+
+			// 绑定先关操作
+			bind := V3Route.Group("/bind")
+			{
+				// 绑定推送令牌
+				bind.Any("/bindToken.json", ClientV3Group.BindController.BindTokenHandler)
+				// 解绑推送令牌
+				bind.Any("/unbindToken.json", ClientV3Group.BindController.UnbindTokenHandler)
+				// 绑定用户邮箱
+				bind.Any("/bindAccountEmail.json", ClientV3Group.BindController.BindAccountEmailHandler)
+			}
 		}
 
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"goapi/pkg/logger"
 	"goapi/pkg/redis"
+	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
 	"goapi/pkg/xtime"
 	"strings"
@@ -16,12 +17,15 @@ type BaseController struct {
 }
 
 type Group struct {
-	BaseController
-	KlineController
 	AgentController
-	PromoteController
+	BaseController
+	BindController
 	ConfigController
+	KlineController
 	OtherController
+	PromoteController
+	TradeController
+	UserController
 }
 
 // 响应消息
@@ -45,6 +49,20 @@ func SocketResp(ws *wss.WsConn, messageType int, msg string) {
 		logger.Error(WriteMessageErr)
 		wss.WsClose(ws)
 	}
+}
+
+func conversionData(data map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, val := range data {
+		vType := fmt.Sprintf("%T", val)
+		if vType == "map[string]interface {}" {
+			tempRes := conversionData(val.(map[string]interface{}))
+			result[utils.GetEncryptionString(key)] = tempRes
+		} else {
+			result[utils.GetEncryptionString(key)] = val
+		}
+	}
+	return result
 }
 
 func IsDie(HeartBeatingKey string) bool { // 检测是否死掉

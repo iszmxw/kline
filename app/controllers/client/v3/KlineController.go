@@ -33,23 +33,7 @@ import (
 // k线图服务
 
 type KlineController struct {
-	BaseController
-}
-
-var Trade = new(TradeController)
-
-func conversionData(data map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for key, val := range data {
-		vType := fmt.Sprintf("%T", val)
-		if vType == "map[string]interface {}" {
-			tempRes := conversionData(val.(map[string]interface{}))
-			result[utils.GetEncryptionString(key)] = tempRes
-		} else {
-			result[utils.GetEncryptionString(key)] = val
-		}
-	}
-	return result
+	TradeController
 }
 
 func SubRepeatLock(ws *wss.WsConn, ID string) bool {
@@ -230,7 +214,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 				params.AppUserId = AppUserId
 				params.LanguageCode = c.Query("languageCode")
 				params.Nation = c.Query("nation")
-				go Trade.SubmitTrade(ws, params)
+				go SubmitTrade(ws, params)
 				// 只执行一次 监控消息通知
 				ws.OnceNotice.Do(func() {
 					go PushNoticePlus(ws)

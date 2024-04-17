@@ -24,6 +24,7 @@ import (
 // 交易模块
 
 type TradeController struct {
+	BaseController
 }
 
 func getMessage(args ...string) string {
@@ -96,7 +97,7 @@ func getMessage(args ...string) string {
 
 // 提交下单
 
-func (h *TradeController) SubmitTrade(ws *wss.WsConn, params requests.SubmitTradeParams) {
+func SubmitTrade(ws *wss.WsConn, params requests.SubmitTradeParams) {
 	logger.RequestId = ws.SecWebSocketKey
 	if params.Amounts <= 0 {
 		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParamsCanNotBeNull"))
