@@ -19,7 +19,6 @@ import (
 	"goapi/pkg/notice/gotify"
 	NoticeMail "goapi/pkg/notice/mail"
 	"goapi/pkg/redis"
-	"goapi/pkg/smo"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
 	"strings"
@@ -106,7 +105,6 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 		redis.Client.SAdd("onlineConnect", ws.Ip)
 		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", ws.AppUserId).Update("online", 1)
 	}
-	//go HeartBeatingWatch(ws, socketId)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		// 读取用户客户端ws中订阅的 topic
@@ -861,21 +859,6 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)
 			return
-		}
-		if "IOS" == params.ItemCode {
-			// IOS 和 SMO 的数据保持一致，但是数据的 状态 还是按照自己爬取的数据源来决定
-			PushRateData2 := smo.GetPushRateData("SMO", params.Nation)
-			for i := 0; i < len(PushRateData2); i++ {
-				for j := 0; j < len(PushRateData); j++ {
-					if PushRateData2[i].AssetsCode == PushRateData[j].AssetsCode {
-						PushRateData2[i].IsValid = PushRateData[j].IsValid
-						PushRateData2[i].IsShow = PushRateData[j].IsShow
-						PushRateData2[i].AssetsStatus = PushRateData[j].AssetsStatus
-						break // 找到匹配的AssetsCode后可以跳出内部循环
-					}
-				}
-			}
-			PushRateData = PushRateData2
 		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "09",
