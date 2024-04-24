@@ -836,9 +836,7 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 		}
 		var PushRateData []response.PushRateData
 		DB := mysql.DB
-		err := DB.Model(models.TradingAssets{}).
-			Where("item_code", params.ItemCode).
-			Find(&PushRateData).Error
+		err := DB.Model(models.TradingAssets{}).Find(&PushRateData).Error
 		if err != nil {
 			SocketResp(ws, websocket.TextMessage, `{"id":"10409","msg":"no data"}`)
 			logger.Error(err)

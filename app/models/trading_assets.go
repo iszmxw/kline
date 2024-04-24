@@ -8,7 +8,6 @@ import (
 
 type TradingAssets struct {
 	Id                  int64     `json:"id" gorm:"column:id; PRIMARY_KEY"`                        //资产表主键ID
-	ItemCode            string    `json:"item_code" gorm:"column:item_code"`                       // 应用编码
 	AssetsName          string    `json:"assets_name" gorm:"column:assets_name"`                   // 资产名称
 	AssetsCode          string    `json:"assets_code" gorm:"column:assets_code"`                   // 资产编码
 	AssetsStatus        int       `json:"assets_status" gorm:"column:assets_status"`               // 资产状态 1正常 2休市 3下架
@@ -35,6 +34,9 @@ type TradingAssets struct {
 	VolatilityAmplitude float64   `json:"volatility_amplitude" gorm:"column:volatility_amplitude"` // 波动幅度
 	VolatilityFrequency float64   `json:"volatility_frequency" gorm:"column:volatility_frequency"` // 波动频率
 	MonitoringNumber    int       `json:"monitoring_number" gorm:"column:monitoring_number"`       // 波动小数点位数
+	AutoRiskControl     int       `json:"auto_risk_control" gorm:"column:auto_risk_control"`       // 自动风控 1-开启自动 0-手动
+	TargetProfitRate    float64   `json:"target_profit_rate" gorm:"column:target_profit_rate"`     // 目标利润率
+	IsProfitRate        int       `json:"is_profit_rate" gorm:"column:is_profit_rate"`             // 是否开启利润率浮动 0-否 1-是
 }
 
 type SleepTime struct {

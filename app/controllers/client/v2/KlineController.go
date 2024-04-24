@@ -730,14 +730,11 @@ func PushNotice(socketId string, messageType int, ws *wss.WsConn, subInfo string
 		return
 	}
 	if len(TradeOrderInfo.ItemCode) == 0 {
-		TradeOrderInfo.ItemCode = config.GetString("app.item_code")
+		TradeOrderInfo.ItemCode = ws.ItemCode
 	}
 	// 获取交易资产的小数点位数
 	var TradingAssets models.TradingAssets
-	mysql.DB.Debug().Model(models.TradingAssets{}).
-		Where("item_code", TradeOrderInfo.ItemCode).
-		Where("assets_code", TradeOrderInfo.AssetsCode).
-		Find(&TradingAssets)
+	mysql.DB.Debug().Model(models.TradingAssets{}).Where("assets_code", TradeOrderInfo.AssetsCode).Find(&TradingAssets)
 	if TradingAssets.Id <= 0 {
 		logger.Error(errors.New("查询错误"))
 		return
@@ -921,9 +918,7 @@ func PushRate(socketId string, messageType int, ws *wss.WsConn, subInfo string) 
 		}
 		var PushRateData []response.PushRateData
 		DB := mysql.DB
-		err := DB.Model(models.TradingAssets{}).
-			Where("item_code", SubNationInfo.ItemCode).
-			Find(&PushRateData).Error
+		err = DB.Model(models.TradingAssets{}).Find(&PushRateData).Error
 		if err != nil {
 			ws.Mux.Lock()
 			_ = ws.Conn.WriteMessage(messageType, []byte(`{"id":"10409","msg":"no data"}`))

@@ -229,7 +229,6 @@ func Log(logData utils.LogData) {
 	}
 	DB := mysql.DB.Debug()
 	err := DB.Model(models.TradingAssets{}).
-		Where("item_code", logData.ItemCode).
 		Where("assets_code", logData.AssetsCode).
 		Where("is_valid", 1).
 		Where("is_show", 1).
@@ -245,7 +244,6 @@ func Log(logData utils.LogData) {
 	} else {
 		DB.Begin()
 		err = DB.Model(models.TradingAssets{}).
-			Where("item_code", logData.ItemCode).
 			Where("assets_code", logData.AssetsCode).
 			Where("is_valid", 1).
 			Where("is_show", 1).
