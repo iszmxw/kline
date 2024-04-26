@@ -7,6 +7,9 @@ WORKDIR /work
 # 将本地代码拷贝到容器中
 COPY . .
 
+# 设置 Go 模块代理
+ENV GOPROXY="https://goproxy.cn"
+
 # 编译应用程序
 RUN GOOS=linux GOARCH=amd64 go build -o iqoption-client . && \
     mv iqoption-client binary/client
