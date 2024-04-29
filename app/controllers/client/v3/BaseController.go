@@ -28,6 +28,11 @@ type Group struct {
 	UserController
 }
 
+const NoData = `{"id":"10409","msg":"no data"}`
+const NoSub = `{"id":"10407","msg":"no sub"}`
+const Pong = `{"id":"03","msg":"pong"}`
+const TokenErr = `{"id":"10409","msg":"token error"}`
+
 // 响应消息
 
 func SocketResp(ws *wss.WsConn, messageType int, msg string) {
@@ -42,6 +47,7 @@ func SocketResp(ws *wss.WsConn, messageType int, msg string) {
 		message, _ := json.Marshal(result)
 		msg = string(message)
 	}
+	logger.Info(ws.Uuid, "---", msg)
 	ws.Mux.Lock()
 	WriteMessageErr := ws.Conn.WriteMessage(messageType, []byte(msg))
 	ws.Mux.Unlock()
