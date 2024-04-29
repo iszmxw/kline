@@ -111,9 +111,9 @@ cp service/huobi/huobi.service /etc/systemd/system/huobi.service
 ```shell
 vim /etc/systemd/system/huobi.service
 # 程序的工作路径
-WorkingDirectory=/mnt/hgfs/docker_company/www/site/YC/IQOptionPro/
+WorkingDirectory=/mnt/hgfs/docker_company/www/site/YC/IQOPTION/
 # 程序的执行路径
-ExecStart=/mnt/hgfs/docker_company/www/site/YC/IQOptionPro/huobiService
+ExecStart=/mnt/hgfs/docker_company/www/site/YC/IQOPTION/huobiService
 ```
 
 - 启动服务
