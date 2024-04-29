@@ -47,7 +47,7 @@ func SocketResp(ws *wss.WsConn, messageType int, msg string) {
 		message, _ := json.Marshal(result)
 		msg = string(message)
 	}
-	logger.Info(ws.Uuid, "---", msg)
+	//logger.Info(ws.Uuid, "---", msg)
 	ws.Mux.Lock()
 	WriteMessageErr := ws.Conn.WriteMessage(messageType, []byte(msg))
 	ws.Mux.Unlock()
