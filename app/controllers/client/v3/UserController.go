@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"goapi/app/requests"
 	"goapi/pkg/echo"
+	"goapi/pkg/helpers"
 	"goapi/pkg/validate"
 )
 
@@ -16,19 +17,16 @@ type UserController struct {
 
 // RegisterHandler 注册
 func (h *UserController) RegisterHandler(c *gin.Context) {
-	deviceidentity := c.GetHeader("deviceidentity")
-	issecert := c.GetHeader("issecert")
-	sign := c.GetHeader("sign")
-	token := c.GetHeader("token")
-	fmt.Println(issecert, sign, token)
-	if len(deviceidentity) > 0 {
-
-	}
-	//res := address.GetMessageByIp(c.ClientIP())
+	HeaderParams := getHeaderParams(c)
+	fmt.Println(HeaderParams.IsSecret, HeaderParams.Sign, HeaderParams.Token)
 	var params requests.UserRegisterParams
 	_ = c.Bind(&params)
 	// 数据验证
 	if validate.ParamsError(c, params) {
+		return
+	}
+	if !helpers.IsEmail(params.Account) {
+		echo.Error(c, "ParamsError", "：邮箱格式不正确")
 		return
 	}
 	c.Request.Header.Set("Language", params.LanguageCode)

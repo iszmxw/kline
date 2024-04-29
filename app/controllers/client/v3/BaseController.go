@@ -2,15 +2,12 @@ package v3
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"goapi/pkg/logger"
-	"goapi/pkg/redis"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
-	"goapi/pkg/xtime"
 	"strings"
-	"time"
 )
 
 type BaseController struct {
@@ -71,38 +68,26 @@ func conversionData(data map[string]interface{}) map[string]interface{} {
 	return result
 }
 
-func IsDie(HeartBeatingKey string) bool { // 检测是否死掉
-	var isDie bool
-	// 检测心跳活跃
-	HeartBeatingTime, _ := redis.Client.Get(HeartBeatingKey)
-	if len(HeartBeatingTime) > 0 {
-		nowTime := time.Now().Unix()
-		HeartBeatTime := xtime.Parse(HeartBeatingTime).Unix()
-		interval := nowTime - HeartBeatTime // 心跳间隔
-		//logger.Info(fmt.Sprintf("nowTime(%v) - HeartBeatTime(%v)=%v", nowTime, HeartBeatTime, interval))
-		if interval > 30 {
-			logger.Error(errors.New("30秒无心跳，主动断开"))
-			isDie = true
-		}
-	} else {
-		// 处理心跳数据
-		currentTime := time.Now().Format("2006-01-02 15:04:05")
-		_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
-	}
-	return isDie
+type Header struct {
+	// 应用信息
+	DeviceIdentity string `json:"deviceidentity"`
+	IsSecret       string `json:"issecert"`
+	Sign           string `json:"sign"`
+	Token          string `json:"token"`
+	Version        string `json:"version"`
+	NationLanguage string `json:"nationlanguage"`
+	UserAgent      string `json:"User-Agent"`
+	ContentType    string `json:"Content-Type"`
 }
 
-// 心跳观测
-
-func HeartBeatingWatch(ws *wss.WsConn, socketId string) {
-	for !ws.IsClose {
-		HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
-		if IsDie(HeartBeatingKey) {
-			goto STOP
-		}
-		time.Sleep(time.Millisecond * 1000) // 每隔1000
-	}
-STOP:
-	logger.Error(errors.New("暂无心跳关闭链接"))
-	wss.WsClose(ws)
+func getHeaderParams(c *gin.Context) (Header Header) {
+	Header.DeviceIdentity = c.GetHeader("deviceidentity")
+	Header.IsSecret = c.GetHeader("issecert")
+	Header.Sign = c.GetHeader("sign")
+	Header.Token = c.GetHeader("token")
+	Header.Version = c.GetHeader("version")
+	Header.NationLanguage = c.GetHeader("nationlanguage")
+	Header.UserAgent = c.GetHeader("User-Agent")
+	Header.ContentType = c.GetHeader("Content-Type")
+	return
 }

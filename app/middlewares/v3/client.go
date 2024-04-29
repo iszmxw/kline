@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	v3 "goapi/app/controllers/client/v3"
 	"goapi/app/response"
 	"goapi/pkg/address"
 	"goapi/pkg/config"
@@ -14,6 +13,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/request"
 	wss "goapi/pkg/websocket"
+	"goapi/pkg/xtime"
 	"goapi/service/binary-monitoring/pkg"
 	"time"
 )
@@ -73,6 +73,8 @@ func Client() gin.HandlerFunc {
 		case "/app/v3/config/iqoption.json":
 		case "/app/v3/other/pushList.json":
 		case "/app/v3/other/mongo.json":
+			// 注册
+		case "/app/v3/user/register.json":
 			// 继续往下面执行
 			c.Next()
 			break
@@ -114,7 +116,7 @@ func CheckLogin(c *gin.Context) {
 	} else {
 		if c.IsWebsocket() {
 			ws, _ := wss.GetSocket(c)
-			go v3.HeartBeatingWatch(ws, c.GetHeader("Sec-WebSocket-Key"))
+			go HeartBeatingWatch(ws, c.GetHeader("Sec-WebSocket-Key"))
 			c.Set("NoLogin", true)
 			// 继续往下面执行
 			c.Next()
@@ -152,4 +154,40 @@ func SetLang(c *gin.Context, lang string) {
 		c.Request.Header.Set("Language", "jp")
 		break
 	}
+}
+
+func IsDie(HeartBeatingKey string) bool { // 检测是否死掉
+	var isDie bool
+	// 检测心跳活跃
+	HeartBeatingTime, _ := redis.Client.Get(HeartBeatingKey)
+	if len(HeartBeatingTime) > 0 {
+		nowTime := time.Now().Unix()
+		HeartBeatTime := xtime.Parse(HeartBeatingTime).Unix()
+		interval := nowTime - HeartBeatTime // 心跳间隔
+		//logger.Info(fmt.Sprintf("nowTime(%v) - HeartBeatTime(%v)=%v", nowTime, HeartBeatTime, interval))
+		if interval > 30 {
+			logger.Error(errors.New("30秒无心跳，主动断开"))
+			isDie = true
+		}
+	} else {
+		// 处理心跳数据
+		currentTime := time.Now().Format("2006-01-02 15:04:05")
+		_, _ = redis.Client.Add(HeartBeatingKey, currentTime, 300) // 5分钟过期
+	}
+	return isDie
+}
+
+// 心跳观测
+
+func HeartBeatingWatch(ws *wss.WsConn, socketId string) {
+	for !ws.IsClose {
+		HeartBeatingKey := fmt.Sprintf("ws_index:%v:heart_beating_key", socketId)
+		if IsDie(HeartBeatingKey) {
+			goto STOP
+		}
+		time.Sleep(time.Millisecond * 1000) // 每隔1000
+	}
+STOP:
+	logger.Error(errors.New("暂无心跳关闭链接"))
+	wss.WsClose(ws)
 }

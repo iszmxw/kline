@@ -3,13 +3,13 @@ package requests
 type UserRegisterParams struct {
 	// 应用信息
 	AppPackage string `json:"appPackage" validate:"required"`
-	AppVersion string `json:"appVersion"`
+	AppVersion string `json:"appVersion" validate:"required"`
 	Channel    string `json:"channel"`
 
 	// 设备信息
 	DeciveBrand string `json:"deciveBrand" validate:"required"`
-	DeviceModel string `json:"deviceModel"`
-	DeciveId    string `json:"deciveId"`
+	DeviceModel string `json:"deviceModel" validate:"required"`
+	DeciveId    string `json:"deciveId" validate:"required"`
 
 	// 认证信息
 	AuthorizeIdToken string `json:"authorizeIdToken"`
@@ -19,7 +19,7 @@ type UserRegisterParams struct {
 	AccountType      int    `json:"accountType" validate:"required"`
 	ItemCode         string `json:"itemCode" validate:"required"`
 	InvitCode        string `json:"invitCode"`
-	VisitUserId      string `json:"visitUserId"`
+	VisitUserId      string `json:"visitUserId" validate:"required"`
 	PartnerUserId    string `json:"partnerUserId"`
 	AuthorizePartner string `json:"authorizePartner"`
 
@@ -31,5 +31,5 @@ type UserRegisterParams struct {
 	Nation          string `json:"nation" validate:"required"`
 	LanguageCode    string `json:"languageCode" validate:"required"`
 	RequestTime     string `json:"requestTime" validate:"required"`
-	OnlineOnlyKeyId string `json:"onlineOnlyKeyId"`
+	OnlineOnlyKeyId string `json:"onlineOnlyKeyId" validate:"required"`
 }

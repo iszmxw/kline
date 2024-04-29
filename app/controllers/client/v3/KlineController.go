@@ -16,8 +16,8 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mongodb"
 	"goapi/pkg/mysql"
-	"goapi/pkg/notice/gotify"
 	NoticeMail "goapi/pkg/notice/mail"
+	"goapi/pkg/notice/wechat"
 	"goapi/pkg/redis"
 	"goapi/pkg/utils"
 	wss "goapi/pkg/websocket"
@@ -699,8 +699,8 @@ func PushNoticePlus(ws *wss.WsConn) {
 			}
 			// 推送消息通知前端开奖结果
 			SocketResp(ws, websocket.TextMessage, string(marshal))
-			// gotify 通知
-			gotify.Notice(fmt.Sprintf("%s-%s,用户%s,订单号：%s", ip, ws.Uuid, appUserId, orderData.TradeOrderId), string(marshal))
+			// wechat 通知
+			wechat.Notice(fmt.Sprintf("%s-%s,用户%s,订单号：%s", ip, ws.Uuid, appUserId, orderData.TradeOrderId), string(marshal))
 			logger.Info(string(marshal))
 			time.Sleep(200 * time.Millisecond) // 每隔 1 秒来一次推送
 		}(ws, push)

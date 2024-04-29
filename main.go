@@ -9,7 +9,7 @@ import (
 	conf "goapi/pkg/config"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
-	"goapi/pkg/notice/gotify"
+	"goapi/pkg/notice/wechat"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -64,7 +64,7 @@ func main() {
 	// 启动路由
 	logger.Info("启动路由")
 	logger.Info(fmt.Sprintf("当前环境:%v", *AppPort))
-	// bark 通知
-	gotify.Notice(helpers.IP(), "xw-client 启动成功")
+	// wechat 通知
+	wechat.Notice(helpers.IP(), "xw-client 启动成功")
 	_ = router.Run(fmt.Sprintf(":%v", *AppPort))
 }
