@@ -30,7 +30,6 @@ func SendMsg(id, msg string) {
 	fullURL := baseURL + "&" + encodedParams
 	res, err := http.Get(fullURL)
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 	defer res.Body.Close()

@@ -1,6 +1,7 @@
 package requests
 
 type UserRegisterParams struct {
+	Base
 	// 应用信息
 	AppPackage string `json:"appPackage" validate:"required"`
 	AppVersion string `json:"appVersion" validate:"required"`
@@ -17,7 +18,6 @@ type UserRegisterParams struct {
 	Password         string `json:"password" validate:"required"`
 	Account          string `json:"account" validate:"required"`
 	AccountType      int    `json:"accountType" validate:"required"`
-	ItemCode         string `json:"itemCode" validate:"required"`
 	InvitCode        string `json:"invitCode"`
 	VisitUserId      string `json:"visitUserId" validate:"required"`
 	PartnerUserId    string `json:"partnerUserId"`
@@ -28,8 +28,6 @@ type UserRegisterParams struct {
 	FlowCompanyCode string `json:"flowCompanyCode"`
 
 	// 其他详情
-	Nation          string `json:"nation" validate:"required"`
-	LanguageCode    string `json:"languageCode" validate:"required"`
 	RequestTime     string `json:"requestTime" validate:"required"`
 	OnlineOnlyKeyId string `json:"onlineOnlyKeyId" validate:"required"`
 }

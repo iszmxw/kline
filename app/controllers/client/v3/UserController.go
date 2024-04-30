@@ -3,9 +3,12 @@ package v3
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
+	"goapi/pkg/mysql"
 	"goapi/pkg/validate"
 )
 
@@ -20,16 +23,24 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	HeaderParams := getHeaderParams(c)
 	fmt.Println(HeaderParams.IsSecret, HeaderParams.Sign, HeaderParams.Token)
 	var params requests.UserRegisterParams
-	_ = c.Bind(&params)
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	// 校验邮箱的格式
 	if !helpers.IsEmail(params.Account) {
 		echo.Error(c, "ParamsError", "：邮箱格式不正确")
 		return
 	}
-	c.Request.Header.Set("Language", params.LanguageCode)
+	// 检查用户是否已经注册
+	var appUser models.AppUser
+	mysql.DB.Debug().Model(appUser).Where("email", params.Account).Find(&appUser)
+	if len(appUser.AppUserId) > 0 {
+		// PleaseLoginOrRetrievePassword ，注册检测，已注册用户，提示用户去登录或者去找回密码
+		echo.Error(c, "PleaseLoginOrRetrievePassword", "")
+		return
+	}
 	echo.Success(c, nil, "SUCCESS")
 }
 

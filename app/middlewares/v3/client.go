@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/pkg/address"
 	"goapi/pkg/config"
@@ -153,6 +155,17 @@ func SetLang(c *gin.Context, lang string) {
 		// 日语
 		c.Request.Header.Set("Language", "jp")
 		break
+	}
+	var base requests.Base
+	_ = c.ShouldBindBodyWith(&base, binding.JSON)
+	if len(base.LanguageCode) > 0 {
+		c.Request.Header.Set("Language", base.LanguageCode)
+	}
+	if len(base.ItemCode) > 0 {
+		c.Request.Header.Set("ItemCode", base.ItemCode)
+	}
+	if len(base.Nation) > 0 {
+		c.Request.Header.Set("Nation", base.Nation)
 	}
 }
 

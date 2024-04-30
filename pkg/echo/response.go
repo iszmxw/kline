@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
+	"strings"
 )
 
 // Rjson 成功返回封装 参数 data interface{} 类型为可接受任意类型
@@ -28,13 +29,18 @@ func Rjson(c *gin.Context, result interface{}, msg string, code int) {
 }
 
 // Error  错误返回封装
-func Error(c *gin.Context, code string, lastMsg string) {
+func Error(c *gin.Context, codeName string, lastMsg string) {
 	var logInfo []zapcore.Field
 	if len(logger.RequestId) > 0 {
 		logInfo = append(logInfo, zap.Any("RequestId", logger.RequestId))
 	}
-	code, firstMsg := GetCode(code, c.Request.Header.Get("Language")) // 最终code
-	fullMsg := firstMsg + lastMsg                                     // 最终msg
+	// 本地枚举获取错误代码
+	code, firstMsg := GetCode(codeName, c.Request.Header.Get("Language")) // 最终code
+	if strings.EqualFold("未知错误", firstMsg) {
+		// 数据库获取错误代码
+		code, firstMsg = showWord(codeName, c.Request.Header.Get("Language"), c.Request.Header.Get("itemCode"))
+	}
+	fullMsg := firstMsg + lastMsg // 最终msg
 	logInfo = append(logInfo, zap.Any(code, fullMsg))
 	logger.Logger.WithOptions(zap.AddCallerSkip(1)).Info("返回错误", logInfo...)
 	Rjson(c, nil, fullMsg, helpers.StringToInt(code))

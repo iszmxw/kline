@@ -13,6 +13,7 @@ type TMultiLanguageShow struct {
 	Status       int       `json:"status"`        // 显示状态
 	UpdateTime   time.Time `json:"update_time"`   // 修改时间
 	Updater      string    `json:"updater"`       // 修改人
+	ItemCode     string    `json:"item_code"`     // itemCode
 }
 
 func (m *TMultiLanguageShow) TableName() string {

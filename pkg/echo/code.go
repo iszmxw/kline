@@ -10,10 +10,12 @@ import (
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
 	zhTranslations "github.com/go-playground/validator/v10/translations/zh"
 	cmap "github.com/orcaman/concurrent-map"
+	"goapi/app/models"
 	"goapi/pkg/echo/code/en"
 	"goapi/pkg/echo/code/insa"
 	"goapi/pkg/echo/code/zh"
 	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	"reflect"
 	"strings"
 )
@@ -24,6 +26,20 @@ type ValidateLang struct {
 	importLang locales.Translator
 	trans      ut.Translator
 	Validate   *validator.Validate
+}
+
+func showWord(code, Language, itemCode string) (codeNum string, msg string) {
+	var TMultiLanguageShow models.TMultiLanguageShow
+	mysql.DB.Debug().Model(TMultiLanguageShow).
+		Where(map[string]interface{}{
+			"type":          "toast",
+			"language_code": Language,
+			"show_column":   code,
+			"item_code":     itemCode,
+		}).
+		Select("code,show_word").
+		Find(&TMultiLanguageShow)
+	return fmt.Sprintf("%v", TMultiLanguageShow.Code), TMultiLanguageShow.ShowWord
 }
 
 func GetCode(code, Language string) (string, string) {
@@ -44,7 +60,7 @@ func GetCode(code, Language string) (string, string) {
 	}
 	field, ok := t.FieldByName(code)
 	if !ok {
-		return "0", "unknown mistake"
+		return "0", "未知错误"
 	}
 	return field.Tag.Get("code"), field.Tag.Get("msg")
 }
