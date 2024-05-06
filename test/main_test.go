@@ -3,11 +3,11 @@ package test
 import (
 	"database/sql"
 	"fmt"
-	v3 "goapi/app/controllers/client/v3"
 	"goapi/bootstrap"
 	"goapi/config"
 	conf "goapi/pkg/config"
 	"goapi/pkg/logger"
+	"goapi/pkg/xtime"
 	"testing"
 	"time"
 )
@@ -40,8 +40,23 @@ func Test_Main(t *testing.T) {
 	defer bootstrap.RedisClose()
 	bootstrap.SetupMongoDB()
 
-	RES := v3.GetVipInfo("SMO", "Indonesia", 1)
-	fmt.Println(RES)
-	fmt.Println(RES)
-	fmt.Println(RES)
+	offset := xtime.GmtOffset("GMT+07:00")
+	fmt.Println(offset)
+	// 时区设置
+	timeZone := time.FixedZone("CST", offset)
+	// 获取本周的最后一天日期
+	endDate := xtime.GetEndDateOfATimeZoneWeek(0, timeZone)
+	fmt.Println("获取本周的最后一天日期:", endDate)
+	// 获取上周的最后一天日期
+	endDateLastWeek := xtime.GetEndDateOfATimeZoneWeek(1, timeZone)
+	fmt.Println("获取上周的最后一天日期:", endDateLastWeek)
+	// 获取上上周的最后一天日期
+	endDateTwoWeeksAgo := xtime.GetEndDateOfATimeZoneWeek(2, timeZone)
+	fmt.Println("获取上上周的最后一天日期:", endDateTwoWeeksAgo)
+	// 其他周的最后一天日期依此类推...
+	//
+	//RES := v3.GetVipInfo("SMO", "Indonesia", 1)
+	//fmt.Println(RES)
+	//fmt.Println(RES)
+	//fmt.Println(RES)
 }

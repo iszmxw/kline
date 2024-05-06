@@ -88,6 +88,7 @@ func (h *PromoteController) RegisterHandler(c *gin.Context) {
 		CreateAppUser.VirtualBalance = 10000.00
 		CreateAppUser.CurrencyType = "INR"
 	}
+	timeNow := time.Now()
 	CreateAppUser.UserLevel = 0
 	CreateAppUser.IsNew = 1
 	CreateAppUser.Avatar = "https://fileserver.iqoptionproo.com/file/download/0a3d5de4-2eb2-4001-93ea-f7c051ec3e5e.png"
@@ -97,10 +98,10 @@ func (h *PromoteController) RegisterHandler(c *gin.Context) {
 	CreateAppUser.UserName = "user"
 	CreateAppUser.IsLogout = 0
 	CreateAppUser.DeciveBrand = "HTML5" // 设置设备品牌 多个用,号隔开 当前为最后一个
-	CreateAppUser.InvitDate = time.Now()
-	CreateAppUser.InvitTs = time.Now().UnixMilli()
-	CreateAppUser.LastLoginDate = nil
-	CreateAppUser.PullBlackDate = nil
+	CreateAppUser.InvitDate = &timeNow
+	CreateAppUser.InvitTs = timeNow.UnixMilli()
+	CreateAppUser.LastLoginDate = &timeNow
+	CreateAppUser.PullBlackDate = &timeNow
 	CreateAppUser.CreateTs = time.Now().UnixMilli()
 	CreateAppUser.UpdateTs = time.Now().UnixMilli()
 	DB := mysql.DB.Begin()
@@ -113,7 +114,7 @@ func (h *PromoteController) RegisterHandler(c *gin.Context) {
 	}
 	// 创建关联认证记录
 	AppUserCredit.AppUserId = CreateAppUser.AppUserId
-	AppUserCredit.CreateDate = time.Now()
+	AppUserCredit.CreateDate = &timeNow
 	AppUserCredit.TotalStep = 3
 	AppUserCredit.ItemCode = config.GetString("app.item_code")
 	AppUserCredit.IsValid = 1

@@ -1,7 +1,6 @@
 package common
 
 import (
-	"goapi/pkg/abnormal"
 	"goapi/pkg/config"
 	"net/http"
 
@@ -25,7 +24,7 @@ func Cors() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusNoContent)
 		}
 		if config.GetString("app.env") == "local" {
-			defer abnormal.Stack("进入中间件", c)
+			//defer abnormal.Stack("进入中间件", c)
 		}
 		c.Next()
 	}

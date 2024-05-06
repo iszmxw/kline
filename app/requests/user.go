@@ -19,7 +19,7 @@ type UserRegisterParams struct {
 	Account          string `json:"account" validate:"required"`
 	AccountType      int    `json:"accountType" validate:"required"`
 	InvitCode        string `json:"invitCode"`
-	VisitUserId      string `json:"visitUserId" validate:"required"`
+	VisitUserId      string `json:"visitUserId"`
 	PartnerUserId    string `json:"partnerUserId"`
 	AuthorizePartner string `json:"authorizePartner"`
 
@@ -30,4 +30,11 @@ type UserRegisterParams struct {
 	// 其他详情
 	RequestTime     string `json:"requestTime" validate:"required"`
 	OnlineOnlyKeyId string `json:"onlineOnlyKeyId" validate:"required"`
+
+	// 整合流量方公司的原始IDFA(仅限IOS)
+	Idfa string `json:"idfa"`
+	// 整合流量方公司的adjust设备id
+	Adid string `json:"adid"`
+	// 整合流量方公司的原始IDFV
+	Idfv string `json:"idfv"`
 }

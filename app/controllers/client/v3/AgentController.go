@@ -104,10 +104,11 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	CreateAppUser.UserName = "user"
 	CreateAppUser.IsLogout = 0
 	CreateAppUser.DeciveBrand = "HTML5" // 设置设备品牌 多个用,号隔开 当前为最后一个
-	CreateAppUser.InvitDate = time.Now()
-	CreateAppUser.InvitTs = time.Now().UnixMilli()
-	CreateAppUser.LastLoginDate = nil
-	CreateAppUser.PullBlackDate = nil
+	timeNow := time.Now()
+	CreateAppUser.InvitDate = &timeNow
+	CreateAppUser.InvitTs = timeNow.UnixMilli()
+	CreateAppUser.LastLoginDate = &timeNow
+	CreateAppUser.PullBlackDate = &timeNow
 	DB := mysql.DB.Begin()
 	err := DB.Debug().Model(models.AppUser{}).Create(CreateAppUser).Error
 	if err != nil {
@@ -118,7 +119,7 @@ func (h *AgentController) RegisterHandler(c *gin.Context) {
 	}
 	// 创建关联认证记录
 	AppUserCredit.AppUserId = CreateAppUser.AppUserId
-	AppUserCredit.CreateDate = time.Now()
+	AppUserCredit.CreateDate = &timeNow
 	AppUserCredit.TotalStep = 3
 	AppUserCredit.ItemCode = config.GetString("app.item_code")
 	AppUserCredit.IsValid = 1

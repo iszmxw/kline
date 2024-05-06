@@ -49,3 +49,32 @@ func Parse(strTime string) time.Time {
 	}
 	return result
 }
+
+func GetEndDateOfATimeZoneWeek(week int, timeZone *time.Location) time.Time {
+	// 获取当前时间
+	now := time.Now().In(timeZone)
+	// 获取当前星期几（星期日作为第一天）
+	dayOfWeek := int(now.Weekday())
+	// 计算偏移量
+	offset := 7 - dayOfWeek
+	if dayOfWeek == 0 {
+		offset = 0
+	}
+	// 计算目标日期
+	targetDate := now.AddDate(0, 0, offset-7*week)
+	return targetDate
+}
+
+func GmtOffset(str string) (offset int) {
+	timeStr := strings.ReplaceAll(str, "GMT", "")
+	fh := string([]rune(timeStr)[:1])
+	arr := strings.Split(string([]rune(timeStr)[1:]), ":")
+	offset = helpers.StringToInt(arr[0])*3600 + helpers.StringToInt(arr[1])*60
+	if strings.EqualFold("-", fh) && offset > 0 {
+		offset = 0 - offset
+	}
+	if strings.EqualFold("+", fh) && offset < 0 {
+		offset = 0 - offset
+	}
+	return
+}
