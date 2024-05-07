@@ -18,7 +18,7 @@ type AppUser struct {
 	BonusBalance               float64    `json:"bonus_balance"`                // 奖励余额
 	CurrencyType               string     `json:"currency_type"`                // 货币类型 IDR USD CNY
 	UserLevel                  int        `json:"user_level"`                   // 用户等级
-	IsNew                      int32      `json:"is_new"`                       // 是否新用户 1是 0否 首充后变成0
+	IsNew                      int        `json:"is_new"`                       // 是否新用户 1是 0否 首充后变成0
 	Avatar                     string     `json:"avatar"`                       // 默认头像链接
 	NewAvatar                  string     `json:"new_avatar"`                   // 最新头像链接
 	ReferralCode               string     `json:"referral_code"`                // 邀请码
@@ -50,7 +50,7 @@ type AppUser struct {
 	Nation                     string     `json:"nation"`                       // 绑定国家
 	Religion                   string     `json:"religion"`                     // 宗教
 	City                       string     `json:"city"`                         // 城市
-	IsNeedKyc                  int32      `json:"is_need_kyc"`                  // 是否需要去认证KYC 1是 0否 3完成KYC认证
+	IsNeedKyc                  int        `json:"is_need_kyc"`                  // 是否需要去认证KYC 1是 0否 3完成KYC认证
 	OptimizationDivision       string     `json:"optimization_division"`        // 优化师
 	TrackChannel               string     `json:"track_channel"`                // 投放方式:自投,代投,代投公司
 	Network                    string     `json:"network"`                      // 投放渠道

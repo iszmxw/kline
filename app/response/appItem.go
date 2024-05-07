@@ -10,4 +10,5 @@ type ItemNationMessageParams struct {
 	TimeZone         string  `json:"timeZone"`
 	DemoBalance      float64 `json:"DemoBalance"`
 	CurrencyType     string  `json:"CurrencyType"`
+	MonetaryUnit     string  `json:"monetaryUnit"`
 }

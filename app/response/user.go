@@ -39,7 +39,7 @@ type ClientUserBeans struct {
 	AppUserId                   string     `json:"appUserId"`                   // 客户ID
 	RealBalance                 string     `json:"realBalance"`                 // 客户余额
 	BonusBalance                string     `json:"bonusBalance"`                // 客户奖金余额
-	VirtualBalance              float64    `json:"virtualBalance"`              // 模拟币余额
+	VirtualBalance              string     `json:"virtualBalance"`              // 模拟币余额
 	TradingAmounts              string     `json:"tradingAmounts"`              // 当日交易金额
 	WithdrawAmounts             string     `json:"withdrawAmounts"`             // 可提现余额
 	HadWithdrawAmounts          string     `json:"hadWithdrawAmounts"`          // 已提现金额

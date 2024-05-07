@@ -30,6 +30,29 @@ type UserController struct {
 	BaseController
 }
 
+// 保存登录记录
+func saveLoginLog(log requests.LoginLog) {
+	err := mysql.DB.Debug().Model(models.TAppUserLoginLog{}).Create(&models.TAppUserLoginLog{
+		AppUserId:        log.AppUserId,
+		DeciveId:         log.DeciveId,
+		ItemCode:         log.ItemCode,
+		AccountNumber:    log.Account,
+		AccountType:      log.AccountType,
+		FlowBindId:       log.FlowBindId,
+		AuthorizedOrNot:  0,
+		AuthorizeStatus:  0,
+		AuthorizePartner: "",
+		Status:           1,
+		CreateDate:       time.Now(),
+		PartnerUserId:    "",
+		IdTokenUrl:       "",
+		ResultJsonUrl:    "",
+	}).Error
+	if err != nil {
+		logger.Error(err)
+	}
+}
+
 func WrongPwdList() []string {
 	tempPwdList := make([]string, 0)
 	// 第一个循环
@@ -150,25 +173,14 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 		// 修改保存用户授信登录信息
 
 		// 保存登录记录
-		err := mysql.DB.Debug().Model(models.TAppUserLoginLog{}).Create(&models.TAppUserLoginLog{
-			AppUserId:        AppUserId,
-			DeciveId:         params.DeciveId,
-			ItemCode:         params.ItemCode,
-			AccountNumber:    params.Account,
-			AccountType:      params.AccountType,
-			AuthorizedOrNot:  0,
-			AuthorizeStatus:  0,
-			AuthorizePartner: "",
-			Status:           1,
-			CreateDate:       time.Now(),
-			PartnerUserId:    "",
-			IdTokenUrl:       "",
-			ResultJsonUrl:    "",
-			FlowBindId:       params.FlowBindId,
-		}).Error
-		if err != nil {
-			logger.Error(err)
-		}
+		saveLoginLog(requests.LoginLog{
+			AppUserId:   AppUserId,
+			ItemCode:    params.ItemCode,
+			Account:     params.Account,
+			AccountType: params.AccountType,
+			DeciveId:    params.DeciveId,
+			FlowBindId:  params.FlowBindId,
+		})
 	}
 	// 正式用户注册成功 检查此前游客是否有demo交易 有则合并
 	if len(params.VisitUserId) > 0 {
@@ -196,7 +208,7 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	clientUserBeans.BonusBalance = "0.0"
 	clientUserBeans.AppUserId = AppUserId
 	clientUserBeans.RealBalance = "0.0"
-	clientUserBeans.VirtualBalance = appItem.DemoBalance
+	clientUserBeans.VirtualBalance = fmt.Sprintf("%v", appItem.DemoBalance)
 	clientUserBeans.IsNew = 1
 	clientUserBeans.AccountEmail = email
 	clientUserBeans.Mobile = mobile
@@ -221,7 +233,7 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 		return
 	}
 	// 用户信息写入 redis 缓存
-	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key+token, string(marshal), -1)
+	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key+token, string(marshal), 0)
 
 	// 组装返回数据
 	data := cmap.New().Items()
@@ -415,6 +427,131 @@ func GiveSign(AppUserId string, appItem response.ItemNationMessageParams) {
 
 // LoginHandler 登录
 func (h *UserController) LoginHandler(c *gin.Context) {
+	HeaderParams := getHeaderParams(c)
+	fmt.Println(HeaderParams.IsSecret, HeaderParams.Sign, HeaderParams.Token)
+	var params requests.UserLoginParams
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	// 校验邮箱的格式
+	if !helpers.IsEmail(params.Account) {
+		echo.Error(c, "ParamsError", "：邮箱格式不正确")
+		return
+	}
+	// 检查用户是否已经注册
+	var appUser models.AppUser
+	mysql.DB.Debug().Model(appUser).Where("email", params.Account).Find(&appUser)
+	if len(appUser.AppUserId) == 0 {
+		// 登录检测，用户不存在提示用户去走注册流程
+		echo.Error(c, "UserDoesNotExistPleaseRegist", "")
+		return
+	}
+	// 黑名单拦截
+	if appUser.BlackList == 1 {
+		echo.Error(c, "LoginBlackRule", "")
+		return
+	}
+	// 密码不正确的时候拦截
+	if !strings.EqualFold(appUser.Password, params.Password) {
+		echo.Error(c, "AccountWrong", "")
+		return
+	}
+	// 保存登录记录
+	saveLoginLog(requests.LoginLog{
+		AppUserId:   appUser.AppUserId,
+		ItemCode:    params.ItemCode,
+		Account:     params.Account,
+		AccountType: params.AccountType,
+		DeciveId:    params.DeciveId,
+		FlowBindId:  params.FlowBindId,
+	})
+	// 关闭的国家用户注册登录显示提示：toast提示：系统维护中
+	isStart, _ := redis.Client.Get(fmt.Sprintf("%s%s:isStart:%s", keyenum.KeyInfo(keyenum.NATION_USER).Key, params.ItemCode, params.Nation))
+	if strings.EqualFold("0", isStart) {
+		echo.Error(c, "SystemMaintenance", "")
+		return
+	}
+
+	clientUserBeans := new(response.ClientUserBeans)
+	clientUserBeans.AppUserId = appUser.AppUserId
+
+	token := helpers.GetUUID()
+	addrInfo := address.GetMessageByIp(c.ClientIP())
+	city := addrInfo.City
+	fmt.Println(token, city)
+	appItem := getAppItem(params.Nation)
+
+	if len(appUser.Email) == 0 && len(appUser.CreditEmail) > 0 {
+		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Update("email", appUser.CreditEmail)
+	}
+	// 获取认证信息
+	var userCredit models.AppUserCredit
+	mysql.DB.Debug().Model(models.AppUserCredit{}).Where("app_user_id", appUser.AppUserId).Find(&userCredit)
+	clientUserBeans.IdentityCredit = userCredit.IdentityCredit
+	clientUserBeans.IsFinishCredit = userCredit.IsFinishCredit
+	clientUserBeans.MobileCredit = userCredit.MobileCredit
+	clientUserBeans.EmailCredit = userCredit.EmailCredit
+	clientUserBeans.BankCredit = userCredit.BankCredit
+
+	// 绑定信息
+	clientUserBeans.BonusBalance = fmt.Sprintf("%v", appUser.BonusBalance)
+	clientUserBeans.AppUserId = fmt.Sprintf("%v", appUser.AppUserId)
+	clientUserBeans.RealBalance = fmt.Sprintf("%v", appUser.Balance)
+	clientUserBeans.VirtualBalance = fmt.Sprintf("%v", appUser.VirtualBalance)
+	clientUserBeans.IsNew = appUser.IsNew
+	clientUserBeans.IsVisit = appUser.IsVisit
+	clientUserBeans.IsFinishCredit = appUser.IsNeedKyc
+	clientUserBeans.AccountEmail = appUser.Email
+	clientUserBeans.Mobile = appUser.Mobile
+	clientUserBeans.UserLevel = appUser.UserLevel
+
+	// 动态统计数据
+	clientUserBeans.RechargeAmounts = "50000000.0"
+	clientUserBeans.WithdrawAmounts = "50000000.0"
+	clientUserBeans.TradingAmounts = "50000000.0"
+
+	clientUserBeans.TotalHisWithdrawAmounts = "0.0"
+	clientUserBeans.TotalHisRechargeAmounts = "0.0"
+	clientUserBeans.TotalHisBonusAmounts = "0.0"
+
+	clientUserBeans.HadRechargeAmounts = "50000000.0"
+	clientUserBeans.HadWithdrawAmounts = "50000000.0"
+
+	clientUserBeans.Nation = appUser.Nation
+	clientUserBeans.CurrencyType = appUser.CurrencyType
+	clientUserBeans.MonetaryUnit = appItem.MonetaryUnit
+
+	marshal, err := json.Marshal(clientUserBeans)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	// 用户信息写入 redis 缓存
+	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key+token, string(marshal), 0)
+	// 组装返回数据
+	data := cmap.New().Items()
+	data["token"] = token
+	data["avatar"] = "https://fileupload.ssmartoption.com/file/views/9b6394b8-aa55-47b7-89bc-3dac781d233b.png"
+	data["userId"] = appUser.AppUserId
+	data["isVisit"] = 0
+	data["isExistEmail"] = 1
+	data["isHiddenIosAssets"] = 1 /* IOS是否隐藏数字货币交易 1是 0否 */
+	data["appItems"] = appItem
+	if len(appUser.Email) == 0 && len(appUser.CreditEmail) == 0 { // 用户没有绑定邮箱
+		data["isExistEmail"] = 0
+	}
+	// 清除旧的 token
+	redis.Client.Delete(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key + appUser.Token)
+	// 缓存 下线原因 0 token过期 用户注销 1 异地登陆，过期时间 一周
+	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.LOGOUT_TOKEN_REASON).Key+appUser.Token, "1", 60*60*24*7)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Updates(map[string]interface{}{
+		"token":           token,
+		"last_login_ip":   c.ClientIP(),
+		"last_login_date": time.Now(),
+	})
+	echo.Success(c, data, "SUCCESS")
 
 }
 
