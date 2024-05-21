@@ -1,12 +1,19 @@
 package requests
 
 type LoginLog struct {
-	AppUserId   string `json:"appUserId" validate:"required"`
-	ItemCode    string `json:"itemCode" validate:"required"`
-	Account     string `json:"account" validate:"required"`
-	AccountType int    `json:"accountType" validate:"required"`
-	DeciveId    string `json:"deciveId" validate:"required"`
-	FlowBindId  string `json:"flowBindId"`
+	AppUserId        string `json:"appUserId" validate:"required"`   // 客户id
+	ItemCode         string `json:"itemCode" validate:"required"`    // 项目编码
+	Account          string `json:"account" validate:"required"`     // 登录账号
+	AccountType      int    `json:"accountType" validate:"required"` // 登录方式 1邮箱 2电话 3谷歌 4faceBook
+	DeciveId         string `json:"deciveId" validate:"required"`    // 设备id
+	FlowBindId       string `json:"flowBindId"`                      // 整合流量方公司绑定ID
+	AuthorizePartner string `json:"authorize_partner"`               // 授信第三方 google 、Facebook、Apple
+	AuthorizeStatus  int64  `json:"authorize_status"`                // 获取第三方授信状态 0授信失败 1授信成功
+	AuthorizedOrNot  int64  `json:"authorized_or_not"`               // 是否授信登录 0非授信登录 1授信登录
+	PartnerUserId    string `json:"partner_user_id"`                 // 第三方用户标识id
+	IdTokenUrl       string `json:"id_token_url"`                    // 授权idToken的url
+	ResultJsonUrl    string `json:"result_json_url"`                 // 响应结果的url
+	Status           int64  `json:"status"`                          // 登录状 0失败，1成功
 }
 
 // 登录和注册公共参数
@@ -15,7 +22,7 @@ type LoginAndRegister struct {
 	Base
 	AccountType     int    `json:"accountType" validate:"required"`     // 账号类型 1邮箱 2手机号 3google 4facebook 5apple
 	Account         string `json:"account" validate:"required"`         // 账号
-	Password        string `json:"password" validate:"required"`        // 密码
+	Password        string `json:"password"`                            // 密码
 	InvitCode       string `json:"invitCode"`                           // 邀请码
 	VisitUserId     string `json:"visitUserId"`                         // 游客ID
 	OnlineOnlyKeyId string `json:"onlineOnlyKeyId" validate:"required"` // 设备ID
@@ -34,7 +41,7 @@ type LoginAndRegister struct {
 	FlowCompanyCode string `json:"flowCompanyCode"`
 
 	// 其他详情
-	RequestTime string `json:"requestTime" validate:"required"`
+	RequestTime int `json:"requestTime"`
 
 	// 整合流量方公司的原始IDFA(仅限IOS)
 	Idfa string `json:"idfa"`

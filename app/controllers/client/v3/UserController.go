@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
+	"goapi/app/models/keyenum"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/pkg/address"
@@ -15,8 +16,8 @@ import (
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/oauth"
 	"goapi/pkg/redis"
-	"goapi/pkg/redis/keyenum"
 	"goapi/pkg/validate"
 	"goapi/pkg/xtime"
 	"strconv"
@@ -39,14 +40,14 @@ func saveLoginLog(log requests.LoginLog) {
 		AccountNumber:    log.Account,
 		AccountType:      log.AccountType,
 		FlowBindId:       log.FlowBindId,
-		AuthorizedOrNot:  0,
-		AuthorizeStatus:  0,
-		AuthorizePartner: "",
-		Status:           1,
 		CreateDate:       time.Now(),
-		PartnerUserId:    "",
-		IdTokenUrl:       "",
-		ResultJsonUrl:    "",
+		PartnerUserId:    log.PartnerUserId,
+		IdTokenUrl:       log.IdTokenUrl,
+		ResultJsonUrl:    log.ResultJsonUrl,
+		AuthorizedOrNot:  log.AuthorizedOrNot,
+		AuthorizeStatus:  log.AuthorizeStatus,
+		AuthorizePartner: log.AuthorizePartner,
+		Status:           log.Status,
 	}).Error
 	if err != nil {
 		logger.Error(err)
@@ -110,6 +111,32 @@ func getAppItem(nation string) (item response.ItemNationMessageParams) {
 	return
 }
 
+func UserBeans(data *response.ClientUserBeans) *response.ClientUserBeans {
+	// 获取认证信息
+	data.IdentityCredit = 0
+	data.IsFinishCredit = 0
+	data.MobileCredit = 0
+	data.EmailCredit = 0
+	data.BankCredit = 0
+	// 绑定信息
+	data.BonusBalance = "0.0"
+	data.RealBalance = "0.0"
+	data.IsNew = 1
+	// 动态统计数据
+	data.RechargeAmounts = "0.0"
+	data.WithdrawAmounts = "0.0"
+	data.TradingAmounts = "0.0"
+
+	data.TotalHisWithdrawAmounts = "0.0"
+	data.TotalHisRechargeAmounts = "0.0"
+	data.TotalHisBonusAmounts = "0.0"
+
+	data.HadRechargeAmounts = "0.0"
+	data.HadWithdrawAmounts = "0.0"
+	data.IsVisit = 0
+	return data
+}
+
 // RegisterHandler 注册
 func (h *UserController) RegisterHandler(c *gin.Context) {
 	HeaderParams := getHeaderParams(c)
@@ -118,6 +145,12 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
+		return
+	}
+	// 关闭的国家用户注册登录显示提示：toast提示：系统维护中
+	isStart, _ := redis.Client.Get(fmt.Sprintf("%s%s:isStart:%s", keyenum.KeyInfo(keyenum.NATION_USER).Key, params.ItemCode, params.Nation))
+	if strings.EqualFold("0", isStart) {
+		echo.Error(c, "SystemMaintenance", "")
 		return
 	}
 	// 校验邮箱的格式
@@ -138,12 +171,6 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 		echo.Error(c, "PasswordLimit", "")
 		return
 	}
-	// 关闭的国家用户注册登录显示提示：toast提示：系统维护中
-	isStart, _ := redis.Client.Get(fmt.Sprintf("%s%s:isStart:%s", keyenum.KeyInfo(keyenum.NATION_USER).Key, params.ItemCode, params.Nation))
-	if strings.EqualFold("0", isStart) {
-		echo.Error(c, "SystemMaintenance", "")
-		return
-	}
 	// 设备限制规则
 	if params.AccountType != 6 {
 		ok := registrationRuleJudgment(params.ItemCode, params.DeciveId, c.ClientIP(), params.OnlineOnlyKeyId)
@@ -157,8 +184,6 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	addrInfo := address.GetMessageByIp(c.ClientIP())
 	city := addrInfo.City
 	fmt.Println(token, city)
-	clientUserBeans := new(response.ClientUserBeans)
-	clientUserBeans.AppUserId = AppUserId
 	appItem := getAppItem(params.Nation)
 	email := ""
 	mobile := ""
@@ -170,16 +195,21 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	}
 	ok := createAppUser(params, appItem, email, mobile, c.ClientIP(), token, AppUserId, city, 0)
 	if ok {
-		// 修改保存用户授信登录信息
-
 		// 保存登录记录
 		saveLoginLog(requests.LoginLog{
-			AppUserId:   AppUserId,
-			ItemCode:    params.ItemCode,
-			Account:     params.Account,
-			AccountType: params.AccountType,
-			DeciveId:    params.DeciveId,
-			FlowBindId:  params.FlowBindId,
+			AppUserId:        AppUserId,
+			ItemCode:         params.ItemCode,
+			Account:          params.Account,
+			AccountType:      params.AccountType,
+			DeciveId:         params.DeciveId,
+			FlowBindId:       params.FlowBindId,
+			AuthorizePartner: "",
+			AuthorizeStatus:  0,
+			AuthorizedOrNot:  0,
+			PartnerUserId:    "",
+			IdTokenUrl:       "",
+			ResultJsonUrl:    "",
+			Status:           1,
 		})
 	}
 	// 正式用户注册成功 检查此前游客是否有demo交易 有则合并
@@ -198,34 +228,15 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	// 赠送注册奖金 TODO
 	// 异步发送注册埋点事件 TODO
 
-	// 获取认证信息
-	clientUserBeans.IdentityCredit = 0
-	clientUserBeans.IsFinishCredit = 0
-	clientUserBeans.MobileCredit = 0
-	clientUserBeans.EmailCredit = 0
-	clientUserBeans.BankCredit = 0
-	// 绑定信息
-	clientUserBeans.BonusBalance = "0.0"
-	clientUserBeans.AppUserId = AppUserId
-	clientUserBeans.RealBalance = "0.0"
-	clientUserBeans.VirtualBalance = fmt.Sprintf("%v", appItem.DemoBalance)
-	clientUserBeans.IsNew = 1
-	clientUserBeans.AccountEmail = email
-	clientUserBeans.Mobile = mobile
-	// 动态统计数据
-	clientUserBeans.RechargeAmounts = "0.0"
-	clientUserBeans.WithdrawAmounts = "0.0"
-	clientUserBeans.TradingAmounts = "0.0"
+	clientUserBeans := new(response.ClientUserBeans)
+	clientUserBeans = UserBeans(clientUserBeans)
 
-	clientUserBeans.TotalHisWithdrawAmounts = "0.0"
-	clientUserBeans.TotalHisRechargeAmounts = "0.0"
-	clientUserBeans.TotalHisBonusAmounts = "0.0"
-
-	clientUserBeans.HadRechargeAmounts = "0.0"
-	clientUserBeans.HadWithdrawAmounts = "0.0"
 	clientUserBeans.Nation = params.Nation
 	clientUserBeans.CurrencyType = appItem.CurrencyType
-	clientUserBeans.IsVisit = 0
+	clientUserBeans.AccountEmail = email
+	clientUserBeans.Mobile = mobile
+	clientUserBeans.AppUserId = AppUserId
+	clientUserBeans.VirtualBalance = fmt.Sprintf("%v", appItem.DemoBalance)
 
 	marshal, err := json.Marshal(clientUserBeans)
 	if err != nil {
@@ -243,12 +254,13 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	data["isVisit"] = 0
 	data["isExistEmail"] = 1
 	data["isHiddenIosAssets"] = 1 /* IOS是否隐藏数字货币交易 1是 0否 */
-	data["appItems"] = appItem
 	var appuser models.AppUser
 	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", AppUserId).Find(&appuser)
 	if len(appuser.Email) == 0 { // 用户没有绑定邮箱
 		data["isExistEmail"] = 0
 	}
+	appItem.ItemCode = appUser.ItemCode
+	data["appItems"] = appItem
 	echo.Success(c, data, "SUCCESS")
 }
 
@@ -430,19 +442,142 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 	HeaderParams := getHeaderParams(c)
 	fmt.Println(HeaderParams.IsSecret, HeaderParams.Sign, HeaderParams.Token)
 	var params requests.UserLoginParams
+	var appUser models.AppUser
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	// 校验邮箱的格式
-	if !helpers.IsEmail(params.Account) {
-		echo.Error(c, "ParamsError", "：邮箱格式不正确")
+	// 关闭的国家用户注册登录显示提示：toast提示：系统维护中
+	isStart, _ := redis.Client.Get(fmt.Sprintf("%s%s:isStart:%s", keyenum.KeyInfo(keyenum.NATION_USER).Key, params.ItemCode, params.Nation))
+	if strings.EqualFold("0", isStart) {
+		echo.Error(c, "SystemMaintenance", "")
 		return
 	}
-	// 检查用户是否已经注册
-	var appUser models.AppUser
-	mysql.DB.Debug().Model(appUser).Where("email", params.Account).Find(&appUser)
+	// 初始化登录日志
+	loginLog := requests.LoginLog{
+		ItemCode:    params.ItemCode,
+		Account:     params.Account,
+		AccountType: params.AccountType,
+		DeciveId:    params.DeciveId,
+		FlowBindId:  params.FlowBindId,
+	}
+	// 账号类型 1邮箱 2手机号 3google 4facebook 5apple
+	if params.AccountType >= 3 {
+		// 谷歌授权登录验证
+		var serve oauth.BaseAuthorizeLoginService
+		if strings.EqualFold("google", params.AuthorizePartner) {
+			serve = new(oauth.AuthorizeLoginServiceGoogle)
+		}
+		if strings.EqualFold("apple", params.AuthorizePartner) {
+			serve = new(oauth.AuthorizeLoginServiceApple)
+		}
+		authorizeResult := serve.CheckAuthorizeIdToken(oauth.CheckAuthorizeIdTokenParams{
+			AuthorizeIdToken: params.AuthorizeIdToken,
+			Email:            params.Account,
+		}, params.ItemCode, params.AuthorizePartner, params.Nation)
+		// 谷歌授权登录验证
+		if !authorizeResult.IsVerifiy || len(authorizeResult.PartnerUserId) == 0 || !strings.EqualFold(authorizeResult.PartnerUserId, params.PartnerUserId) {
+			// 保存登录失败记录
+			loginLog.AuthorizePartner = params.AuthorizePartner
+			loginLog.AuthorizeStatus = 0
+			loginLog.AuthorizedOrNot = 1
+			loginLog.PartnerUserId = params.PartnerUserId
+			loginLog.Status = 0
+			saveLoginLog(loginLog)
+			echo.Error(c, "FailAuthorizeLogin", "")
+			return
+		}
+		// 授权完了检查用户是否存在是数据库，授权的信息可能没有：1、邮箱，2、手机号，但是一定会有 PartnerUserId
+		WhereAuthorizeData := cmap.New().Items()
+		WhereAuthorizeData["item_code"] = params.ItemCode
+		WhereAuthorizeData["account_type"] = params.AccountType
+		WhereAuthorizeData["authorize_partner"] = params.AuthorizePartner
+		if len(authorizeResult.PartnerUserId) > 0 {
+			WhereAuthorizeData["partner_user_id"] = authorizeResult.PartnerUserId
+		}
+		if len(authorizeResult.Email) > 0 {
+			WhereAuthorizeData["account_number"] = authorizeResult.Email
+		}
+		var tAppUserLoginAuthorizeData models.TAppUserLoginAuthorizeData
+		mysql.DB.Debug().Model(models.TAppUserLoginAuthorizeData{}).Where(WhereAuthorizeData).Order("id desc").Find(&tAppUserLoginAuthorizeData)
+		if len(tAppUserLoginAuthorizeData.AppUserId) == 0 {
+			// 第一次授权，创建新用户然后登陆 todo
+			appItem := getAppItem(params.Nation)
+			AppUserId := helpers.GetUUID11()
+			token := helpers.GetUUID()
+			addrInfo := address.GetMessageByIp(c.ClientIP())
+			city := addrInfo.City
+			UserRegisterParams := requests.UserRegisterParams{
+				LoginAndRegister: params.LoginAndRegister,
+				Code:             "",
+				InvitCode:        params.InvitCode,
+			}
+			ok := createAppUser(UserRegisterParams, appItem, authorizeResult.Email, "", c.ClientIP(), token, AppUserId, city, 0)
+			if ok {
+				mysql.DB.Debug().Model(appUser).Where("app_user_id", AppUserId).Find(&appUser)
+				// 修改保存用户授信登录信息
+				err := mysql.DB.Debug().Model(models.TAppUserLoginAuthorizeData{}).Create(&models.TAppUserLoginAuthorizeData{
+					AppUserId:            AppUserId,
+					ItemCode:             params.ItemCode,
+					AccountNumber:        authorizeResult.Email,
+					Password:             "",
+					AccountType:          3,
+					CreateDate:           time.Now(),
+					UpdateDate:           time.Now(),
+					PartnerUserId:        authorizeResult.PartnerUserId,
+					AuthorizePartner:     params.AuthorizePartner,
+					DeciveId:             params.DeciveId,
+					RegistIp:             c.ClientIP(),
+					PartnerResultJsonUrl: "",
+					CreateTs:             time.Now().UnixMilli(),
+					UpdateTs:             time.Now().UnixMilli(),
+				}).Error
+				if err != nil {
+					logger.Error(err)
+				}
+				// 保存登录记录
+				loginLog.AppUserId = AppUserId
+				loginLog.AuthorizePartner = params.AuthorizePartner
+				loginLog.AuthorizeStatus = 1
+				loginLog.AuthorizedOrNot = 1
+				loginLog.PartnerUserId = authorizeResult.PartnerUserId
+				loginLog.Status = 1
+				loginLog.IdTokenUrl = ""
+				loginLog.ResultJsonUrl = ""
+			}
+			// 正式用户注册成功 检查此前游客是否有demo交易 有则合并
+			if len(params.VisitUserId) > 0 {
+				err := mysql.DB.Debug().Model(models.TradingOrderVirtual{}).Where(map[string]interface{}{
+					"item_code":   params.ItemCode,
+					"nation":      params.Nation,
+					"app_user_id": params.VisitUserId,
+					"is_valid":    1,
+					"amount_type": 3, // demo 交易类型
+				}).Update("app_user_id", AppUserId).Error
+				if err != nil {
+					logger.Error(err)
+				}
+			}
+			// 赠送注册奖金 TODO
+			// 异步发送注册埋点事件 TODO
+		}
+		// 已经授权过，直接获取信息然后登陆
+		mysql.DB.Debug().Model(appUser).Where("app_user_id", tAppUserLoginAuthorizeData.AppUserId).Find(&appUser)
+		// 不存在的话就初始化用户数据生成一个新的
+		if len(authorizeResult.Email) > 0 {
+			params.Account = authorizeResult.Email
+		}
+	}
+	// 邮箱模式
+	if params.AccountType == 1 {
+		if !helpers.IsEmail(params.Account) {
+			echo.Error(c, "ParamsError", "：邮箱格式不正确")
+			return
+		}
+		// 邮箱查询账户
+		mysql.DB.Debug().Model(appUser).Where("email", params.Account).Find(&appUser)
+	}
 	if len(appUser.AppUserId) == 0 {
 		// 登录检测，用户不存在提示用户去走注册流程
 		echo.Error(c, "UserDoesNotExistPleaseRegist", "")
@@ -459,23 +594,7 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 		return
 	}
 	// 保存登录记录
-	saveLoginLog(requests.LoginLog{
-		AppUserId:   appUser.AppUserId,
-		ItemCode:    params.ItemCode,
-		Account:     params.Account,
-		AccountType: params.AccountType,
-		DeciveId:    params.DeciveId,
-		FlowBindId:  params.FlowBindId,
-	})
-	// 关闭的国家用户注册登录显示提示：toast提示：系统维护中
-	isStart, _ := redis.Client.Get(fmt.Sprintf("%s%s:isStart:%s", keyenum.KeyInfo(keyenum.NATION_USER).Key, params.ItemCode, params.Nation))
-	if strings.EqualFold("0", isStart) {
-		echo.Error(c, "SystemMaintenance", "")
-		return
-	}
-
-	clientUserBeans := new(response.ClientUserBeans)
-	clientUserBeans.AppUserId = appUser.AppUserId
+	saveLoginLog(loginLog)
 
 	token := helpers.GetUUID()
 	addrInfo := address.GetMessageByIp(c.ClientIP())
@@ -489,6 +608,11 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 	// 获取认证信息
 	var userCredit models.AppUserCredit
 	mysql.DB.Debug().Model(models.AppUserCredit{}).Where("app_user_id", appUser.AppUserId).Find(&userCredit)
+
+	clientUserBeans := new(response.ClientUserBeans)
+	clientUserBeans = UserBeans(clientUserBeans)
+	clientUserBeans.AppUserId = appUser.AppUserId
+
 	clientUserBeans.IdentityCredit = userCredit.IdentityCredit
 	clientUserBeans.IsFinishCredit = userCredit.IsFinishCredit
 	clientUserBeans.MobileCredit = userCredit.MobileCredit
@@ -497,7 +621,6 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 
 	// 绑定信息
 	clientUserBeans.BonusBalance = fmt.Sprintf("%v", appUser.BonusBalance)
-	clientUserBeans.AppUserId = fmt.Sprintf("%v", appUser.AppUserId)
 	clientUserBeans.RealBalance = fmt.Sprintf("%v", appUser.Balance)
 	clientUserBeans.VirtualBalance = fmt.Sprintf("%v", appUser.VirtualBalance)
 	clientUserBeans.IsNew = appUser.IsNew
@@ -538,6 +661,7 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 	data["isVisit"] = 0
 	data["isExistEmail"] = 1
 	data["isHiddenIosAssets"] = 1 /* IOS是否隐藏数字货币交易 1是 0否 */
+	appItem.ItemCode = appUser.ItemCode
 	data["appItems"] = appItem
 	if len(appUser.Email) == 0 && len(appUser.CreditEmail) == 0 { // 用户没有绑定邮箱
 		data["isExistEmail"] = 0
@@ -551,6 +675,7 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 		"last_login_ip":   c.ClientIP(),
 		"last_login_date": time.Now(),
 	})
+
 	echo.Success(c, data, "SUCCESS")
 
 }
