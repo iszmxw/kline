@@ -15,6 +15,7 @@ import (
 	"goapi/pkg/redis"
 	"goapi/pkg/xtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -296,4 +297,98 @@ func GiveSign(AppUserId string, appItem response.ItemNationMessageParams) {
 		_, _ = redis.Client.Lpush("signInAWeek:"+AppUserId, 1)
 		redis.Client.Expire("signInAWeek:"+AppUserId, int(expireSeconds))
 	}
+}
+
+func CheckSmsCode(codeType int, smsCode, email, mobile string) bool {
+	if len(email) == 0 && len(mobile) == 0 {
+		return true
+	}
+	where := cmap.New().Items()
+	// 减去30分钟
+	newDateTime := time.Now().Add(-30 * time.Minute).Format("2006-01-02 15:04:05")
+	where["code_type"] = codeType
+	if len(email) > 0 {
+		where["email"] = email
+		where["connect_type"] = 2
+	}
+	if len(mobile) > 0 {
+		where["mobile"] = mobile
+		where["connect_type"] = 1
+	}
+	var TAppVerificationCode models.TAppVerificationCode
+	mysql.DB.Model(models.TAppVerificationCode{}).Where(where).Where("create_date >= ?", newDateTime).Order("create_date desc").Find(&TAppVerificationCode)
+	if TAppVerificationCode.ID == 0 || !strings.EqualFold(TAppVerificationCode.SmsCode, smsCode) {
+		return true
+	}
+	return false
+}
+
+func LoginSuccess(appUser models.AppUser, appItem response.ItemNationMessageParams, token, ip string) map[string]interface{} {
+	// 获取认证信息
+	var userCredit models.AppUserCredit
+	mysql.DB.Debug().Model(models.AppUserCredit{}).Where("app_user_id", appUser.AppUserId).Find(&userCredit)
+
+	clientUserBeans := new(response.ClientUserBeans)
+	clientUserBeans = UserBeans(clientUserBeans)
+	clientUserBeans.AppUserId = appUser.AppUserId
+
+	clientUserBeans.IdentityCredit = userCredit.IdentityCredit
+	clientUserBeans.IsFinishCredit = userCredit.IsFinishCredit
+	clientUserBeans.MobileCredit = userCredit.MobileCredit
+	clientUserBeans.EmailCredit = userCredit.EmailCredit
+	clientUserBeans.BankCredit = userCredit.BankCredit
+
+	// 绑定信息
+	clientUserBeans.BonusBalance = fmt.Sprintf("%v", appUser.BonusBalance)
+	clientUserBeans.RealBalance = fmt.Sprintf("%v", appUser.Balance)
+	clientUserBeans.VirtualBalance = fmt.Sprintf("%v", appUser.VirtualBalance)
+	clientUserBeans.IsNew = appUser.IsNew
+	clientUserBeans.IsVisit = appUser.IsVisit
+	clientUserBeans.IsFinishCredit = appUser.IsNeedKyc
+	clientUserBeans.AccountEmail = appUser.Email
+	clientUserBeans.Mobile = appUser.Mobile
+	clientUserBeans.UserLevel = appUser.UserLevel
+
+	// 动态统计数据
+	clientUserBeans.RechargeAmounts = "50000000.0"
+	clientUserBeans.WithdrawAmounts = "50000000.0"
+	clientUserBeans.TradingAmounts = "50000000.0"
+
+	clientUserBeans.TotalHisWithdrawAmounts = "0.0"
+	clientUserBeans.TotalHisRechargeAmounts = "0.0"
+	clientUserBeans.TotalHisBonusAmounts = "0.0"
+
+	clientUserBeans.HadRechargeAmounts = "50000000.0"
+	clientUserBeans.HadWithdrawAmounts = "50000000.0"
+
+	clientUserBeans.Nation = appUser.Nation
+	clientUserBeans.CurrencyType = appUser.CurrencyType
+	clientUserBeans.MonetaryUnit = appItem.MonetaryUnit
+
+	marshal, _ := json.Marshal(clientUserBeans)
+	// 用户信息写入 redis 缓存
+	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key+token, string(marshal), 0)
+	// 组装返回数据
+	data := cmap.New().Items()
+	data["token"] = token
+	data["avatar"] = "https://fileupload.ssmartoption.com/file/views/9b6394b8-aa55-47b7-89bc-3dac781d233b.png"
+	data["userId"] = appUser.AppUserId
+	data["isVisit"] = 0
+	data["isExistEmail"] = 1
+	data["isHiddenIosAssets"] = 1 /* IOS是否隐藏数字货币交易 1是 0否 */
+	appItem.ItemCode = appUser.ItemCode
+	data["appItems"] = appItem
+	if len(appUser.Email) == 0 && len(appUser.CreditEmail) == 0 { // 用户没有绑定邮箱
+		data["isExistEmail"] = 0
+	}
+	// 清除旧的 token
+	redis.Client.Delete(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key + appUser.Token)
+	// 缓存 下线原因 0 token过期 用户注销 1 异地登陆，过期时间 一周
+	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.LOGOUT_TOKEN_REASON).Key+appUser.Token, "1", 60*60*24*7)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Updates(map[string]interface{}{
+		"token":           token,
+		"last_login_ip":   ip,
+		"last_login_date": time.Now(),
+	})
+	return data
 }

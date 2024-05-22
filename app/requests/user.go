@@ -70,3 +70,7 @@ type UserLoginParams struct {
 	AuthorizePartner string `json:"authorizePartner"` // 三方标识 google 、Apple、facebook
 	PartnerUserId    string `json:"partnerUserId"`    // 授权第三方的用户标识id
 }
+
+type Logout struct {
+	Token string `json:"token" validate:"required"` // token
+}

@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -9,7 +8,6 @@ import (
 	"goapi/app/models"
 	"goapi/app/models/keyenum"
 	"goapi/app/requests"
-	"goapi/app/response"
 	"goapi/app/service/client"
 	"goapi/pkg/address"
 	"goapi/pkg/echo"
@@ -119,40 +117,8 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	}
 	// 赠送注册奖金 TODO
 	// 异步发送注册埋点事件 TODO
-
-	clientUserBeans := new(response.ClientUserBeans)
-	clientUserBeans = client.UserBeans(clientUserBeans)
-
-	clientUserBeans.Nation = params.Nation
-	clientUserBeans.CurrencyType = appItem.CurrencyType
-	clientUserBeans.AccountEmail = email
-	clientUserBeans.Mobile = mobile
-	clientUserBeans.AppUserId = AppUserId
-	clientUserBeans.VirtualBalance = fmt.Sprintf("%v", appItem.DemoBalance)
-
-	marshal, err := json.Marshal(clientUserBeans)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	// 用户信息写入 redis 缓存
-	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key+token, string(marshal), 0)
-
-	// 组装返回数据
-	data := cmap.New().Items()
-	data["token"] = token
-	data["avatar"] = "https://fileupload.ssmartoption.com/file/views/9b6394b8-aa55-47b7-89bc-3dac781d233b.png"
-	data["userId"] = AppUserId
-	data["isVisit"] = 0
-	data["isExistEmail"] = 1
-	data["isHiddenIosAssets"] = 1 /* IOS是否隐藏数字货币交易 1是 0否 */
-	var appuser models.AppUser
-	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", AppUserId).Find(&appuser)
-	if len(appuser.Email) == 0 { // 用户没有绑定邮箱
-		data["isExistEmail"] = 0
-	}
-	appItem.ItemCode = appUser.ItemCode
-	data["appItems"] = appItem
+	mysql.DB.Debug().Model(appUser).Where("app_user_id", AppUserId).Find(&appUser)
+	data := client.LoginSuccess(appUser, appItem, token, c.ClientIP())
 	echo.Success(c, data, "SUCCESS")
 }
 
@@ -324,84 +290,22 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 	if len(appUser.Email) == 0 && len(appUser.CreditEmail) > 0 {
 		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Update("email", appUser.CreditEmail)
 	}
-	// 获取认证信息
-	var userCredit models.AppUserCredit
-	mysql.DB.Debug().Model(models.AppUserCredit{}).Where("app_user_id", appUser.AppUserId).Find(&userCredit)
-
-	clientUserBeans := new(response.ClientUserBeans)
-	clientUserBeans = client.UserBeans(clientUserBeans)
-	clientUserBeans.AppUserId = appUser.AppUserId
-
-	clientUserBeans.IdentityCredit = userCredit.IdentityCredit
-	clientUserBeans.IsFinishCredit = userCredit.IsFinishCredit
-	clientUserBeans.MobileCredit = userCredit.MobileCredit
-	clientUserBeans.EmailCredit = userCredit.EmailCredit
-	clientUserBeans.BankCredit = userCredit.BankCredit
-
-	// 绑定信息
-	clientUserBeans.BonusBalance = fmt.Sprintf("%v", appUser.BonusBalance)
-	clientUserBeans.RealBalance = fmt.Sprintf("%v", appUser.Balance)
-	clientUserBeans.VirtualBalance = fmt.Sprintf("%v", appUser.VirtualBalance)
-	clientUserBeans.IsNew = appUser.IsNew
-	clientUserBeans.IsVisit = appUser.IsVisit
-	clientUserBeans.IsFinishCredit = appUser.IsNeedKyc
-	clientUserBeans.AccountEmail = appUser.Email
-	clientUserBeans.Mobile = appUser.Mobile
-	clientUserBeans.UserLevel = appUser.UserLevel
-
-	// 动态统计数据
-	clientUserBeans.RechargeAmounts = "50000000.0"
-	clientUserBeans.WithdrawAmounts = "50000000.0"
-	clientUserBeans.TradingAmounts = "50000000.0"
-
-	clientUserBeans.TotalHisWithdrawAmounts = "0.0"
-	clientUserBeans.TotalHisRechargeAmounts = "0.0"
-	clientUserBeans.TotalHisBonusAmounts = "0.0"
-
-	clientUserBeans.HadRechargeAmounts = "50000000.0"
-	clientUserBeans.HadWithdrawAmounts = "50000000.0"
-
-	clientUserBeans.Nation = appUser.Nation
-	clientUserBeans.CurrencyType = appUser.CurrencyType
-	clientUserBeans.MonetaryUnit = appItem.MonetaryUnit
-
-	marshal, err := json.Marshal(clientUserBeans)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-	// 用户信息写入 redis 缓存
-	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key+token, string(marshal), 0)
-	// 组装返回数据
-	data := cmap.New().Items()
-	data["token"] = token
-	data["avatar"] = "https://fileupload.ssmartoption.com/file/views/9b6394b8-aa55-47b7-89bc-3dac781d233b.png"
-	data["userId"] = appUser.AppUserId
-	data["isVisit"] = 0
-	data["isExistEmail"] = 1
-	data["isHiddenIosAssets"] = 1 /* IOS是否隐藏数字货币交易 1是 0否 */
-	appItem.ItemCode = appUser.ItemCode
-	data["appItems"] = appItem
-	if len(appUser.Email) == 0 && len(appUser.CreditEmail) == 0 { // 用户没有绑定邮箱
-		data["isExistEmail"] = 0
-	}
-	// 清除旧的 token
-	redis.Client.Delete(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key + appUser.Token)
-	// 缓存 下线原因 0 token过期 用户注销 1 异地登陆，过期时间 一周
-	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.LOGOUT_TOKEN_REASON).Key+appUser.Token, "1", 60*60*24*7)
-	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Updates(map[string]interface{}{
-		"token":           token,
-		"last_login_ip":   c.ClientIP(),
-		"last_login_date": time.Now(),
-	})
-
+	data := client.LoginSuccess(appUser, appItem, token, c.ClientIP())
 	echo.Success(c, data, "SUCCESS")
 
 }
 
 // LogoutHandler 退出
 func (h *UserController) LogoutHandler(c *gin.Context) {
-
+	var params requests.Logout
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	HeaderParams := getHeaderParams(c)
+	redis.Client.Delete(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key + HeaderParams.Token)
+	echo.Success(c, nil, "SUCCESS")
 }
 
 // CancelingAccountHandler 注销
@@ -416,5 +320,61 @@ func (h *UserController) UnbindTokenHandler(c *gin.Context) {
 
 // ChangePasswordHandler 修改密码
 func (h *UserController) ChangePasswordHandler(c *gin.Context) {
-
+	var params requests.ChangePasswordParams
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	// 密码设置太简单拦截
+	if client.CheckPassword(client.WrongPwdList(), params.NewPasswordOne) {
+		echo.Error(c, "PasswordLimit", "")
+		return
+	}
+	// 两次密码不一致
+	if !strings.EqualFold(params.NewPasswordOne, params.NewPasswordTwo) {
+		echo.Error(c, "AccountWrong", "")
+		return
+	}
+	if client.CheckSmsCode(3, params.SmsCode, params.Email, params.Mobile) {
+		echo.Error(c, "FailVerificationcode", "")
+		return
+	}
+	var user models.AppUser
+	mysql.DB.Debug().Model(models.AppUser{}).Where("email", params.Email).Find(&user)
+	// 账户不存在
+	if len(user.AppUserId) == 0 {
+		echo.Error(c, "AccountCanNotNull", "")
+		return
+	}
+	// 黑名单禁止中
+	if user.BlackList == 1 {
+		echo.Error(c, "LoginBlackRule", "")
+		return
+	}
+	// 一切ok ，准备开始更新密码
+	where := cmap.New().Items()
+	where["is_used"] = 0
+	if len(params.Email) > 0 {
+		where["email"] = params.Email
+		user.CreditEmail = params.Email
+	}
+	if len(params.Mobile) > 0 {
+		user.CreditMobile = params.Mobile
+		where["mobile"] = params.Mobile
+	}
+	user.Password = params.NewPasswordTwo
+	err := mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", user.AppUserId).Updates(&user).Error
+	if err != nil {
+		logger.Error(err)
+	}
+	err = mysql.DB.Model(models.TAppVerificationCode{}).Where(where).Update("is_used", 1).Error
+	if err != nil {
+		logger.Error(err)
+	}
+	// 还要帮助用户登录
+	appItem := client.GetAppItem(params.Nation)
+	token := helpers.GetUUID()
+	data := client.LoginSuccess(user, appItem, token, c.ClientIP())
+	echo.Success(c, data, "SUCCESS")
 }
