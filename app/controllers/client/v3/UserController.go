@@ -354,6 +354,18 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 	if validate.ParamsError(c, params) {
 		return
 	}
+	if client.CheckSmsCode(3, params.SmsCode, params.Email, params.Mobile) {
+		echo.Error(c, "FailVerificationcode", "")
+		return
+	}
+	if 1 == params.Step {
+		echo.Success(c, nil, "SUCCESS")
+		return
+	}
+	if len(params.NewPasswordOne) == 0 || len(params.NewPasswordTwo) == 0 {
+		echo.Error(c, "ParamsCanNotBeNull", "")
+		return
+	}
 	// 密码设置太简单拦截
 	if client.CheckPassword(client.WrongPwdList(), params.NewPasswordOne) {
 		echo.Error(c, "PasswordLimit", "")
@@ -362,10 +374,6 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 	// 两次密码不一致
 	if !strings.EqualFold(params.NewPasswordOne, params.NewPasswordTwo) {
 		echo.Error(c, "AccountWrong", "")
-		return
-	}
-	if client.CheckSmsCode(3, params.SmsCode, params.Email, params.Mobile) {
-		echo.Error(c, "FailVerificationcode", "")
 		return
 	}
 	var user models.AppUser

@@ -316,7 +316,7 @@ func CheckSmsCode(codeType int, smsCode, email, mobile string) bool {
 		where["connect_type"] = 1
 	}
 	var TAppVerificationCode models.TAppVerificationCode
-	mysql.DB.Model(models.TAppVerificationCode{}).Where(where).Where("create_date >= ?", newDateTime).Order("create_date desc").Find(&TAppVerificationCode)
+	mysql.DB.Debug().Model(models.TAppVerificationCode{}).Where(where).Where("create_date >= ?", newDateTime).Order("create_date desc").Find(&TAppVerificationCode)
 	if TAppVerificationCode.ID == 0 || !strings.EqualFold(TAppVerificationCode.SmsCode, smsCode) {
 		return true
 	}
