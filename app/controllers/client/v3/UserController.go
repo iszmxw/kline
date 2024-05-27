@@ -8,6 +8,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/models/keyenum"
 	"goapi/app/requests"
+	"goapi/app/response"
 	"goapi/app/service/client"
 	"goapi/pkg/address"
 	"goapi/pkg/echo"
@@ -310,12 +311,39 @@ func (h *UserController) LogoutHandler(c *gin.Context) {
 
 // CancelingAccountHandler 注销
 func (h *UserController) CancelingAccountHandler(c *gin.Context) {
-
-}
-
-// UnbindTokenHandler 解绑推送令牌
-func (h *UserController) UnbindTokenHandler(c *gin.Context) {
-
+	var TAppUserBank models.TAppUserBank
+	var AppUser models.AppUser
+	var TAppUserLoginAuthorizeData models.TAppUserLoginAuthorizeData
+	HeaderParams := getHeaderParams(c)
+	user, _ := c.Get("user")
+	ClientUserBeans := user.(response.ClientUserBeans)
+	appUserId := ClientUserBeans.AppUserId
+	// 1、清理绑定银行卡
+	mysql.DB.Debug().Model(models.TAppUserBank{}).Where("app_user_id", appUserId).Find(&TAppUserBank)
+	if TAppUserBank.ID > 0 {
+		TAppUserBank.CardNo += fmt.Sprintf("[%v]", time.Now().UnixMilli())
+		mysql.DB.Debug().Model(models.TAppUserBank{}).Where("app_user_id", appUserId).Updates(TAppUserBank)
+	}
+	// 2、清理认证信息和账号
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUserId).Find(&AppUser)
+	if AppUser.CreateTs > 0 {
+		AppUser.Mobile += "[A]"
+		AppUser.Email += "[A]"
+		AppUser.CreditEmail += "[A]"
+		AppUser.CreditMobile += "[A]"
+		AppUser.IsLogout = 1
+		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUserId).Updates(AppUser)
+	}
+	mysql.DB.Debug().Model(models.TAppUserLoginAuthorizeData{}).
+		Where("app_user_id", appUserId).
+		Find(&TAppUserLoginAuthorizeData)
+	if TAppUserLoginAuthorizeData.ID > 0 {
+		mysql.DB.Debug().Model(models.TAppUserLoginAuthorizeData{}).Where("app_user_id", appUserId).Update("app_user_id", appUserId+fmt.Sprintf("[%v]", time.Now().UnixMilli()))
+	}
+	token := strings.ReplaceAll(HeaderParams.Token, keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key, "")
+	redis.Client.Delete(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key + token)
+	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.LOGOUT_TOKEN_REASON).Key+token, "0", 60*60*24*7)
+	echo.Success(c, nil, "SUCCESS")
 }
 
 // ChangePasswordHandler 修改密码
