@@ -77,7 +77,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				user.Any("/cancelingAccount.json", ClientV3Group.UserController.CancelingAccountHandler)
 			}
 
-			// 绑定先关操作
+			// 绑定相关操作
 			bind := V3Route.Group("/bind")
 			{
 				// 绑定推送令牌
