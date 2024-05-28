@@ -88,7 +88,7 @@ func (h *BindController) BindTokenHandler(c *gin.Context) {
 	if len(params.PushToken) > 0 {
 		where2["token_index"] = strings.ToLower(params.PushToken[:16])
 	}
-	mysql.DB.Debug().Model(models.TAppPushUserConnect{}).Where(where2).Order("create_data desc").Find(&TAppPushUserConnect)
+	mysql.DB.Debug().Model(models.TAppPushUserConnect{}).Where(where2).Order("create_date desc").Find(&TAppPushUserConnect)
 	if TAppPushUserConnect.PushId == 0 {
 		// 创建
 		mysql.DB.Debug().Model(models.TAppPushUserConnect{}).Create(&models.TAppPushUserConnect{
@@ -203,7 +203,7 @@ func (h *BindController) UnbindTokenHandler(c *gin.Context) {
 	if len(params.PushToken) > 0 {
 		where2["token_index"] = strings.ToLower(params.PushToken[:16])
 	}
-	mysql.DB.Debug().Model(models.TAppPushUserConnect{}).Where(where2).Order("create_data desc").Find(&ListTAppPushUserConnect)
+	mysql.DB.Debug().Model(models.TAppPushUserConnect{}).Where(where2).Order("create_date desc").Find(&ListTAppPushUserConnect)
 	for _, item := range ListTAppPushUserConnect {
 		// 更新
 		mysql.DB.Debug().Model(models.TAppPushUserConnect{}).Where("push_id", item.PushId).Updates(map[string]interface{}{

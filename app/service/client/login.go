@@ -94,7 +94,7 @@ func RegistrationRuleJudgment(itemCode, deviceId, regIp, onlineOnlyKeyId string)
 
 func GetAppItem(nation string) (item response.ItemNationMessageParams) {
 	mysql.DB.Debug().Model(models.AppItem{}).
-		Select("item_code as ItemCode,language_code as LanguageCode,item_national_name as ItemNationalName,item_national_flag as ItemNationalFlag,item_national_name as nation,is_start as IsStart,time_zone as TimeZone,demo_balance as DemoBalance,currency_type as CurrencyType").
+		Select("item_code as ItemCode,language_code as LanguageCode,item_national_name as ItemNationalName,item_national_flag as ItemNationalFlag,item_national_name as nation,is_start as IsStart,time_zone as TimeZone,demo_balance as DemoBalance,currency_type as CurrencyType,go_mail as GoMail").
 		Where("item_national_name", nation).
 		Find(&item)
 	return

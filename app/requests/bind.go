@@ -25,5 +25,5 @@ type UnbindTokenParams struct {
 type BindEmailParams struct {
 	Base
 	Email     string `json:"email" validate:"required"` // 邮箱
-	AppUserId string `json:"app_user_id"`               // 用户ID
+	AppUserId string `json:"appUserId"`                 // 用户ID
 }

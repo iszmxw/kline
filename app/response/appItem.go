@@ -11,4 +11,5 @@ type ItemNationMessageParams struct {
 	DemoBalance      float64 `json:"DemoBalance"`
 	CurrencyType     string  `json:"CurrencyType"`
 	MonetaryUnit     string  `json:"monetaryUnit"`
+	GoMail           string  `json:"go_mail"`
 }

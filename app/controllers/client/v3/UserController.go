@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -11,6 +13,7 @@ import (
 	"goapi/app/response"
 	"goapi/app/service/client"
 	"goapi/pkg/address"
+	"goapi/pkg/commonUtils"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -18,6 +21,10 @@ import (
 	"goapi/pkg/oauth"
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -413,4 +420,102 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 	token := helpers.GetUUID()
 	data := client.LoginSuccess(user, appItem, token, c.ClientIP())
 	echo.Success(c, data, "SUCCESS")
+}
+
+// GetCodeByTypeHandler 多类型获取验证码
+func (h *UserController) GetCodeByTypeHandler(c *gin.Context) {
+	var params requests.SendSMSByTypeParams
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	// 发送忘记密码验证用户是否存在
+	if params.CodeType == 3 {
+		var AppUser models.AppUser
+		mysql.DB.Debug().Model(models.AppUser{}).Where("email", params.Account).Find(&AppUser)
+		if len(AppUser.AppUserId) == 0 {
+			echo.Error(c, "AccountNotRegistered", "")
+			return
+		}
+	}
+	// 调用发送验证码服务
+	// 生成验证码
+	smsCode := generateVerificationCode()
+	fmt.Println(smsCode)
+	var SystemEmailRoutingNode models.SystemEmailRoutingNode
+	mysql.DB.Debug().Model(models.SystemEmailRoutingNode{}).Where("valid", 1).Where("item_code", params.ItemCode).Order("sort asc").Find(&SystemEmailRoutingNode)
+	if SystemEmailRoutingNode.Id == 0 {
+		logger.Error(errors.New("没有路由节点可用"))
+		echo.Error(c, "FailOperate", "")
+		return
+	}
+	if len(params.LanguageCode) == 0 {
+		// 默认英文模板
+		params.LanguageCode = "EN"
+	}
+	// 获取验证码模板
+	if len(params.ApiCode) == 0 {
+		params.ApiCode = "VerificationCode"
+	}
+	emailTemplate := commonUtils.GetEmailTemplate(params.Nation, params.LanguageCode, params.ApiCode)
+	if !strings.EqualFold("1", emailTemplate["status"]) {
+		logger.Error(errors.New("未配置邮件模板"))
+		echo.Error(c, "FailOperate", "")
+		return
+	}
+	// 组装邮件服务参数 准备发送邮件
+	emailBody := requests.SendOneEmail{
+		ItemCode:       params.ItemCode,
+		MailAccount:    SystemEmailRoutingNode.Email,
+		ReceiveEmail:   params.Account,
+		ContentType:    emailTemplate["type"],
+		MainTitle:      strings.ReplaceAll(emailTemplate["title"], "{{.smsCode}}", smsCode),
+		MessageContent: strings.ReplaceAll(emailTemplate["body"], "{{.smsCode}}", smsCode),
+	}
+	// 异步发送邮件
+	go func(Body requests.SendOneEmail) {
+		marshal, err := json.Marshal(Body)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		payload := strings.NewReader(string(marshal))
+		resp, err := http.Post(emailTemplate["url"], "application/json", payload)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		defer func(Body io.ReadCloser) {
+			err = Body.Close()
+			if err != nil {
+				logger.Error(err)
+			}
+		}(resp.Body)
+		body, err := ioutil.ReadAll(resp.Body)
+		logger.Info(string(body))
+	}(emailBody)
+	// 创建发送记录
+	mysql.DB.Debug().Model(models.TAppVerificationCode{}).Create(&models.TAppVerificationCode{
+		CodeType:    int64(params.CodeType),
+		CreateDate:  time.Now(),
+		Email:       params.Account,
+		ConnectType: 2,
+		IsUsed:      0,
+		SendType:    1,
+		SmsCode:     smsCode,
+		Nation:      params.Nation,
+		Mobile:      "",
+		UsingDate:   nil,
+	})
+	// 缓存发送记录 一天后过期
+	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.CLIENT_SMS_CODE).Key+params.Account, smsCode, 60*60*24)
+	echo.Success(c, nil, "SUCCESS")
+}
+
+// 生成随机四位数验证码
+func generateVerificationCode() string {
+	rand.Seed(time.Now().UnixNano()) // 使用当前时间的纳秒数作为种子
+	code := rand.Intn(10000)         // 生成一个0到9999之间的随机整数
+	return fmt.Sprintf("%04d", code) // 格式化为四位数，不足的地方用0填充
 }

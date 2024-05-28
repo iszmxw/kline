@@ -1,9 +1,13 @@
 package commonUtils
 
 import (
+	"errors"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
+	"goapi/app/service/client"
+	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"strings"
 )
 
 func GeTCollaboratorParams(itemCode, partnerCode, accountCode, nation string) (TCollaboratorParams models.TCollaboratorParams) {
@@ -26,5 +30,31 @@ func GeTCollaboratorParams(itemCode, partnerCode, accountCode, nation string) (T
 func SendStrToFileServiceGetUrl(str string) (submitParamUrl string) {
 	//getFileUrl := "https://fileupload.ssmartoption.com/file/uploadBase64Str"
 
+	return
+}
+
+func GetEmailTemplate(nation, languageCode, name string) (arr map[string]string) {
+	arr = make(map[string]string)
+	arr["status"] = "1"
+	// 获取验证码模板
+	var TSystemEmailTemplate models.TSystemEmailTemplate
+	where := cmap.New().Items()
+	where["language_code"] = strings.ToLower(languageCode)
+	where["name"] = name
+	mysql.DB.Debug().Model(models.TSystemEmailTemplate{}).Where(where).Find(&TSystemEmailTemplate)
+	if TSystemEmailTemplate.ID == 0 {
+		logger.Error(errors.New("没有路模板可用"))
+		arr["status"] = "0"
+		return
+	}
+	appItem := client.GetAppItem(nation)
+	if len(appItem.ItemCode) == 0 {
+		arr["status"] = "0"
+		return
+	}
+	arr["url"] = appItem.GoMail
+	arr["type"] = TSystemEmailTemplate.Type
+	arr["title"] = TSystemEmailTemplate.Title
+	arr["body"] = TSystemEmailTemplate.Body
 	return
 }
