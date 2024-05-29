@@ -10,6 +10,14 @@ import (
 	"strings"
 )
 
+// Response 统一响应结构
+type Response struct {
+	Code  int         `json:"code"`  // 响应码，1 表示成功，其他表示失败
+	Msg   string      `json:"msg"`   // 响应消息，SUCCESS 表示成功
+	Data  interface{} `json:"data"`  // 响应数据，有数据的时候返回数据
+	ReqID string      `json:"reqId"` // 请求 ID，用于追踪请求
+}
+
 // Rjson 成功返回封装 参数 data interface{} 类型为可接受任意类型
 func Rjson(c *gin.Context, result interface{}, msg string, code int) {
 	reqId, _ := c.Get("Tracking-Id")

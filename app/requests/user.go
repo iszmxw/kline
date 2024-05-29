@@ -57,7 +57,6 @@ type UserRegisterParams struct {
 	LoginAndRegister
 	Code      string `json:"code"`      // 验证码
 	InvitCode string `json:"invitCode"` // 邀请码
-
 }
 
 // 登录接口参数

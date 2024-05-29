@@ -79,6 +79,7 @@ func Client() gin.HandlerFunc {
 		case "/app/v3/user/register.json":
 		case "/app/v3/user/login.json":
 		case "/app/v3/user/getCodeByType.json":
+		case "/app/v3/other/info.json":
 			// 继续往下面执行
 			c.Next()
 			break

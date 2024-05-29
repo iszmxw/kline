@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/pkg/config"
 	"goapi/pkg/echo"
 	"goapi/pkg/logger"
@@ -16,6 +17,19 @@ import (
 
 type OtherController struct {
 	BaseController
+}
+
+// 接口信息
+
+func (h *OtherController) Info(c *gin.Context) {
+	data := cmap.New().Items()
+	data["name"] = "SmartOption3.0"
+	data["url"] = "http://192.168.192.95:7104/doc/swagger.json"
+	data["location"] = "http://192.168.192.95:7104/doc/swagger.json"
+	data["swaggerVersion"] = "3.0"
+	var result []map[string]interface{}
+	result = append(result, data)
+	c.JSON(200, result)
 }
 
 // 获取 15 库的所有键值对

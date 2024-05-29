@@ -2,7 +2,10 @@ package bootstrap
 
 import (
 	"fmt"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"goapi/app/middlewares/common"
+	_ "goapi/docs" // 不要忘了导入把你上一步生成的docs
 	"goapi/pkg/redis"
 	"goapi/routes"
 	"goapi/routes/client_v1"
@@ -41,6 +44,10 @@ func SetupRoute() *gin.Engine {
 		}
 		c.String(200, string(output))
 	})
+	//router.StaticFile("/v3/api-docs/swagger-config", "./docs/swagger.json")
+	router.StaticFile("/services.json", "./docs/services.json")
+	router.StaticFile("/doc/swagger.json", "./docs/swagger.json")
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	// 二元 client 接口
 	client_v1.RegisterClientRoutes(router.Group("/"))
 	client_v2.RegisterClientRoutes(router.Group("/"))

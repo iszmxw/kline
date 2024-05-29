@@ -35,7 +35,22 @@ type UserController struct {
 	BaseController
 }
 
-// RegisterHandler 注册
+// RegisterHandler
+// @Summary 用户注册接口
+// @Description 注册接口的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 用户模块
+// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
+// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
+// @Param version header string true "版本号" example:"32"
+// @Param nationlanguage header string true "国家语言" example:"in"
+// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
+// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Param UserRegisterParams body requests.UserRegisterParams true "注册参数"
+// @Success 1 {object} echo.Response "1表示成功响应"
+// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Router /app/v3/user/register.json [post]
 func (h *UserController) RegisterHandler(c *gin.Context) {
 	HeaderParams := getHeaderParams(c)
 	fmt.Println(HeaderParams.IsSecret, HeaderParams.Sign, HeaderParams.Token)
@@ -131,6 +146,21 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 }
 
 // LoginHandler 登录
+// @Summary 用户登录接口
+// @Description 登录接口的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 用户模块
+// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
+// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
+// @Param version header string true "版本号" example:"32"
+// @Param nationlanguage header string true "国家语言" example:"in"
+// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
+// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Param UserLoginParams body requests.UserLoginParams true "登录参数"
+// @Success 1 {object} echo.Response "1表示成功响应"
+// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Router /app/v3/user/login.json [post]
 func (h *UserController) LoginHandler(c *gin.Context) {
 	HeaderParams := getHeaderParams(c)
 	fmt.Println(HeaderParams.IsSecret, HeaderParams.Sign, HeaderParams.Token)
@@ -304,6 +334,21 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 }
 
 // LogoutHandler 退出
+// @Summary 用户退出接口
+// @Description 退出接口的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 用户模块
+// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
+// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
+// @Param version header string true "版本号" example:"32"
+// @Param nationlanguage header string true "国家语言" example:"in"
+// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
+// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Param Logout body requests.Logout true "退出参数"
+// @Success 1 {object} echo.Response "1表示成功响应"
+// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Router /app/v3/user/logout.json [post]
 func (h *UserController) LogoutHandler(c *gin.Context) {
 	var params requests.Logout
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
@@ -317,6 +362,20 @@ func (h *UserController) LogoutHandler(c *gin.Context) {
 }
 
 // CancelingAccountHandler 注销
+// @Summary 用户注销接口
+// @Description 注销接口的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 用户模块
+// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
+// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
+// @Param version header string true "版本号" example:"32"
+// @Param nationlanguage header string true "国家语言" example:"in"
+// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
+// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Success 1 {object} echo.Response "1表示成功响应"
+// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Router /app/v3/user/cancelingAccount.json [post]
 func (h *UserController) CancelingAccountHandler(c *gin.Context) {
 	var TAppUserBank models.TAppUserBank
 	var AppUser models.AppUser
@@ -354,6 +413,21 @@ func (h *UserController) CancelingAccountHandler(c *gin.Context) {
 }
 
 // ChangePasswordHandler 修改密码
+// @Summary 用户修改密码接口
+// @Description 修改密码接口的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 用户模块
+// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
+// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
+// @Param version header string true "版本号" example:"32"
+// @Param nationlanguage header string true "国家语言" example:"in"
+// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
+// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Param ChangePasswordParams body requests.ChangePasswordParams true "修改密码参数"
+// @Success 1 {object} echo.Response "1表示成功响应"
+// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Router /app/v3/user/changePassword.json [post]
 func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 	var params requests.ChangePasswordParams
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
@@ -423,6 +497,21 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 }
 
 // GetCodeByTypeHandler 多类型获取验证码
+// @Summary 用户多类型获取验证码接口
+// @Description 多类型获取验证码接口的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 用户模块
+// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
+// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
+// @Param version header string true "版本号" example:"32"
+// @Param nationlanguage header string true "国家语言" example:"in"
+// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
+// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Param SendSMSByTypeParams body requests.SendSMSByTypeParams true "多类型获取验证码参数"
+// @Success 1 {object} echo.Response "1表示成功响应"
+// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Router /app/v3/user/getCodeByType.json [post]
 func (h *UserController) GetCodeByTypeHandler(c *gin.Context) {
 	var params requests.SendSMSByTypeParams
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)

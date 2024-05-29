@@ -56,6 +56,8 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			// 其他接口
 			other := V3Route.Group("/other")
 			{
+				// 接口信息
+				other.Any("/info.json", ClientV3Group.OtherController.Info)
 				// 生产队列数据
 				other.Any("/pushList.json", ClientV3Group.OtherController.PushList)
 				// 测试mongo
