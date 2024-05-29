@@ -14,6 +14,69 @@ components:
           description: 请求 ID，用于追踪请求
           type: string
       type: object
+    requests.BindEmailParams:
+      properties:
+        appOsType:
+          description: 系统类型 1安卓 2IOS 3html
+          type: string
+        appUserId:
+          description: 用户ID
+          type: string
+        email:
+          description: 邮箱
+          type: string
+        itemCode:
+          description: 项目编码
+          type: string
+        languageCode:
+          description: 语言编码
+          type: string
+        nation:
+          description: 国家编码
+          type: string
+      required:
+      - email
+      - itemCode
+      - languageCode
+      - nation
+      type: object
+    requests.BindTokenParams:
+      properties:
+        app_user_id:
+          description: 用户ID
+          type: string
+        appOsType:
+          description: 系统类型 1安卓 2IOS 3html
+          type: string
+        deviceBrand:
+          description: 设备品牌
+          type: string
+        deviceId:
+          description: 设备ID
+          type: string
+        itemCode:
+          description: 项目编码
+          type: string
+        languageCode:
+          description: 语言编码
+          type: string
+        nation:
+          description: 国家编码
+          type: string
+        pushPlatForm:
+          description: push平台 firebase
+          type: string
+        pushToken:
+          description: push令牌
+          type: string
+        submitType:
+          description: 类型 1安装 2注册
+          type: integer
+      required:
+      - itemCode
+      - languageCode
+      - nation
+      type: object
     requests.ChangePasswordParams:
       properties:
         appOsType:
@@ -89,6 +152,40 @@ components:
         sendChannelType:
           description: 发送验证码渠道类型 1手机号 2邮箱
           type: integer
+      required:
+      - itemCode
+      - languageCode
+      - nation
+      type: object
+    requests.UnbindTokenParams:
+      properties:
+        app_user_id:
+          description: 用户ID
+          type: string
+        appOsType:
+          description: 系统类型 1安卓 2IOS 3html
+          type: string
+        deviceBrand:
+          description: 设备品牌
+          type: string
+        deviceId:
+          description: 设备ID
+          type: string
+        itemCode:
+          description: 项目编码
+          type: string
+        languageCode:
+          description: 语言编码
+          type: string
+        nation:
+          description: 国家编码
+          type: string
+        pushPlatForm:
+          description: push平台 firebase
+          type: string
+        pushToken:
+          description: push令牌
+          type: string
       required:
       - itemCode
       - languageCode
@@ -277,9 +374,10 @@ components:
           description: 项目编码
           type: string
         itemNationalFlag:
+          description: 项目国国旗
           type: string
         itemNationalName:
-          description: 国家
+          description: 项目国家名称
           type: string
         languageCode:
           description: 语言编码
@@ -330,6 +428,195 @@ info:
   version: "3.0"
 openapi: 3.1.0
 paths:
+  /app/v3/bind/bindAccountEmail.json:
+    post:
+      description: 绑定用户邮箱的详细描述
+      parameters:
+      - description: 用户令牌
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.BindEmailParams'
+        description: 绑定用户邮箱参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 1表示成功响应
+      summary: 绑定用户邮箱接口
+      tags:
+      - 绑定模块
+  /app/v3/bind/bindToken.json:
+    post:
+      description: 绑定推送令牌的详细描述
+      parameters:
+      - description: 用户令牌
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.BindTokenParams'
+        description: 绑定推送令牌参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 1表示成功响应
+      summary: 绑定推送令牌接口
+      tags:
+      - 绑定模块
+  /app/v3/bind/unbindToken.json:
+    post:
+      description: 解绑推送令牌的详细描述
+      parameters:
+      - description: 用户令牌
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.UnbindTokenParams'
+        description: 解绑推送令牌参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 1表示成功响应
+      summary: 解绑推送令牌接口
+      tags:
+      - 绑定模块
   /app/v3/user/cancelingAccount.json:
     post:
       description: 注销接口的详细描述
