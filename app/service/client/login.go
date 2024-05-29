@@ -323,7 +323,7 @@ func CheckSmsCode(codeType int, smsCode, email, mobile string) bool {
 	return false
 }
 
-func LoginSuccess(appUser models.AppUser, appItem response.ItemNationMessageParams, token, ip string) map[string]interface{} {
+func LoginSuccess(appUser models.AppUser, appItem response.ItemNationMessageParams, token, ip string) (data response.SuccessUserLogin) {
 	// 获取认证信息
 	var userCredit models.AppUserCredit
 	mysql.DB.Debug().Model(models.AppUserCredit{}).Where("app_user_id", appUser.AppUserId).Find(&userCredit)
@@ -369,17 +369,16 @@ func LoginSuccess(appUser models.AppUser, appItem response.ItemNationMessagePara
 	// 用户信息写入 redis 缓存
 	_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key+token, string(marshal), 0)
 	// 组装返回数据
-	data := cmap.New().Items()
-	data["token"] = token
-	data["avatar"] = "https://fileupload.ssmartoption.com/file/views/9b6394b8-aa55-47b7-89bc-3dac781d233b.png"
-	data["userId"] = appUser.AppUserId
-	data["isVisit"] = 0
-	data["isExistEmail"] = 1
-	data["isHiddenIosAssets"] = 1 /* IOS是否隐藏数字货币交易 1是 0否 */
+	data.Token = token
+	data.Avatar = "https://fileupload.ssmartoption.com/file/views/9b6394b8-aa55-47b7-89bc-3dac781d233b.png"
+	data.UserId = appUser.AppUserId
+	data.IsVisit = 0
+	data.IsExistEmail = 1
+	data.IsHiddenIosAssets = 1 /* IOS是否隐藏数字货币交易 1是 0否 */
 	appItem.ItemCode = appUser.ItemCode
-	data["appItems"] = appItem
+	data.AppItems = appItem
 	if len(appUser.Email) == 0 && len(appUser.CreditEmail) == 0 { // 用户没有绑定邮箱
-		data["isExistEmail"] = 0
+		data.IsExistEmail = 0
 	}
 	// 清除旧的 token
 	redis.Client.Delete(keyenum.KeyInfo(keyenum.CLIENT_TOKEN).Key + appUser.Token)

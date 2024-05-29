@@ -6,7 +6,7 @@ components:
           description: 响应码，1 表示成功，其他表示失败
           type: integer
         data:
-          description: 响应数据，有数据的时候返回数据
+          description: 响应数据，有数据的时候返回数据，详情请看data数据结构体
         msg:
           description: 响应消息，SUCCESS 表示成功
           type: string
@@ -258,6 +258,65 @@ components:
       - nation
       - onlineOnlyKeyId
       type: object
+    response.ItemNationMessageParams:
+      description: appItems 信息
+      properties:
+        CurrencyType:
+          description: 货币
+          type: string
+        DemoBalance:
+          description: demo 余额
+          type: number
+        go_mail:
+          description: 邮件发送地址
+          type: string
+        isStart:
+          description: 是否开启
+          type: string
+        itemCode:
+          description: 项目编码
+          type: string
+        itemNationalFlag:
+          type: string
+        itemNationalName:
+          description: 国家
+          type: string
+        languageCode:
+          description: 语言编码
+          type: string
+        monetaryUnit:
+          description: 货币符号
+          type: string
+        nation:
+          description: 国家
+          type: string
+        timeZone:
+          description: 时区
+          type: string
+      type: object
+    response.SuccessUserLogin:
+      properties:
+        appItems:
+          $ref: '#/components/schemas/response.ItemNationMessageParams'
+        avatar:
+          description: 头像
+          type: string
+        isExistEmail:
+          description: 是否绑定了邮箱
+          type: integer
+        isHiddenIosAssets:
+          description: 是否隐藏 ios 资产
+          type: integer
+        isVisit:
+          description: 是否游客
+          type: integer
+        token:
+          description: 用户的 token
+          type: string
+        userId:
+          description: 用户的 userID
+          type: string
+      type: object
 externalDocs:
   description: ""
   url: ""
@@ -317,18 +376,18 @@ paths:
             schema:
               type: object
       responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
         "1":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/echo.Response'
           description: 1表示成功响应
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/echo.Response'
-          description: 不是1就是失败的
       summary: 用户注销接口
       tags:
       - 用户模块
@@ -380,18 +439,18 @@ paths:
         description: 修改密码参数
         required: true
       responses:
-        "1":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/echo.Response'
-          description: 1表示成功响应
-        "500":
+        "0":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/echo.Response'
           description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessUserLogin'
+          description: data数据结构体
       summary: 用户修改密码接口
       tags:
       - 用户模块
@@ -443,18 +502,18 @@ paths:
         description: 多类型获取验证码参数
         required: true
       responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
         "1":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/echo.Response'
           description: 1表示成功响应
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/echo.Response'
-          description: 不是1就是失败的
       summary: 用户多类型获取验证码接口
       tags:
       - 用户模块
@@ -506,18 +565,18 @@ paths:
         description: 登录参数
         required: true
       responses:
-        "1":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/echo.Response'
-          description: 1表示成功响应
-        "500":
+        "0":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/echo.Response'
           description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessUserLogin'
+          description: data数据结构体
       summary: 用户登录接口
       tags:
       - 用户模块
@@ -569,18 +628,18 @@ paths:
         description: 退出参数
         required: true
       responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
         "1":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/echo.Response'
           description: 1表示成功响应
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/echo.Response'
-          description: 不是1就是失败的
       summary: 用户退出接口
       tags:
       - 用户模块
@@ -632,18 +691,18 @@ paths:
         description: 注册参数
         required: true
       responses:
-        "1":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/echo.Response'
-          description: 1表示成功响应
-        "500":
+        "0":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/echo.Response'
           description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessUserLogin'
+          description: data数据结构体
       summary: 用户注册接口
       tags:
       - 用户模块

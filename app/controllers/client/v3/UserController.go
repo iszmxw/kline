@@ -48,8 +48,8 @@ type UserController struct {
 // @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
 // @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
 // @Param UserRegisterParams body requests.UserRegisterParams true "注册参数"
-// @Success 1 {object} echo.Response "1表示成功响应"
-// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.SuccessUserLogin "data数据结构体"
 // @Router /app/v3/user/register.json [post]
 func (h *UserController) RegisterHandler(c *gin.Context) {
 	HeaderParams := getHeaderParams(c)
@@ -158,8 +158,8 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 // @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
 // @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
 // @Param UserLoginParams body requests.UserLoginParams true "登录参数"
-// @Success 1 {object} echo.Response "1表示成功响应"
-// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.SuccessUserLogin "data数据结构体"
 // @Router /app/v3/user/login.json [post]
 func (h *UserController) LoginHandler(c *gin.Context) {
 	HeaderParams := getHeaderParams(c)
@@ -346,8 +346,8 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 // @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
 // @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
 // @Param Logout body requests.Logout true "退出参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
-// @Failure 500 {object} echo.Response "不是1就是失败的"
 // @Router /app/v3/user/logout.json [post]
 func (h *UserController) LogoutHandler(c *gin.Context) {
 	var params requests.Logout
@@ -373,8 +373,8 @@ func (h *UserController) LogoutHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example:"in"
 // @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
 // @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
-// @Failure 500 {object} echo.Response "不是1就是失败的"
 // @Router /app/v3/user/cancelingAccount.json [post]
 func (h *UserController) CancelingAccountHandler(c *gin.Context) {
 	var TAppUserBank models.TAppUserBank
@@ -425,8 +425,8 @@ func (h *UserController) CancelingAccountHandler(c *gin.Context) {
 // @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
 // @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
 // @Param ChangePasswordParams body requests.ChangePasswordParams true "修改密码参数"
-// @Success 1 {object} echo.Response "1表示成功响应"
-// @Failure 500 {object} echo.Response "不是1就是失败的"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.SuccessUserLogin "data数据结构体"
 // @Router /app/v3/user/changePassword.json [post]
 func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 	var params requests.ChangePasswordParams
@@ -509,8 +509,8 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 // @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
 // @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
 // @Param SendSMSByTypeParams body requests.SendSMSByTypeParams true "多类型获取验证码参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
-// @Failure 500 {object} echo.Response "不是1就是失败的"
 // @Router /app/v3/user/getCodeByType.json [post]
 func (h *UserController) GetCodeByTypeHandler(c *gin.Context) {
 	var params requests.SendSMSByTypeParams

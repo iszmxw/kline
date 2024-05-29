@@ -2,7 +2,6 @@ package echo
 
 import (
 	"github.com/gin-gonic/gin"
-	cmap "github.com/orcaman/concurrent-map"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"goapi/pkg/helpers"
@@ -14,23 +13,23 @@ import (
 type Response struct {
 	Code  int         `json:"code"`  // 响应码，1 表示成功，其他表示失败
 	Msg   string      `json:"msg"`   // 响应消息，SUCCESS 表示成功
-	Data  interface{} `json:"data"`  // 响应数据，有数据的时候返回数据
+	Data  interface{} `json:"data"`  // 响应数据，有数据的时候返回数据，详情请看data数据结构体
 	ReqID string      `json:"reqId"` // 请求 ID，用于追踪请求
 }
 
 // Rjson 成功返回封装 参数 data interface{} 类型为可接受任意类型
 func Rjson(c *gin.Context, result interface{}, msg string, code int) {
 	reqId, _ := c.Get("Tracking-Id")
-	rdata := cmap.New().Items()
-	rdata["reqId"] = reqId
-	rdata["code"] = code
+	rdata := new(Response)
+	rdata.ReqID = reqId.(string)
+	rdata.Code = code
 	if result != nil {
-		rdata["data"] = result
+		rdata.Data = result
 	}
 	if len(msg) > 0 {
-		rdata["msg"] = msg
+		rdata.Msg = msg
 	} else {
-		rdata["msg"] = "success."
+		rdata.Msg = "success."
 	}
 	c.JSON(200, rdata)
 	return
