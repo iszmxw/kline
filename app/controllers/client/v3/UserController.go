@@ -40,13 +40,13 @@ type UserController struct {
 // @Description 注册接口的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 用户模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 01.用户模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param UserRegisterParams body requests.UserRegisterParams true "注册参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.SuccessUserLogin "data数据结构体"
@@ -150,13 +150,13 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 // @Description 登录接口的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 用户模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 01.用户模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param UserLoginParams body requests.UserLoginParams true "登录参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.SuccessUserLogin "data数据结构体"
@@ -338,13 +338,13 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 // @Description 退出接口的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 用户模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 01.用户模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param Logout body requests.Logout true "退出参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
@@ -366,13 +366,13 @@ func (h *UserController) LogoutHandler(c *gin.Context) {
 // @Description 注销接口的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 用户模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 01.用户模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
 // @Router /app/v3/user/cancelingAccount.json [post]
@@ -417,13 +417,13 @@ func (h *UserController) CancelingAccountHandler(c *gin.Context) {
 // @Description 修改密码接口的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 用户模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 01.用户模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param ChangePasswordParams body requests.ChangePasswordParams true "修改密码参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.SuccessUserLogin "data数据结构体"
@@ -501,13 +501,13 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 // @Description 多类型获取验证码接口的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 用户模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 01.用户模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param SendSMSByTypeParams body requests.SendSMSByTypeParams true "多类型获取验证码参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"

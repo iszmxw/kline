@@ -195,9 +195,17 @@ components:
       properties:
         account:
           description: 账号
+          example: 123444@qq.com
           type: string
         accountType:
           description: 账号类型 1邮箱 2手机号 3google 4facebook 5apple
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          example: 1
           type: integer
         adid:
           description: 整合流量方公司的adjust设备id
@@ -280,9 +288,17 @@ components:
       properties:
         account:
           description: 账号
+          example: 123444@qq.com
           type: string
         accountType:
           description: 账号类型 1邮箱 2手机号 3google 4facebook 5apple
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          example: 1
           type: integer
         adid:
           description: 整合流量方公司的adjust设备id
@@ -299,6 +315,7 @@ components:
           type: string
         code:
           description: 验证码
+          form: code
           type: string
         deciveBrand:
           description: 设备信息
@@ -320,6 +337,7 @@ components:
           type: string
         invitCode:
           description: 邀请码
+          form: invitCode
           type: string
         itemCode:
           description: 项目编码
@@ -410,6 +428,7 @@ components:
           type: integer
         token:
           description: 用户的 token
+          example: 123444@qq.com
           type: string
         userId:
           description: 用户的 userID
@@ -433,36 +452,42 @@ paths:
       description: 绑定用户邮箱的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -490,42 +515,48 @@ paths:
           description: 1表示成功响应
       summary: 绑定用户邮箱接口
       tags:
-      - 绑定模块
+      - 02.绑定模块
   /app/v3/bind/bindToken.json:
     post:
       description: 绑定推送令牌的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -553,42 +584,48 @@ paths:
           description: 1表示成功响应
       summary: 绑定推送令牌接口
       tags:
-      - 绑定模块
+      - 02.绑定模块
   /app/v3/bind/unbindToken.json:
     post:
       description: 解绑推送令牌的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -616,42 +653,48 @@ paths:
           description: 1表示成功响应
       summary: 解绑推送令牌接口
       tags:
-      - 绑定模块
+      - 02.绑定模块
   /app/v3/user/cancelingAccount.json:
     post:
       description: 注销接口的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -677,42 +720,48 @@ paths:
           description: 1表示成功响应
       summary: 用户注销接口
       tags:
-      - 用户模块
+      - 01.用户模块
   /app/v3/user/changePassword.json:
     post:
       description: 修改密码接口的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -740,42 +789,48 @@ paths:
           description: data数据结构体
       summary: 用户修改密码接口
       tags:
-      - 用户模块
+      - 01.用户模块
   /app/v3/user/getCodeByType.json:
     post:
       description: 多类型获取验证码接口的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -803,42 +858,48 @@ paths:
           description: 1表示成功响应
       summary: 用户多类型获取验证码接口
       tags:
-      - 用户模块
+      - 01.用户模块
   /app/v3/user/login.json:
     post:
       description: 登录接口的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -866,42 +927,48 @@ paths:
           description: data数据结构体
       summary: 用户登录接口
       tags:
-      - 用户模块
+      - 01.用户模块
   /app/v3/user/logout.json:
     post:
       description: 退出接口的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -929,42 +996,48 @@ paths:
           description: 1表示成功响应
       summary: 用户退出接口
       tags:
-      - 用户模块
+      - 01.用户模块
   /app/v3/user/register.json:
     post:
       description: 注册接口的详细描述
       parameters:
       - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
         in: header
         name: token
         required: true
         schema:
           type: string
       - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
         in: header
         name: sign
         required: true
         schema:
           type: string
       - description: 版本号
+        example: "32"
         in: header
         name: version
         required: true
         schema:
           type: string
       - description: 国家语言
+        example: in
         in: header
         name: nationlanguage
         required: true
         schema:
           type: string
       - description: 用户代理
+        example: okhttp/4.9.1
         in: header
         name: User-Agent
         required: true
         schema:
           type: string
       - description: 内容类型
+        example: application/json;charset=UTF-8
         in: header
         name: Content-Type
         required: true
@@ -992,6 +1065,6 @@ paths:
           description: data数据结构体
       summary: 用户注册接口
       tags:
-      - 用户模块
+      - 01.用户模块
 servers:
 - url: 127.0.0.1:7104

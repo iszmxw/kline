@@ -20,12 +20,12 @@ type LoginLog struct {
 
 type LoginAndRegister struct {
 	Base
-	AccountType     int    `json:"accountType" validate:"required"`     // 账号类型 1邮箱 2手机号 3google 4facebook 5apple
-	Account         string `json:"account" validate:"required"`         // 账号
-	Password        string `json:"password"`                            // 密码
-	InvitCode       string `json:"invitCode"`                           // 邀请码
-	VisitUserId     string `json:"visitUserId"`                         // 游客ID
-	OnlineOnlyKeyId string `json:"onlineOnlyKeyId" validate:"required"` // 设备ID
+	AccountType     int    `json:"accountType" example:"1" validate:"required" enums:"1,2,3,4,5"` // 账号类型 1邮箱 2手机号 3google 4facebook 5apple
+	Account         string `json:"account" validate:"required" example:"mail@qq.com"`             // 账号
+	Password        string `json:"password"`                                                      // 密码
+	InvitCode       string `json:"invitCode"`                                                     // 邀请码
+	VisitUserId     string `json:"visitUserId"`                                                   // 游客ID
+	OnlineOnlyKeyId string `json:"onlineOnlyKeyId" validate:"required"`                           // 设备ID
 	// 应用信息
 	AppPackage string `json:"appPackage" validate:"required"`
 	AppVersion string `json:"appVersion" validate:"required"`

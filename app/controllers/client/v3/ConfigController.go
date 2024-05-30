@@ -3,12 +3,16 @@ package v3
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"goapi/app/models"
+	"goapi/app/requests"
+	"goapi/app/service/client"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
+	"goapi/pkg/validate"
 	"goapi/service/binary-monitoring/pkg"
 	"golang.org/x/text/unicode/norm"
 	"io/ioutil"
@@ -151,6 +155,18 @@ func (h *ConfigController) Iqoption(c *gin.Context) {
 }
 
 func (h *ConfigController) GetLanguagePageV2Handler(c *gin.Context) {
+	var params requests.GetLanguagePageParams
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	appItem := client.GetAppItem(params.Nation)
+	if len(appItem.TimeZone) == 0 {
+		echo.Error(c, "ItemIsNull", "")
+		return
+	}
+
 	Token := c.Query("token")
 	if len(Token) > 0 {
 		_, err := redis.Client.SelectDbAdd(15, "token:iqoption", Token, 0)

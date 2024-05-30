@@ -40,13 +40,13 @@ type PushSetRule struct {
 // @Description 绑定推送令牌的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 绑定模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 02.绑定模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param BindTokenParams body requests.BindTokenParams true "绑定推送令牌参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
@@ -167,13 +167,13 @@ func (h *BindController) BindTokenHandler(c *gin.Context) {
 // @Description 解绑推送令牌的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 绑定模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 02.绑定模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param UnbindTokenParams body requests.UnbindTokenParams true "解绑推送令牌参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
@@ -279,13 +279,13 @@ func (h *BindController) UnbindTokenHandler(c *gin.Context) {
 // @Description 绑定用户邮箱的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 绑定模块
-// @Param token header string true "用户令牌" example:"82c16868633147de906d65b4e5b55c64"
-// @Param sign header string true "签名" example:"EAFB0EF644F493F74FE8F0871BE15914"
-// @Param version header string true "版本号" example:"32"
-// @Param nationlanguage header string true "国家语言" example:"in"
-// @Param User-Agent header string true "用户代理" example:"okhttp/4.9.1"
-// @Param Content-Type header string true "内容类型" example:"application/json;charset=UTF-8"
+// @Tags 02.绑定模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param BindEmailParams body requests.BindEmailParams true "绑定用户邮箱参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
