@@ -27,8 +27,8 @@ type LoginAndRegister struct {
 	VisitUserId     string `json:"visitUserId"`                                                   // 游客ID
 	OnlineOnlyKeyId string `json:"onlineOnlyKeyId" validate:"required"`                           // 设备ID
 	// 应用信息
-	AppPackage string `json:"appPackage" validate:"required"`
-	AppVersion string `json:"appVersion" validate:"required"`
+	AppPackage string `json:"appPackage" validate:"required"` // app包路径
+	AppVersion string `json:"appVersion" validate:"required"` // app本版
 	Channel    string `json:"channel"`
 
 	// 设备信息

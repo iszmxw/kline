@@ -36,11 +36,11 @@ type PushSetRule struct {
 }
 
 // BindTokenHandler 绑定推送令牌
-// @Summary 绑定推送令牌接口
+// @Summary No.02.1-绑定推送令牌接口
 // @Description 绑定推送令牌的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 02.绑定模块
+// @Tags 2.绑定模块
 // @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
 // @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
 // @Param version header string true "版本号" example(32)
@@ -50,7 +50,7 @@ type PushSetRule struct {
 // @Param BindTokenParams body requests.BindTokenParams true "绑定推送令牌参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
-// @Router /app/v3/bind/bindToken.json [post]
+// @Router /No.02.1/app/v3/bind/bindToken.json [post]
 func (h *BindController) BindTokenHandler(c *gin.Context) {
 	var params requests.BindTokenParams
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
@@ -163,11 +163,11 @@ func (h *BindController) BindTokenHandler(c *gin.Context) {
 }
 
 // UnbindTokenHandler 解绑推送令牌
-// @Summary 解绑推送令牌接口
+// @Summary No.02.2-解绑推送令牌接口
 // @Description 解绑推送令牌的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 02.绑定模块
+// @Tags 2.绑定模块
 // @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
 // @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
 // @Param version header string true "版本号" example(32)
@@ -177,7 +177,7 @@ func (h *BindController) BindTokenHandler(c *gin.Context) {
 // @Param UnbindTokenParams body requests.UnbindTokenParams true "解绑推送令牌参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
-// @Router /app/v3/bind/unbindToken.json [post]
+// @Router /No.02.2/app/v3/bind/unbindToken.json [post]
 func (h *BindController) UnbindTokenHandler(c *gin.Context) {
 	HeaderParams := getHeaderParams(c)
 	var params requests.UnbindTokenParams
@@ -275,11 +275,11 @@ func (h *BindController) UnbindTokenHandler(c *gin.Context) {
 }
 
 // BindAccountEmailHandler 绑定用户邮箱
-// @Summary 绑定用户邮箱接口
+// @Summary No.02.3-绑定用户邮箱接口
 // @Description 绑定用户邮箱的详细描述
 // @Accept application/json
 // @Produce application/json
-// @Tags 02.绑定模块
+// @Tags 2.绑定模块
 // @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
 // @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
 // @Param version header string true "版本号" example(32)
@@ -289,7 +289,7 @@ func (h *BindController) UnbindTokenHandler(c *gin.Context) {
 // @Param BindEmailParams body requests.BindEmailParams true "绑定用户邮箱参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "1表示成功响应"
-// @Router /app/v3/bind/bindAccountEmail.json [post]
+// @Router /No.02.3/app/v3/bind/bindAccountEmail.json [post]
 func (h *BindController) BindAccountEmailHandler(c *gin.Context) {
 	var params requests.BindEmailParams
 	var AppUser models.AppUser
