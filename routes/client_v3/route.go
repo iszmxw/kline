@@ -94,7 +94,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 
 			// 配置模块
 			{
-				// 获取系统多语言包 v2 [todo]
+				// 获取系统多语言包 v2 [ok]
 				config.Any("/getLanguagePageV2.json", ClientV3Group.ConfigController.GetLanguagePageV2Handler)
 				// 获取国家信息 [todo]
 				config.Any("/getExistingCountryV2.json", ClientV3Group.ConfigController.GetExistingCountryV2Handler)

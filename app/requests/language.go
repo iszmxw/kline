@@ -7,3 +7,8 @@ type GetLanguagePageParams struct {
 	Uuid   string `json:"uuid"`
 	Adid   string `json:"adid"`
 }
+
+type PageShow struct {
+	ShowWord   string `json:"showWord"`
+	ShowColumn string `json:"showColumn"`
+}
