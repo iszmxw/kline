@@ -197,7 +197,8 @@ func (h *ConfigController) GetLanguagePageV2Handler(c *gin.Context) {
 	VipIsValid, _ := redis.Client.Get(fmt.Sprintf("%s:%s:%s", keyenum.KeyInfo(keyenum.SETTING_VIP_RULE_SWITCH).Key, params.ItemCode, params.Nation))
 	mysql.DB.Debug().Model(models.TMultiLanguageShow{}).
 		Where("type LIKE ?", "%"+params.Type+"%").
-		Where(where).Select("show_word AS showWord,show_column AS showColumn").
+		Where(where).
+		Select("show_word,show_column").
 		Find(&PageShowList)
 	languageData := cmap.New().Items()
 	for _, PageShow := range PageShowList {
