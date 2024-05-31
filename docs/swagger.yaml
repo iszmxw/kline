@@ -1379,7 +1379,7 @@ paths:
       - 3.配置模块
   /No.03.3/app/v3/config/getUserOperationRules.json:
     post:
-      description: 获取国家信息的详细描述
+      description: 获取用户限制规则列表的详细描述
       parameters:
       - description: 用户令牌
         example: 82c16868633147de906d65b4e5b55c64
@@ -1428,7 +1428,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/requests.ExistingCountryParams'
-        description: 获取国家信息参数
+        description: 获取用户限制规则列表参数
         required: true
       responses:
         "0":
@@ -1443,7 +1443,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/response.ExistingCountry'
           description: data数据结构体
-      summary: No.03.3-获取国家信息
+      summary: No.03.3-获取用户限制规则列表
       tags:
       - 3.配置模块
   /No.03.4/app/v3/config/getUserTradingRules.json:

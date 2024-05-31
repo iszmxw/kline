@@ -13,6 +13,7 @@ import (
 	"goapi/app/response"
 	"goapi/app/service/client"
 	"goapi/pkg/address"
+	"goapi/pkg/commonUtils"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -373,8 +374,8 @@ func (h *ConfigController) GetExistingCountryV2Handler(c *gin.Context) {
 }
 
 // GetUserOperationRulesHandler
-// @Summary No.03.3-获取国家信息
-// @Description 获取国家信息的详细描述
+// @Summary No.03.3-获取用户限制规则列表
+// @Description 获取用户限制规则列表的详细描述
 // @Accept application/json
 // @Produce application/json
 // @Tags 3.配置模块
@@ -384,73 +385,90 @@ func (h *ConfigController) GetExistingCountryV2Handler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取国家信息参数"
+// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取用户限制规则列表参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.ExistingCountry "data数据结构体"
 // @Router /No.03.3/app/v3/config/getUserOperationRules.json [post]
 func (h *ConfigController) GetUserOperationRulesHandler(c *gin.Context) {
-	var params requests.ExistingCountryParams
-	var list []response.ItemNationMessageParams
-	var result []response.ExistingCountry
+	var params requests.Base
+	//var result []response.ExistingCountry
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	ip := c.ClientIP()
-	Address := address.GetMessageByIp(ip)
-	switch Address.Country {
-	case "Indonesia":
-		params.Nation = "Indonesia"
-		break
-	case "India":
-		params.Nation = "India"
-		break
-	case "Mexico":
-		params.Nation = "Mexico"
-		break
-	case "Brazil":
-		params.Nation = "Brazil"
-		break
-	default:
-		break
+	var list []models.TUserOperationRules
+	mysql.DB.Debug().Model(models.TUserOperationRules{}).Where(map[string]interface{}{
+		"is_valid":  1,
+		"is_show":   1,
+		"item_code": params.ItemCode,
+		"nation":    params.Nation,
+	}).Find(&list)
+	// 获取用户vip相关信息
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	vipRule := commonUtils.GetVipInfo(params.ItemCode, params.Nation, User.UserLevel)
+	// vip权益覆盖
+	if nil == vipRule {
+		// 获取用户默认vip相关信息
+		vipRule = commonUtils.GetVipInfo(params.ItemCode, params.Nation, 0)
 	}
-	if len(params.SystemLanguage) == 0 {
-		params.SystemLanguage = "en"
-	}
-	mysql.DB.Debug().Model(models.AppItem{}).Joins(models.Prefix("left join $_app_item_nation_language_config on $_app_item_nation_language_config.item_code=$_app_item.item_code and $_app_item_nation_language_config.nation_name=$_app_item.item_national_name")).
-		Where(map[string]interface{}{
-			models.Prefix("$_app_item.is_start"):                         1,
-			models.Prefix("$_app_item_nation_language_config.language"):  params.SystemLanguage,
-			models.Prefix("$_app_item_nation_language_config.item_code"): params.ItemCode,
-		}).
-		Order(models.Prefix("$_app_item.sort desc,$_app_item.create_date desc")).
-		Select(
-			models.Prefix("$_app_item.item_code"),
-			models.Prefix("$_app_item.language_code"),
-			models.Prefix("$_app_item_nation_language_config.nation_name as ItemNationalName"),
-			models.Prefix("$_app_item.item_national_flag"),
-			models.Prefix("$_app_item.item_national_name as nation"),
-			models.Prefix("$_app_item.is_start"),
-			models.Prefix("$_app_item.time_zone"),
-		).
-		Find(&list)
-	for _, item := range list {
-		data := new(response.ExistingCountry)
-		data.ItemCode = item.ItemCode
-		data.Language = item.LanguageCode
-		data.ItemNationalFlag = item.ItemNationalFlag
-		data.ItemNationalName = item.ItemNationalName
-		data.Nation = item.Nation
-		data.IsStart = item.IsStart
-		data.TimeZone = item.TimeZone
-		data.Selected = "0"
-		if item.Nation == params.Nation {
-			data.Selected = "1"
+	data := cmap.New().Items()
+	var withdrawFee *models.TUserOperationRules
+	var withdrawFeeCondition *models.TUserOperationRules
+	for _, tUserOperationRules := range list {
+		if vipRule != nil {
+			if strings.EqualFold("todayWihdrawAmounts", tUserOperationRules.RuleCode) || strings.EqualFold("maxWithdrawAmounts", tUserOperationRules.RuleCode) {
+				tUserOperationRules.Value = vipRule.WithdrawAmounts * float64(vipRule.WithdrawTimes)
+			}
+			if strings.EqualFold("maxWithdrawTimes", tUserOperationRules.RuleCode) {
+				tUserOperationRules.Value = float64(vipRule.WithdrawTimes)
+			}
 		}
-		result = append(result, *data)
+		if strings.EqualFold("withdrawFee", tUserOperationRules.RuleCode) {
+			withdrawFee = &tUserOperationRules
+		}
+		if strings.EqualFold("withdrawFeeCondition", tUserOperationRules.RuleCode) {
+			withdrawFeeCondition = &tUserOperationRules
+		}
+		data[tUserOperationRules.RuleCode] = tUserOperationRules
 	}
-	echo.Success(c, result, "ok")
+	// 查询用户是否存在充值赠送Bonus数据
+	var bonusCounts int64
+	var rechargeCounts int64
+	mysql.DB.Debug().Model(models.TAppBonusLog{}).Where(map[string]interface{}{
+		"app_user_id":   User.AppUserId,
+		"item_code":     params.ItemCode,
+		"activity_code": "first_recharge",
+	}).Count(&bonusCounts)
+	mysql.DB.Debug().Model(models.TRechargeOrder{}).Where(map[string]interface{}{
+		"app_user_id":           User.AppUserId,
+		"item_code":             params.ItemCode,
+		"recharge_order_status": 1,
+	}).Count(&rechargeCounts)
+	// 充值未赠送bonus客户
+	if bonusCounts == 0 && rechargeCounts > 0 {
+		data["isShowRealWithdraw"] = false
+	} else if rechargeCounts == 0 { // 未充值客户
+		data["isShowRealWithdraw"] = false
+	} else {
+		data["isShowRealWithdraw"] = true
+	}
+	jsonObject := cmap.New().Items()
+	if vipRule != nil {
+		data["withdrawRuleContent"] = vipRule.WithdrawShowWord
+		jsonObject["basic"] = vipRule.WidrawFeeJson
+		// 前端需要进行百分比转换
+		jsonObject["feeRate"] = vipRule.WidrawFeeJson
+	}
+	jsonObject["ruleName"] = "提币手续费"
+	jsonObject["feeRateSecond"] = 0 // 新的提现费率,第二费率
+
+	if withdrawFee != nil && withdrawFeeCondition != nil {
+
+	}
+	data["withdrawFee"] = jsonObject
+	echo.Success(c, data, "ok")
 }
 
 // GetUserTradingRulesHandler

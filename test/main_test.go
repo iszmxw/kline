@@ -55,7 +55,7 @@ func Test_Main(t *testing.T) {
 	fmt.Println("获取上上周的最后一天日期:", endDateTwoWeeksAgo)
 	// 其他周的最后一天日期依此类推...
 	//
-	//RES := v3.GetVipInfo("SMO", "Indonesia", 1)
+	//RES := commonUtils.GetVipInfo("SMO", "Indonesia", 1)
 	//fmt.Println(RES)
 	//fmt.Println(RES)
 	//fmt.Println(RES)

@@ -64,7 +64,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				other.Any("/mongo.json", ClientV3Group.OtherController.Mongo)
 			}
 			// TODO:: 新接口开发中
-			// 用户模块
+			// 1.用户模块
 			user := V3Route.Group("/user")
 			{
 				// 注册 [ok]
@@ -81,7 +81,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				user.Any("/getCodeByType.json", ClientV3Group.UserController.GetCodeByTypeHandler)
 			}
 
-			// 绑定相关操作
+			// 2.绑定模块
 			bind := V3Route.Group("/bind")
 			{
 				// 绑定推送令牌 [ok]
@@ -92,7 +92,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				bind.Any("/bindAccountEmail.json", ClientV3Group.BindController.BindAccountEmailHandler)
 			}
 
-			// 配置模块
+			// 3.配置模块
 			{
 				// 获取系统多语言包 v2 [ok]
 				config.Any("/getLanguagePageV2.json", ClientV3Group.ConfigController.GetLanguagePageV2Handler)
@@ -108,7 +108,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				config.Any("/getUserWithdrawList.json", ClientV3Group.ConfigController.GetUserWithdrawListHandler)
 			}
 
-			// 活动模块
+			// 4.活动模块
 			activity := V3Route.Group("/activity")
 			{
 				// 获取用户亏损返还数据 v2 [todo]
@@ -131,7 +131,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				activity.Any("/submit.json", ClientV3Group.ActivityController.SubmitHandler)
 			}
 
-			// 我的模块
+			// 5.我的模块
 			mine := V3Route.Group("/mine")
 			{
 				// 获取客户账号信息 [todo]
@@ -150,7 +150,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				mine.Any("/uploadPhoto.json", ClientV3Group.MineController.UploadPhotoHandler)
 			}
 
-			// 银行模块
+			// 6.银行模块
 			bank := V3Route.Group("/bank")
 			{
 				// 获取用户提现银行卡列表 [todo]
@@ -163,7 +163,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				bank.Any("/getPaidType.json", ClientV3Group.BankController.GetPaidTypeHandler)
 			}
 
-			// 订单模块
+			// 7.订单模块
 			order := V3Route.Group("/order")
 			{
 				// 生成充值码 [todo]
@@ -176,7 +176,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				order.Any("/getCashFlow.json", ClientV3Group.OrderController.GetCashFlowHandler)
 			}
 
-			// VIP模块
+			// 8.VIP模块
 			vip := V3Route.Group("/vip")
 			{
 				// 查询用户 VIP 信息 [todo]
@@ -185,7 +185,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				vip.Any("/getSettingVip.json", ClientV3Group.VipController.GetSettingVipHandler)
 			}
 
-			// 认证模块
+			// 9.认证模块
 			credit := V3Route.Group("/credit")
 			{
 				// 提交邮箱、身份认证 [todo]
@@ -194,7 +194,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				credit.Any("/getUserCreditMessage.json", ClientV3Group.CreditController.GetUserCreditMessageHandler)
 			}
 
-			// 交易模块
+			// 10.交易模块
 			{
 				// 获取资产列表 [todo]
 				trade.Any("/getAssetsList.json", ClientV3Group.TradeController.GetAssetsListHandler)

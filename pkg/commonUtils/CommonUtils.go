@@ -1,12 +1,15 @@
 package commonUtils
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/service/client"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/redis"
 	"strings"
 )
 
@@ -57,4 +60,36 @@ func GetEmailTemplate(nation, languageCode, name string) (arr map[string]string)
 	arr["title"] = TSystemEmailTemplate.Title
 	arr["body"] = TSystemEmailTemplate.Body
 	return
+}
+
+func GetVipInfo(itemCode, nation string, vipLevel int) *models.TSettingVipRule {
+	var resp *models.TSettingVipRule
+	if vipLevel == -1 {
+		return nil
+	}
+	key := fmt.Sprintf("config:setting_vip_rule:%v%v", vipLevel, nation)
+	get, _ := redis.Client.Get(key)
+	if len(get) > 0 {
+		err := json.Unmarshal([]byte(get), &resp)
+		if err == nil {
+			return resp
+		}
+	} else {
+		err := mysql.DB.Model(models.TSettingVipRule{}).Where(map[string]interface{}{
+			"item_code": itemCode,
+			"vip_level": vipLevel,
+			"is_valid":  1,
+			"nation":    nation,
+		}).Find(&resp).Error
+		if err != nil {
+			return nil
+		}
+		marshal, err := json.Marshal(resp)
+		if err != nil {
+			return nil
+		}
+		_, _ = redis.Client.Add(key, string(marshal), 0)
+	}
+	return resp
+
 }

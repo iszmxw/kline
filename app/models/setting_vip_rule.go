@@ -26,7 +26,7 @@ type TSettingVipRule struct {
 	WithdrawTimes       int                   `json:"withdrawTimes"`       // 单日提现次数
 	ParallelTrans       int64                 `json:"parallelTrans"`       // 同时交易订单数
 	MaxTransAmount      float64               `json:"maxTransAmount"`      // 最大交易金额
-	WithdrawAmounts     int                   `json:"withdrawAmounts"`     // 单日提现金额
+	WithdrawAmounts     float64               `json:"withdrawAmounts"`     // 单日提现金额
 	WidrawFeeJson       string                `json:"widrawFeeJson"`       // 提现手续费规则
 	StandardShowWord    string                `json:"standardShowWord"`    // 会员达标条件
 	WelfareShowWord     string                `json:"welfareShowWord"`     // 会员享受福利文案
