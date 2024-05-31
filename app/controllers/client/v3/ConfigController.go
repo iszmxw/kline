@@ -1,6 +1,7 @@
 package v3
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -11,6 +12,7 @@ import (
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/app/service/client"
+	"goapi/pkg/address"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -30,6 +32,44 @@ import (
 
 type ConfigController struct {
 	BaseController
+}
+
+// 生成设备唯一的 id
+func onlineOnlyKeyId() string {
+	onlineOnlyKey := fmt.Sprintf("G%v%v", uuid.New().ID(), uuid.New().ID())
+	return onlineOnlyKey
+}
+
+// 获取国家支持的提现类型
+func getWithdrawType(nation, itemCode string) string {
+	WithdrawType := "0"
+	isBlock := false
+	isBank := false
+	var list []models.TTipartiteConfiguration
+	mysql.DB.Debug().Model(models.TTipartiteConfiguration{}).Where(map[string]interface{}{
+		"item_code": itemCode,
+		"nation":    nation,
+		"is_valid":  1,
+		"use_type":  "withdraw",
+	}).Find(&list)
+	for _, item := range list {
+		fmt.Println(item)
+		if strings.EqualFold("broPay", item.PartnerCode) {
+			isBlock = true
+		} else {
+			isBank = true
+		}
+	}
+	if isBlock {
+		WithdrawType = "2" // 数字货币提现
+	}
+	if isBank {
+		WithdrawType = "3" // 银行卡提现
+	}
+	if isBlock && isBank {
+		WithdrawType = "1" // 银行卡和数字货币都支持
+	}
+	return WithdrawType
 }
 
 // 获取 15 库的所有键值对
@@ -204,10 +244,14 @@ func (h *ConfigController) GetLanguagePageV2Handler(c *gin.Context) {
 	for _, PageShow := range PageShowList {
 		languageData[PageShow.ShowColumn] = PageShow.ShowWord
 	}
+	WebUrl := make(map[string]interface{})
+	WebUrlPre := make(map[string]interface{})
+	_ = json.Unmarshal([]byte(appItem.WebUrl), &WebUrl)
+	_ = json.Unmarshal([]byte(appItem.WebUrlPre), &WebUrlPre)
 	result.LanguageData = languageData                                               // 多语言
 	result.PageVersion = appItem.PageVersion                                         // 页面版本
-	result.WebUrl = appItem.WebUrl                                                   // 网页的地址
-	result.WebUrlPre = appItem.WebUrlPre                                             // 网页的地址 预发布版本
+	result.WebUrl = WebUrl                                                           // 网页的地址
+	result.WebUrlPre = WebUrlPre                                                     // 网页的地址 预发布版本
 	result.NationConfig.CurrencyDigits = appItem.NumberPoint                         // 小数点保留位数
 	result.NationConfig.MonetaryUnit = appItem.MonetaryUnit                          // 货币符号
 	result.NationConfig.CurrencyType = appItem.CurrencyType                          // 货币类型
@@ -247,55 +291,83 @@ func (h *ConfigController) GetLanguagePageV2Handler(c *gin.Context) {
 	echo.Success(c, result, "ok")
 }
 
-// 获取国家支持的提现类型
-func getWithdrawType(nation, itemCode string) string {
-	WithdrawType := "0"
-	isBlock := false
-	isBank := false
-	var list []models.TTipartiteConfiguration
-	mysql.DB.Debug().Model(models.TTipartiteConfiguration{}).Where(map[string]interface{}{
-		"item_code": itemCode,
-		"nation":    nation,
-		"is_valid":  1,
-		"use_type":  "withdraw",
-	}).Find(&list)
-	for _, item := range list {
-		fmt.Println(item)
-		if strings.EqualFold("broPay", item.PartnerCode) {
-			isBlock = true
-		} else {
-			isBank = true
-		}
-	}
-	if isBlock {
-		WithdrawType = "2" // 数字货币提现
-	}
-	if isBank {
-		WithdrawType = "3" // 银行卡提现
-	}
-	if isBlock && isBank {
-		WithdrawType = "1" // 银行卡和数字货币都支持
-	}
-	return WithdrawType
-}
-
-// 生成设备唯一的 id
-func onlineOnlyKeyId() string {
-	onlineOnlyKey := fmt.Sprintf("G%v%v", uuid.New().ID(), uuid.New().ID())
-	return onlineOnlyKey
-}
-
+// GetExistingCountryV2Handler
+// @Summary No.03.2-获取国家信息
+// @Description 获取国家信息的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 3.配置模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
+// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取国家信息参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Router /No.03.2/app/v3/config/getExistingCountryV2.json [post]
 func (h *ConfigController) GetExistingCountryV2Handler(c *gin.Context) {
-	Token := c.Query("token")
-	if len(Token) > 0 {
-		_, err := redis.Client.SelectDbAdd(15, "token:iqoption", Token, 0)
-		if err != nil {
-			echo.Error(c, "Failed", "操作失败"+err.Error())
-			return
-		}
-	} else {
-		echo.Error(c, "Failed", "操作失败,token不能为空")
+	var params requests.ExistingCountryParams
+	var list []response.ItemNationMessageParams
+	var result []response.ExistingCountry
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, nil, "ok")
+	ip := c.ClientIP()
+	Address := address.GetMessageByIp(ip)
+	switch Address.Country {
+	case "Indonesia":
+		params.Nation = "Indonesia"
+		break
+	case "India":
+		params.Nation = "India"
+		break
+	case "Mexico":
+		params.Nation = "Mexico"
+		break
+	case "Brazil":
+		params.Nation = "Brazil"
+		break
+	default:
+		break
+	}
+	if len(params.SystemLanguage) == 0 {
+		params.SystemLanguage = "en"
+	}
+	mysql.DB.Debug().Model(models.AppItem{}).Joins(models.Prefix("left join $_app_item_nation_language_config on $_app_item_nation_language_config.item_code=$_app_item.item_code and $_app_item_nation_language_config.nation_name=$_app_item.item_national_name")).
+		Where(map[string]interface{}{
+			models.Prefix("$_app_item.is_start"):                         1,
+			models.Prefix("$_app_item_nation_language_config.language"):  params.SystemLanguage,
+			models.Prefix("$_app_item_nation_language_config.item_code"): params.ItemCode,
+		}).
+		Order(models.Prefix("$_app_item.sort desc,$_app_item.create_date desc")).
+		Select(
+			models.Prefix("$_app_item.item_code"),
+			models.Prefix("$_app_item.language_code"),
+			models.Prefix("$_app_item_nation_language_config.nation_name as ItemNationalName"),
+			models.Prefix("$_app_item.item_national_flag"),
+			models.Prefix("$_app_item.item_national_name as nation"),
+			models.Prefix("$_app_item.is_start"),
+			models.Prefix("$_app_item.time_zone"),
+		).
+		Find(&list)
+	for _, item := range list {
+		data := new(response.ExistingCountry)
+		data.ItemCode = item.ItemCode
+		data.Language = item.LanguageCode
+		data.ItemNationalFlag = item.ItemNationalFlag
+		data.ItemNationalName = item.ItemNationalName
+		data.Nation = item.Nation
+		data.IsStart = item.IsStart
+		data.TimeZone = item.TimeZone
+		data.Selected = "0"
+		if item.Nation == params.Nation {
+			data.Selected = "1"
+		}
+		result = append(result, *data)
+	}
+	echo.Success(c, result, "ok")
 }

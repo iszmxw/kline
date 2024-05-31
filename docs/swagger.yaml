@@ -118,6 +118,28 @@ components:
       - nation
       - smsCode
       type: object
+    requests.ExistingCountryParams:
+      properties:
+        appOsType:
+          description: 系统类型 1安卓 2IOS 3html
+          type: string
+        itemCode:
+          description: 项目编码
+          type: string
+        languageCode:
+          description: 语言编码
+          type: string
+        nation:
+          description: 国家编码
+          type: string
+        systemLanguage:
+          description: 用户手机默认系统语言
+          type: string
+      required:
+      - itemCode
+      - languageCode
+      - nation
+      type: object
     requests.GetLanguagePageParams:
       properties:
         adid:
@@ -132,6 +154,7 @@ components:
           description: 语言编码
           type: string
         nation:
+          description: 国家编码
           type: string
         type:
           type: string
@@ -140,7 +163,6 @@ components:
       required:
       - itemCode
       - languageCode
-      - nation
       - nation
       - type
       type: object
@@ -398,6 +420,33 @@ components:
       - languageCode
       - nation
       - onlineOnlyKeyId
+      type: object
+    response.ExistingCountry:
+      properties:
+        isStart:
+          description: 是否开启
+          type: string
+        itemCode:
+          description: 项目编码
+          type: string
+        itemNationalFlag:
+          description: 项目国国旗
+          type: string
+        itemNationalName:
+          description: 项目国家名称
+          type: string
+        language:
+          description: 语言编码
+          type: string
+        nation:
+          description: 国家
+          type: string
+        selected:
+          description: 是否选中 0否，1是
+          type: string
+        timeZone:
+          description: 时区
+          type: string
       type: object
     response.ItemNationMessageParams:
       description: appItems 信息
@@ -1257,6 +1306,75 @@ paths:
                 $ref: '#/components/schemas/response.SuccessLanguagePageV2'
           description: data数据结构体
       summary: No.03.1-获取系统多语言包v2
+      tags:
+      - 3.配置模块
+  /No.03.2/app/v3/config/getExistingCountryV2.json:
+    post:
+      description: 获取国家信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.ExistingCountryParams'
+        description: 获取国家信息参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.ExistingCountry'
+          description: data数据结构体
+      summary: No.03.2-获取国家信息
       tags:
       - 3.配置模块
 servers:

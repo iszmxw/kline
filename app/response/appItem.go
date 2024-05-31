@@ -21,3 +21,14 @@ type ItemNationMessageParams struct {
 	Address          string  `json:"adress"`           // 公司地址
 	ServicePhone     string  `json:"servicePhone"`     // 服务电话
 }
+
+type ExistingCountry struct {
+	ItemCode         string `json:"itemCode"`         // 项目编码
+	Language         string `json:"language"`         // 语言编码
+	ItemNationalFlag string `json:"itemNationalFlag"` // 项目国国旗
+	ItemNationalName string `json:"itemNationalName"` // 项目国家名称
+	Nation           string `json:"nation"`           // 国家
+	Selected         string `json:"selected"`         // 是否选中 0否，1是
+	IsStart          string `json:"isStart"`          // 是否开启
+	TimeZone         string `json:"timeZone"`         // 时区
+}
