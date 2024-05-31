@@ -23,6 +23,12 @@ type Group struct {
 	PromoteController
 	TradeController
 	UserController
+	ActivityController
+	MineController
+	BankController
+	OrderController
+	VipController
+	CreditController
 }
 
 const NoData = `{"id":"10409","msg":"no data"}`

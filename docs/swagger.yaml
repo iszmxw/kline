@@ -1377,5 +1377,2351 @@ paths:
       summary: No.03.2-获取国家信息
       tags:
       - 3.配置模块
+  /No.03.3/app/v3/config/getUserOperationRules.json:
+    post:
+      description: 获取国家信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.ExistingCountryParams'
+        description: 获取国家信息参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.ExistingCountry'
+          description: data数据结构体
+      summary: No.03.3-获取国家信息
+      tags:
+      - 3.配置模块
+  /No.03.4/app/v3/config/getUserTradingRules.json:
+    post:
+      description: 获取配置信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.ExistingCountryParams'
+        description: 获取配置信息参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.ExistingCountry'
+          description: data数据结构体
+      summary: No.03.4-获取配置信息
+      tags:
+      - 3.配置模块
+  /No.03.5/app/v3/config/getBlockWithdrawInfo.json:
+    post:
+      description: 获取数字货币提现相关的信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.ExistingCountryParams'
+        description: 获取数字货币提现相关的信息参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.ExistingCountry'
+          description: data数据结构体
+      summary: No.03.5-获取数字货币提现相关的信息
+      tags:
+      - 3.配置模块
+  /No.03.6/app/v3/config/getUserWithdrawList.json:
+    post:
+      description: 获取支持提现银行列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.ExistingCountryParams'
+        description: 获取支持提现银行列表的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.ExistingCountry'
+          description: data数据结构体
+      summary: No.03.6-获取支持提现银行列表信息
+      tags:
+      - 3.配置模块
+  /No.04.1/app/v3/activity/getUserLossReturn.json:
+    post:
+      description: 获取用户亏损返还数据v2的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取用户亏损返还数据v2参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.1-获取用户亏损返还数据v2
+      tags:
+      - 4.活动模块
+  /No.04.1/app/v3/mine/getUserAccountMessage.json:
+    post:
+      description: 获取客户账号信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取客户账号信息参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.1-获取客户账号信息
+      tags:
+      - 5.我的模块
+  /No.04.2/app/v3/activity/getBonusTypes.json:
+    post:
+      description: 获取 Bonus 类型的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取 Bonus 类型参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.2-获取 Bonus 类型
+      tags:
+      - 4.活动模块
+  /No.04.3/app/v3/activity/getBonusRecords.json:
+    post:
+      description: 获取 Bonus 赠送记录的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取 Bonus 赠送记录参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.3-获取 Bonus 赠送记录
+      tags:
+      - 4.活动模块
+  /No.04.3/app/v3/mine/submitUpdateUserInfo.json:
+    post:
+      description: 更新用户信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 更新用户信息的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.3-更新用户信息
+      tags:
+      - 5.我的模块
+  /No.04.4/app/v3/activity/getBanners.json:
+    post:
+      description: 获取 banner 数据的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取 banner 数据参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.4-获取 banner 数据
+      tags:
+      - 4.活动模块
+  /No.04.4/app/v3/mine/sumbmitPartnerEventByType.json:
+    post:
+      description: 上报新手教程完成状态的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 上报新手教程完成状态的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.4-上报新手教程完成状态
+      tags:
+      - 5.我的模块
+  /No.04.5/app/v3/activity/getFAQManageList.json:
+    post:
+      description: 获取 FAQ 管理列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取 FAQ 管理列表参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.5-获取 FAQ 管理列表
+      tags:
+      - 4.活动模块
+  /No.04.5/app/v3/mine/getInvitUsers.json:
+    post:
+      description: 获取邀请用户进度的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取邀请用户进度的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.5-获取邀请用户进度
+      tags:
+      - 5.我的模块
+  /No.04.6/app/v3/activity/getUserRank.json:
+    post:
+      description: 获取客户排名列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取客户排名列表参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.6-获取客户排名列表
+      tags:
+      - 4.活动模块
+  /No.04.6/app/v3/mine/getInvitationCode.json:
+    post:
+      description: 获取用户邀请码及父邀请码的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取用户邀请码及父邀请码的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.6-获取用户邀请码及父邀请码
+      tags:
+      - 5.我的模块
+  /No.04.7/app/v3/activity/getWeekDataV2.json:
+    post:
+      description: 获取本周签到列表v2的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取本周签到列表v2参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.7-获取本周签到列表v2
+      tags:
+      - 4.活动模块
+  /No.04.7/app/v3/mine/getUserMailMessage.json:
+    post:
+      description: 获取站内信列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取站内信列表的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.7-获取站内信列表
+      tags:
+      - 5.我的模块
+  /No.04.8/app/v3/activity/signNotify.json:
+    post:
+      description: 签到启停 firebase 通知的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 签到启停 firebase 通知参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.8-签到启停 firebase 通知
+      tags:
+      - 4.活动模块
+  /No.04.8/app/v3/mine/uploadPhoto.json:
+    post:
+      description: 上传照片的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 上传照片参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.8-上传照片
+      tags:
+      - 5.我的模块
+  /No.04.9/app/v3/activity/submit.json:
+    post:
+      description: 每日签到的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 每日签到参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.04.9-每日签到
+      tags:
+      - 4.活动模块
+  /No.06.1/app/v3/bank/getUserBankCards.json:
+    post:
+      description: 获取用户提现银行卡列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取用户提现银行卡列表的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.06.1-获取用户提现银行卡列表
+      tags:
+      - 6.银行模块
+  /No.06.1/app/v3/order/createPaidCode.json:
+    post:
+      description: 生成充值码的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 生成充值码的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.06.1-生成充值码
+      tags:
+      - 7.订单模块
+  /No.06.2/app/v3/bank/deleteUserBankCard.json:
+    post:
+      description: 删除用户银行卡的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 删除用户银行卡的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.06.2-删除用户银行卡
+      tags:
+      - 6.银行模块
+  /No.06.2/app/v3/order/submitWithdraw.json:
+    post:
+      description: 提交提现的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 提交提现的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.06.2-提交提现
+      tags:
+      - 7.订单模块
+  /No.06.3/app/v3/bank/getPaidFastAmounts.json:
+    post:
+      description: 获取充值快捷金额列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取充值快捷金额列表的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.06.3-获取充值快捷金额列表
+      tags:
+      - 6.银行模块
+  /No.06.3/app/v3/order/orderDetail.json:
+    post:
+      description: 获取订单详细信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取订单详细信息的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.06.3-获取订单详细信息
+      tags:
+      - 7.订单模块
+  /No.06.4/app/v3/bank/getPaidType.json:
+    post:
+      description: 获取支付方式的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取支付方式的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.06.4-获取支付方式
+      tags:
+      - 6.银行模块
+  /No.06.4/app/v3/order/getCashFlow.json:
+    post:
+      description: 获取资金流水列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取资金流水列表的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.06.4-获取资金流水列表
+      tags:
+      - 7.订单模块
+  /No.08.1/app/v3/vip/getUserVip.json:
+    post:
+      description: 查询用户 VIP 信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 查询用户 VIP 信息的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.08.1-查询用户 VIP 信息
+      tags:
+      - 8.VIP模块
+  /No.08.2/app/v3/vip/getSettingVip.json:
+    post:
+      description: 个人中心页会员标识列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 个人中心页会员标识列表的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.08.2-个人中心页会员标识列表
+      tags:
+      - 8.VIP模块
+  /No.09.1/app/v3/credit/submitCredit.json:
+    post:
+      description: 提交邮箱、身份认证的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 提交邮箱、身份认证的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.09.1-提交邮箱、身份认证
+      tags:
+      - 9.认证模块
+  /No.09.2/app/v3/credit/getUserCreditMessage.json:
+    post:
+      description: 获取用户认证状态和认证信息的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取用户认证状态和认证信息的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.09.2-获取用户认证状态和认证信息
+      tags:
+      - 9.认证模块
+  /No.10.1/app/v3/trade/getAssetsList.json:
+    post:
+      description: 获取资产列表的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 获取资产列表的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.10.1-获取资产列表
+      tags:
+      - 10.交易模块
+  /No.10.2/app/v3/trade/getTradeHistorys.json:
+    post:
+      description: 查询交易历史的详细描述
+      parameters:
+      - description: 用户令牌
+        example: 82c16868633147de906d65b4e5b55c64
+        in: header
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: 签名
+        example: EAFB0EF644F493F74FE8F0871BE15914
+        in: header
+        name: sign
+        required: true
+        schema:
+          type: string
+      - description: 版本号
+        example: "32"
+        in: header
+        name: version
+        required: true
+        schema:
+          type: string
+      - description: 国家语言
+        example: in
+        in: header
+        name: nationlanguage
+        required: true
+        schema:
+          type: string
+      - description: 用户代理
+        example: okhttp/4.9.1
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+      - description: 内容类型
+        example: application/json;charset=UTF-8
+        in: header
+        name: Content-Type
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requests.GetLanguagePageParams'
+        description: 查询交易历史的参数
+        required: true
+      responses:
+        "0":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/echo.Response'
+          description: 不是1就是失败的
+        "1":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.SuccessLanguagePageV2'
+          description: data数据结构体
+      summary: No.10.2-查询交易历史
+      tags:
+      - 10.交易模块
 servers:
 - url: 127.0.0.1:7104

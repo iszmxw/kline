@@ -371,3 +371,162 @@ func (h *ConfigController) GetExistingCountryV2Handler(c *gin.Context) {
 	}
 	echo.Success(c, result, "ok")
 }
+
+// GetUserOperationRulesHandler
+// @Summary No.03.3-获取国家信息
+// @Description 获取国家信息的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 3.配置模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
+// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取国家信息参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Router /No.03.3/app/v3/config/getUserOperationRules.json [post]
+func (h *ConfigController) GetUserOperationRulesHandler(c *gin.Context) {
+	var params requests.ExistingCountryParams
+	var list []response.ItemNationMessageParams
+	var result []response.ExistingCountry
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	ip := c.ClientIP()
+	Address := address.GetMessageByIp(ip)
+	switch Address.Country {
+	case "Indonesia":
+		params.Nation = "Indonesia"
+		break
+	case "India":
+		params.Nation = "India"
+		break
+	case "Mexico":
+		params.Nation = "Mexico"
+		break
+	case "Brazil":
+		params.Nation = "Brazil"
+		break
+	default:
+		break
+	}
+	if len(params.SystemLanguage) == 0 {
+		params.SystemLanguage = "en"
+	}
+	mysql.DB.Debug().Model(models.AppItem{}).Joins(models.Prefix("left join $_app_item_nation_language_config on $_app_item_nation_language_config.item_code=$_app_item.item_code and $_app_item_nation_language_config.nation_name=$_app_item.item_national_name")).
+		Where(map[string]interface{}{
+			models.Prefix("$_app_item.is_start"):                         1,
+			models.Prefix("$_app_item_nation_language_config.language"):  params.SystemLanguage,
+			models.Prefix("$_app_item_nation_language_config.item_code"): params.ItemCode,
+		}).
+		Order(models.Prefix("$_app_item.sort desc,$_app_item.create_date desc")).
+		Select(
+			models.Prefix("$_app_item.item_code"),
+			models.Prefix("$_app_item.language_code"),
+			models.Prefix("$_app_item_nation_language_config.nation_name as ItemNationalName"),
+			models.Prefix("$_app_item.item_national_flag"),
+			models.Prefix("$_app_item.item_national_name as nation"),
+			models.Prefix("$_app_item.is_start"),
+			models.Prefix("$_app_item.time_zone"),
+		).
+		Find(&list)
+	for _, item := range list {
+		data := new(response.ExistingCountry)
+		data.ItemCode = item.ItemCode
+		data.Language = item.LanguageCode
+		data.ItemNationalFlag = item.ItemNationalFlag
+		data.ItemNationalName = item.ItemNationalName
+		data.Nation = item.Nation
+		data.IsStart = item.IsStart
+		data.TimeZone = item.TimeZone
+		data.Selected = "0"
+		if item.Nation == params.Nation {
+			data.Selected = "1"
+		}
+		result = append(result, *data)
+	}
+	echo.Success(c, result, "ok")
+}
+
+// GetUserTradingRulesHandler
+// @Summary No.03.4-获取配置信息
+// @Description 获取配置信息的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 3.配置模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
+// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取配置信息参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Router /No.03.4/app/v3/config/getUserTradingRules.json [post]
+func (h *ConfigController) GetUserTradingRulesHandler(c *gin.Context) {
+	var params requests.ExistingCountryParams
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	echo.Success(c, nil, "ok")
+}
+
+// GetBlockWithdrawInfoHandler
+// @Summary No.03.5-获取数字货币提现相关的信息
+// @Description 获取数字货币提现相关的信息的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 3.配置模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
+// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取数字货币提现相关的信息参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Router /No.03.5/app/v3/config/getBlockWithdrawInfo.json [post]
+func (h *ConfigController) GetBlockWithdrawInfoHandler(c *gin.Context) {
+	var params requests.ExistingCountryParams
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	echo.Success(c, nil, "ok")
+}
+
+// GetUserWithdrawListHandler
+// @Summary No.03.6-获取支持提现银行列表信息
+// @Description 获取支持提现银行列表的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 3.配置模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
+// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取支持提现银行列表的参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Router /No.03.6/app/v3/config/getUserWithdrawList.json [post]
+func (h *ConfigController) GetUserWithdrawListHandler(c *gin.Context) {
+	var params requests.ExistingCountryParams
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	echo.Success(c, nil, "ok")
+}

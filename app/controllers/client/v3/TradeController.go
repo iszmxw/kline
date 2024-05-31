@@ -803,3 +803,43 @@ func GetVipInfo(itemCode, nation string, vipLevel int) *models.TSettingVipRule {
 	return resp
 
 }
+
+// GetAssetsListHandler
+// @Summary No.10.1-获取资产列表
+// @Description 获取资产列表的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 10.交易模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
+// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取资产列表的参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Router /No.10.1/app/v3/trade/getAssetsList.json [post]
+func (h *TradeController) GetAssetsListHandler(c *gin.Context) {
+	return
+}
+
+// GetTradeHistoryHandler
+// @Summary No.10.2-查询交易历史
+// @Description 查询交易历史的详细描述
+// @Accept application/json
+// @Produce application/json
+// @Tags 10.交易模块
+// @Param token header string true "用户令牌" example(82c16868633147de906d65b4e5b55c64)
+// @Param sign header string true "签名" example(EAFB0EF644F493F74FE8F0871BE15914)
+// @Param version header string true "版本号" example(32)
+// @Param nationlanguage header string true "国家语言" example(in)
+// @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
+// @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
+// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "查询交易历史的参数"
+// @Failure 0 {object} echo.Response "不是1就是失败的"
+// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Router /No.10.2/app/v3/trade/getTradeHistorys.json [post]
+func (h *TradeController) GetTradeHistoryHandler(c *gin.Context) {
+	return
+}
