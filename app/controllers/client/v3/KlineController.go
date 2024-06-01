@@ -883,8 +883,8 @@ func PushUserInfo(ws *wss.WsConn) {
 		for _, item := range ListAppItem {
 			// 虚拟余额不足时重置用户虚拟余额
 			if strings.EqualFold(AppUser.Nation, item.ItemNationalName) {
-				var UserOperationRules models.UserOperationRules
-				err = DB.Model(models.UserOperationRules{}).Where("item_code", item.ItemCode).
+				var UserOperationRules models.TUserOperationRules
+				err = DB.Model(models.TUserOperationRules{}).Where("item_code", item.ItemCode).
 					Where("nation", item.ItemNationalName).
 					Where("rule_code", "minTradingAmounts").
 					Find(&UserOperationRules).Error

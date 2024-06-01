@@ -613,7 +613,7 @@ components:
           description: 阈值计算方式 1> 2< 3>= 4<= 5<> 6in 7equals 8=
           type: integer
         ruleName:
-          description: 充值未赠送bonus客户
+          description: 规则名称例如：充值未赠送bonus客户
           type: string
         value:
           description: 阈值
@@ -632,6 +632,27 @@ components:
         withdrawRuleContent:
           description: withdrawRuleContent 提现页面文案
           type: string
+      type: object
+    response.UserTradingRules:
+      properties:
+        dayMaxTradingAmounts:
+          description: 单日最大交易总额
+          type: integer
+        eachIncreaseDecrease:
+          description: 每次增减金额
+          type: integer
+        maxTradingAmounts:
+          description: 最大交易金额
+          type: integer
+        maxTradingTimes:
+          description: 每日最大的交易次数
+          type: integer
+        minTradingAmounts:
+          description: 最小交易金额
+          type: integer
+        numberPoint:
+          description: 保留小数位数
+          type: integer
       type: object
     response.WithdrawFee:
       description: 提现费率
@@ -1558,7 +1579,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/response.ExistingCountry'
+                $ref: '#/components/schemas/response.UserTradingRules'
           description: data数据结构体
       summary: No.03.4-获取配置信息
       tags:

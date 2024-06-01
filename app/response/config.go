@@ -51,8 +51,18 @@ type WithdrawFee struct {
 }
 
 type UserOperationRuleBean struct {
-	RuleName        string  `json:"ruleName"`        // 充值未赠送bonus客户
+	RuleName        string  `json:"ruleName"`        // 规则名称例如：充值未赠送bonus客户
 	Value           float64 `json:"value"`           // 阈值
-	CalculateMethod int64   `json:"calculateMethod"` // 阈值计算方式 1> 2< 3>= 4<= 5<> 6in 7equals 8=
+	CalculateMethod int     `json:"calculateMethod"` // 阈值计算方式 1> 2< 3>= 4<= 5<> 6in 7equals 8=
 	ValueTips       string  `json:"valueTips"`       // 值触发提示模板
+}
+
+// UserTradingRules 配置信息
+type UserTradingRules struct {
+	DayMaxTradingAmounts int `json:"dayMaxTradingAmounts"` // 单日最大交易总额
+	MaxTradingAmounts    int `json:"maxTradingAmounts"`    // 最大交易金额
+	EachIncreaseDecrease int `json:"eachIncreaseDecrease"` // 每次增减金额
+	MaxTradingTimes      int `json:"maxTradingTimes"`      // 每日最大的交易次数
+	MinTradingAmounts    int `json:"minTradingAmounts"`    // 最小交易金额
+	NumberPoint          int `json:"numberPoint"`          // 保留小数位数
 }

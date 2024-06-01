@@ -9,7 +9,7 @@ type TUserOperationRules struct {
 	RuleCode        string    `json:"rule_code" gorm:"rule_code"`               // 规则编码
 	RuleTypeCode    string    `json:"rule_type_code" gorm:"rule_type_code"`     // 规则方式编码 recharge充值 withdraw提现 trading交易
 	Value           float64   `json:"value" gorm:"value"`                       // 阈值
-	CalculateMethod int64     `json:"calculate_method" gorm:"calculate_method"` // 阈值计算方式 1> 2< 3>= 4<= 5<> 6in 7equals 8=
+	CalculateMethod int       `json:"calculate_method" gorm:"calculate_method"` // 阈值计算方式 1> 2< 3>= 4<= 5<> 6in 7equals 8=
 	ValueTips       string    `json:"value_tips" gorm:"value_tips"`             // 值触发提示模板
 	HideValue       int64     `json:"hide_value" gorm:"hide_value"`             // 隐藏值
 	IsValid         int64     `json:"is_valid" gorm:"is_valid"`                 // 是否有效 1是 0否

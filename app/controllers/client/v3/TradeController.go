@@ -388,8 +388,8 @@ WHERE 1=1 AND a.app_user_id = ? AND a.amount_type = 1 AND a.nation = ?) AS e ON 
 	logger.Info(userTradeMessage["tradingCount"])
 	logger.Info(userTradeMessage["tradingAmounts"])
 	// 查询用户交易规则
-	var userOperationRules []models.UserOperationRules
-	mysql.DB.Debug().Model(models.UserOperationRules{}).
+	var userOperationRules []models.TUserOperationRules
+	mysql.DB.Debug().Model(models.TUserOperationRules{}).
 		Where("is_valid", 1).
 		Where("is_show", 1).
 		Where("rule_type_code", "trading").

@@ -100,7 +100,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				config.Any("/getExistingCountryV2.json", ClientV3Group.ConfigController.GetExistingCountryV2Handler)
 				// 获取用户限制规则列表 [ok]
 				config.Any("/getUserOperationRules.json", ClientV3Group.ConfigController.GetUserOperationRulesHandler)
-				// 获取配置信息 [todo]
+				// 获取配置信息 [ok]
 				config.Any("/getUserTradingRules.json", ClientV3Group.ConfigController.GetUserTradingRulesHandler)
 				// 获取数字货币提现相关的信息 [todo]
 				config.Any("/getBlockWithdrawInfo.json", ClientV3Group.ConfigController.GetBlockWithdrawInfoHandler)

@@ -504,16 +504,31 @@ func (h *ConfigController) GetUserOperationRulesHandler(c *gin.Context) {
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param ExistingCountryParams body requests.ExistingCountryParams true "获取配置信息参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Success 1 {object} response.UserTradingRules "data数据结构体"
 // @Router /No.03.4/app/v3/config/getUserTradingRules.json [post]
 func (h *ConfigController) GetUserTradingRulesHandler(c *gin.Context) {
-	var params requests.ExistingCountryParams
+	var params requests.Base
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, nil, "ok")
+	var list []models.TUserOperationRules
+	mysql.DB.Debug().Model(models.TUserOperationRules{}).Where(map[string]interface{}{
+		"nation":         params.Nation,
+		"item_code":      params.ItemCode,
+		"is_valid":       1,
+		"rule_type_code": "trading",
+	}).Find(&list)
+	// 交易规则 最大值 最小值 增加间距加入集合
+	result := cmap.New().Items()
+	for _, item := range list {
+		result[item.RuleCode] = item.Value
+	}
+	// 交易规则 精确小数位数加入集合
+	appItem := client.GetAppItem(params.Nation)
+	result["numberPoint"] = appItem.NumberPoint
+	echo.Success(c, result, "ok")
 }
 
 // GetBlockWithdrawInfoHandler
