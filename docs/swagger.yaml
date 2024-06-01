@@ -607,6 +607,48 @@ components:
           description: 用户的 userID
           type: string
       type: object
+    response.UserOperationRuleBean:
+      properties:
+        calculateMethod:
+          description: 阈值计算方式 1> 2< 3>= 4<= 5<> 6in 7equals 8=
+          type: integer
+        ruleName:
+          description: 充值未赠送bonus客户
+          type: string
+        value:
+          description: 阈值
+          type: number
+        valueTips:
+          description: 值触发提示模板
+          type: string
+      type: object
+    response.UserOperationRules:
+      properties:
+        isShowRealWithdraw:
+          description: 充值未赠送bonus客户
+          type: boolean
+        withdrawFee:
+          $ref: '#/components/schemas/response.WithdrawFee'
+        withdrawRuleContent:
+          description: withdrawRuleContent 提现页面文案
+          type: string
+      type: object
+    response.WithdrawFee:
+      description: 提现费率
+      properties:
+        basic:
+          description: 基础费，每笔都要
+          type: number
+        feeRate:
+          description: 提现费率，需除100
+          type: number
+        feeRateSecond:
+          description: 新的提现费率,第二费率,提现费率，需除100
+          type: number
+        ruleName:
+          description: 规则名称 提币手续费
+          type: string
+      type: object
 externalDocs:
   description: ""
   url: ""
@@ -1441,7 +1483,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/response.ExistingCountry'
+                $ref: '#/components/schemas/response.UserOperationRules'
+          description: data数据结构体
+        "2":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response.UserOperationRuleBean'
           description: data数据结构体
       summary: No.03.3-获取用户限制规则列表
       tags:

@@ -387,11 +387,12 @@ func (h *ConfigController) GetExistingCountryV2Handler(c *gin.Context) {
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param ExistingCountryParams body requests.ExistingCountryParams true "获取用户限制规则列表参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Success 1 {object} response.UserOperationRules "data数据结构体"
+// @Success 2 {object} response.UserOperationRuleBean "data数据结构体"
 // @Router /No.03.3/app/v3/config/getUserOperationRules.json [post]
 func (h *ConfigController) GetUserOperationRulesHandler(c *gin.Context) {
 	var params requests.Base
-	//var result []response.ExistingCountry
+	var result response.UserOperationRules
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
@@ -413,9 +414,9 @@ func (h *ConfigController) GetUserOperationRulesHandler(c *gin.Context) {
 		// 获取用户默认vip相关信息
 		vipRule = commonUtils.GetVipInfo(params.ItemCode, params.Nation, 0)
 	}
-	data := cmap.New().Items()
 	var withdrawFee *models.TUserOperationRules
 	var withdrawFeeCondition *models.TUserOperationRules
+	data := cmap.New().Items()
 	for _, tUserOperationRules := range list {
 		if vipRule != nil {
 			if strings.EqualFold("todayWihdrawAmounts", tUserOperationRules.RuleCode) || strings.EqualFold("maxWithdrawAmounts", tUserOperationRules.RuleCode) {
@@ -431,8 +432,14 @@ func (h *ConfigController) GetUserOperationRulesHandler(c *gin.Context) {
 		if strings.EqualFold("withdrawFeeCondition", tUserOperationRules.RuleCode) {
 			withdrawFeeCondition = &tUserOperationRules
 		}
-		data[tUserOperationRules.RuleCode] = tUserOperationRules
+		data[tUserOperationRules.RuleCode] = response.UserOperationRuleBean{
+			RuleName:        tUserOperationRules.RuleName,
+			Value:           tUserOperationRules.Value,
+			CalculateMethod: tUserOperationRules.CalculateMethod,
+			ValueTips:       tUserOperationRules.ValueTips,
+		}
 	}
+	result.AdditionalParams = data
 	// 查询用户是否存在充值赠送Bonus数据
 	var bonusCounts int64
 	var rechargeCounts int64
@@ -448,27 +455,39 @@ func (h *ConfigController) GetUserOperationRulesHandler(c *gin.Context) {
 	}).Count(&rechargeCounts)
 	// 充值未赠送bonus客户
 	if bonusCounts == 0 && rechargeCounts > 0 {
-		data["isShowRealWithdraw"] = false
+		result.IsShowRealWithdraw = false
 	} else if rechargeCounts == 0 { // 未充值客户
-		data["isShowRealWithdraw"] = false
+		result.IsShowRealWithdraw = false
 	} else {
-		data["isShowRealWithdraw"] = true
+		result.IsShowRealWithdraw = true
 	}
-	jsonObject := cmap.New().Items()
 	if vipRule != nil {
-		data["withdrawRuleContent"] = vipRule.WithdrawShowWord
-		jsonObject["basic"] = vipRule.WidrawFeeJson
+		result.WithdrawRuleContent = vipRule.WithdrawShowWord
+		var WidrawFeeJson map[string]interface{}
+		err := json.Unmarshal([]byte(vipRule.WidrawFeeJson), &WidrawFeeJson)
+		if err != nil {
+			logger.Error(err)
+		}
+		result.WithdrawFee.Basic = WidrawFeeJson["basic"].(float64)
 		// 前端需要进行百分比转换
-		jsonObject["feeRate"] = vipRule.WidrawFeeJson
+		result.WithdrawFee.FeeRate = WidrawFeeJson["feeRate"].(float64)
 	}
-	jsonObject["ruleName"] = "提币手续费"
-	jsonObject["feeRateSecond"] = 0 // 新的提现费率,第二费率
-
+	result.WithdrawFee.RuleName = "提币手续费"
+	result.WithdrawFee.FeeRateSecond = 0 // 新的提现费率,第二费率
+	var amounts float64
 	if withdrawFee != nil && withdrawFeeCondition != nil {
-
+		mysql.DB.Debug().Model(models.TradingOrder{}).Where(map[string]interface{}{
+			"app_user_id": User.AppUserId,
+			"item_code":   params.ItemCode,
+			"nation":      params.Nation,
+			"amount_type": 1,
+		}).Select("SUM(amounts) AS amounts").Find(&amounts)
+		// 阈值计算方式 1> 2< 3>= 4<= 5<> 6in 7equals 8=
+		if DecisionAlgorithmInterface(int(amounts), int(withdrawFeeCondition.Value), int(withdrawFeeCondition.CalculateMethod)) {
+			result.WithdrawFee.FeeRateSecond = withdrawFee.Value
+		}
 	}
-	data["withdrawFee"] = jsonObject
-	echo.Success(c, data, "ok")
+	echo.Success(c, result, "ok")
 }
 
 // GetUserTradingRulesHandler
