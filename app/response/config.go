@@ -1,6 +1,9 @@
 package response
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"goapi/app/models"
+)
 
 type AppActiveHostResult struct {
 	/*** 活跃的域名 */
@@ -65,4 +68,12 @@ type UserTradingRules struct {
 	MaxTradingTimes      int `json:"maxTradingTimes"`      // 每日最大的交易次数
 	MinTradingAmounts    int `json:"minTradingAmounts"`    // 最小交易金额
 	NumberPoint          int `json:"numberPoint"`          // 保留小数位数
+}
+
+// BlockWithdrawInfo 获取数字货币提现相关信息
+type BlockWithdrawInfo struct {
+	List     []models.TWithdrawChannel `json:"list"`     // 数字货币提现相关列表数据
+	Num      float64                   `json:"num"`      // 最大交易金额
+	Rate     float64                   `json:"rate"`     // 每次增减金额
+	Currency string                    `json:"currency"` // 每日最大的交易次数
 }

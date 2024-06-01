@@ -385,7 +385,7 @@ func (h *ConfigController) GetExistingCountryV2Handler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取用户限制规则列表参数"
+// @Param Params body requests.Base true "获取用户限制规则列表参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.UserOperationRules "data数据结构体"
 // @Success 2 {object} response.UserOperationRuleBean "data数据结构体"
@@ -502,7 +502,7 @@ func (h *ConfigController) GetUserOperationRulesHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取配置信息参数"
+// @Param Params body requests.Base true "获取配置信息参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.UserTradingRules "data数据结构体"
 // @Router /No.03.4/app/v3/config/getUserTradingRules.json [post]
@@ -543,18 +543,41 @@ func (h *ConfigController) GetUserTradingRulesHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取数字货币提现相关的信息参数"
+// @Param params body requests.Base true "获取数字货币提现相关的信息参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Success 1 {object} response.BlockWithdrawInfo "data数据结构体"
 // @Router /No.03.5/app/v3/config/getBlockWithdrawInfo.json [post]
 func (h *ConfigController) GetBlockWithdrawInfoHandler(c *gin.Context) {
-	var params requests.ExistingCountryParams
+	var params requests.Base
+	var result response.BlockWithdrawInfo
+	var AppCurrencyRate models.AppCurrencyRate
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, nil, "ok")
+	// 1、数字货币提现信息获取接口，汇率换算
+	// 1、获取可以提现的渠道
+	appItem := client.GetAppItem(params.Nation)
+	var list []models.TWithdrawChannel
+	mysql.DB.Debug().
+		Model(models.TWithdrawChannel{}).
+		Where(map[string]interface{}{
+			"is_valid":  1,
+			"is_used":   1,
+			"nation":    params.Nation,
+			"item_code": params.ItemCode,
+		}).Order("channel_soft desc").
+		Find(&list)
+	result.List = list
+	mysql.DB.Debug().Model(models.AppCurrencyRate{}).Where(map[string]interface{}{
+		"currency_a": "USDT",
+		"currency_b": appItem.CurrencyType,
+	}).Find(&AppCurrencyRate)
+	result.Num = AppCurrencyRate.BNum
+	result.Rate = AppCurrencyRate.Rate
+	result.Currency = AppCurrencyRate.CurrencyB
+	echo.Success(c, result, "ok")
 }
 
 // GetUserWithdrawListHandler

@@ -14,6 +14,85 @@ components:
           description: 请求 ID，用于追踪请求
           type: string
       type: object
+    models.TWithdrawChannel:
+      properties:
+        bindPayChannel:
+          description: 绑定的在线支付渠道
+          type: string
+        channelCode:
+          description: 支付方式编码值
+          type: string
+        channelLogoUrl:
+          description: 支付方式logo_url
+          type: string
+        channelName:
+          description: 支付方式名称
+          type: string
+        channelSoft:
+          description: 渠道排序
+          type: integer
+        channelType:
+          description: 支付方式分类
+          type: string
+        createDate:
+          description: 添加日期
+          type: string
+        creator:
+          description: 添加人ID
+          type: string
+        currencyType:
+          description: 货币类型 IDR USD CNY
+          type: string
+        id:
+          description: 充值渠道表主键自增ID
+          type: integer
+        isUsed:
+          description: 是否使用 1是 0否
+          type: integer
+        isValid:
+          description: 是否有效 1是 0否
+          type: integer
+        itemCode:
+          description: 关联项目编码
+          type: string
+        nation:
+          description: 绑定国家
+          type: string
+        updateDate:
+          description: 更新日期
+          type: string
+        updater:
+          description: 更新人ID
+          type: string
+        withdrawFeeRate:
+          description: 提现手续费比率
+          type: number
+        withdrawFixedFee:
+          description: 每笔固定费用（本地货币）
+          type: number
+        withdrawLowestFee:
+          description: 每笔最低手续费（不填表示没有最低费用）
+          type: number
+      type: object
+    requests.Base:
+      properties:
+        appOsType:
+          description: 系统类型 1安卓 2IOS 3html
+          type: string
+        itemCode:
+          description: 项目编码
+          type: string
+        languageCode:
+          description: 语言编码
+          type: string
+        nation:
+          description: 国家编码
+          type: string
+      required:
+      - itemCode
+      - languageCode
+      - nation
+      type: object
     requests.BindEmailParams:
       properties:
         appOsType:
@@ -420,6 +499,24 @@ components:
       - languageCode
       - nation
       - onlineOnlyKeyId
+      type: object
+    response.BlockWithdrawInfo:
+      properties:
+        currency:
+          description: 每日最大的交易次数
+          type: string
+        list:
+          description: 数字货币提现相关列表数据
+          items:
+            $ref: '#/components/schemas/models.TWithdrawChannel'
+          type: array
+          uniqueItems: false
+        num:
+          description: 最大交易金额
+          type: number
+        rate:
+          description: 每次增减金额
+          type: number
       type: object
     response.ExistingCountry:
       properties:
@@ -1490,7 +1587,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/requests.ExistingCountryParams'
+              $ref: '#/components/schemas/requests.Base'
         description: 获取用户限制规则列表参数
         required: true
       responses:
@@ -1565,7 +1662,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/requests.ExistingCountryParams'
+              $ref: '#/components/schemas/requests.Base'
         description: 获取配置信息参数
         required: true
       responses:
@@ -1634,7 +1731,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/requests.ExistingCountryParams'
+              $ref: '#/components/schemas/requests.Base'
         description: 获取数字货币提现相关的信息参数
         required: true
       responses:
@@ -1648,7 +1745,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/response.ExistingCountry'
+                $ref: '#/components/schemas/response.BlockWithdrawInfo'
           description: data数据结构体
       summary: No.03.5-获取数字货币提现相关的信息
       tags:
