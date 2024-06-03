@@ -202,7 +202,7 @@ func SubmitTrade(ws *wss.WsConn, params requests.SubmitTradeParams) {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 			return
 		}
-		if total > TSettingVipRule.ParallelTrans {
+		if total >= TSettingVipRule.ParallelTrans {
 			// 添加文案，您当前的 vip 等级只够同时交易 5 笔
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParallelTrans", fmt.Sprintf("%v", TSettingVipRule.ParallelTrans)))
 			return
