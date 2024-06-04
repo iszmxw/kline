@@ -65,6 +65,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	NoLogin := c.GetBool("NoLogin")
 	isVest, _ := c.GetQuery("isvest")
 	Uuid, _ := c.GetQuery("uuid")
+	DeviceId, _ := c.GetQuery("deviceId")
 	ws.Confuse, _ = c.GetQuery("confuse")
 	if len(isVest) == 0 {
 		isVest = "0"
@@ -77,6 +78,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	ws.AppUserId = AppUserId
 	ws.SecWebSocketKey = socketId
 	ws.Uuid = Uuid
+	ws.DeviceId = DeviceId
 	var AppUser response.AppUser
 	mysql.DB.Model(models.AppUser{}).Where("app_user_id", AppUserId).Find(&AppUser)
 	ws.ItemCode = AppUser.ItemCode
@@ -669,7 +671,7 @@ func PushNoticePlus(ws *wss.WsConn) {
 	}
 	ip := helpers.IP()
 	for !ws.IsClose {
-		key := fmt.Sprintf("Notice:Order:Result:Queue:%v", appUserId)
+		key := fmt.Sprintf("Notice:Order:Result:Queue:%v:%v", appUserId, ws.DeviceId)
 		num, _ := redis.Client.LLen(key)
 		if num <= 0 {
 			time.Sleep(100 * time.Millisecond)
