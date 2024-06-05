@@ -260,7 +260,7 @@ func SubmitTrade(ws *wss.WsConn, params requests.SubmitTradeParams) {
 	params.DeviceId = ws.DeviceId
 	// 标记是哪一个设备下的单，稍后推送给对应设备
 	logger.Info(fmt.Sprintf("用户:%v,当前设备id:%v,创建了一个订单：%v", ws.AppUserId, ws.DeviceId, orderId))
-	_, _ = redis.Client.Add(fmt.Sprintf("Notice:Order:Result:Device:%v", orderId), ws.DeviceId, 0)
+	_, _ = redis.Client.Add(fmt.Sprintf("Notice:Order:Result:Device:%v", orderId), ws.DeviceId, 60*60*2) // 两小时过期
 	if err != nil {
 		logger.Error(err)
 		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))

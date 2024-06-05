@@ -66,6 +66,11 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	isVest, _ := c.GetQuery("isvest")
 	Uuid, _ := c.GetQuery("uuid")
 	DeviceId, _ := c.GetQuery("deviceId")
+	if len(DeviceId) == 0 || strings.EqualFold(DeviceId, "null") {
+		logger.Info("设备ID不存在", DeviceId)
+		wss.WsClose(ws)
+		return
+	}
 	ws.Confuse, _ = c.GetQuery("confuse")
 	if len(isVest) == 0 {
 		isVest = "0"
