@@ -104,7 +104,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				config.Any("/getUserTradingRules.json", ClientV3Group.ConfigController.GetUserTradingRulesHandler)
 				// 获取数字货币提现相关的信息 [ok]
 				config.Any("/getBlockWithdrawInfo.json", ClientV3Group.ConfigController.GetBlockWithdrawInfoHandler)
-				// 获取支持提现银行列表 [todo]
+				// 获取支持提现银行列表 [ok]
 				config.Any("/getUserWithdrawList.json", ClientV3Group.ConfigController.GetUserWithdrawListHandler)
 			}
 

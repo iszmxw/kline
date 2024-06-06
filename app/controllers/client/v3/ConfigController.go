@@ -592,16 +592,55 @@ func (h *ConfigController) GetBlockWithdrawInfoHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param ExistingCountryParams body requests.ExistingCountryParams true "获取支持提现银行列表的参数"
+// @Param GetUserWithdrawListParams body requests.GetUserWithdrawListParams true "获取支持提现银行列表的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.ExistingCountry "data数据结构体"
+// @Success 1 {object} response.GetUserWithdrawList "data数据结构体"
 // @Router /No.03.6/app/v3/config/getUserWithdrawList.json [post]
 func (h *ConfigController) GetUserWithdrawListHandler(c *gin.Context) {
-	var params requests.ExistingCountryParams
+	var params requests.GetUserWithdrawListParams
+	var result response.GetUserWithdrawList
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, nil, "ok")
+	var list []models.TTipartiteConfiguration
+	where := cmap.New().Items()
+	where["item_code"] = params.ItemCode
+	where["nation"] = params.Nation
+	where["is_valid"] = 1
+	where["use_type"] = "withdraw"
+	mysql.DB.Debug().Model(models.TTipartiteConfiguration{}).Where(where).Find(&list)
+	list = getFilteredConfigurations(list)
+	if len(list) == 0 {
+		result.Total = 0
+		echo.Success(c, result, "ok")
+		return
+	}
+	var BankList []response.BankList
+	mysql.DB.Debug().Model(models.TSystemBank{}).Joins(models.Prefix("left join $_config_bank_info ON $_system_bank.id = $_config_bank_info.system_bank_id")).Where(map[string]interface{}{
+		models.Prefix("$_system_bank.nation"): params.Nation,
+	}).
+		Group(models.Prefix("$_system_bank.id")).
+		Order(models.Prefix("$_config_bank_info.is_recommend desc,$_config_bank_info.sort asc")).
+		Select(
+			models.Prefix("$_system_bank.id as BankId"),
+			models.Prefix("$_system_bank.bank_name as BankName"),
+			models.Prefix("IFNULL( $_config_bank_info.is_recommend, 0 ) as IsRecommend"),
+			models.Prefix("IFNULL( $_config_bank_info.sort, 0 ) as sort"),
+		).Find(&BankList)
+	result.BankList = BankList
+	result.Total = int64(len(list))
+	echo.Success(c, result, "ok")
+}
+
+// getFilteredConfigurations 过滤掉PartnerCode为"broPay"的配置
+func getFilteredConfigurations(configs []models.TTipartiteConfiguration) []models.TTipartiteConfiguration {
+	var filteredConfigs []models.TTipartiteConfiguration
+	for _, config := range configs {
+		if config.PartnerCode != "broPay" {
+			filteredConfigs = append(filteredConfigs, config)
+		}
+	}
+	return filteredConfigs
 }
