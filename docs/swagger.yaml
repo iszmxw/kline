@@ -577,6 +577,21 @@ definitions:
         description: 时区
         type: string
     type: object
+  response.GetUserLossReturn:
+    properties:
+      todayBonusReturn:
+        description: 计算得出用户待返还Bonus
+        type: number
+      totalBonusReturn:
+        description: 用户累计获得返还Bonus
+        type: number
+      vipIconUrl:
+        description: 会员等级图标URL
+        type: string
+      vipRate:
+        description: 亏损返还比例
+        type: number
+    type: object
   response.GetUserWithdrawList:
     properties:
       bankList:
@@ -1793,10 +1808,10 @@ paths:
         type: string
       - description: 获取用户亏损返还数据v2参数
         in: body
-        name: GetLanguagePageParams
+        name: Params
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.Base'
       produces:
       - application/json
       responses:
@@ -1807,7 +1822,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.GetUserLossReturn'
       summary: No.04.1-获取用户亏损返还数据v2
       tags:
       - 4.活动模块

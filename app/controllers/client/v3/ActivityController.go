@@ -1,20 +1,21 @@
 package v3
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
-	"goapi/app/models/keyenum"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/app/service/client"
+	"goapi/pkg/commonUtils"
 	"goapi/pkg/echo"
+	"goapi/pkg/helpers"
 	"goapi/pkg/mysql"
-	"goapi/pkg/redis"
 	"goapi/pkg/validate"
+	"strings"
+	"time"
 )
 
 // k线图服务
@@ -35,85 +36,136 @@ type ActivityController struct {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取用户亏损返还数据v2参数"
+// @Param Params body requests.Base true "获取用户亏损返还数据v2参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.GetUserLossReturn "data数据结构体"
 // @Router /No.04.1/app/v3/activity/getUserLossReturn.json [post]
 func (h *ActivityController) GetUserLossReturnHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.Base
+	var result response.GetUserLossReturn
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	vipRule := commonUtils.GetVipInfo(params.ItemCode, params.Nation, User.UserLevel)
+	// vip权益覆盖
+	if nil == vipRule {
+		// 获取用户默认vip相关信息
+		vipRule = commonUtils.GetVipInfo(params.ItemCode, params.Nation, 0)
+	}
+	cashbackRate := vipRule.LostReturnRate
+	vipLogoUrl := vipRule.VipLogoUrl
+	temp := cmap.New().Items()
+	mysql.DB.Debug().Model(models.TAppBonusLog{}).Where(map[string]interface{}{
+		"app_user_id":   User.AppUserId,
+		"item_code":     params.ItemCode,
+		"activity_code": "transaction_loss",
+		"is_valid":      1,
+	}).Select("IFNULL(SUM(amounts),0) AS amounts").Find(&temp)
+	userReturnAmount := temp["amounts"].(float64)
 	appItem := client.GetAppItem(params.Nation)
-	if len(appItem.TimeZone) == 0 {
-		echo.Error(c, "ItemIsNull", "")
-		return
+	todayStartTime := getTodayStartTime(appItem.TimeZone)
+	todayEndTime := getTodayEndTime(appItem.TimeZone)
+	today8Timestamp := todayStartTime + 60*60*8*1000
+	yesterdayStartTime := todayStartTime - 60*60*24*1000
+	now := time.Now().UnixMilli()
+
+	temp2 := cmap.New().Items()
+	if now < today8Timestamp {
+		mysql.DB.Debug().Model(models.TradingOrder{}).Where(map[string]interface{}{
+			"amount_type": 1,
+			"is_valid":    1,
+			"item_code":   params.ItemCode,
+			"nation":      params.Nation,
+			"app_user_id": User.AppUserId,
+		}).
+			Where("quiz_result IN(1,0)").
+			Where("create_ts BETWEEN ? AND ?", yesterdayStartTime, today8Timestamp).
+			Select("IFNULL(SUM(user_gain_amounts), 0) AS amounts").
+			Raw("HAVING IFNULL(SUM(user_gain_amounts), 0) <= 0").
+			Find(&temp2)
+	} else {
+		mysql.DB.Debug().Model(models.TradingOrder{}).Where(map[string]interface{}{
+			"amount_type": 1,
+			"is_valid":    1,
+			"item_code":   params.ItemCode,
+			"nation":      params.Nation,
+			"app_user_id": User.AppUserId,
+		}).
+			Where("quiz_result IN(1,0)").
+			Where("create_ts BETWEEN ? AND ?", todayStartTime, todayEndTime).
+			Select("IFNULL(SUM(user_gain_amounts), 0) AS amounts").
+			Having("IFNULL(SUM(user_gain_amounts), 0) <= 0").
+			Find(&temp2)
 	}
-	var PageShowList []requests.PageShow
-	where := cmap.New().Items()
-	where["status"] = 0
-	where["language_code"] = params.LanguageCode
-	if len(params.ItemCode) > 0 {
-		where["item_code"] = params.ItemCode
+	userGainAmounts := temp2["amounts"].(float64)
+	amount := 0.0
+	if userGainAmounts > 0 {
+		amount = userGainAmounts * cashbackRate * -1
 	}
-	VipIsValid, _ := redis.Client.Get(fmt.Sprintf("%s:%s:%s", keyenum.KeyInfo(keyenum.SETTING_VIP_RULE_SWITCH).Key, params.ItemCode, params.Nation))
-	mysql.DB.Debug().Model(models.TMultiLanguageShow{}).
-		Where("type LIKE ?", "%"+params.Type+"%").
-		Where(where).
-		Select("show_word,show_column").
-		Find(&PageShowList)
-	languageData := cmap.New().Items()
-	for _, PageShow := range PageShowList {
-		languageData[PageShow.ShowColumn] = PageShow.ShowWord
-	}
-	WebUrl := make(map[string]interface{})
-	WebUrlPre := make(map[string]interface{})
-	_ = json.Unmarshal([]byte(appItem.WebUrl), &WebUrl)
-	_ = json.Unmarshal([]byte(appItem.WebUrlPre), &WebUrlPre)
-	result.LanguageData = languageData                                               // 多语言
-	result.PageVersion = appItem.PageVersion                                         // 页面版本
-	result.WebUrl = WebUrl                                                           // 网页的地址
-	result.WebUrlPre = WebUrlPre                                                     // 网页的地址 预发布版本
-	result.NationConfig.CurrencyDigits = appItem.NumberPoint                         // 小数点保留位数
-	result.NationConfig.MonetaryUnit = appItem.MonetaryUnit                          // 货币符号
-	result.NationConfig.CurrencyType = appItem.CurrencyType                          // 货币类型
-	result.AppVersion = appItem.AppVersion                                           // app版本
-	result.EmailAddress = appItem.Email                                              // 公司邮件
-	result.Address = appItem.Address                                                 // 公司地址
-	result.ServicePhone = appItem.ServicePhone                                       // 公司电话
-	result.AppOpendState = 1                                                         // 应用开放状态 1开放 0限制
-	result.OpendStateTips = "YOUR AREA IS BANNED!"                                   // 应用开放状态提示语
-	result.IsMustHadGogleService = 0                                                 // 是否必须安装谷歌服务 1是 0否
-	result.MustHadGogleServiceTips = "Your mobile phone must install Google service" // 未安装谷歌服务提示语
-	result.TimeZone = appItem.TimeZone                                               // 时区
-	result.WithdrawType = getWithdrawType(params.Nation, params.ItemCode)            // 当前国家支持的提现类型 0 暂无支持的提现渠道 1 银行卡和数字货币都支持  2 数字货币提现  3 银行卡提现
-	result.OnlineOnlyKeyId = onlineOnlyKeyId()                                       // 生成设备唯一id
-	result.VipIsValid = VipIsValid                                                   // 是否启用 vip 1是 0否
-	result.Google = 1                                                                // 是否开启谷歌登录1是，2否
-	result.Facebook = 1                                                              // 是否开启fackbook登录，1是2否
-	result.Mobile = 1                                                                // 是否开启mobile登录，1是2否
-	result.Email = 1                                                                 // 是否开启email登录，1是2否
-	var TAppItemVersion models.TAppItemVersion
-	where2 := cmap.New().Items()
-	where2["item_code"] = params.ItemCode
-	where2["is_new"] = 1
-	where2["nation"] = params.Nation
-	where2["app_type"] = 1
-	if len(params.AppOsType) > 0 {
-		where2["app_type"] = params.AppOsType
-	}
-	where2["is_used"] = 1
-	mysql.DB.Debug().Model(models.TAppItemVersion{}).Where(where2).Find(&TAppItemVersion)
-	if TAppItemVersion.ID > 0 {
-		result.Google = TAppItemVersion.Google     // 是否开启谷歌登录1是，2否
-		result.Facebook = TAppItemVersion.Facebook // 是否开启fackbook登录，1是2否
-		result.Mobile = TAppItemVersion.Mobile     // 是否开启mobile登录，1是2否
-		result.Email = TAppItemVersion.Email       // 是否开启email登录，1是2否
-	}
+	amount = helpers.Decimal(amount, appItem.NumberPoint)
+	result.TodayBonusReturn = amount
+	result.TotalBonusReturn = userReturnAmount
+	result.VipRate = cashbackRate
+	result.VipIconUrl = vipLogoUrl
 	echo.Success(c, result, "ok")
+}
+
+func getTodayStartTime(timeZone string) int64 {
+	parts := strings.Split(timeZone, "GMT")
+	if len(parts) != 2 {
+		// 处理时区格式错误的情况
+		// 可以返回默认值或者错误信息
+		return -1
+	}
+
+	hoursMinutes := strings.TrimSpace(parts[1])
+	offsetParts := strings.Split(hoursMinutes, ":")
+	if len(offsetParts) != 2 {
+		// 处理时区格式错误的情况
+		// 可以返回默认值或者错误信息
+		return -1
+	}
+
+	hours := 0
+	minutes := 0
+	fmt.Sscanf(offsetParts[0], "%d", &hours)
+	fmt.Sscanf(offsetParts[1], "%d", &minutes)
+
+	offset := time.FixedZone("GMT", hours*3600+minutes*60)
+
+	todayStart := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, offset)
+	return todayStart.UnixNano() / int64(time.Millisecond)
+}
+
+func getTodayEndTime(timeZone string) int64 {
+	parts := strings.Split(timeZone, "GMT")
+	if len(parts) != 2 {
+		// 处理时区格式错误的情况
+		// 可以返回默认值或者错误信息
+		return -1
+	}
+
+	hoursMinutes := strings.TrimSpace(parts[1])
+	offsetParts := strings.Split(hoursMinutes, ":")
+	if len(offsetParts) != 2 {
+		// 处理时区格式错误的情况
+		// 可以返回默认值或者错误信息
+		return -1
+	}
+
+	hours := 0
+	minutes := 0
+	fmt.Sscanf(offsetParts[0], "%d", &hours)
+	fmt.Sscanf(offsetParts[1], "%d", &minutes)
+
+	offset := time.FixedZone("GMT", hours*3600+minutes*60)
+
+	todayEnd := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 23, 59, 59, 999999999, offset)
+	return todayEnd.UnixNano() / int64(time.Millisecond)
 }
 
 // GetBonusTypesHandler

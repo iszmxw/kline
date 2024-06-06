@@ -111,7 +111,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			// 4.活动模块
 			activity := V3Route.Group("/activity")
 			{
-				// 获取用户亏损返还数据 v2 [todo]
+				// 获取用户亏损返还数据 v2 [ok]
 				activity.Any("/getUserLossReturn.json", ClientV3Group.ActivityController.GetUserLossReturnHandler)
 				// 获取 Bonus 类型 [todo]
 				activity.Any("/getBonusTypes.json", ClientV3Group.ActivityController.GetBonusTypesHandler)
