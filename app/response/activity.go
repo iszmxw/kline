@@ -6,3 +6,13 @@ type GetUserLossReturn struct {
 	VipRate          float64 `json:"vipRate"`          // 亏损返还比例
 	VipIconUrl       string  `json:"vipIconUrl"`       // 会员等级图标URL
 }
+
+type GetBonusTypes struct {
+	List  []BonusTypes      `json:"list"`  // BonusTypes
+	Types map[string]string `json:"types"` // types 键值对 key->value
+}
+
+type BonusTypes struct {
+	ActivityCode string `json:"activityCode"` // 活动代码
+	ActivityName string `json:"activityName"` // 活动名称
+}

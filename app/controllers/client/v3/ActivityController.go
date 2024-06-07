@@ -180,18 +180,30 @@ func getTodayEndTime(timeZone string) int64 {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取 Bonus 类型参数"
+// @Param Params body requests.Base true "获取 Bonus 类型参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.GetBonusTypes "data数据结构体"
 // @Router /No.04.2/app/v3/activity/getBonusTypes.json [post]
 func (h *ActivityController) GetBonusTypesHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.Base
+	var result response.GetBonusTypes
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	var bonusTypes []response.BonusTypes
+	mysql.DB.Debug().Model(models.TAppBonusActivity{}).Where(map[string]interface{}{
+		"nation":    params.Nation,
+		"item_code": params.ItemCode,
+		"is_valid":  1,
+	}).Group("activity_code").Select("activity_code AS ActivityCode,activity_name AS ActivityName").Find(&bonusTypes)
+	types := make(map[string]string)
+	for _, item := range bonusTypes {
+		types[item.ActivityCode] = item.ActivityName
+	}
+	result.List = bonusTypes
+	result.Types = types
 	echo.Success(c, result, "ok")
 }
 

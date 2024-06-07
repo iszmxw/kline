@@ -550,6 +550,15 @@ definitions:
         description: 每次增减金额
         type: number
     type: object
+  response.BonusTypes:
+    properties:
+      activityCode:
+        description: 活动代码
+        type: string
+      activityName:
+        description: 活动名称
+        type: string
+    type: object
   response.ExistingCountry:
     properties:
       isStart:
@@ -576,6 +585,19 @@ definitions:
       timeZone:
         description: 时区
         type: string
+    type: object
+  response.GetBonusTypes:
+    properties:
+      list:
+        description: BonusTypes
+        items:
+          $ref: '#/definitions/response.BonusTypes'
+        type: array
+      types:
+        additionalProperties:
+          type: string
+        description: types 键值对 key->value
+        type: object
     type: object
   response.GetUserLossReturn:
     properties:
@@ -1932,10 +1954,10 @@ paths:
         type: string
       - description: 获取 Bonus 类型参数
         in: body
-        name: GetLanguagePageParams
+        name: Params
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.Base'
       produces:
       - application/json
       responses:
@@ -1946,7 +1968,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.GetBonusTypes'
       summary: No.04.2-获取 Bonus 类型
       tags:
       - 4.活动模块

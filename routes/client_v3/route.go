@@ -113,7 +113,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			{
 				// 获取用户亏损返还数据 v2 [ok]
 				activity.Any("/getUserLossReturn.json", ClientV3Group.ActivityController.GetUserLossReturnHandler)
-				// 获取 Bonus 类型 [todo]
+				// 获取 Bonus 类型 [ok]
 				activity.Any("/getBonusTypes.json", ClientV3Group.ActivityController.GetBonusTypesHandler)
 				// 获取 Bonus 赠送记录 [todo]
 				activity.Any("/getBonusRecords.json", ClientV3Group.ActivityController.GetBonusRecordsHandler)
