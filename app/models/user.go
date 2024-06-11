@@ -63,7 +63,7 @@ type AppUser struct {
 	FlowJson                   string     `json:"flow_json"`                    // 整合流量方公司的参数json
 	CreateTs                   int64      `json:"create_ts"`                    // 创建时间戳
 	UpdateTs                   int64      `json:"update_ts"`                    // 更新时间戳
-	BonusRewardNumber          int32      `json:"bonus_reward_number"`          // 用户充值奖励bonus次数
+	BonusRewardNumber          int        `json:"bonus_reward_number"`          // 用户充值奖励bonus次数
 	ClearingInterceptionStatus int32      `json:"clearing_interception_status"` // 清算拦截状态， 0放行 1拦截 ，提现拦截状态为1用户
 	Online                     int32      `json:"online"`                       // 用户是否在线，1-是，0-否
 	OnlineOnlyKeyId            string     `json:"online_only_key_id"`           // 系统级用户设备唯一id

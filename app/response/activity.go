@@ -26,3 +26,15 @@ type GetBonusRecords struct {
 	ShowAmounts    string `json:"showAmounts"`    // 展示Bouns赠送金额
 	IsValid        int    `json:"isValid"`        // 是否过期
 }
+
+// BannerList 结构体用于表示 BannerParams数据
+type BannerList struct {
+	BannerName   string `json:"bannerName"`   // Banner名称
+	Sort         int    `json:"sort"`         // 排序顺序
+	Position     int    `json:"position"`     // 广告位置（1：首页轮播）
+	PhotoUrl     string `json:"photoUrl"`     // 图片链接URL
+	Description  string `json:"description"`  // 文字描述信息
+	ActionUrl    string `json:"actionUrl"`    // 跳转链接URL
+	ShowTime     int    `json:"showTime"`     // 显示时间（1：长期展示，2：未登录时，3：首充前，4：有充值活动次数时候）
+	JumpPosition int    `json:"jumpPosition"` // 跳转位置
+}

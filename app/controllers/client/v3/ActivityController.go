@@ -289,17 +289,56 @@ func (h *ActivityController) GetBonusRecordsHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取 banner 数据参数"
+// @Param Params body requests.Base true "获取 banner 数据参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} []response.BannerList "data数据结构体"
 // @Router /No.04.4/app/v3/activity/getBanners.json [post]
 func (h *ActivityController) GetBannersHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.Base
+	var list []response.BannerList
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
+	}
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	// 首充前（新用户）
+	firstRecharge := true
+	// 有充值活动次数
+	activiteNum := 0
+	var user models.AppUser
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", User.AppUserId).Find(&user)
+	if user.IsNew == 0 {
+		firstRecharge = false
+	}
+	where := cmap.New().Items()
+	where["is_show"] = 1
+	where["item_code"] = params.ItemCode
+	where["language_code"] = params.LanguageCode
+	where["is_delete"] = 0
+	if len(params.Nation) > 0 {
+		where["nation"] = params.Nation
+	}
+	activiteNum = user.BonusRewardNumber
+	mysql.DB.Debug().Model(models.TAppBanner{}).Where(where).Order("sort desc").Find(&list)
+	result := make([]response.BannerList, 0)
+	for _, banner := range list {
+		// 在这里添加你的条件判断，如果不满足条件就删除
+		// 1-长期展示，2-游客登录时候，3-首充前，4-有充值活动次数时候
+		// 如果登陆了就删除掉
+		if 2 == banner.ShowTime && 1 != user.IsVisit {
+			continue
+		}
+		// 不是首充前（不是新用户）
+		if 3 == banner.ShowTime && !firstRecharge {
+			continue
+		}
+		// 没有充值活动次数的时候
+		if 4 == banner.ShowTime && activiteNum <= 0 {
+			continue
+		}
+		result = append(result, banner)
 	}
 	echo.Success(c, result, "ok")
 }

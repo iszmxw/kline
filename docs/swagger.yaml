@@ -580,6 +580,33 @@ definitions:
         description: 排序
         type: integer
     type: object
+  response.BannerList:
+    properties:
+      actionUrl:
+        description: 跳转链接URL
+        type: string
+      bannerName:
+        description: Banner名称
+        type: string
+      description:
+        description: 文字描述信息
+        type: string
+      jumpPosition:
+        description: 跳转位置
+        type: integer
+      photoUrl:
+        description: 图片链接URL
+        type: string
+      position:
+        description: 广告位置（1：首页轮播）
+        type: integer
+      showTime:
+        description: 显示时间（1：长期展示，2：未登录时，3：首充前，4：有充值活动次数时候）
+        type: integer
+      sort:
+        description: 排序顺序
+        type: integer
+    type: object
   response.BlockWithdrawInfo:
     properties:
       currency:
@@ -2215,10 +2242,10 @@ paths:
         type: string
       - description: 获取 banner 数据参数
         in: body
-        name: GetLanguagePageParams
+        name: Params
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.Base'
       produces:
       - application/json
       responses:
@@ -2229,7 +2256,9 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            items:
+              $ref: '#/definitions/response.BannerList'
+            type: array
       summary: No.04.4-获取 banner 数据
       tags:
       - 4.活动模块
