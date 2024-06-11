@@ -13,6 +13,20 @@ definitions:
         description: 请求 ID，用于追踪请求
         type: string
     type: object
+  models.PageList:
+    properties:
+      current_page:
+        type: integer
+      list: {}
+      pageNum:
+        description: 第几页
+        type: integer
+      pageSize:
+        description: 每页多少条
+        type: integer
+      total:
+        type: integer
+    type: object
   models.TWithdrawChannel:
     properties:
       bindPayChannel:
@@ -217,6 +231,39 @@ definitions:
     - itemCode
     - languageCode
     - nation
+    type: object
+  requests.GetBonusRecordsParams:
+    properties:
+      activityCode:
+        description: 活动编码 eg:first_recharge
+        type: string
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      isToday:
+        description: 是否查询今天 ，1，是，0-查询所有
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+    required:
+    - isToday
+    - itemCode
+    - languageCode
+    - nation
+    - pageNum
     type: object
   requests.GetLanguagePageParams:
     properties:
@@ -584,6 +631,30 @@ definitions:
         type: string
       timeZone:
         description: 时区
+        type: string
+    type: object
+  response.GetBonusRecords:
+    properties:
+      activityLogUrl:
+        description: 活动log链接
+        type: string
+      activityName:
+        description: 活动名称
+        type: string
+      amounts:
+        description: Bouns赠送金额
+        type: integer
+      createDate:
+        description: 赠送时间
+        type: integer
+      isValid:
+        description: 是否过期
+        type: integer
+      monetaryUnit:
+        description: bonus赠送货币单位
+        type: string
+      showAmounts:
+        description: 展示Bouns赠送金额
         type: string
     type: object
   response.GetBonusTypes:
@@ -2016,10 +2087,10 @@ paths:
         type: string
       - description: 获取 Bonus 赠送记录参数
         in: body
-        name: GetLanguagePageParams
+        name: GetBonusRecordsParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetBonusRecordsParams'
       produces:
       - application/json
       responses:
@@ -2030,7 +2101,11 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/models.PageList'
+        "2":
+          description: List数据结构体
+          schema:
+            $ref: '#/definitions/response.GetBonusRecords'
       summary: No.04.3-获取 Bonus 赠送记录
       tags:
       - 4.活动模块

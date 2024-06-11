@@ -16,3 +16,13 @@ type BonusTypes struct {
 	ActivityCode string `json:"activityCode"` // 活动代码
 	ActivityName string `json:"activityName"` // 活动名称
 }
+
+type GetBonusRecords struct {
+	ActivityLogUrl string `json:"activityLogUrl"` // 活动log链接
+	ActivityName   string `json:"activityName"`   // 活动名称
+	CreateDate     int64  `json:"createDate"`     // 赠送时间
+	Amounts        int    `json:"amounts"`        // Bouns赠送金额
+	MonetaryUnit   string `json:"monetaryUnit"`   // bonus赠送货币单位
+	ShowAmounts    string `json:"showAmounts"`    // 展示Bouns赠送金额
+	IsValid        int    `json:"isValid"`        // 是否过期
+}

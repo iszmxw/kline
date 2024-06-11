@@ -21,7 +21,7 @@ func TestBill(t *testing.T) {
 }
 
 func Bill() {
-	url := "https://merchant.idcashypay.com/prod-api/mchManage/api/mchBillList?pageNum=1&pageSize=14000&createStartTime=2014-05-01%252000%253A00%253A00&createEndTime=2024-05-31%252023%253A59%253A59"
+	url := "https://merchant.idcashypay.com/prod-api/mchManage/api/mchBillList?pageNum=1&pageSize=10000&billType=payOut"
 	method := "GET"
 
 	client := &http.Client{}
@@ -31,9 +31,10 @@ func Bill() {
 		fmt.Println(err)
 		return
 	}
+
 	req.Header.Add("Accept", "application/json, text/plain, */*")
 	req.Header.Add("Accept-Language", "zh-CN")
-	req.Header.Add("Authorization", "Bearer eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6Im1jaGZRMzZOeHZ3SE06N2U2ZDY1YmQtNmMxMy00YWJlLTgzNzYtMGFhNDc3ZWZkNDg4In0.pLn3x1MfLPS_01-NDnjmIICvWQnHJIRGlfnRGGsKabfRkKfwhi-nA_2vO4vc0VsgK-OowDEgheOKnB8o1KaTDQ")
+	req.Header.Add("Authorization", "Bearer eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6Im1jaGZRMzZOeHZ3SE06ODcxZTg0Y2YtZjkyMi00NmM0LWJmZDgtMzEwZGMzMjZjM2Q1In0.YEXsmln6aJC4md-B5r3OIah3I3tmReN6MA4GpTLTrTfxo-LZcfxI3Quo8BgKe6kfNKDNdzEdRCfLtTQBmNmcoA")
 	req.Header.Add("Cache-Control", "no-cache")
 	req.Header.Add("Connection", "keep-alive")
 	req.Header.Add("Pragma", "no-cache")
@@ -45,8 +46,7 @@ func Bill() {
 	req.Header.Add("sec-ch-ua", "\"Google Chrome\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"")
 	req.Header.Add("sec-ch-ua-mobile", "?0")
 	req.Header.Add("sec-ch-ua-platform", "\"macOS\"")
-	req.Header.Add("Cookie", "username=mchfQ36NxvwHM; rememberMe=true; password=ZtJ2jWQKdlNiy4ZFle783TQyPP5zODAaHKAOkf/+3pctCcLzNKT8/Xk4uXXj7zU9AIAtSr2zB8MB/ko40URoag; acw_tc=0bc1a05317171452168357709e4e8d27ffee3e061d81ac8c7bc11195335b3c")
-	req.Header.Add("Host", "merchant.idcashypay.com")
+	req.Header.Add("Cookie", "username=mchfQ36NxvwHM; rememberMe=true; acw_tc=0bc159c417177487851791296e9bd40b15e4ee9e31212a3f906eb3416bf04e; password=Ke2zl51o5Jv9Cdqg0vMUzdyL/O7m92UQ+5A59AgnS7WGGPjJona8zUgbkSW3G95WnAeEvHNFPVtMSNreK5IDTQ")
 
 	res, err := client.Do(req)
 	if err != nil {

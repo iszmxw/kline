@@ -12,6 +12,7 @@ import (
 	"goapi/pkg/commonUtils"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
+	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/validate"
 	"strings"
@@ -219,19 +220,61 @@ func (h *ActivityController) GetBonusTypesHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取 Bonus 赠送记录参数"
+// @Param GetBonusRecordsParams body requests.GetBonusRecordsParams true "获取 Bonus 赠送记录参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} models.PageList "data数据结构体"
+// @Success 2 {object} response.GetBonusRecords "List数据结构体"
 // @Router /No.04.3/app/v3/activity/getBonusRecords.json [post]
 func (h *ActivityController) GetBonusRecordsHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.GetBonusRecordsParams
+	var pageList models.PageList // 返回数据
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, result, "ok")
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	var List []response.GetBonusRecords
+	where := cmap.New().Items()
+	if len(params.ActivityCode) > 0 {
+		where[models.Prefix("$_app_bonus_log.activity_code")] = params.ActivityCode
+	}
+	DB := mysql.DB.Debug()
+	table := DB.Model(&models.TAppBonusLog{}).
+		Select(models.Prefix("b.activity_log_url as ActivityLogUrl,$_app_bonus_log.activity_name ActivityName,$_app_bonus_log.create_date as CreateDate,$_app_bonus_log.amounts,$_app_bonus_log.is_valid as IsValid,c.monetary_unit as MonetaryUnit")).
+		Joins(models.Prefix("left join $_app_bonus_activity b on $_app_bonus_log.activity_code = b.activity_code AND $_app_bonus_log.item_code=b.item_code AND $_app_bonus_log.nation = b.nation")).
+		Joins(models.Prefix("left join $_app_item c on c.item_national_name = $_app_bonus_log.nation AND c.item_code=$_app_bonus_log.item_code")).
+		Where(map[string]interface{}{
+			models.Prefix("$_app_bonus_log.app_user_id"): User.AppUserId,
+			models.Prefix("$_app_bonus_log.item_code"):   params.ItemCode,
+			models.Prefix("b.activity_type"):             "signin",
+		})
+	if len(params.ActivityCode) > 0 {
+		table = table.Where(models.Prefix("$_app_bonus_log.activity_code"), params.ActivityCode)
+	}
+	timeBetween := ""
+	if strings.EqualFold("1", params.IsToday) {
+		timeBetween = time.Now().Format("2006-01-02 15:04:05")
+	}
+	if len(timeBetween) > 0 {
+		table = table.Where(models.Prefix("$_app_bonus_log.create_date BETWEEN CONCAT(DATE(NOW()), ' 00:00:00') AND ?"), timeBetween)
+	}
+	table = table.Order(models.Prefix("$_app_bonus_log.create_date desc"))
+	table.Count(&pageList.Total)
+	// 设置分页参数
+	pageList.CurrentPage = params.PageNum
+	pageList.PageSize = params.PageSize
+	models.InitPageList(&pageList)
+	// 设置分页参数
+	table = table.Offset(int(pageList.Offset)).
+		Limit(int(pageList.PageSize))
+	if err := table.Find(&List).Error; err != nil {
+		// 记录错误
+		logger.Error(err)
+	}
+	pageList.List = List
+	echo.Success(c, pageList, "ok")
 }
 
 // GetBannersHandler
