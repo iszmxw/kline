@@ -119,7 +119,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				activity.Any("/getBonusRecords.json", ClientV3Group.ActivityController.GetBonusRecordsHandler)
 				// 获取 banner 数据 [ok]
 				activity.Any("/getBanners.json", ClientV3Group.ActivityController.GetBannersHandler)
-				// 获取 FAQ 管理列表 [todo]
+				// 获取 FAQ 管理列表 [ok]
 				activity.Any("/getFAQManageList.json", ClientV3Group.ActivityController.GetFAQManageListHandler)
 				// 获取客户排名列表 [todo]
 				activity.Any("/getUserRank.json", ClientV3Group.ActivityController.GetUserRankHandler)

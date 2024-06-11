@@ -7,3 +7,8 @@ type GetBonusRecordsParams struct {
 	PageNum      int64  `json:"pageNum" validate:"required"` // 页码
 	PageSize     int64  `json:"pageSize"`                    // 单页条数
 }
+
+type FAQManagerParams struct {
+	Base
+	Type string `json:"type" validate:"required"` // FAQ类型
+}

@@ -357,17 +357,27 @@ func (h *ActivityController) GetBannersHandler(c *gin.Context) {
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取 FAQ 管理列表参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} []response.FAQManagerList "data数据结构体"
 // @Router /No.04.5/app/v3/activity/getFAQManageList.json [post]
 func (h *ActivityController) GetFAQManageListHandler(c *gin.Context) {
 	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var list []response.FAQManagerList
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, result, "ok")
+	mysql.DB.Debug().Model(models.TSystemFaqManage{}).Where(map[string]interface{}{
+		"item_code": params.ItemCode,
+		"nation":    params.Nation,
+		"is_delete": 0,
+		"status":    1,
+		"type":      params.Type,
+	}).
+		Select("type,question,answer").
+		Order("id desc").
+		Find(&list)
+	echo.Success(c, list, "ok")
 }
 
 // GetUserRankHandler

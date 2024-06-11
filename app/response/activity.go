@@ -38,3 +38,9 @@ type BannerList struct {
 	ShowTime     int    `json:"showTime"`     // 显示时间（1：长期展示，2：未登录时，3：首充前，4：有充值活动次数时候）
 	JumpPosition int    `json:"jumpPosition"` // 跳转位置
 }
+
+type FAQManagerList struct {
+	Type     string `json:"type"`     // 问题分类
+	Question string `json:"question"` // 问题
+	Answer   string `json:"answer"`   // 答案
+}

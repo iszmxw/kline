@@ -660,6 +660,18 @@ definitions:
         description: 时区
         type: string
     type: object
+  response.FAQManagerList:
+    properties:
+      answer:
+        description: 答案
+        type: string
+      question:
+        description: 问题
+        type: string
+      type:
+        description: 问题分类
+        type: string
+    type: object
   response.GetBonusRecords:
     properties:
       activityLogUrl:
@@ -2382,7 +2394,9 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            items:
+              $ref: '#/definitions/response.FAQManagerList'
+            type: array
       summary: No.04.5-获取 FAQ 管理列表
       tags:
       - 4.活动模块
