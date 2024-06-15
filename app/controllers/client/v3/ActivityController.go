@@ -438,7 +438,6 @@ func (h *ActivityController) GetUserRankHandler(c *gin.Context) {
 		if !exists || user.IsLogout == 1 {
 			continue
 		}
-
 		rankNo1++
 		var bean response.UserTradingRankList
 		bean.AppUserId = appUserId
@@ -481,7 +480,17 @@ func (h *ActivityController) GetUserRankHandler(c *gin.Context) {
 		"nation":    params.Nation,
 		"rule_code": "minTradingAmounts",
 	}).Find(&rule)
-	// 获取该国家最小交易金额
+	// 初始化我的排名信息
+	myRank.Avatar = Avatar
+	myRank.No = 0
+	myRank.TradingAmounts = "0.0"
+	myRank.ShowTradingAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+	myRank.BonusAmounts = "0.0"
+	myRank.ShowBonusAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+	if nil != rule {
+		myRank.TradeContent = strings.ReplaceAll(anotherShowLanguage.ShowWord, "[value]", fmt.Sprintf("%v", rule.Value))
+	}
+	// 如果我有排名处理一下数据
 	if rank > 0 {
 		rankNo := int(rank + 1)
 		// 从缓存中获取指定用户的消费数据
@@ -520,16 +529,6 @@ func (h *ActivityController) GetUserRankHandler(c *gin.Context) {
 			} else {
 				myRank.TradeContent = strings.ReplaceAll(anotherShowLanguage.ShowWord, "[value]", fmt.Sprintf("%v", gapScore))
 			}
-		}
-	} else {
-		myRank.Avatar = Avatar
-		myRank.No = 0
-		myRank.TradingAmounts = "0.0"
-		myRank.ShowTradingAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
-		myRank.BonusAmounts = "0.0"
-		myRank.ShowBonusAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
-		if nil != rule {
-			myRank.TradeContent = strings.ReplaceAll(anotherShowLanguage.ShowWord, "[value]", fmt.Sprintf("%v", rule.Value))
 		}
 	}
 	result.UserTradingRankList = resultList
