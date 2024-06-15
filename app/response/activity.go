@@ -44,3 +44,24 @@ type FAQManagerList struct {
 	Question string `json:"question"` // 问题
 	Answer   string `json:"answer"`   // 答案
 }
+
+type UserRank struct {
+	UserTradingRankList []UserTradingRankList `json:"userTradingRankList"` // 用户交易排行榜列表
+	MyRank              UserTradingRankList   `json:"myRank"`              // 我的排行信息
+	PageNum             int                   `json:"pageNum"`             // 页数
+	PageSize            int                   `json:"pageSize"`            // 条数
+	Page                int                   `json:"page"`                // 第几页
+	Total               int                   `json:"total"`               // 共有多少条
+	NextMondayTime      int                   `json:"nextMondayTime"`      // 下周一时间
+}
+
+type UserTradingRankList struct {
+	Avatar             string      `json:"avatar"`             // 头像
+	AppUserId          string      `json:"appUserId"`          // 用户ID
+	TradingAmounts     string      `json:"tradingAmounts"`     // 交易金额
+	BonusAmounts       string      `json:"bonusAmounts"`       // bonus金额
+	No                 int         `json:"no"`                 // 排名
+	ShowTradingAmounts string      `json:"showTradingAmounts"` // 展示交易金额
+	ShowBonusAmounts   string      `json:"showBonusAmounts"`   // 展示 bonus 金额
+	TradeContent       interface{} `json:"tradeContent"`       // 交易说明文案
+}

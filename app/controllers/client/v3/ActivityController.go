@@ -8,13 +8,19 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	"goapi/app/response"
-	"goapi/app/service/client"
+	"goapi/app/service/activity"
+	"goapi/app/service/login"
 	"goapi/pkg/commonUtils"
+	"goapi/pkg/decimal"
 	"goapi/pkg/echo"
+	"goapi/pkg/email"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/page"
+	"goapi/pkg/redis"
 	"goapi/pkg/validate"
+	"goapi/pkg/xtime"
 	"strings"
 	"time"
 )
@@ -67,13 +73,12 @@ func (h *ActivityController) GetUserLossReturnHandler(c *gin.Context) {
 		"is_valid":      1,
 	}).Select("IFNULL(SUM(amounts),0) AS amounts").Find(&temp)
 	userReturnAmount := temp["amounts"].(float64)
-	appItem := client.GetAppItem(params.Nation)
-	todayStartTime := getTodayStartTime(appItem.TimeZone)
-	todayEndTime := getTodayEndTime(appItem.TimeZone)
+	appItem := login.GetAppItem(params.Nation)
+	todayStartTime := xtime.GetTodayStartTime(appItem.TimeZone)
+	todayEndTime := xtime.GetTodayEndTime(appItem.TimeZone)
 	today8Timestamp := todayStartTime + 60*60*8*1000
 	yesterdayStartTime := todayStartTime - 60*60*24*1000
 	now := time.Now().UnixMilli()
-
 	temp2 := cmap.New().Items()
 	if now < today8Timestamp {
 		mysql.DB.Debug().Model(models.TradingOrder{}).Where(map[string]interface{}{
@@ -113,60 +118,6 @@ func (h *ActivityController) GetUserLossReturnHandler(c *gin.Context) {
 	result.VipRate = cashbackRate
 	result.VipIconUrl = vipLogoUrl
 	echo.Success(c, result, "ok")
-}
-
-func getTodayStartTime(timeZone string) int64 {
-	parts := strings.Split(timeZone, "GMT")
-	if len(parts) != 2 {
-		// 处理时区格式错误的情况
-		// 可以返回默认值或者错误信息
-		return -1
-	}
-
-	hoursMinutes := strings.TrimSpace(parts[1])
-	offsetParts := strings.Split(hoursMinutes, ":")
-	if len(offsetParts) != 2 {
-		// 处理时区格式错误的情况
-		// 可以返回默认值或者错误信息
-		return -1
-	}
-
-	hours := 0
-	minutes := 0
-	fmt.Sscanf(offsetParts[0], "%d", &hours)
-	fmt.Sscanf(offsetParts[1], "%d", &minutes)
-
-	offset := time.FixedZone("GMT", hours*3600+minutes*60)
-
-	todayStart := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, offset)
-	return todayStart.UnixNano() / int64(time.Millisecond)
-}
-
-func getTodayEndTime(timeZone string) int64 {
-	parts := strings.Split(timeZone, "GMT")
-	if len(parts) != 2 {
-		// 处理时区格式错误的情况
-		// 可以返回默认值或者错误信息
-		return -1
-	}
-
-	hoursMinutes := strings.TrimSpace(parts[1])
-	offsetParts := strings.Split(hoursMinutes, ":")
-	if len(offsetParts) != 2 {
-		// 处理时区格式错误的情况
-		// 可以返回默认值或者错误信息
-		return -1
-	}
-
-	hours := 0
-	minutes := 0
-	fmt.Sscanf(offsetParts[0], "%d", &hours)
-	fmt.Sscanf(offsetParts[1], "%d", &minutes)
-
-	offset := time.FixedZone("GMT", hours*3600+minutes*60)
-
-	todayEnd := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 23, 59, 59, 999999999, offset)
-	return todayEnd.UnixNano() / int64(time.Millisecond)
 }
 
 // GetBonusTypesHandler
@@ -392,18 +343,202 @@ func (h *ActivityController) GetFAQManageListHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取客户排名列表参数"
+// @Param GetUserRankParams body requests.GetUserRankParams true "获取客户排名列表参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.UserRank "data数据结构体"
 // @Router /No.04.6/app/v3/activity/getUserRank.json [post]
 func (h *ActivityController) GetUserRankHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var (
+		params              requests.GetUserRankParams     // 接口请求查询的参数
+		result              response.UserRank              // 最后返回的数据结果集
+		User                models.AppUser                 // 查询用户信息
+		tSystemRankRewards  []models.TSystemRankReward     // 查询排行奖励bonus金额
+		anotherShowLanguage models.TMultiLanguageShow      // 获取其他名次多语言内容
+		topOneShowLanguage  models.TMultiLanguageShow      // 获取第一名多语言内容
+		beginDate           time.Time                      // 开始时间
+		nextMondayTime      int64                          // 下周一时间
+		resultList          []response.UserTradingRankList // 未退出登录用户的排行榜
+		myRank              response.UserTradingRankList   // 计算用户自己的排行位置
+		rule                *models.TUserOperationRules    // 获取该国家最小交易金额
+	)
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	appItem := login.GetAppItem(params.Nation)
+	switch params.WhichWeek {
+	case "1": // 本周
+		beginDate = xtime.GetFirstDateOfATimeZoneWeek(0, appItem.TimeZone)
+		nextMondayTime = xtime.GetNextWeekMonday(appItem.TimeZone) / 1000
+		break
+	case "2": // 上周
+		beginDate = xtime.GetFirstDateOfATimeZoneWeek(1, appItem.TimeZone)
+		break
+	default:
+		echo.Error(c, "ErrorWhichWeekValue", "")
+		return
+	}
+	if params.PageNum == 0 || params.PageSize == 0 {
+		params.PageNum = 1
+		params.PageSize = 10
+	}
+	// 从缓存获取 本/上周一 后七天数据并集集合 (缓存暂保存一个月)
+	keys := make([]string, 7)
+	for i := 0; i < 7; i++ {
+		date := beginDate.AddDate(0, 0, i).Format("2006-01-02")
+		keys[i] = fmt.Sprintf("%vRank:%v", appItem.CurrencyType, date)
+	}
+	// 印度和印尼用户同时合并key可能存在并发问题 做双key  同时从缓存并集集合中获取一周交易人数
+	unionRankWeekKey := appItem.CurrencyType + "RankWeek"
+	total, err := redis.Client.ZUnionStore(keys, unionRankWeekKey)
+	if err != nil {
+		logger.Error(err)
+	}
+	pagea := page.NewPageApple(params.PageSize, params.PageNum)
+	// 分页逆序获取一周排行榜
+	rankWeek, _ := redis.Client.ZRevRangeWithScores(unionRankWeekKey, int64(*pagea.Index), (int64(*pagea.Ends)-1)+(int64(*pagea.Ends)*(int64(*pagea.PageNumber)-1)))
+	appUser, _ := c.Get("user")
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUser.(response.ClientUserBeans).AppUserId).Find(&User)
+	// 排行奖励bonus金额
+	mysql.DB.Debug().Model(models.TSystemRankReward{}).Where(map[string]interface{}{
+		"reward_type": 1,               // 奖励Bonus类型
+		"is_deleted":  0,               // 未逻辑删除
+		"item_code":   params.ItemCode, // 项目编码
+		"nation":      params.Nation,   // 国家
+	}).Order("id asc").Find(&tSystemRankRewards)
+	// 获取其他名次多语言
+	mysql.DB.Debug().Model(models.TMultiLanguageShow{}).Where(map[string]interface{}{
+		"show_column":   "anotherRank",       // 多语言栏目key
+		"language_code": params.LanguageCode, // 语言编码
+		"status":        0,                   // 状态
+		"item_code":     params.ItemCode,     // 项目编码
+	}).Find(&anotherShowLanguage)
+	// 提取所有的 app_user_id
+	var appUserIds []string
+	for _, Z := range rankWeek {
+		arrTmp := strings.Split(Z.Member.(string), "=")
+		appUserIds = append(appUserIds, arrTmp[2])
+	}
+	// 一次性查询所有的用户
+	var users []models.AppUser
+	mysql.DB.Debug().Model(&models.AppUser{}).Where("app_user_id IN ?", appUserIds).Find(&users)
+	// 将查询结果转换为 map，便于后续查找
+	userMap := make(map[string]models.AppUser)
+	for _, user := range users {
+		userMap[user.AppUserId] = user
+	}
+	// 获取需要设置小数位数
+	rankNo1 := *pagea.Index
+	for _, Z := range rankWeek {
+		arrTmp := strings.Split(Z.Member.(string), "=")
+		avatar := arrTmp[0]
+		appUserId := arrTmp[2]
+		user, exists := userMap[appUserId]
+		if !exists || user.IsLogout == 1 {
+			continue
+		}
+
+		rankNo1++
+		var bean response.UserTradingRankList
+		bean.AppUserId = appUserId
+		// 处理邮箱，加密星号展示出来
+		if len(user.Email) == 0 {
+			bean.AppUserId = appUserId
+		} else {
+			bean.AppUserId = email.EnEmail(user.Email)
+		}
+		bean.Avatar = avatar
+		bean.No = rankNo1
+		bean.TradingAmounts = decimal.FormatDouble(Z.Score, appItem.NumberPoint)
+		bean.ShowTradingAmounts = decimal.FormatNumber(Z.Score, params.Nation, appItem.NumberPoint)
+		bonusAmounts := activity.GetBonusAmounts(rankNo1, tSystemRankRewards)
+		if Z.Score == 0 {
+			bean.BonusAmounts = "0.0"
+			bean.ShowBonusAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+		} else {
+			bean.BonusAmounts = fmt.Sprintf("%v", helpers.Decimal(bonusAmounts, appItem.NumberPoint))
+			bean.ShowBonusAmounts = decimal.FormatNumber(bonusAmounts, params.Nation, appItem.NumberPoint)
+		}
+		resultList = append(resultList, bean)
+	}
+	if len(User.Email) == 0 {
+		myRank.AppUserId = User.AppUserId
+	} else {
+		myRank.AppUserId = email.EnEmail(User.Email)
+	}
+	Avatar := User.Avatar
+	if len(User.NewAvatar) > 0 {
+		Avatar = User.NewAvatar
+	}
+	// 拼接redis member字段
+	redisMember := Avatar + "=" + User.CurrencyType + "=" + User.AppUserId
+	// 逆序获取用户排名 rank从0开始 若排行榜不存在该用户则返回null
+	rank, _ := redis.Client.ZRevRank(unionRankWeekKey, redisMember)
+	// 获取该国家最小交易金额
+	mysql.DB.Debug().Model(models.TUserOperationRules{}).Where(map[string]interface{}{
+		"item_code": params.ItemCode,
+		"nation":    params.Nation,
+		"rule_code": "minTradingAmounts",
+	}).Find(&rule)
+	// 获取该国家最小交易金额
+	if rank > 0 {
+		rankNo := int(rank + 1)
+		// 从缓存中获取指定用户的消费数据
+		userTradingRank, _ := redis.Client.ZScore(unionRankWeekKey, redisMember)
+		myRank.No = rankNo
+		myRank.Avatar = Avatar
+		myRank.TradingAmounts = decimal.FormatDouble(userTradingRank, appItem.NumberPoint)
+		myRank.ShowTradingAmounts = decimal.FormatNumber(userTradingRank, params.Nation, appItem.NumberPoint)
+		bonusAmounts := activity.GetBonusAmounts(rankNo, tSystemRankRewards)
+		if userTradingRank == 0 {
+			myRank.BonusAmounts = "0.0"
+			myRank.ShowBonusAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+		} else {
+			myRank.BonusAmounts = fmt.Sprintf("%v", helpers.Decimal(bonusAmounts, appItem.NumberPoint))
+			myRank.ShowBonusAmounts = decimal.FormatNumber(bonusAmounts, params.Nation, appItem.NumberPoint)
+		}
+		// 第一名 特殊处理
+		if rankNo == 1 {
+			mysql.DB.Debug().Model(models.TMultiLanguageShow{}).Where(map[string]interface{}{
+				"show_column":   "topOneRank",        // 多语言栏目key 获取第一名多语言
+				"language_code": params.LanguageCode, // 语言编码
+				"status":        0,                   // 状态
+				"item_code":     params.ItemCode,     // 项目编码
+			}).Find(&topOneShowLanguage)
+			myRank.TradeContent = topOneShowLanguage.ShowWord
+		} else {
+			// 获取前一名用户数据
+			// 分页逆序获取一周排行榜
+			upMemberSet, _ := redis.Client.ZRevRange(unionRankWeekKey, rank-1, rank-1)
+			upMemberScore, _ := redis.Client.ZScore(unionRankWeekKey, upMemberSet[0])
+			gapScore := upMemberScore - userTradingRank
+			if gapScore == 0 {
+				if nil != rule {
+					myRank.TradeContent = strings.ReplaceAll(anotherShowLanguage.ShowWord, "[value]", fmt.Sprintf("%v", rule.Value))
+				}
+			} else {
+				myRank.TradeContent = strings.ReplaceAll(anotherShowLanguage.ShowWord, "[value]", fmt.Sprintf("%v", gapScore))
+			}
+		}
+	} else {
+		myRank.Avatar = Avatar
+		myRank.No = 0
+		myRank.TradingAmounts = "0.0"
+		myRank.ShowTradingAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+		myRank.BonusAmounts = "0.0"
+		myRank.ShowBonusAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+		if nil != rule {
+			myRank.TradeContent = strings.ReplaceAll(anotherShowLanguage.ShowWord, "[value]", fmt.Sprintf("%v", rule.Value))
+		}
+	}
+	result.UserTradingRankList = resultList
+	result.MyRank = myRank
+	result.PageNum = params.PageNum
+	result.PageSize = params.PageSize
+	result.Page = page.GetPage(int(total), params.PageSize)
+	result.Total = int(total)
+	result.NextMondayTime = int(nextMondayTime)
 	echo.Success(c, result, "ok")
 }
 

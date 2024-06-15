@@ -10,7 +10,7 @@ import (
 	"goapi/app/models/keyenum"
 	"goapi/app/requests"
 	"goapi/app/response"
-	"goapi/app/service/client"
+	"goapi/app/service/login"
 	"goapi/pkg/echo"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
@@ -47,7 +47,7 @@ func (h *VipController) GetUserVipHandler(c *gin.Context) {
 	if validate.ParamsError(c, params) {
 		return
 	}
-	appItem := client.GetAppItem(params.Nation)
+	appItem := login.GetAppItem(params.Nation)
 	if len(appItem.TimeZone) == 0 {
 		echo.Error(c, "ItemIsNull", "")
 		return

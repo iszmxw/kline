@@ -1,4 +1,4 @@
-package client
+package login
 
 import (
 	"encoding/json"
@@ -282,11 +282,8 @@ func CreateAppUser(
 // 赠送签到资格
 
 func GiveSign(AppUserId string, appItem response.ItemNationMessageParams) {
-	offset := xtime.GmtOffset(appItem.TimeZone)
-	// 时区设置
-	timeZone := time.FixedZone("CST", offset)
 	// 获取本周的最后一天日期
-	endDateOfAWeek := xtime.GetEndDateOfATimeZoneWeek(0, timeZone).UnixMilli() + 86399000
+	endDateOfAWeek := xtime.GetEndDateOfATimeZoneWeek(0, appItem.TimeZone).UnixMilli() + 86399000
 	expireSeconds := endDateOfAWeek - time.Now().UnixMilli()/1000
 	if expireSeconds <= 0 {
 		expireSeconds = 1

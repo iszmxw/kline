@@ -1,5 +1,10 @@
 package email
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Params struct {
 	From        string   `json:"From"`        // 发件人邮箱
 	To          string   `json:"To"`          // 收件人邮箱
@@ -20,4 +25,15 @@ type MarketingEmailInfo struct {
 	Type         int    `json:"type"`
 	Nation       string `json:"nation"`        // 国家
 	LanguageCode string `json:"language_code"` // 语言编码
+}
+
+func EnEmail(email string) string {
+	temp := strings.Split(email, "@")
+	emailBefore := temp[0]
+	emailAfter := temp[1]
+	if len(emailBefore) <= 6 {
+		return email
+	} else {
+		return fmt.Sprintf("%s****%s@%s", emailBefore[:3], emailBefore[len(emailBefore)-3:], emailAfter)
+	}
 }

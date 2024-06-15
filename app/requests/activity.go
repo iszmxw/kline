@@ -12,3 +12,10 @@ type FAQManagerParams struct {
 	Base
 	Type string `json:"type" validate:"required"` // FAQ类型
 }
+
+type GetUserRankParams struct {
+	Base
+	WhichWeek string `json:"whichWeek" validate:"required"` // 哪一周 1本周 2上周
+	PageNum   int    `json:"pageNum"`                       // 第几页
+	PageSize  int    `json:"pageSize"`                      // 每页多少条
+}

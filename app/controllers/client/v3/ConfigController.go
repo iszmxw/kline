@@ -11,7 +11,7 @@ import (
 	"goapi/app/models/keyenum"
 	"goapi/app/requests"
 	"goapi/app/response"
-	"goapi/app/service/client"
+	"goapi/app/service/login"
 	"goapi/pkg/address"
 	"goapi/pkg/commonUtils"
 	"goapi/pkg/echo"
@@ -223,7 +223,7 @@ func (h *ConfigController) GetLanguagePageV2Handler(c *gin.Context) {
 	if validate.ParamsError(c, params) {
 		return
 	}
-	appItem := client.GetAppItem(params.Nation)
+	appItem := login.GetAppItem(params.Nation)
 	if len(appItem.TimeZone) == 0 {
 		echo.Error(c, "ItemIsNull", "")
 		return
@@ -526,7 +526,7 @@ func (h *ConfigController) GetUserTradingRulesHandler(c *gin.Context) {
 		result[item.RuleCode] = item.Value
 	}
 	// 交易规则 精确小数位数加入集合
-	appItem := client.GetAppItem(params.Nation)
+	appItem := login.GetAppItem(params.Nation)
 	result["numberPoint"] = appItem.NumberPoint
 	echo.Success(c, result, "ok")
 }
@@ -558,7 +558,7 @@ func (h *ConfigController) GetBlockWithdrawInfoHandler(c *gin.Context) {
 	}
 	// 1、数字货币提现信息获取接口，汇率换算
 	// 1、获取可以提现的渠道
-	appItem := client.GetAppItem(params.Nation)
+	appItem := login.GetAppItem(params.Nation)
 	var list []models.TWithdrawChannel
 	mysql.DB.Debug().
 		Model(models.TWithdrawChannel{}).

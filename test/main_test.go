@@ -40,18 +40,14 @@ func Test_Main(t *testing.T) {
 	defer bootstrap.RedisClose()
 	bootstrap.SetupMongoDB()
 
-	offset := xtime.GmtOffset("GMT+07:00")
-	fmt.Println(offset)
-	// 时区设置
-	timeZone := time.FixedZone("CST", offset)
 	// 获取本周的最后一天日期
-	endDate := xtime.GetEndDateOfATimeZoneWeek(0, timeZone)
+	endDate := xtime.GetEndDateOfATimeZoneWeek(0, "GMT+07:00")
 	fmt.Println("获取本周的最后一天日期:", endDate)
 	// 获取上周的最后一天日期
-	endDateLastWeek := xtime.GetEndDateOfATimeZoneWeek(1, timeZone)
+	endDateLastWeek := xtime.GetEndDateOfATimeZoneWeek(1, "GMT+07:00")
 	fmt.Println("获取上周的最后一天日期:", endDateLastWeek)
 	// 获取上上周的最后一天日期
-	endDateTwoWeeksAgo := xtime.GetEndDateOfATimeZoneWeek(2, timeZone)
+	endDateTwoWeeksAgo := xtime.GetEndDateOfATimeZoneWeek(2, "GMT+07:00")
 	fmt.Println("获取上上周的最后一天日期:", endDateTwoWeeksAgo)
 	// 其他周的最后一天日期依此类推...
 	//

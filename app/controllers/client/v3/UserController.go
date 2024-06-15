@@ -11,7 +11,7 @@ import (
 	"goapi/app/models/keyenum"
 	"goapi/app/requests"
 	"goapi/app/response"
-	"goapi/app/service/client"
+	"goapi/app/service/login"
 	"goapi/pkg/address"
 	"goapi/pkg/commonUtils"
 	"goapi/pkg/echo"
@@ -80,13 +80,13 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 		return
 	}
 	// 密码设置太简单拦截
-	if client.CheckPassword(client.WrongPwdList(), params.Password) {
+	if login.CheckPassword(login.WrongPwdList(), params.Password) {
 		echo.Error(c, "PasswordLimit", "")
 		return
 	}
 	// 设备限制规则
 	if params.AccountType != 6 {
-		ok := client.RegistrationRuleJudgment(params.ItemCode, params.DeciveId, c.ClientIP(), params.OnlineOnlyKeyId)
+		ok := login.RegistrationRuleJudgment(params.ItemCode, params.DeciveId, c.ClientIP(), params.OnlineOnlyKeyId)
 		if ok {
 			echo.Error(c, "ThrottlingRules", "")
 			return
@@ -97,7 +97,7 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	addrInfo := address.GetMessageByIp(c.ClientIP())
 	city := addrInfo.City
 	fmt.Println(token, city)
-	appItem := client.GetAppItem(params.Nation)
+	appItem := login.GetAppItem(params.Nation)
 	email := ""
 	mobile := ""
 	if params.AccountType == 1 || params.AccountType == 3 || params.AccountType == 4 {
@@ -106,10 +106,10 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	if params.AccountType == 2 {
 		mobile = params.Account
 	}
-	ok := client.CreateAppUser(params, appItem, email, mobile, c.ClientIP(), token, AppUserId, city, 0)
+	ok := login.CreateAppUser(params, appItem, email, mobile, c.ClientIP(), token, AppUserId, city, 0)
 	if ok {
 		// 保存登录记录
-		client.SaveLoginLog(requests.LoginLog{
+		login.SaveLoginLog(requests.LoginLog{
 			AppUserId:        AppUserId,
 			ItemCode:         params.ItemCode,
 			Account:          params.Account,
@@ -141,7 +141,7 @@ func (h *UserController) RegisterHandler(c *gin.Context) {
 	// 赠送注册奖金 TODO
 	// 异步发送注册埋点事件 TODO
 	mysql.DB.Debug().Model(appUser).Where("app_user_id", AppUserId).Find(&appUser)
-	data := client.LoginSuccess(appUser, appItem, token, c.ClientIP())
+	data := login.LoginSuccess(appUser, appItem, token, c.ClientIP())
 	echo.Success(c, data, "SUCCESS")
 }
 
@@ -207,7 +207,7 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 			loginLog.AuthorizedOrNot = 1
 			loginLog.PartnerUserId = params.PartnerUserId
 			loginLog.Status = 0
-			client.SaveLoginLog(loginLog)
+			login.SaveLoginLog(loginLog)
 			echo.Error(c, "FailAuthorizeLogin", "")
 			return
 		}
@@ -226,7 +226,7 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 		mysql.DB.Debug().Model(models.TAppUserLoginAuthorizeData{}).Where(WhereAuthorizeData).Order("id desc").Find(&tAppUserLoginAuthorizeData)
 		if len(tAppUserLoginAuthorizeData.AppUserId) == 0 {
 			// 第一次授权，创建新用户然后登陆 todo
-			appItem := client.GetAppItem(params.Nation)
+			appItem := login.GetAppItem(params.Nation)
 			AppUserId := helpers.GetUUID11()
 			token := helpers.GetUUID()
 			addrInfo := address.GetMessageByIp(c.ClientIP())
@@ -236,7 +236,7 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 				Code:             "",
 				InvitCode:        params.InvitCode,
 			}
-			ok := client.CreateAppUser(UserRegisterParams, appItem, authorizeResult.Email, "", c.ClientIP(), token, AppUserId, city, 0)
+			ok := login.CreateAppUser(UserRegisterParams, appItem, authorizeResult.Email, "", c.ClientIP(), token, AppUserId, city, 0)
 			if ok {
 				mysql.DB.Debug().Model(appUser).Where("app_user_id", AppUserId).Find(&appUser)
 				// 修改保存用户授信登录信息
@@ -317,18 +317,18 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 		return
 	}
 	// 保存登录记录
-	client.SaveLoginLog(loginLog)
+	login.SaveLoginLog(loginLog)
 
 	token := helpers.GetUUID()
 	addrInfo := address.GetMessageByIp(c.ClientIP())
 	city := addrInfo.City
 	fmt.Println(token, city)
-	appItem := client.GetAppItem(params.Nation)
+	appItem := login.GetAppItem(params.Nation)
 
 	if len(appUser.Email) == 0 && len(appUser.CreditEmail) > 0 {
 		mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUser.AppUserId).Update("email", appUser.CreditEmail)
 	}
-	data := client.LoginSuccess(appUser, appItem, token, c.ClientIP())
+	data := login.LoginSuccess(appUser, appItem, token, c.ClientIP())
 	echo.Success(c, data, "SUCCESS")
 
 }
@@ -435,7 +435,7 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 	if validate.ParamsError(c, params) {
 		return
 	}
-	if client.CheckSmsCode(3, params.SmsCode, params.Email, params.Mobile) {
+	if login.CheckSmsCode(3, params.SmsCode, params.Email, params.Mobile) {
 		echo.Error(c, "FailVerificationcode", "")
 		return
 	}
@@ -448,7 +448,7 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 		return
 	}
 	// 密码设置太简单拦截
-	if client.CheckPassword(client.WrongPwdList(), params.NewPasswordOne) {
+	if login.CheckPassword(login.WrongPwdList(), params.NewPasswordOne) {
 		echo.Error(c, "PasswordLimit", "")
 		return
 	}
@@ -490,9 +490,9 @@ func (h *UserController) ChangePasswordHandler(c *gin.Context) {
 		logger.Error(err)
 	}
 	// 还要帮助用户登录
-	appItem := client.GetAppItem(params.Nation)
+	appItem := login.GetAppItem(params.Nation)
 	token := helpers.GetUUID()
-	data := client.LoginSuccess(user, appItem, token, c.ClientIP())
+	data := login.LoginSuccess(user, appItem, token, c.ClientIP())
 	echo.Success(c, data, "SUCCESS")
 }
 

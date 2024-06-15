@@ -275,6 +275,36 @@ func (rdb *Redis) Keys(key string) ([]string, error) {
 	return value, err
 }
 
+func (rdb *Redis) ZUnionStore(keys []string, finalKey string) (int64, error) {
+	value, err := rdb.Client.ZUnionStore(finalKey, redis.ZStore{}, keys...).Result()
+	return value, err
+}
+
+func (rdb *Redis) ZCard(key string) (int64, error) {
+	value, err := rdb.Client.ZCard(key).Result()
+	return value, err
+}
+
+func (rdb *Redis) ZRevRange(key string, start, stop int64) ([]string, error) {
+	value, err := rdb.Client.ZRevRange(key, start, stop).Result()
+	return value, err
+}
+
+func (rdb *Redis) ZRevRangeWithScores(key string, start, stop int64) ([]redis.Z, error) {
+	value, err := rdb.Client.ZRevRangeWithScores(key, start, stop).Result()
+	return value, err
+}
+
+func (rdb *Redis) ZRevRank(key, member string) (int64, error) {
+	value, err := rdb.Client.ZRevRank(key, member).Result()
+	return value, err
+}
+
+func (rdb *Redis) ZScore(key, member string) (float64, error) {
+	value, err := rdb.Client.ZScore(key, member).Result()
+	return value, err
+}
+
 func (rdb *Redis) SubExpireEvent(channels string) *redis.PubSub {
 	// 订阅key过期事件
 	//sub := Redis.Subscribe("__keyevent@0__:expired")

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
-	"goapi/app/service/client"
+	"goapi/app/service/login"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
@@ -50,7 +50,7 @@ func GetEmailTemplate(nation, languageCode, name string) (arr map[string]string)
 		arr["status"] = "0"
 		return
 	}
-	appItem := client.GetAppItem(nation)
+	appItem := login.GetAppItem(nation)
 	if len(appItem.ItemCode) == 0 {
 		arr["status"] = "0"
 		return

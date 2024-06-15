@@ -11,6 +11,20 @@ import (
 
 const TimeFormat = "2006-01-02 15:04:05"
 
+func GmtOffset(str string) (offset int) {
+	timeStr := strings.ReplaceAll(str, "GMT", "")
+	fh := string([]rune(timeStr)[:1])
+	arr := strings.Split(string([]rune(timeStr)[1:]), ":")
+	offset = helpers.StringToInt(arr[0])*3600 + helpers.StringToInt(arr[1])*60
+	if strings.EqualFold("-", fh) && offset > 0 {
+		offset = 0 - offset
+	}
+	if strings.EqualFold("+", fh) && offset < 0 {
+		offset = 0 - offset
+	}
+	return
+}
+
 // 检测今天的休市时间
 
 func GetTodayTimeDetail(WeekdayTimeDetail []models.WeekdayTimeDetail) models.WeekdayTimeDetail {
@@ -50,7 +64,10 @@ func Parse(strTime string) time.Time {
 	return result
 }
 
-func GetEndDateOfATimeZoneWeek(week int, timeZone *time.Location) time.Time {
+func GetEndDateOfATimeZoneWeek(week int, GMT string) time.Time {
+	// 时区设置
+	gmtOffset := GmtOffset(GMT)
+	timeZone := time.FixedZone("CST", gmtOffset)
 	// 获取当前时间
 	now := time.Now().In(timeZone)
 	// 获取当前星期几（星期日作为第一天）
@@ -65,16 +82,51 @@ func GetEndDateOfATimeZoneWeek(week int, timeZone *time.Location) time.Time {
 	return targetDate
 }
 
-func GmtOffset(str string) (offset int) {
-	timeStr := strings.ReplaceAll(str, "GMT", "")
-	fh := string([]rune(timeStr)[:1])
-	arr := strings.Split(string([]rune(timeStr)[1:]), ":")
-	offset = helpers.StringToInt(arr[0])*3600 + helpers.StringToInt(arr[1])*60
-	if strings.EqualFold("-", fh) && offset > 0 {
-		offset = 0 - offset
+// GetFirstDateOfATimeZoneWeek 获取某一周的第一天,星期一作为第一天
+// week: 0为本周 1为上周 2为上上周 依此类推
+func GetFirstDateOfATimeZoneWeek(week int, GMT string) time.Time {
+	// 时区设置
+	gmtOffset := GmtOffset(GMT)
+	timeZone := time.FixedZone("CST", gmtOffset)
+	now := time.Now().In(timeZone)
+	dayOfWeek := int(now.Weekday())
+	offset := 1 - dayOfWeek
+	if dayOfWeek == 0 {
+		offset = -6
 	}
-	if strings.EqualFold("+", fh) && offset < 0 {
-		offset = 0 - offset
-	}
-	return
+	calendar := now.AddDate(0, 0, offset-7*week)
+	return calendar
+}
+
+// GetTodayStartTime 获取指定时区今天开始时间戳
+func GetTodayStartTime(GMT string) int64 {
+	// 时区设置
+	gmtOffset := GmtOffset(GMT)
+	timeZone := time.FixedZone("CST", gmtOffset)
+	todayStart := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, timeZone)
+	return todayStart.UnixNano() / int64(time.Millisecond)
+}
+
+// GetTodayEndTime 获取今日结束时间戳
+func GetTodayEndTime(GMT string) int64 {
+	// 时区设置
+	gmtOffset := GmtOffset(GMT)
+	timeZone := time.FixedZone("CST", gmtOffset)
+	todayEnd := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 23, 59, 59, 999999999, timeZone)
+	return todayEnd.UnixNano() / int64(time.Millisecond)
+}
+
+// GetNextWeekMonday 获取下周一0点时间戳
+func GetNextWeekMonday(GMT string) int64 {
+	// 设置时区
+	gmtOffset := GmtOffset(GMT)
+	timeZone := time.FixedZone("CST", gmtOffset)
+	now := time.Now().In(timeZone)
+	// 计算下周一的日期
+	nextMonday := now.AddDate(0, 0, int(time.Monday-now.Weekday()+7)%7)
+	// 将时间设置为0点
+	nextMonday = time.Date(nextMonday.Year(), nextMonday.Month(), nextMonday.Day(), 0, 0, 0, 0, timeZone)
+	// 转换为时间戳
+	timestamp := nextMonday.Unix()
+	return timestamp
 }
