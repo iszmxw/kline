@@ -46,13 +46,13 @@ type FAQManagerList struct {
 }
 
 type UserRank struct {
-	UserTradingRankList []UserTradingRankList `json:"userTradingRankList"` // 用户交易排行榜列表
-	MyRank              UserTradingRankList   `json:"myRank"`              // 我的排行信息
 	PageNum             int                   `json:"pageNum"`             // 页数
 	PageSize            int                   `json:"pageSize"`            // 条数
 	Page                int                   `json:"page"`                // 第几页
 	Total               int                   `json:"total"`               // 共有多少条
 	NextMondayTime      int                   `json:"nextMondayTime"`      // 下周一时间
+	UserTradingRankList []UserTradingRankList `json:"userTradingRankList"` // 用户交易排行榜列表
+	MyRank              UserTradingRankList
 }
 
 type UserTradingRankList struct {

@@ -291,6 +291,35 @@ definitions:
     - nation
     - type
     type: object
+  requests.GetUserRankParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 第几页
+        type: integer
+      pageSize:
+        description: 每页多少条
+        type: integer
+      whichWeek:
+        description: 哪一周 1本周 2上周
+        type: string
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    - whichWeek
+    type: object
   requests.GetUserWithdrawListParams:
     properties:
       appOsType:
@@ -920,6 +949,57 @@ definitions:
         description: 提现费率
       withdrawRuleContent:
         description: withdrawRuleContent 提现页面文案
+        type: string
+    type: object
+  response.UserRank:
+    properties:
+      myRank:
+        $ref: '#/definitions/response.UserTradingRankList'
+      nextMondayTime:
+        description: 下周一时间
+        type: integer
+      page:
+        description: 第几页
+        type: integer
+      pageNum:
+        description: 页数
+        type: integer
+      pageSize:
+        description: 条数
+        type: integer
+      total:
+        description: 共有多少条
+        type: integer
+      userTradingRankList:
+        description: 用户交易排行榜列表
+        items:
+          $ref: '#/definitions/response.UserTradingRankList'
+        type: array
+    type: object
+  response.UserTradingRankList:
+    properties:
+      appUserId:
+        description: 用户ID
+        type: string
+      avatar:
+        description: 头像
+        type: string
+      bonusAmounts:
+        description: bonus金额
+        type: string
+      "no":
+        description: 排名
+        type: integer
+      showBonusAmounts:
+        description: 展示 bonus 金额
+        type: string
+      showTradingAmounts:
+        description: 展示交易金额
+        type: string
+      tradeContent:
+        description: 交易说明文案
+      tradingAmounts:
+        description: 交易金额
         type: string
     type: object
   response.UserTradingRules:
@@ -2506,10 +2586,10 @@ paths:
         type: string
       - description: 获取客户排名列表参数
         in: body
-        name: GetLanguagePageParams
+        name: GetUserRankParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetUserRankParams'
       produces:
       - application/json
       responses:
@@ -2520,7 +2600,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.UserRank'
       summary: No.04.6-获取客户排名列表
       tags:
       - 4.活动模块
