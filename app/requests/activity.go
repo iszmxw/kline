@@ -19,3 +19,9 @@ type GetUserRankParams struct {
 	PageNum   int    `json:"pageNum"`                       // 第几页
 	PageSize  int    `json:"pageSize"`                      // 每页多少条
 }
+
+type GetUserSignInParams struct {
+	Base
+	SignInTime     int64 `json:"signInTime"`     // 签到时间
+	FirebaseNotify int64 `json:"firebaseNotify"` // 是否开启firebase签到推送 1-开启 0-关闭
+}

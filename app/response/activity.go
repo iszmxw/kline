@@ -1,5 +1,7 @@
 package response
 
+import "time"
+
 type GetUserLossReturn struct {
 	TodayBonusReturn float64 `json:"todayBonusReturn"` // 计算得出用户待返还Bonus
 	TotalBonusReturn float64 `json:"totalBonusReturn"` // 用户累计获得返还Bonus
@@ -64,4 +66,48 @@ type UserTradingRankList struct {
 	ShowTradingAmounts string      `json:"showTradingAmounts"` // 展示交易金额
 	ShowBonusAmounts   string      `json:"showBonusAmounts"`   // 展示 bonus 金额
 	TradeContent       interface{} `json:"tradeContent"`       // 交易说明文案
+}
+
+type WeekDataV2 struct {
+	List           []WeekDataList
+	FirebaseNotify int32 `json:"firebaseNotify"` // 获取是否开启firebase通知 1-开启 0-关闭
+}
+
+type WeekDataList struct {
+	Bonus  string `json:"bonus"`  // 奖励的 bonus
+	Week   string `json:"week"`   // 展示的星期几
+	Date   int64  `json:"date"`   // 本周七天日期，时间戳
+	Desc   string `json:"desc"`   // 描述
+	Imgurl string `json:"imgurl"` // 签到状态图标
+	Status int    `json:"status"` // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日
+}
+
+// AppSignIn 是签到信息结构体
+type AppSignIn struct {
+	ID            int       `json:"id"`            // 主键id
+	AppUserID     string    `json:"appUserId"`     // 用户ID
+	ItemCode      string    `json:"itemCode"`      // 关联项目编码
+	BonusBalance  float64   `json:"bonusBalance"`  // 奖励余额
+	WhichDay      string    `json:"whichDay"`      // 周几
+	GiveAwayBonus float64   `json:"giveAwayBonus"` // 赠送bonus
+	DeviceModel   string    `json:"deviceModel"`   // 设备型号
+	SigninType    int       `json:"signinType"`    // 签到类型 1-正常签到，2-补签签到
+	Nation        string    `json:"nation"`        // 绑定国家
+	SigninStatus  int       `json:"signinStatus"`  // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日
+	SigninIP      string    `json:"signinIp"`      // 签到 IP
+	SigninDate    time.Time `json:"signinDate"`    // 签到日期
+	CreateDate    time.Time `json:"createDate"`    // 创建日期
+	UpdateDate    time.Time `json:"updateDate"`    // 更新日期
+}
+
+type SignInRuleBeans struct {
+	Rule         map[string]float64          `json:"rule"`         // 规则
+	MonetaryUnit string                      `json:"monetaryUnit"` // 货币符号
+	EnumStatus   []SignInRuleEnumStatusBeans // 枚举
+}
+
+type SignInRuleEnumStatusBeans struct {
+	Status int    `json:"status"` // 状态
+	Desc   string `json:"desc"`   // 描述
+	Imgurl string `json:"imgurl"` // 图片地址
 }

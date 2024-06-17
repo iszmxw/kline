@@ -130,3 +130,81 @@ func GetNextWeekMonday(GMT string) int64 {
 	timestamp := nextMonday.Unix()
 	return timestamp
 }
+
+// GetOneWeekStartTime 获取指定国家一周前的开始时间戳(包括今天)
+func GetOneWeekStartTime(GMT string) int64 {
+	// 设置时区
+	gmtOffset := GmtOffset(GMT)
+	timeZone := time.FixedZone("CST", gmtOffset)
+	now := time.Now().In(timeZone)
+	oneWeekAgo := now.AddDate(0, 0, -6)
+	startOfDay := time.Date(oneWeekAgo.Year(), oneWeekAgo.Month(), oneWeekAgo.Day(), 0, 0, 0, 0, timeZone)
+	return startOfDay.UnixNano() / int64(time.Millisecond)
+}
+
+// ConvertTimestamp 函数接受一个时间戳（int64 类型）和一个时区字符串（如 "GMT-06:00" 或 "GMT+05:30"）
+// 然后返回一个 time.Time 类型的时间
+func ConvertTimestamp(timestamp int64, timezone string) (time.Time, error) {
+	// 将时间戳转换为 UTC 时间
+	utcTime := time.Unix(timestamp, 0).UTC()
+	// 设置时区
+	gmtOffset := GmtOffset(timezone)
+	// 解析时区
+	location := time.FixedZone("CST", gmtOffset)
+	// 将 UTC 时间转换为目标时区时间
+	localTime := utcTime.In(location)
+
+	// 格式化为 "yyyy-MM-dd" 字符串
+	dateString := localTime.Format("2006-01-02")
+
+	// 将格式化后的字符串重新解析为 time.Time 类型
+	finalTime, err := time.ParseInLocation("2006-01-02", dateString, location)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return finalTime, nil
+}
+
+// GetNextWeekStartTime 获取指定国家指定日期一周后的开始时间戳(包括今天)
+func GetNextWeekStartTime(startDate time.Time, GMT string) time.Time {
+	// 设置时区
+	gmtOffset := GmtOffset(GMT)
+	timeZone := time.FixedZone("CST", gmtOffset)
+	// 将startDate转换为指定时区
+	startDate = startDate.In(timeZone)
+
+	// 加6天
+	nextWeek := startDate.AddDate(0, 0, 6)
+
+	// 设置时间为00:00:00
+	nextWeek = time.Date(nextWeek.Year(), nextWeek.Month(), nextWeek.Day(), 0, 0, 0, 0, timeZone)
+
+	return nextWeek
+}
+
+func GetTodayOfATimeZoneWeek(date time.Time, GMT string) string {
+	weekMap := map[int]string{
+		1: "Sunday",
+		2: "Monday",
+		3: "Tuesday",
+		4: "Wednesday",
+		5: "Thursday",
+		6: "Friday",
+		7: "Saturday",
+	}
+	// 设置时区
+	gmtOffset := GmtOffset(GMT)
+	timeZone := time.FixedZone("CST", gmtOffset)
+
+	calendar := time.Now().In(timeZone)
+	if !date.IsZero() {
+		calendar = date.In(timeZone)
+	}
+
+	dayOfWeek := int(calendar.Weekday()) + 1
+	if dayOfWeek == 8 {
+		dayOfWeek = 1
+	}
+
+	return weekMap[dayOfWeek]
+}

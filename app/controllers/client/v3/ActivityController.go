@@ -553,18 +553,105 @@ func (h *ActivityController) GetUserRankHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取本周签到列表v2参数"
+// @Param GetUserSignInParams body requests.GetUserSignInParams true "获取本周签到列表v2参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.WeekDataV2 "data数据结构体"
 // @Router /No.04.7/app/v3/activity/getWeekDataV2.json [post]
 func (h *ActivityController) GetWeekDataV2Handler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.GetUserSignInParams
+	var result response.WeekDataV2
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	u, _ := c.Get("user")
+	User := u.(response.ClientUserBeans)
+	appUserId := User.AppUserId // 用户 ID
+	var appUser models.AppUser
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUserId).Find(&appUser)
+	appItem := login.GetAppItem(params.Nation)
+	// 新注册用户 赠送一周签到资格
+	todayStartTime := xtime.GetTodayStartTime(appItem.TimeZone)
+	todayEndTime := xtime.GetTodayEndTime(appItem.TimeZone)
+	oneWeekStartTime := xtime.GetOneWeekStartTime(appItem.TimeZone)
+	var startDate time.Time
+	var endDate time.Time
+	// 默认新注册用户 赠送一周签到资格
+	startDate, _ = xtime.ConvertTimestamp(appUser.CreateTs, appItem.TimeZone)
+	endDate = xtime.GetNextWeekStartTime(startDate, appItem.TimeZone)
+	// 非新用户 检查7天内是否充值
+	if appUser.CreateTs <= oneWeekStartTime {
+		// 检测用户充值时间是否在注册首周赠送签到时间内 防止用户注册签到奖励与充值签到奖励冲突
+		if oneWeekStartTime < endDate.UnixMilli()+86400000 {
+			oneWeekStartTime = endDate.UnixMilli() + 86400000
+		}
+		var tRechargeOrders []models.TRechargeOrder
+		mysql.DB.Debug().Model(models.TRechargeOrder{}).Where(map[string]interface{}{
+			"app_user_id":           appUserId, // 用户ID
+			"recharge_order_status": 1,         // 充值状态 1充值成功 0充值失败 2处理中 3已超时
+			"status":                "02",      // 订单状态 01：未支付 02：已支付 05：转入退款 09：支付失败
+		}).Where("createTs BETWEEN ? AND ?", oneWeekStartTime, todayEndTime).Order("create_ts ASC").Find(&tRechargeOrders)
+		if len(tRechargeOrders) > 0 {
+			rechargeTime := tRechargeOrders[0].CreateTs
+			startDate, _ = xtime.ConvertTimestamp(rechargeTime, appItem.TimeZone)
+		} else {
+			startDate, _ = xtime.ConvertTimestamp(todayStartTime, appItem.TimeZone)
+		}
+		endDate = xtime.GetNextWeekStartTime(startDate, appItem.TimeZone)
+	}
+	var list []response.AppSignIn
+	mysql.DB.Debug().Model(models.TAppSignin{}).Where(map[string]interface{}{
+		"app_user_id": appUserId,
+		"item_code":   params.ItemCode,
+		"nation":      params.Nation,
+	}).
+		Where("DATE_FORMAT(signin_date,'%Y-%m-%d') >= DATE_FORMAT(%v,'%Y-%m-%d')", startDate.Format(xtime.TimeFormat)).
+		Where("DATE_FORMAT(signin_date,'%Y-%m-%d') <= DATE_FORMAT(%v,'%Y-%m-%d')", endDate.Format(xtime.TimeFormat)).
+		Find(&list)
+	signInRuleData := activity.GetSystemSignInRuleV2(params.ItemCode, params.Nation)
+	Rule := signInRuleData.Rule
+	enumStatus := signInRuleData.EnumStatus
+	var weekData []response.WeekDataList
+	var n = 0
+	for i := startDate.UnixMilli(); i < endDate.UnixMilli(); i = i + 86400000 { // 本周七天日期
+		thisDate, _ := xtime.ConvertTimestamp(i, appItem.TimeZone)
+		thisWeek := xtime.GetTodayOfATimeZoneWeek(thisDate, appItem.TimeZone)
+		var hashMap response.WeekDataList
+		status := 0
+		if strings.EqualFold("Brazil", params.Nation) {
+			hashMap.Bonus = signInRuleData.MonetaryUnit + fmt.Sprintf("%v", helpers.Decimal(Rule[activity.JudgeOneDay(n)], 1))
+		} else {
+			hashMap.Bonus = signInRuleData.MonetaryUnit + fmt.Sprintf("%v", helpers.Decimal(Rule[activity.JudgeOneDay(n)], 0))
+		}
+		hashMap.Week = activity.WeekTypeAliasV2(activity.JudgeOneDay(n))
+		hashMap.Date = i
+		if i == todayEndTime {
+			hashMap.Week = "Today"
+		}
+		for _, appSignIn := range list {
+			if activity.JudgeOneDay(n) == appSignIn.WhichDay || thisWeek == appSignIn.WhichDay {
+				status = appSignIn.SigninStatus // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日
+			}
+		}
+		if thisDate.UnixMilli() == todayStartTime && status == 0 {
+			status = 2 // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日\
+		}
+		if thisDate.UnixMilli() >= todayStartTime+86400000 {
+			status = 3 // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日
+		}
+		for _, enums := range enumStatus {
+			if enums.Status == status {
+				hashMap.Desc = enums.Desc
+				hashMap.Imgurl = enums.Imgurl
+			}
+		}
+		hashMap.Status = status
+		weekData = append(weekData, hashMap)
+		n++
+	}
+	result.List = weekData
+	result.FirebaseNotify = appUser.IsFirebaseNotify
 	echo.Success(c, result, "ok")
 }
 
