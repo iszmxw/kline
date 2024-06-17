@@ -667,19 +667,29 @@ func (h *ActivityController) GetWeekDataV2Handler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "签到启停 firebase 通知参数"
+// @Param GetUserSignInParams body requests.GetUserSignInParams true "签到启停 firebase 通知参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
 // @Router /No.04.8/app/v3/activity/signNotify.json [post]
 func (h *ActivityController) SignNotifyHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.GetUserSignInParams
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, result, "ok")
+	u, _ := c.Get("user")
+	User := u.(response.ClientUserBeans)
+	err := mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", User.AppUserId).Update("is_firebase_notify", params.FirebaseNotify).Error
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
+		return
+	}
+	if params.FirebaseNotify == 1 { // 开通时toast弹窗通知
+		echo.Error(c, "SignInNotify", "success")
+		return
+	}
+	echo.Success(c, nil, "ok")
 }
 
 // SubmitHandler
