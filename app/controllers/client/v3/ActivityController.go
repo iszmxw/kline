@@ -591,7 +591,7 @@ func (h *ActivityController) GetWeekDataV2Handler(c *gin.Context) {
 			"app_user_id":           appUserId, // 用户ID
 			"recharge_order_status": 1,         // 充值状态 1充值成功 0充值失败 2处理中 3已超时
 			"status":                "02",      // 订单状态 01：未支付 02：已支付 05：转入退款 09：支付失败
-		}).Where("createTs BETWEEN ? AND ?", oneWeekStartTime, todayEndTime).Order("create_ts ASC").Find(&tRechargeOrders)
+		}).Where("create_ts BETWEEN ? AND ?", oneWeekStartTime, todayEndTime).Order("create_ts ASC").Find(&tRechargeOrders)
 		if len(tRechargeOrders) > 0 {
 			rechargeTime := tRechargeOrders[0].CreateTs
 			startDate, _ = xtime.ConvertTimestamp(rechargeTime, appItem.TimeZone)
@@ -606,8 +606,8 @@ func (h *ActivityController) GetWeekDataV2Handler(c *gin.Context) {
 		"item_code":   params.ItemCode,
 		"nation":      params.Nation,
 	}).
-		Where("DATE_FORMAT(signin_date,'%Y-%m-%d') >= DATE_FORMAT(%v,'%Y-%m-%d')", startDate.Format(xtime.TimeFormat)).
-		Where("DATE_FORMAT(signin_date,'%Y-%m-%d') <= DATE_FORMAT(%v,'%Y-%m-%d')", endDate.Format(xtime.TimeFormat)).
+		Where("DATE_FORMAT(signin_date,'%Y-%m-%d') >= DATE_FORMAT(?,'%Y-%m-%d')", startDate.Format(xtime.TimeFormat)).
+		Where("DATE_FORMAT(signin_date,'%Y-%m-%d') <= DATE_FORMAT(?,'%Y-%m-%d')", endDate.Format(xtime.TimeFormat)).
 		Find(&list)
 	signInRuleData := activity.GetSystemSignInRuleV2(params.ItemCode, params.Nation)
 	Rule := signInRuleData.Rule

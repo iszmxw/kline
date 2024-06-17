@@ -123,7 +123,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				activity.Any("/getFAQManageList.json", ClientV3Group.ActivityController.GetFAQManageListHandler)
 				// 获取客户排名列表 [ok]
 				activity.Any("/getUserRank.json", ClientV3Group.ActivityController.GetUserRankHandler)
-				// 获取本周签到列表v2 [todo]
+				// 获取本周签到列表v2 [ok]
 				activity.Any("/getWeekDataV2.json", ClientV3Group.ActivityController.GetWeekDataV2Handler)
 				// 签到启停 firebase 通知 [todo]
 				activity.Any("/signNotify.json", ClientV3Group.ActivityController.SignNotifyHandler)

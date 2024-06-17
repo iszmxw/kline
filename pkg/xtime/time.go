@@ -146,7 +146,7 @@ func GetOneWeekStartTime(GMT string) int64 {
 // 然后返回一个 time.Time 类型的时间
 func ConvertTimestamp(timestamp int64, timezone string) (time.Time, error) {
 	// 将时间戳转换为 UTC 时间
-	utcTime := time.Unix(timestamp, 0).UTC()
+	utcTime := time.Unix(timestamp/1000, 0).UTC()
 	// 设置时区
 	gmtOffset := GmtOffset(timezone)
 	// 解析时区

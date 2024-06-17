@@ -11,10 +11,10 @@ import (
 func GetSystemSignInRuleV2(itemCode, nation string) (SignInRuleBeans response.SignInRuleBeans) {
 	var tAppBonusActivity models.TAppBonusActivity
 	mysql.DB.Debug().Model(models.TAppBonusActivity{}).Where(map[string]interface{}{
-		"itemCode":     itemCode,
-		"nation":       nation,
-		"isValid":      1,
-		"activityType": "signin",
+		"item_code":     itemCode,
+		"nation":        nation,
+		"is_valid":      1,
+		"activity_type": "signin",
 	}).Find(&tAppBonusActivity)
 	err := json.Unmarshal([]byte(tAppBonusActivity.ActivitySetJson), &SignInRuleBeans)
 	if err != nil {
