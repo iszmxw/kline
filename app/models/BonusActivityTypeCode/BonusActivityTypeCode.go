@@ -15,7 +15,7 @@ const (
 
 // BonusActivityTypeCode 存储键值对应关系和备注信息的结构体
 type BonusActivityTypeCode struct {
-	Key    string // 键值
+	Code   string // 键值
 	Remark string // 备注信息
 }
 

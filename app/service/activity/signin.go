@@ -126,13 +126,13 @@ func SendBonusByActivityCode(specialAmounts float64, appUserId, nation, itemCode
 	var appBonusActivity *models.TAppBonusActivity
 	mysql.DB.Debug().Model(models.TAppBonusActivity{}).Where(map[string]interface{}{
 		"is_valid":      1,
-		"activity_code": BonusActivityTypeCode.KeyInfo(activityCode).Key,
+		"activity_code": BonusActivityTypeCode.KeyInfo(activityCode).Code,
 		"nation":        nation,
 		"item_code":     itemCode,
 	}).Find(&appBonusActivity)
 	var appUser models.AppUser
 	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUserId).Find(&appUser)
-	switch BonusActivityTypeCode.KeyInfo(activityCode).Key {
+	switch BonusActivityTypeCode.KeyInfo(activityCode).Code {
 	case "first_recharge":
 		{
 			discountRate := 0.0
@@ -187,7 +187,7 @@ func SendBonusByActivityCode(specialAmounts float64, appUserId, nation, itemCode
 
 	EndValidDate, _ := xtime.ConvertTimestamp(date.UnixMilli()+30*3600000*24, login.GetAppItem(nation).TimeZone)
 	record := models.TAppBonusLog{
-		ActivityCode: BonusActivityTypeCode.KeyInfo(activityCode).Key,
+		ActivityCode: BonusActivityTypeCode.KeyInfo(activityCode).Code,
 		Amounts:      bonusAmounts,
 		AppUserId:    appUserId,
 		CreateDate:   date,

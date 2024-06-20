@@ -153,13 +153,13 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			// 6.银行模块
 			bank := V3Route.Group("/bank")
 			{
-				// 获取用户提现银行卡列表 [todo]
+				// 获取用户提现银行卡列表 [ok]
 				bank.Any("/getUserBankCards.json", ClientV3Group.BankController.GetUserBankCardsHandler)
-				// 删除用户银行卡 [todo]
+				// 删除用户银行卡 [ok]
 				bank.Any("/deleteUserBankCard.json", ClientV3Group.BankController.DeleteUserBankCardHandler)
-				// 获取充值快捷金额列表 [todo]
+				// 获取充值快捷金额列表 [ok]
 				bank.Any("/getPaidFastAmounts.json", ClientV3Group.BankController.GetPaidFastAmountsHandler)
-				// 获取支付方式 [todo]
+				// 获取支付方式 [ok]
 				bank.Any("/getPaidType.json", ClientV3Group.BankController.GetPaidTypeHandler)
 			}
 

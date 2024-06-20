@@ -291,6 +291,53 @@ definitions:
     - nation
     - type
     type: object
+  requests.GetPaidFastAmountsParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      paidTypeId:
+        description: 充值类型ID
+        type: integer
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
+  requests.GetUserBankCards:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.GetUserRankParams:
     properties:
       appOsType:
@@ -306,10 +353,10 @@ definitions:
         description: 国家编码
         type: string
       pageNum:
-        description: 第几页
+        description: 页码
         type: integer
       pageSize:
-        description: 每页多少条
+        description: 单页条数
         type: integer
       whichWeek:
         description: 哪一周 1本周 2上周
@@ -399,6 +446,37 @@ definitions:
         description: 发送验证码渠道类型 1手机号 2邮箱
         type: integer
     required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
+  requests.SetUserBankCardParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      bank:
+        description: 银行名称
+        type: string
+      bankCode:
+        description: 银行编码
+        type: string
+      cardNo:
+        description: 银行卡号
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+    required:
+    - bank
+    - bankCode
+    - cardNo
     - itemCode
     - languageCode
     - nation
@@ -618,6 +696,15 @@ definitions:
     - languageCode
     - nation
     - onlineOnlyKeyId
+    type: object
+  response.BankCards:
+    properties:
+      total:
+        type: integer
+      userBankCards:
+        items:
+          $ref: '#/definitions/response.UserBankCardsParam'
+        type: array
     type: object
   response.BankList:
     properties:
@@ -859,6 +946,105 @@ definitions:
         description: 货币单位
         type: string
     type: object
+  response.RechargeChannelBeans:
+    properties:
+      channelCode:
+        description: 支付方式编码值
+        type: string
+      channelId:
+        description: 支付类型ID
+        type: integer
+      channelLightLogoUrl:
+        description: 支付方式白天logo_url
+        type: string
+      channelLogoUrl:
+        description: 支付方式logo_url
+        type: string
+      channelType:
+        description: 支付渠道类型
+        type: string
+      currencyType:
+        description: 货币类型
+        type: string
+      needMobile:
+        description: 是否需要填写手机号 1是 0否
+        type: integer
+      soft:
+        description: 排序
+        type: integer
+    type: object
+  response.RechargeFastAmountBeans:
+    properties:
+      currencyType:
+        description: 货币类型 IDR USD CNY
+        type: string
+      discountBonus:
+        description: 充值赠送奖金
+        type: number
+      discountRate:
+        description: 充值百分比
+        type: string
+      rechargeAmount:
+        description: 快捷充值金额
+        type: number
+      showDiscountBonus:
+        description: 充值赠送奖金
+        type: string
+      showRechargeAmount:
+        description: 展示快捷充值金额
+        type: string
+      soft:
+        description: 排序序号
+        type: integer
+      vipContent:
+        description: 对应 VIP 文案
+        type: string
+      vipIcon:
+        description: 充值对应的 VIP 小图标
+        type: string
+      vipLevel:
+        description: VIP 等级
+        type: integer
+    type: object
+  response.RechargeFastAmountResult:
+    properties:
+      list:
+        description: 快捷充值金额列表
+        items:
+          $ref: '#/definitions/response.RechargeFastAmountBeans'
+        type: array
+      total:
+        description: 快捷充值金额总数
+        type: integer
+      userAmount:
+        description: 用户余额
+        type: number
+      vipList:
+        description: vip等级列表
+        items:
+          $ref: '#/definitions/response.VipRuleBean'
+        type: array
+    type: object
+  response.RechargeTypeBeans:
+    properties:
+      channelTotals:
+        description: 支付渠道总数
+        type: integer
+      chargeTypeLogoUrl:
+        description: 支付类型 logo 链接
+        type: string
+      chargeTypeName:
+        description: 支付类型名称
+        type: string
+      payPartner:
+        description: 支付三方
+        type: string
+      rechargeChannels:
+        description: 支付类型下的支付渠道
+        items:
+          $ref: '#/definitions/response.RechargeChannelBeans'
+        type: array
+    type: object
   response.SuccessLanguagePageV2:
     properties:
       WithdrawType:
@@ -947,6 +1133,30 @@ definitions:
       userId:
         description: 用户的 userID
         type: string
+    type: object
+  response.UserBankCardsParam:
+    properties:
+      bank:
+        description: 银行名称
+        type: string
+      bankCode:
+        description: 银行编码
+        type: string
+      bankId:
+        description: 银行ID
+        type: string
+      cardNo:
+        description: 银行卡号
+        type: string
+      cardType:
+        description: 银行卡类型
+        type: string
+      cardholder:
+        description: 持卡人
+        type: string
+      isConfig:
+        description: 是否默认 1是0否
+        type: integer
     type: object
   response.UserOperationRuleBean:
     properties:
@@ -1047,6 +1257,21 @@ definitions:
       numberPoint:
         description: 保留小数位数
         type: integer
+    type: object
+  response.VipRuleBean:
+    properties:
+      vipIcon:
+        description: VIP 图标
+        type: string
+      vipLevel:
+        description: VIP 级别
+        type: integer
+      vipLostReturnRate:
+        description: VIP 亏损返还比率
+        type: string
+      vipRechargeStandard:
+        description: VIP 达标条件
+        type: number
     type: object
   response.WeekDataList:
     properties:
@@ -3072,10 +3297,10 @@ paths:
         type: string
       - description: 获取用户提现银行卡列表的参数
         in: body
-        name: GetLanguagePageParams
+        name: GetUserBankCards
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetUserBankCards'
       produces:
       - application/json
       responses:
@@ -3086,7 +3311,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.BankCards'
       summary: No.06.1-获取用户提现银行卡列表
       tags:
       - 6.银行模块
@@ -3196,10 +3421,10 @@ paths:
         type: string
       - description: 删除用户银行卡的参数
         in: body
-        name: GetLanguagePageParams
+        name: SetUserBankCardParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.SetUserBankCardParams'
       produces:
       - application/json
       responses:
@@ -3207,10 +3432,6 @@ paths:
           description: 不是1就是失败的
           schema:
             $ref: '#/definitions/echo.Response'
-        "1":
-          description: data数据结构体
-          schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
       summary: No.06.2-删除用户银行卡
       tags:
       - 6.银行模块
@@ -3320,10 +3541,10 @@ paths:
         type: string
       - description: 获取充值快捷金额列表的参数
         in: body
-        name: GetLanguagePageParams
+        name: GetPaidFastAmountsParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetPaidFastAmountsParams'
       produces:
       - application/json
       responses:
@@ -3334,7 +3555,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.RechargeFastAmountResult'
       summary: No.06.3-获取充值快捷金额列表
       tags:
       - 6.银行模块
@@ -3444,10 +3665,10 @@ paths:
         type: string
       - description: 获取支付方式的参数
         in: body
-        name: GetLanguagePageParams
+        name: Params
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.Base'
       produces:
       - application/json
       responses:
@@ -3458,7 +3679,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.RechargeTypeBeans'
       summary: No.06.4-获取支付方式
       tags:
       - 6.银行模块

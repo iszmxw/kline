@@ -8,6 +8,6 @@ type Base struct {
 }
 
 type PageInfo struct {
-	PageSize int64 `json:"pageSize" validate:"required"` // 单页条数
-	PageNum  int64 `json:"pageNum" validate:"required"`  // 页码
+	PageSize int `json:"pageSize"` // 单页条数
+	PageNum  int `json:"pageNum"`  // 页码
 }

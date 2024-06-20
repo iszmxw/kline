@@ -15,9 +15,8 @@ type FAQManagerParams struct {
 
 type GetUserRankParams struct {
 	Base
+	PageInfo
 	WhichWeek string `json:"whichWeek" validate:"required"` // 哪一周 1本周 2上周
-	PageNum   int    `json:"pageNum"`                       // 第几页
-	PageSize  int    `json:"pageSize"`                      // 每页多少条
 }
 
 type GetUserSignInParams struct {

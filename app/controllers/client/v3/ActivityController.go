@@ -452,14 +452,14 @@ func (h *ActivityController) GetUserRankHandler(c *gin.Context) {
 		bean.Avatar = avatar
 		bean.No = rankNo1
 		bean.TradingAmounts = decimal.FormatDouble(Z.Score, appItem.NumberPoint)
-		bean.ShowTradingAmounts = decimal.FormatNumber(Z.Score, params.Nation, appItem.NumberPoint)
+		bean.ShowTradingAmounts = decimal.SplitDisplay(Z.Score, params.Nation, appItem.NumberPoint)
 		bonusAmounts := activity.GetBonusAmounts(rankNo1, tSystemRankRewards)
 		if Z.Score == 0 {
 			bean.BonusAmounts = "0.0"
-			bean.ShowBonusAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+			bean.ShowBonusAmounts = decimal.SplitDisplay(0.0, params.Nation, appItem.NumberPoint)
 		} else {
 			bean.BonusAmounts = fmt.Sprintf("%v", helpers.Decimal(bonusAmounts, appItem.NumberPoint))
-			bean.ShowBonusAmounts = decimal.FormatNumber(bonusAmounts, params.Nation, appItem.NumberPoint)
+			bean.ShowBonusAmounts = decimal.SplitDisplay(bonusAmounts, params.Nation, appItem.NumberPoint)
 		}
 		resultList = append(resultList, bean)
 	}
@@ -486,9 +486,9 @@ func (h *ActivityController) GetUserRankHandler(c *gin.Context) {
 	myRank.Avatar = Avatar
 	myRank.No = 0
 	myRank.TradingAmounts = "0.0"
-	myRank.ShowTradingAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+	myRank.ShowTradingAmounts = decimal.SplitDisplay(0.0, params.Nation, appItem.NumberPoint)
 	myRank.BonusAmounts = "0.0"
-	myRank.ShowBonusAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+	myRank.ShowBonusAmounts = decimal.SplitDisplay(0.0, params.Nation, appItem.NumberPoint)
 	if nil != rule {
 		myRank.TradeContent = strings.ReplaceAll(anotherShowLanguage.ShowWord, "[value]", fmt.Sprintf("%v", rule.Value))
 	}
@@ -500,14 +500,14 @@ func (h *ActivityController) GetUserRankHandler(c *gin.Context) {
 		myRank.No = rankNo
 		myRank.Avatar = Avatar
 		myRank.TradingAmounts = decimal.FormatDouble(userTradingRank, appItem.NumberPoint)
-		myRank.ShowTradingAmounts = decimal.FormatNumber(userTradingRank, params.Nation, appItem.NumberPoint)
+		myRank.ShowTradingAmounts = decimal.SplitDisplay(userTradingRank, params.Nation, appItem.NumberPoint)
 		bonusAmounts := activity.GetBonusAmounts(rankNo, tSystemRankRewards)
 		if userTradingRank == 0 {
 			myRank.BonusAmounts = "0.0"
-			myRank.ShowBonusAmounts = decimal.FormatNumber(0.0, params.Nation, appItem.NumberPoint)
+			myRank.ShowBonusAmounts = decimal.SplitDisplay(0.0, params.Nation, appItem.NumberPoint)
 		} else {
 			myRank.BonusAmounts = fmt.Sprintf("%v", helpers.Decimal(bonusAmounts, appItem.NumberPoint))
-			myRank.ShowBonusAmounts = decimal.FormatNumber(bonusAmounts, params.Nation, appItem.NumberPoint)
+			myRank.ShowBonusAmounts = decimal.SplitDisplay(bonusAmounts, params.Nation, appItem.NumberPoint)
 		}
 		// 第一名 特殊处理
 		if rankNo == 1 {

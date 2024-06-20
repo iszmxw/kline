@@ -1,8 +1,8 @@
 package response
 
 type BankCards struct {
-	Total         int64              `json:"total"`
-	UserBankCards UserBankCardsParam `json:"userBankCards"`
+	Total         int64                `json:"total"`
+	UserBankCards []UserBankCardsParam `json:"userBankCards"`
 }
 
 // UserBankCardsParam 定义用户银行卡参数
@@ -28,7 +28,7 @@ type RechargeFastAmountResult struct {
 type RechargeFastAmountBeans struct {
 	RechargeAmount     float64 `json:"rechargeAmount"`     // 快捷充值金额
 	DiscountBonus      float64 `json:"discountBonus"`      // 充值赠送奖金
-	Soft               int     `json:"soft"`               // 排序序号
+	Soft               int64   `json:"soft"`               // 排序序号
 	DiscountRate       string  `json:"discountRate"`       // 充值百分比
 	CurrencyType       string  `json:"currencyType"`       // 货币类型 IDR USD CNY
 	ShowRechargeAmount string  `json:"showRechargeAmount"` // 展示快捷充值金额
@@ -65,4 +65,25 @@ type RechargeChannelBeans struct {
 	ChannelType         string `json:"channelType"`         // 支付渠道类型
 	CurrencyType        string `json:"currencyType"`        // 货币类型
 	Soft                int    `json:"soft"`                // 排序
+}
+
+type VipRuleInfo struct {
+	VipLevel            int         `json:"vipLevel"`            // 会员等级
+	VipName             string      `json:"vipName"`             // 会员等级前缀
+	VipLogoUrl          string      `json:"vipLogoUrl"`          // 用户VIP等级图标
+	RechargeIcon        string      `json:"rechargeIcon"`        // 充值页面快捷金额对应小图标
+	VipBanner           string      `json:"vipBanner"`           // 会员卡片图标
+	Color               interface{} `json:"color"`               // 进度条颜色
+	Action              interface{} `json:"action"`              // 提升特权按钮：1去充值、2去交易
+	RechargeStandard    float64     `json:"rechargeStandard"`    // 充值达标金额
+	TradingStandard     int         `json:"tradingStandard"`     // 交易达标次数
+	UsdRechargeStandard interface{} `json:"usdRechargeStandard"` // 是否使用充值金额作为标准 1是 0否
+	UsdTradingStandard  interface{} `json:"usdTrdingStandard"`   // 是否使用交易次数作为标准 1是 0否
+	LostReturnRate      float64     `json:"lostReturnRate"`      // 亏损返还比例
+	WithdrawTimes       float64     `json:"withdrawTimes"`       // 增加单日提现次数
+	WithdrawAmounts     float64     `json:"withdrawAmounts"`     // 增加单日提现金额
+	WithdrawFeeJson     interface{} `json:"withdrawFeeJson"`     // 提现手续费规则
+	StandardShowWord    interface{} `json:"standardShowWord"`    // 会员达标条件文案
+	WelfareShowWord     interface{} `json:"welfareShowWord"`     // 会员享受福利文案
+	RechargeShowWord    string      `json:"rechargeShowWord"`    // 充值页面快捷金额文案
 }
