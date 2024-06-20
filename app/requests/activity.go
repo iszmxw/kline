@@ -25,3 +25,18 @@ type GetUserSignInParams struct {
 	SignInTime     int64 `json:"signInTime"`     // 签到时间
 	FirebaseNotify int64 `json:"firebaseNotify"` // 是否开启firebase签到推送 1-开启 0-关闭
 }
+
+// SiteInformationCacheResult 站内信缓存结果
+type SiteInformationCacheResult struct {
+	ItemCode     string // 应用编码
+	Nation       string // 国家 Indonesia、India
+	PushPlatForm string // 推送平台
+	TopicName    string // 主题名称
+	ImageUrl     string // 将在通知中显示的图像的URL
+	Url          string // 跳转url
+	DeciveBrand  string // 设备品牌 apple(android)
+	MailId       int64  // 站内信发送表id
+	MessageId    int64  // 站内信信息模板表id
+	SendTime     int64  // 发送时间
+	AppUserIds   string // 将要批量发送的用户 当为 ALL 时发送给所有用户
+}

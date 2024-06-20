@@ -99,12 +99,11 @@ func GetFirstDateOfATimeZoneWeek(week int, GMT string) time.Time {
 }
 
 // GetTodayStartTime 获取指定时区今天开始时间戳
-func GetTodayStartTime(GMT string) int64 {
+func GetTodayStartTime(GMT string) time.Time {
 	// 时区设置
 	gmtOffset := GmtOffset(GMT)
 	timeZone := time.FixedZone("CST", gmtOffset)
-	todayStart := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, timeZone)
-	return todayStart.UnixNano() / int64(time.Millisecond)
+	return time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, timeZone)
 }
 
 // GetTodayEndTime 获取今日结束时间戳

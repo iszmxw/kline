@@ -69,8 +69,8 @@ type UserTradingRankList struct {
 }
 
 type WeekDataV2 struct {
-	List           []WeekDataList
-	FirebaseNotify int32 `json:"firebaseNotify"` // 获取是否开启firebase通知 1-开启 0-关闭
+	List           []WeekDataList `json:"list"`
+	FirebaseNotify int32          `json:"firebaseNotify"` // 获取是否开启firebase通知 1-开启 0-关闭
 }
 
 type WeekDataList struct {
@@ -101,7 +101,7 @@ type AppSignIn struct {
 }
 
 type SignInRuleBeans struct {
-	Rule         map[string]float64          `json:"rule"`         // 规则
+	Rule         map[string]string           `json:"rule"`         // 规则
 	MonetaryUnit string                      `json:"monetaryUnit"` // 货币符号
 	EnumStatus   []SignInRuleEnumStatusBeans // 枚举
 }
@@ -110,4 +110,10 @@ type SignInRuleEnumStatusBeans struct {
 	Status int    `json:"status"` // 状态
 	Desc   string `json:"desc"`   // 描述
 	Imgurl string `json:"imgurl"` // 图片地址
+}
+
+type ActivitySetJson struct {
+	Min          float64 `json:"min"`          // 最小值
+	Max          float64 `json:"max"`          // 最大值
+	DiscountRate float64 `json:"discountRate"` // 百分比
 }

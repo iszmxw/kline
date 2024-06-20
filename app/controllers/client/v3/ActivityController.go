@@ -1,11 +1,13 @@
 package v3
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
+	"goapi/app/models/BonusActivityTypeCode"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/app/service/activity"
@@ -76,8 +78,8 @@ func (h *ActivityController) GetUserLossReturnHandler(c *gin.Context) {
 	appItem := login.GetAppItem(params.Nation)
 	todayStartTime := xtime.GetTodayStartTime(appItem.TimeZone)
 	todayEndTime := xtime.GetTodayEndTime(appItem.TimeZone)
-	today8Timestamp := todayStartTime + 60*60*8*1000
-	yesterdayStartTime := todayStartTime - 60*60*24*1000
+	today8Timestamp := todayStartTime.UnixMicro() + 60*60*8*1000
+	yesterdayStartTime := todayStartTime.UnixMicro() - 60*60*24*1000
 	now := time.Now().UnixMilli()
 	temp2 := cmap.New().Items()
 	if now < today8Timestamp {
@@ -596,7 +598,7 @@ func (h *ActivityController) GetWeekDataV2Handler(c *gin.Context) {
 			rechargeTime := tRechargeOrders[0].CreateTs
 			startDate, _ = xtime.ConvertTimestamp(rechargeTime, appItem.TimeZone)
 		} else {
-			startDate, _ = xtime.ConvertTimestamp(todayStartTime, appItem.TimeZone)
+			startDate, _ = xtime.ConvertTimestamp(todayStartTime.UnixMilli(), appItem.TimeZone)
 		}
 		endDate = xtime.GetNextWeekStartTime(startDate, appItem.TimeZone)
 	}
@@ -620,9 +622,9 @@ func (h *ActivityController) GetWeekDataV2Handler(c *gin.Context) {
 		var hashMap response.WeekDataList
 		status := 0
 		if strings.EqualFold("Brazil", params.Nation) {
-			hashMap.Bonus = signInRuleData.MonetaryUnit + fmt.Sprintf("%v", helpers.Decimal(Rule[activity.JudgeOneDay(n)], 1))
+			hashMap.Bonus = signInRuleData.MonetaryUnit + fmt.Sprintf("%v", helpers.Decimal(helpers.StrToFloat64(Rule[activity.JudgeOneDay(n)]), 1))
 		} else {
-			hashMap.Bonus = signInRuleData.MonetaryUnit + fmt.Sprintf("%v", helpers.Decimal(Rule[activity.JudgeOneDay(n)], 0))
+			hashMap.Bonus = signInRuleData.MonetaryUnit + fmt.Sprintf("%v", helpers.Decimal(helpers.StrToFloat64(Rule[activity.JudgeOneDay(n)]), 0))
 		}
 		hashMap.Week = activity.WeekTypeAliasV2(activity.JudgeOneDay(n))
 		hashMap.Date = i
@@ -634,10 +636,10 @@ func (h *ActivityController) GetWeekDataV2Handler(c *gin.Context) {
 				status = appSignIn.SigninStatus // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日
 			}
 		}
-		if thisDate.UnixMilli() == todayStartTime && status == 0 {
-			status = 2 // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日\
+		if thisDate.UnixMilli() == todayStartTime.UnixMilli() && status == 0 {
+			status = 2 // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日
 		}
-		if thisDate.UnixMilli() >= todayStartTime+86400000 {
+		if thisDate.UnixMilli() >= todayStartTime.UnixMilli()+86400000 {
 			status = 3 // 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日
 		}
 		for _, enums := range enumStatus {
@@ -704,17 +706,100 @@ func (h *ActivityController) SignNotifyHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "每日签到参数"
+// @Param GetUserSignInParams body requests.GetUserSignInParams true "每日签到参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
 // @Router /No.04.9/app/v3/activity/submit.json [post]
 func (h *ActivityController) SubmitHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.GetUserSignInParams
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, result, "ok")
+	u, _ := c.Get("user")
+	User := u.(response.ClientUserBeans)
+	appUserId := User.AppUserId
+	appItem := login.GetAppItem(params.Nation)
+	timeZone := appItem.TimeZone
+	signInTime, _ := xtime.ConvertTimestamp(params.SignInTime, timeZone) // 前端传递的签到时间,时间戳
+	signInType := "0"                                                    // 签到类型
+	date := time.Now()                                                   // 系统当前时间
+	todayStrTime := xtime.GetTodayStartTime(timeZone)                    // 今天的开始时间
+	firstDateOfAWeek := xtime.GetFirstDateOfATimeZoneWeek(0, timeZone)   // 一周的第一天
+	endDateOfAWeek := xtime.GetEndDateOfATimeZoneWeek(0, timeZone)       // 一周的最后一天
+	signInWeek := xtime.GetTodayOfATimeZoneWeek(todayStrTime, timeZone)  // 今天周几
+	if signInTime.UnixMilli() == 0 {
+		echo.Error(c, "PleaseSelectCheckIn", "")
+		return
+	}
+	// 检测签到时间
+	if firstDateOfAWeek.UnixMilli() > signInTime.UnixMilli() || endDateOfAWeek.UnixMilli()+86400000 <= signInTime.UnixMilli() || signInTime.UnixMilli() >= todayStrTime.UnixMilli()+86400000 || signInTime.UnixMilli() < todayStrTime.UnixMilli() {
+		// 超过开始时间 || 超出结束时间 || 超出当日签到结束时间 || 小于当日签到开始时间
+		echo.Error(c, "IncorrectCheckInTime", "")
+		return
+	}
+	// 当天签到
+	if signInTime.UnixMilli() >= todayStrTime.UnixMilli() {
+		signInType = "1" // 当天签到
+	}
+	// 检测该时间是否签到过，禁止重复签到
+	data := activity.CheckIsSignIn(appUserId, params.ItemCode, signInTime.Format(xtime.TimeFormat))
+	if data != nil && data.SigninStatus == 1 {
+		logger.Error(errors.New("您今天已经签到过请勿重复签到"))
+		echo.Error(c, "AlreadySignedInToday", "")
+		return
+	}
+	// 组装数据
+	// 获取用户信息 查询用户当前的 BonusBalance
+	var AppUser models.AppUser
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", appUserId).Find(&AppUser)
+	// 读取签到奖励分配规则
+	SystemSignInRule := activity.GetSystemSignInRuleV2(params.ItemCode, params.Nation)
+	rule := SystemSignInRule.Rule
+	if rule == nil {
+		logger.Error(errors.New("未设置签到规则"))
+		echo.Error(c, "CheckInRulesNotSet", "")
+		return
+	}
+	giveAwayBonus := helpers.StrToFloat64(rule[signInWeek]) // 读取今日赠送bonus的
+	if giveAwayBonus == 0 {
+		logger.Error(errors.New("未读取到配置信息"))
+		echo.Error(c, "ConfigurationInformationNot", "")
+		return
+	}
+	record := new(models.TAppSignin)
+	record.AppUserId = appUserId                   // 用户 ID
+	record.ItemCode = params.ItemCode              // 项目编码
+	record.Nation = params.Nation                  // 国家
+	record.BonusBalance = AppUser.BonusBalance     // 记录用户当前的 BonusBalance
+	record.WhichDay = signInWeek                   // 记录星期几
+	record.GiveAwayBonus = giveAwayBonus           // 赠送bonus
+	record.DeviceModel = c.GetHeader("User-Agent") // 设备型号
+	record.SigninIp = c.ClientIP()                 // 签到IP
+	record.SigninDate = signInTime                 // 签到日期
+	record.CreateDate = date                       // 创建日期
+	record.UpdateDate = date                       // 更新日期
+	// 当天签到
+	if signInType == "1" {
+		// 检测用户是否新用户 新用户首周不需要充值可直接签到
+		if AppUser.CreateDate.UnixMilli() < firstDateOfAWeek.UnixMilli() {
+			// 检测用户本周是否充值过
+			if !activity.WhetherToRechargeThisWeek(appUserId, timeZone) {
+				logger.Error(errors.New("本周未充值，请您先充值后在进行操作"))
+				echo.Error(c, "NotRechargedThisWeek", "")
+				return
+			}
+		}
+		record.SigninType = 1   // 签到类型 1-正常签到，2-补签签到
+		record.SigninStatus = 1 // 签到状态 0-未签到待补签，1-已签到
+		err := mysql.DB.Debug().Model(models.TAppSignin{}).Create(&record).Error
+		if err == nil {
+			// 发放Bonus奖励到Bonus余额
+			activity.SendBonusByActivityCode(giveAwayBonus, appUserId, params.ItemCode, params.Nation, BonusActivityTypeCode.SupplementarySignature)
+			echo.Success(c, nil, "ok")
+			return
+		}
+	}
+	echo.Error(c, "SignInFailed", "")
 }

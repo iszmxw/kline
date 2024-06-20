@@ -320,6 +320,31 @@ definitions:
     - nation
     - whichWeek
     type: object
+  requests.GetUserSignInParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      firebaseNotify:
+        description: 是否开启firebase签到推送 1-开启 0-关闭
+        type: integer
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      signInTime:
+        description: 签到时间
+        type: integer
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.GetUserWithdrawListParams:
     properties:
       appOsType:
@@ -1022,6 +1047,37 @@ definitions:
       numberPoint:
         description: 保留小数位数
         type: integer
+    type: object
+  response.WeekDataList:
+    properties:
+      bonus:
+        description: 奖励的 bonus
+        type: string
+      date:
+        description: 本周七天日期，时间戳
+        type: integer
+      desc:
+        description: 描述
+        type: string
+      imgurl:
+        description: 签到状态图标
+        type: string
+      status:
+        description: 签到状态 0-未签到待补签，1-已签到 2-签到日等待签到 3-未到签到日
+        type: integer
+      week:
+        description: 展示的星期几
+        type: string
+    type: object
+  response.WeekDataV2:
+    properties:
+      firebaseNotify:
+        description: 获取是否开启firebase通知 1-开启 0-关闭
+        type: integer
+      list:
+        items:
+          $ref: '#/definitions/response.WeekDataList'
+        type: array
     type: object
   response.WithdrawFee:
     properties:
@@ -2710,10 +2766,10 @@ paths:
         type: string
       - description: 获取本周签到列表v2参数
         in: body
-        name: GetLanguagePageParams
+        name: GetUserSignInParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetUserSignInParams'
       produces:
       - application/json
       responses:
@@ -2724,7 +2780,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.WeekDataV2'
       summary: No.04.7-获取本周签到列表v2
       tags:
       - 4.活动模块
@@ -2834,10 +2890,10 @@ paths:
         type: string
       - description: 签到启停 firebase 通知参数
         in: body
-        name: GetLanguagePageParams
+        name: GetUserSignInParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetUserSignInParams'
       produces:
       - application/json
       responses:
@@ -2845,10 +2901,6 @@ paths:
           description: 不是1就是失败的
           schema:
             $ref: '#/definitions/echo.Response'
-        "1":
-          description: data数据结构体
-          schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
       summary: No.04.8-签到启停 firebase 通知
       tags:
       - 4.活动模块
@@ -2958,10 +3010,10 @@ paths:
         type: string
       - description: 每日签到参数
         in: body
-        name: GetLanguagePageParams
+        name: GetUserSignInParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetUserSignInParams'
       produces:
       - application/json
       responses:
