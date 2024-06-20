@@ -6,3 +6,8 @@ type Base struct {
 	LanguageCode string `json:"languageCode" validate:"required"` // 语言编码
 	AppOsType    string `json:"appOsType"`                        // 系统类型 1安卓 2IOS 3html
 }
+
+type PageInfo struct {
+	PageSize int64 `json:"pageSize" validate:"required"` // 单页条数
+	PageNum  int64 `json:"pageNum" validate:"required"`  // 页码
+}
