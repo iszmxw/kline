@@ -604,6 +604,9 @@ func createTradingOrder(orderId string, params requests.SubmitTradeParams, appUs
 
 // 创建虚拟交易订单
 func createVirtualTradingOrder(orderId string, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
+	if appUser.IsNew == 1 {
+		asset.ReturnRate = 0.75
+	}
 	createOrder := new(models.TradingOrderVirtual)
 	createOrder.TradeOrderId = orderId
 	createOrder.Amounts = params.Amounts
