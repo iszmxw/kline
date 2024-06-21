@@ -275,12 +275,50 @@ func (h *BankController) GetPaidFastAmountsHandler(c *gin.Context) {
 // @Success 1 {object} response.RechargeTypeBeans "data数据结构体"
 // @Router /No.06.4/app/v3/bank/getPaidType.json [post]
 func (h *BankController) GetPaidTypeHandler(c *gin.Context) {
-	var params requests.Base
-	var result response.RechargeTypeBeans
+	var params requests.GetPaidType
+	var rechargeTypeList []models.TRechargeType
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, result, "ok")
+	mysql.DB.Debug().Model(models.TRechargeType{}).Where(map[string]interface{}{
+		"item_code": params.ItemCode,
+		"nation":    params.Nation,
+		"is_valid":  1,
+	}).Find(&rechargeTypeList)
+	// 打包充值类型
+	data := cmap.New().Items()
+	payPartner := ""
+	for _, tRechargeType := range rechargeTypeList {
+		payPartner = tRechargeType.BindPayChannel
+		data[tRechargeType.ChannelType] = response.RechargeTypeBeans{
+			ChargeTypeLogoUrl: tRechargeType.TypeLogoUrl,
+			ChargeTypeName:    tRechargeType.TypeName,
+			ChannelTotals:     0,
+			PayPartner:        payPartner,
+			RechargeChannels:  nil,
+		}
+	}
+	// 获取实际支付方式
+	var rechargeChannels []response.RechargeChannelBeans
+	mysql.DB.Debug().Model(models.TRechargeChannel{}).Where(map[string]interface{}{
+		"item_code": params.ItemCode,
+		"is_valid":  1,
+		"is_used":   1,
+		"nation":    params.Nation,
+	}).Group("channel_code").Order("channel_soft desc").Find(&rechargeChannels)
+	// 打包充值渠道
+	for _, tRechargeChannel := range rechargeChannels {
+		beans := data[tRechargeChannel.ChannelType].(*response.RechargeTypeBeans)
+		if beans != nil {
+			if params.IsLightMode != 0 {
+				tRechargeChannel.ChannelLogoUrl = tRechargeChannel.ChannelLightLogoUrl
+				var channels []response.RechargeChannelBeans
+				channels = append(channels, tRechargeChannel)
+				beans.RechargeChannels = channels
+			}
+		}
+	}
+	echo.Success(c, data, "ok")
 }

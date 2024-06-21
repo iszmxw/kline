@@ -17,3 +17,8 @@ type GetUserBankCards struct {
 	Base
 	PageInfo
 }
+
+type GetPaidType struct {
+	Base
+	IsLightMode int `json:"isLightMode" validate:"required"` // 是否白天模式
+}
