@@ -134,7 +134,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			// 5.我的模块
 			mine := V3Route.Group("/mine")
 			{
-				// 获取客户账号信息 [todo]
+				// 获取客户账号信息 [ok]
 				mine.Any("/getUserAccountMessage.json", ClientV3Group.MineController.GetUserAccountMessageHandler)
 				// 更新用户信息 [todo]
 				mine.Any("/submitUpdateUserInfo.json", ClientV3Group.MineController.SubmitUpdateUserInfoHandler)

@@ -2,11 +2,11 @@ package test
 
 import (
 	"fmt"
-	"github.com/google/uuid"
+	"goapi/pkg/decimal"
 	"testing"
 )
 
 func Test_xw(t *testing.T) {
-	onlineOnlyKey := fmt.Sprintf("G%v%v", uuid.New().ID(), uuid.New().ID())
-	fmt.Println(onlineOnlyKey)
+	res := decimal.SplitDisplayInteger(123123456789.88, "Indonesia")
+	fmt.Println(res)
 }
