@@ -7,10 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"goapi/app/models"
+	"goapi/app/models/FlowEventTokenCode"
 	"goapi/app/models/SystemDataDictionaryParams"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/app/service/login"
+	goadjust "goapi/pkg/adjust"
 	"goapi/pkg/commonUtils"
 	"goapi/pkg/decimal"
 	"goapi/pkg/echo"
@@ -472,19 +474,47 @@ func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "上报新手教程完成状态的参数"
+// @Param SumbmitPartnerEventByTypeParams body requests.SumbmitPartnerEventByTypeParams true "上报新手教程完成状态的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} echo.Response "data数据结构体"
 // @Router /No.04.4/app/v3/mine/sumbmitPartnerEventByType.json [post]
 func (h *MineController) SumbmitPartnerEventByTypeHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.SumbmitPartnerEventByTypeParams
+	var tAppUser *models.AppUser
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, result, "ok")
+	eventName := ""
+	if 1 == params.EventType {
+		eventName = FlowEventTokenCode.Info(FlowEventTokenCode.CompleteTutorial).Code
+	}
+	if 2 == params.EventType {
+		eventName = FlowEventTokenCode.Info(FlowEventTokenCode.SkipTutorial).Code
+	}
+	if len(eventName) == 0 {
+		logger.Error(errors.New("参数错误 EVENT TYPE WRONG"))
+		echo.Error(c, "Failed", "")
+		return
+	}
+
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", User.AppUserId).Find(&tAppUser)
+	// 异步发送注册埋点事件
+	goadjust.SubmitEvent(goadjust.EventParams{
+		Email:            tAppUser.Email,
+		EventBindId:      tAppUser.FlowBindId,
+		Mobile:           tAppUser.Mobile,
+		FlowJsonString:   tAppUser.FlowJson,
+		DeviceBrand:      tAppUser.DeciveBrand,
+		EventName:        eventName,
+		AppUserId:        tAppUser.AppUserId,
+		IsRepeatedSubmit: "0",
+		ItemCode:         tAppUser.ItemCode,
+	}, tAppUser.Nation, "adjust")
+	echo.Success(c, nil, "ok")
 }
 
 // GetInvitUsersHandler

@@ -481,6 +481,58 @@ definitions:
     - languageCode
     - nation
     type: object
+  requests.SubmitUpdateUserInfo:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      photo:
+        description: 用户头像base64链接地址
+        type: string
+      submitType:
+        description: 提交类型 1 头像  2 性别
+        type: integer
+      userSex:
+        description: 性别 0女 1男 2未知 3保密
+        type: integer
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    - submitType
+    type: object
+  requests.SumbmitPartnerEventByTypeParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      eventType:
+        description: 埋点事件类型  1完成教程 2跳过教程
+        type: integer
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+    required:
+    - eventType
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.UnbindTokenParams:
     properties:
       app_user_id:
@@ -772,6 +824,129 @@ definitions:
         type: string
       activityName:
         description: 活动名称
+        type: string
+    type: object
+  response.ClientUserBeans:
+    properties:
+      accountEmail:
+        description: 登录账号email
+        type: string
+      appUserId:
+        description: 客户ID
+        type: string
+      bankCredit:
+        description: 银行卡认证状态 1已认证 0未认证
+        type: integer
+      bonusBalance:
+        description: 客户奖金余额
+        type: string
+      currencyType:
+        description: 货币类型 IDR USD CNY
+        type: string
+      emailCredit:
+        description: 邮箱认证状态 1已认证 0未认证
+        type: integer
+      hadRechargeAmounts:
+        description: 已充值金额
+        type: string
+      hadWithdrawAmounts:
+        description: 已提现金额
+        type: string
+      hisTradingAmounts:
+        description: 历史交易金额 (使用big.Float类型)
+        type: string
+      hisTradingCount:
+        description: 历史交易次数
+        type: integer
+      identityCredit:
+        description: 证件认证状态 1已认证 0未认证
+        type: integer
+      isFinishCredit:
+        description: 是否完成KYC认证 1是 0否
+        type: integer
+      isNeedKyc:
+        description: 是否需要去认证KYC 1是 0否
+        type: integer
+      isNew:
+        description: 是否新用户 1是 0否 首充后变成0
+        type: integer
+      isVisit:
+        description: 是否游客登陆
+        type: integer
+      mobile:
+        description: 客户手机号
+        type: string
+      mobileCredit:
+        description: 手机号认证状态 1已认证 0未认证
+        type: integer
+      monetaryUnit:
+        description: 货币单位
+        type: string
+      nation:
+        description: 绑定国家
+        type: string
+      realBalance:
+        description: 客户余额
+        type: string
+      rechargeAmounts:
+        description: 剩余可充值金额
+        type: string
+      showBonusBalance:
+        description: 展示奖金总额
+        type: string
+      showHadRechargeAmounts:
+        description: 展示今日充值金额
+        type: string
+      showHadWithdrawAmounts:
+        description: 展示今日提现余额
+        type: string
+      showHisTradingAmounts:
+        description: 展示历史交易金额
+        type: string
+      showRealBalance:
+        description: 展示客户余额
+        type: string
+      showRechargeAmounts:
+        description: 展示今日剩余充值金额
+        type: string
+      showTotalHisWithdrawAmounts:
+        description: 展示历史提现总额
+        type: string
+      showWithdrawAmounts:
+        description: 展示今日剩余提现额度
+        type: string
+      totalHisBonusAmounts:
+        description: 历史累计获得Bonus总金额
+        type: string
+      totalHisRechargeAmounts:
+        description: 历史充值总金额
+        type: string
+      totalHisWithdrawAmounts:
+        description: 历史提现总金额
+        type: string
+      tradingAmounts:
+        description: 当日交易金额
+        type: string
+      tradingCount:
+        description: 交易次数
+        type: integer
+      userAvatar:
+        description: 头像
+        type: string
+      userLevel:
+        description: 用户等级
+        type: integer
+      userName:
+        description: 用户名称
+        type: string
+      userSex:
+        description: 用户性别
+        type: integer
+      virtualBalance:
+        description: 模拟币余额
+        type: string
+      withdrawAmounts:
+        description: 可提现余额
         type: string
     type: object
   response.ExistingCountry:
@@ -2363,10 +2538,10 @@ paths:
         type: string
       - description: 获取客户账号信息参数
         in: body
-        name: GetLanguagePageParams
+        name: Params
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.Base'
       produces:
       - application/json
       responses:
@@ -2377,7 +2552,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.ClientUserBeans'
       summary: No.04.1-获取客户账号信息
       tags:
       - 5.我的模块
@@ -2553,10 +2728,10 @@ paths:
         type: string
       - description: 更新用户信息的参数
         in: body
-        name: GetLanguagePageParams
+        name: SubmitUpdateUserInfo
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.SubmitUpdateUserInfo'
       produces:
       - application/json
       responses:
@@ -2567,7 +2742,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/echo.Response'
       summary: No.04.3-更新用户信息
       tags:
       - 5.我的模块
@@ -2679,10 +2854,10 @@ paths:
         type: string
       - description: 上报新手教程完成状态的参数
         in: body
-        name: GetLanguagePageParams
+        name: SumbmitPartnerEventByTypeParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.SumbmitPartnerEventByTypeParams'
       produces:
       - application/json
       responses:
@@ -2693,7 +2868,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/echo.Response'
       summary: No.04.4-上报新手教程完成状态
       tags:
       - 5.我的模块

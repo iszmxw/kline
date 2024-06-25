@@ -138,9 +138,9 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				mine.Any("/getUserAccountMessage.json", ClientV3Group.MineController.GetUserAccountMessageHandler)
 				// 更新用户信息 [ok]
 				mine.Any("/submitUpdateUserInfo.json", ClientV3Group.MineController.SubmitUpdateUserInfoHandler)
-				// 上报新手教程完成状态 [todo]
+				// 上报新手教程完成状态 [ok]
 				mine.Any("/sumbmitPartnerEventByType.json", ClientV3Group.MineController.SumbmitPartnerEventByTypeHandler)
-				// 获取邀请用户进度 [todo]
+				// 获取邀请用户进度 [ok]
 				mine.Any("/getInvitUsers.json", ClientV3Group.MineController.GetInvitUsersHandler)
 				// 获取用户邀请码及父邀请码 [todo]
 				mine.Any("/getInvitationCode.json", ClientV3Group.MineController.GetInvitationCodeHandler)
