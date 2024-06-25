@@ -136,7 +136,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			{
 				// 获取客户账号信息 [ok]
 				mine.Any("/getUserAccountMessage.json", ClientV3Group.MineController.GetUserAccountMessageHandler)
-				// 更新用户信息 [todo]
+				// 更新用户信息 [ok]
 				mine.Any("/submitUpdateUserInfo.json", ClientV3Group.MineController.SubmitUpdateUserInfoHandler)
 				// 上报新手教程完成状态 [todo]
 				mine.Any("/sumbmitPartnerEventByType.json", ClientV3Group.MineController.SumbmitPartnerEventByTypeHandler)

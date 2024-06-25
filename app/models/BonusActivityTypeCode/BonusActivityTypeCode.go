@@ -30,6 +30,6 @@ var KeyMap = map[Code]BonusActivityTypeCode{
 }
 
 // KeyInfo 根据键代码获取键值
-func KeyInfo(key Code) BonusActivityTypeCode {
-	return KeyMap[key]
+func KeyInfo(code Code) BonusActivityTypeCode {
+	return KeyMap[code]
 }

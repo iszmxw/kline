@@ -1,10 +1,13 @@
 package v3
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"goapi/app/models"
+	"goapi/app/models/SystemDataDictionaryParams"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/app/service/login"
@@ -14,6 +17,10 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/validate"
+	"goapi/pkg/xstring"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"strings"
 )
 
@@ -308,19 +315,149 @@ FROM (
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "更新用户信息的参数"
+// @Param SubmitUpdateUserInfo body requests.SubmitUpdateUserInfo true "更新用户信息的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} echo.Response "data数据结构体"
 // @Router /No.04.3/app/v3/mine/submitUpdateUserInfo.json [post]
 func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.SubmitUpdateUserInfo
+	var tAppUser *models.AppUser
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
-	echo.Success(c, result, "ok")
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", User.AppUserId).Find(&tAppUser)
+	if tAppUser == nil {
+		echo.Error(c, "Failed", "")
+		return
+	}
+	if 1 == params.SubmitType {
+		if len(params.Photo) <= 0 {
+			echo.Error(c, "ParamsCanNotBeNull", "")
+			return
+		}
+		// 首次修改需要新增用户头像链接
+		if len(tAppUser.NewAvatar) == 0 {
+			// 上传操作
+			var uploadData *models.TSystemDataDictionary
+			mysql.DB.Debug().Model(models.TSystemDataDictionary{}).Where(map[string]interface{}{
+				"name": SystemDataDictionaryParams.Info(SystemDataDictionaryParams.IMAGES_UPLOAD_ADDRESS).Name,
+			}).Find(&uploadData)
+			if nil == uploadData {
+				logger.Error(errors.New("检查数据库配置"))
+				echo.Error(c, "Failed", "")
+				return
+			}
+			paramsMap := map[string]interface{}{
+				"serviceType": "iqo",
+				"sourceType":  "iqo",
+				"extName":     "png",
+				"base64Str":   params.Photo,
+			}
+			marshal, err := json.Marshal(paramsMap)
+			if err != nil {
+				logger.Error(err)
+				echo.Error(c, "Failed", "")
+				return
+			}
+			payload := strings.NewReader(string(marshal))
+			resp, err := http.Post(uploadData.Value, "application/json", payload)
+			if err != nil {
+				logger.Error(err)
+				echo.Error(c, "Failed", "")
+				return
+			}
+			defer func(Body io.ReadCloser) {
+				err = Body.Close()
+				if err != nil {
+					logger.Error(err)
+				}
+			}(resp.Body)
+			body, err := ioutil.ReadAll(resp.Body)
+			var fileUrlResJson response.RespUploadBase64Str
+			err = json.Unmarshal(body, &fileUrlResJson)
+			if err != nil {
+				logger.Error(err)
+				echo.Error(c, "Failed", "")
+				return
+			}
+			if !fileUrlResJson.Success {
+				logger.Error(errors.New("上传失败"))
+				echo.Error(c, "Failed", "")
+				return
+			}
+			// 赋值
+			submitParamUrl := fileUrlResJson.Data.Url
+			err = mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", tAppUser.AppUserId).Update("new_avatar", submitParamUrl).Error
+			if err != nil {
+				logger.Error(errors.New("更新失败"))
+				echo.Error(c, "Failed", "")
+				return
+			}
+			logger.Info(string(body))
+		} else {
+			// 非首次仅需要上传头像
+			// 上传操作
+			var uploadData *models.TSystemDataDictionary
+			mysql.DB.Debug().Model(models.TSystemDataDictionary{}).Where(map[string]interface{}{
+				"name": SystemDataDictionaryParams.Info(SystemDataDictionaryParams.IMAGES_UPLOAD_UPDATE_ADDRESS).Name,
+			}).Find(&uploadData)
+			if nil == uploadData {
+				logger.Error(errors.New("检查数据库配置"))
+				echo.Error(c, "Failed", "")
+				return
+			}
+			indexOf := xstring.LastIndexOf(tAppUser.NewAvatar, "/")
+			paramsMap := map[string]interface{}{
+				"base64Str": params.Photo,
+				"fileName":  tAppUser.NewAvatar[indexOf:],
+			}
+			marshal, err := json.Marshal(paramsMap)
+			if err != nil {
+				logger.Error(err)
+				echo.Error(c, "Failed", "")
+				return
+			}
+			payload := strings.NewReader(string(marshal))
+			resp, err := http.Post(uploadData.Value, "application/json", payload)
+			if err != nil {
+				logger.Error(err)
+				echo.Error(c, "Failed", "")
+				return
+			}
+			defer func(Body io.ReadCloser) {
+				err = Body.Close()
+				if err != nil {
+					logger.Error(err)
+				}
+			}(resp.Body)
+			body, err := ioutil.ReadAll(resp.Body)
+			var fileUrlResJson response.RespUploadBase64Str
+			err = json.Unmarshal(body, &fileUrlResJson)
+			if err != nil {
+				logger.Error(err)
+				echo.Error(c, "Failed", "")
+				return
+			}
+			if !fileUrlResJson.Success {
+				logger.Error(errors.New("上传失败"))
+				echo.Error(c, "Failed", "")
+				return
+			}
+		}
+	}
+	if 2 == params.SubmitType {
+		err := mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", tAppUser.AppUserId).Update("gender", params.UserSex).Error
+		if err != nil {
+			logger.Error(err)
+			echo.Error(c, "Failed", "")
+			return
+		}
+	}
+	echo.Success(c, nil, "ok")
 }
 
 // SumbmitPartnerEventByTypeHandler
