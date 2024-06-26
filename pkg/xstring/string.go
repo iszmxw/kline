@@ -13,3 +13,11 @@ func LastIndexOf(str, sub string) int {
 	}
 	return -1
 }
+
+// ReplaceRange 用于替换字符串指定范围内的子字符串
+func ReplaceRange(str string, start int, end int, replacement string) string {
+	if start < 0 || end > len(str) || start > end {
+		return str // 如果输入范围不正确，则返回原始字符串
+	}
+	return str[:start] + replacement + str[end:]
+}

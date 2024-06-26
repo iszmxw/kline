@@ -2,7 +2,9 @@ package email
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 type Params struct {
@@ -36,4 +38,32 @@ func EnEmail(email string) string {
 	} else {
 		return fmt.Sprintf("%s****%s@%s", emailBefore[:3], emailBefore[len(emailBefore)-3:], emailAfter)
 	}
+}
+
+// GenerateRandomEmail 随机生成邮箱账号
+func GenerateRandomEmail() string {
+	domains := []string{"gmail.com", "outlook.com"}
+	rand.Seed(time.Now().UnixNano())
+
+	// 生成随机的邮箱前缀
+	var prefix strings.Builder
+	for i := 0; i < 12; i++ {
+		randomType := rand.Intn(2)
+		if randomType == 0 {
+			// 生成随机字母
+			randomChar := 'a' + rune(rand.Intn(26))
+			prefix.WriteRune(randomChar)
+		} else {
+			// 生成随机数字
+			randomDigit := rand.Intn(10)
+			prefix.WriteString(string(randomDigit + '0'))
+		}
+	}
+
+	// 随机选择一个域名
+	domain := domains[rand.Intn(len(domains))]
+
+	// 拼接邮箱账号
+	email := prefix.String() + "@" + domain
+	return email
 }

@@ -419,6 +419,35 @@ definitions:
     required:
     - token
     type: object
+  requests.MineInvitUserParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+      referralCode:
+        description: 埋点事件类型  1完成教程 2跳过教程
+        type: string
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    - referralCode
+    type: object
   requests.SendSMSByTypeParams:
     properties:
       account:
@@ -1025,6 +1054,25 @@ definitions:
         description: types 键值对 key->value
         type: object
     type: object
+  response.GetInvitUsers:
+    properties:
+      invitBonus:
+        description: 请一人获得得奖励
+        type: number
+      invitUser:
+        items:
+          $ref: '#/definitions/response.MineInvitUserResults'
+        type: array
+      myBonus:
+        description: 我获得的总邀请奖励
+        type: number
+      thisWeek:
+        allOf:
+        - $ref: '#/definitions/response.ThisWeek'
+        description: 本周top1
+      total:
+        type: integer
+    type: object
   response.GetUserLossReturn:
     properties:
       todayBonusReturn:
@@ -1107,6 +1155,24 @@ definitions:
         type: string
       webUrlPre:
         description: 前端页面地址_预发布环境
+        type: string
+    type: object
+  response.MineInvitUserResults:
+    properties:
+      appUserId:
+        description: 用户id
+        type: string
+      avatar:
+        description: 头像
+        type: string
+      email:
+        description: 邮箱
+        type: string
+      invitStatus:
+        description: 邀请状态 -1 未充值 0 未交易 1-19交易订单数状态 >=20邀请成功
+        type: string
+      isLogout:
+        description: 是否注销 1是 0否
         type: string
     type: object
   response.NationConfig:
@@ -1307,6 +1373,15 @@ definitions:
         type: string
       userId:
         description: 用户的 userID
+        type: string
+    type: object
+  response.ThisWeek:
+    properties:
+      thisBonus:
+        description: 本周 获得奖励 Bonus
+        type: number
+      thisEmail:
+        description: 邮箱
         type: string
     type: object
   response.UserBankCardsParam:
@@ -2980,10 +3055,10 @@ paths:
         type: string
       - description: 获取邀请用户进度的参数
         in: body
-        name: GetLanguagePageParams
+        name: MineInvitUserParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.MineInvitUserParams'
       produces:
       - application/json
       responses:
@@ -2994,7 +3069,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.GetInvitUsers'
       summary: No.04.5-获取邀请用户进度
       tags:
       - 5.我的模块

@@ -6,24 +6,33 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
 	"goapi/app/models/FlowEventTokenCode"
 	"goapi/app/models/SystemDataDictionaryParams"
+	"goapi/app/models/keyenum"
+	"goapi/app/models/mapper"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/app/service/login"
+	"goapi/app/service/mine"
 	goadjust "goapi/pkg/adjust"
 	"goapi/pkg/commonUtils"
 	"goapi/pkg/decimal"
 	"goapi/pkg/echo"
+	"goapi/pkg/email"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/page"
+	"goapi/pkg/redis"
 	"goapi/pkg/validate"
 	"goapi/pkg/xstring"
+	"goapi/pkg/xtime"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // 我的模块
@@ -31,6 +40,8 @@ import (
 type MineController struct {
 	BaseController
 }
+
+var LastExecutionDate *time.Time
 
 // GetUserAccountMessageHandler
 // @Summary No.04.1-获取客户账号信息
@@ -120,83 +131,7 @@ func (h *MineController) GetUserAccountMessageHandler(c *gin.Context) {
 			clientUserBeans.UserName = tAppUser.UserName
 		}
 	}
-	sqlStr := `
-SELECT a.app_user_id AS appUserId ,
-        a.is_new AS isNew ,
-        a.black_list AS blackList ,
-        ifnull(b.tradingCount,0) as tradingCount,
-        ifnull(b.tradingAmounts,0) as tradingAmounts,
-        ifnull(c.rechargeAmounts,0) as rechargeAmounts,
-        ifnull(c.rechargeCount,0) as rechargeCount,
-        ifnull(c.rechargeTodayAmounts,0) as rechargeTodayAmounts,
-        ifnull(c.rechargeTodayCount,0) as rechargeTodayCount,
-        ifnull(d.withdrawAmounts,0) as withdrawAmounts,
-        ifnull(d.withdrawCount,0) as withdrawCount,
-        ifnull(d.withdrawTodayAmounts,0) as withdrawTodayAmounts,
-        ifnull(d.withdrawTodayCount,0) as withdrawTodayCount,
-        ifnull(e.hisTradingCount,0) as hisTradingCount,
-        ifnull(e.hisTradingAmounts,0) as hisTradingAmounts
-FROM (
-         SELECT a.app_user_id,
-                '1' AS biao,
-                 a.is_new,
-                a.black_list
-         FROM t_app_user AS a
-         WHERE 1=1
-           AND a.app_user_id = #{appUserId}
-           AND a.nation = #{nation}
-     ) AS a INNER JOIN
-     (
-         SELECT COUNT(1) AS tradingCount,
-                 SUM(a.amounts) AS tradingAmounts,
-                 '1' AS biao
-         FROM t_trading_order AS a
-         WHERE 1=1
-           AND a.app_user_id = #{appUserId}
-			AND DATE_FORMAT(CONVERT_TZ(a.create_date, '+07:00', #{timeZone}),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', #{timeZone}),'%Y-%m-%d')
-			AND a.amount_type = 1
-			AND a.nation = #{nation}
-     ) AS b ON a.biao = b.biao INNER JOIN
-     (
-         SELECT SUM(b.amount) AS rechargeAmounts,
-                 COUNT(1) AS rechargeCount,
-                 SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', #{timeZone}),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', #{timeZone}),'%Y-%m-%d') THEN b.amount ELSE 0 END ) AS rechargeTodayAmounts,
-                 SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', #{timeZone}),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', #{timeZone}),'%Y-%m-%d') THEN 1 ELSE 0 END ) AS rechargeTodayCount,
-                 '1' AS biao
-         FROM t_recharge_order AS b
-         WHERE 1=1
-           AND b.app_user_id = #{appUserId}
-			AND b.recharge_order_status = 1
-			AND b.nation = #{nation}
-     ) AS c ON a.biao = c.biao  INNER JOIN
-     (
-         SELECT SUM(b.amount) AS withdrawAmounts,
-                 COUNT(1) AS withdrawCount,
-                 SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', #{timeZone}),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', #{timeZone}),'%Y-%m-%d') THEN b.amount ELSE 0 END ) AS withdrawTodayAmounts,
-                 SUM(CASE WHEN DATE_FORMAT(CONVERT_TZ(b.create_date, '+07:00', #{timeZone}),'%Y-%m-%d') = DATE_FORMAT(CONVERT_TZ(NOW(), '+07:00', #{timeZone}),'%Y-%m-%d') THEN 1 ELSE 0 END ) AS withdrawTodayCount,
-                 '1' AS biao
-         FROM t_withdraw_order AS b
-         WHERE 1=1
-           AND b.app_user_id = #{appUserId}
-			AND b.withdraw_order_status IN (1,2)
-            AND b.nation = #{nation}
-     ) AS d  ON a.biao = d.biao INNER JOIN
-     (
-         SELECT COUNT(1) AS hisTradingCount,
-                 SUM(a.amounts) AS hisTradingAmounts,
-                 '1' AS biao
-         FROM t_trading_order AS a
-         WHERE 1=1
-           AND a.app_user_id = #{appUserId}
-			AND a.amount_type = 1
-			AND a.nation = #{nation}
-     ) AS e ON a.biao = e.biao
-`
-	timeZone := strings.SplitAfter(appItem.TimeZone, "T")
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", tAppUser.AppUserId)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", tAppUser.Nation)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{timeZone}", timeZone[1])
-	err := mysql.DB.Debug().Raw(sqlStr).Scan(&userTradeMessage).Error
+	userTradeMessage, err := mapper.GetUserTradeMessage(appItem, tAppUser)
 	if err == nil {
 		clientUserBeans.RechargeAmounts = decimal.PreserveDecimalPlaces(userTradeMessage.RechargeAmounts, numberPoint)
 		// 展示的充值金额
@@ -529,18 +464,123 @@ func (h *MineController) SumbmitPartnerEventByTypeHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取邀请用户进度的参数"
+// @Param MineInvitUserParams body requests.MineInvitUserParams true "获取邀请用户进度的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.GetInvitUsers "data数据结构体"
 // @Router /No.04.5/app/v3/mine/getInvitUsers.json [post]
 func (h *MineController) GetInvitUsersHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.MineInvitUserParams
+	var result response.GetInvitUsers
+	var total int64
+	var invitBonus float64
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	if params.PageNum == 0 || params.PageSize == 0 {
+		params.PageNum = 1
+		params.PageSize = 5
+	}
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	mysql.DB.Debug().Model(models.AppUser{}).Where(map[string]interface{}{
+		"parent_code": params.ReferralCode,
+		"item_code":   params.ItemCode,
+		"nation":      params.Nation,
+	}).Count(&total)
+	if params.PageSize*(params.PageNum-1) > int(total) {
+		echo.Error(c, "NextPageIsGone", "")
+		return
+	}
+	pagea := page.NewPageApple(params.PageSize, params.PageNum)
+	var invitUserResults []response.MineInvitUserResults
+	invitUserResults = mapper.GetMineInvitUserList(
+		params.ItemCode,
+		params.ReferralCode,
+		fmt.Sprintf("%v", pagea.Index),
+		fmt.Sprintf("%v", pagea.Ends),
+		params.Nation,
+	)
+	for i, userResult := range invitUserResults {
+		invitUserResults[i].AppUserID = xstring.ReplaceRange(userResult.AppUserID, 3, 7, "***")
+		invitUserResults[i].Email = email.EnEmail(userResult.Email)
+	}
+	// 获取邀请活动赠送奖金
+	var invitActivity string
+	err := mysql.DB.Model(models.TAppBonusActivity{}).Where(map[string]interface{}{
+		"activity_code": "invite_politely",
+		"is_valid":      1,
+		"item_code":     params.ItemCode,
+		"nation":        params.Nation,
+	}).Select("activity_set_json").Scan(&invitActivity).Error
+	if err != nil {
+		echo.Error(c, "Failed", "")
+		return
+	}
+	jsonObject := cmap.New().Items()
+	_ = json.Unmarshal([]byte(invitActivity), &jsonObject)
+	// 获取用户邀请赠送总金额
+	mysql.DB.Debug().Model(models.TAppBonusLog{}).Where(map[string]interface{}{
+		"activity_code": "invite_politely",
+		"item_code":     params.ItemCode,
+		"nation":        params.Nation,
+		"app_user_id":   User.AppUserId,
+	}).Select("IFNULL(SUM(amounts),0) AS invitBonus").Scan(&invitBonus)
+	// 获取本周邀请top1
+	// 获取本周的开始日期和结束日期
+	appItem := login.GetAppItem(params.Nation)
+	beginTimestamp := xtime.GetFirstDateOfATimeZoneWeek(0, appItem.TimeZone)
+	endTimestamp := xtime.GetEndDateOfATimeZoneWeek(0, appItem.TimeZone) // 一周的最后一天
+	var invitTop1Info *response.UserInvitTopOneResult
+	invitTop1Info = mapper.GetInvitTop1Info(params, beginTimestamp, endTimestamp)
+	var thisWeek response.ThisWeek
+	if invitTop1Info != nil {
+		s, _ := redis.Client.Get(keyenum.KeyInfo(keyenum.THIS_WEEK_INVIT_TOP_ONE_INFO).Key + params.Nation)
+		exp := endTimestamp.Unix() - time.Now().Unix()
+		if len(s) == 0 {
+			// 初始化
+			thisWeek.ThisBonus = jsonObject["amounts"].(float64) * 2
+			thisWeek.ThisEmail = email.EnEmail(email.GenerateRandomEmail())
+			marshal, _ := json.Marshal(thisWeek)
+			_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.THIS_WEEK_INVIT_TOP_ONE_INFO).Key+params.Nation, string(marshal), int(exp))
+		} else {
+			jsons := cmap.New().Items()
+			_ = json.Unmarshal([]byte(s), &jsons)
+			// 每天只能执行一次
+			currentDate := time.Now()
+			if LastExecutionDate == nil || LastExecutionDate.Before(currentDate) {
+				// 当前时间比较规则
+				thisWeek.ThisBonus = mine.GetDummyBonus(jsons["thisBonus"].(float64), jsonObject["amounts"].(float64))
+				thisWeek.ThisEmail = email.EnEmail(jsons["thisEmail"].(string))
+				marshal, _ := json.Marshal(thisWeek)
+				_, _ = redis.Client.Add(keyenum.KeyInfo(keyenum.THIS_WEEK_INVIT_TOP_ONE_INFO).Key+params.Nation, string(marshal), int(exp))
+				LastExecutionDate = &currentDate
+			} else {
+				thisWeek.ThisBonus = jsons["thisBonus"].(float64)
+				thisWeek.ThisEmail = jsons["thisEmail"].(string)
+			}
+		}
+	} else {
+		s, _ := redis.Client.Get(keyenum.KeyInfo(keyenum.THIS_WEEK_INVIT_TOP_ONE_INFO).Key + params.Nation)
+		object := cmap.New().Items()
+		_ = json.Unmarshal([]byte(s), &object)
+		if invitTop1Info.InvitAmounts >= object["thisBonus"].(float64) {
+			var tAppUser models.AppUser
+			mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", invitTop1Info.AppUserId).Find(&tAppUser)
+			thisWeek.ThisBonus = invitTop1Info.InvitAmounts
+			thisWeek.ThisEmail = email.EnEmail(tAppUser.Email)
+		} else {
+			// 当前时间比较规则
+			thisWeek.ThisBonus = object["thisBonus"].(float64)
+			thisWeek.ThisEmail = object["thisEmail"].(string)
+		}
+	}
+	result.Total = int(total)
+	result.InvitUser = invitUserResults
+	result.InvitBonus = jsonObject["amounts"].(float64)
+	result.MyBonus = invitBonus
+	result.ThisWeek = thisWeek
 	echo.Success(c, result, "ok")
 }
 
