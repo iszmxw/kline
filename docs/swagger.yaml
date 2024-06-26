@@ -1097,6 +1097,15 @@ definitions:
       total:
         type: integer
     type: object
+  response.InvitationCodes:
+    properties:
+      invitationCode:
+        description: 邀请码
+        type: string
+      parentCode:
+        description: 父邀请码
+        type: string
+    type: object
   response.ItemNationMessageParams:
     properties:
       DemoBalance:
@@ -3179,10 +3188,10 @@ paths:
         type: string
       - description: 获取用户邀请码及父邀请码的参数
         in: body
-        name: GetLanguagePageParams
+        name: Params
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.Base'
       produces:
       - application/json
       responses:
@@ -3193,7 +3202,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.InvitationCodes'
       summary: No.04.6-获取用户邀请码及父邀请码
       tags:
       - 5.我的模块

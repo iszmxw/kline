@@ -142,7 +142,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				mine.Any("/sumbmitPartnerEventByType.json", ClientV3Group.MineController.SumbmitPartnerEventByTypeHandler)
 				// 获取邀请用户进度 [ok]
 				mine.Any("/getInvitUsers.json", ClientV3Group.MineController.GetInvitUsersHandler)
-				// 获取用户邀请码及父邀请码 [todo]
+				// 获取用户邀请码及父邀请码 [ok]
 				mine.Any("/getInvitationCode.json", ClientV3Group.MineController.GetInvitationCodeHandler)
 				// 获取站内信列表 [todo]
 				mine.Any("/getUserMailMessage.json", ClientV3Group.MineController.GetUserMailMessageHandler)

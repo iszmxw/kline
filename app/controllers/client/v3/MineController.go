@@ -596,18 +596,24 @@ func (h *MineController) GetInvitUsersHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取用户邀请码及父邀请码的参数"
+// @Param Params body requests.Base true "获取用户邀请码及父邀请码的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.InvitationCodes "data数据结构体"
 // @Router /No.04.6/app/v3/mine/getInvitationCode.json [post]
 func (h *MineController) GetInvitationCodeHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.Base
+	var result response.InvitationCodes
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	var tAppUser models.AppUser
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", User.AppUserId).Find(&tAppUser)
+	result.InvitationCode = tAppUser.ReferralCode
+	result.ParentCode = tAppUser.ParentCode
 	echo.Success(c, result, "ok")
 }
 

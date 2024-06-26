@@ -37,3 +37,9 @@ type UserInvitTopOneResult struct {
 	AppUserId    string  `json:"appUserId"`    // 用户ID
 	InvitAmounts float64 `json:"invitAmounts"` // 获取本周获得奖励
 }
+
+// InvitationCodes 结构体定义
+type InvitationCodes struct {
+	InvitationCode string `json:"invitationCode"` // 邀请码
+	ParentCode     string `json:"parentCode"`     // 父邀请码
+}
