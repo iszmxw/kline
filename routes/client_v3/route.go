@@ -179,7 +179,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			// 8.VIP模块
 			vip := V3Route.Group("/vip")
 			{
-				// 查询用户 VIP 信息 [todo]
+				// 查询用户 VIP 信息 [ok]
 				vip.Any("/getUserVip.json", ClientV3Group.VipController.GetUserVipHandler)
 				// 个人中心页会员标识列表 [todo]
 				vip.Any("/getSettingVip.json", ClientV3Group.VipController.GetSettingVipHandler)

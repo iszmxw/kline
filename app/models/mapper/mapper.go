@@ -238,3 +238,32 @@ func UpdateMailStatus(itemCode, nation, deviceType, appUserId string) {
 	mysql.DB.Exec(sqlStr)
 	return
 }
+
+func QueryUserVipInfo(appUserId string) (VipUserInfo response.VipUserInfo) {
+	sqlStr := `
+		SELECT
+        b.user_level AS userLevel,
+        IFNULL(b.new_avatar,b.avatar) AS avatar,
+        a.vip_logo_url AS vipLogoUrl,
+        a.recharge_icon AS rechargeIcon,
+        IFNULL( SUM( c.amount ), 0 ) AS amount,
+        IFNULL( count(c.recharge_id), 0 ) AS tradeTimes,
+        b.app_user_id AS appUserId,
+        a.vip_name AS vipName,
+        a.recharge_standard AS rechargeStandard,
+        a.trading_standard AS tradingStandard
+        FROM
+        t_setting_vip_rule a
+        LEFT JOIN t_app_user b ON a.vip_level = b.user_level
+        AND a.item_code = b.item_code
+        AND a.nation = b.nation
+        LEFT JOIN t_recharge_order c ON c.app_user_id = b.app_user_id
+        AND c.recharge_order_status = 1
+        AND c.STATUS = '02'
+        WHERE
+        b.app_user_id = #{appUserId}
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	mysql.DB.Raw(sqlStr).Scan(&VipUserInfo)
+	return
+}

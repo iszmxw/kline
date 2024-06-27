@@ -313,6 +313,28 @@ definitions:
     - languageCode
     - nation
     type: object
+  requests.GetSettingVipParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      deviceType:
+        description: 设备类型
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.GetUserBankCards:
     properties:
       appOsType:
@@ -1606,6 +1628,15 @@ definitions:
         description: 保留小数位数
         type: integer
     type: object
+  response.VipRankInfo:
+    properties:
+      rankAmount:
+        description: 会员等级金额
+        type: string
+      rankName:
+        description: 会员等级名称
+        type: string
+    type: object
   response.VipRuleBean:
     properties:
       vipIcon:
@@ -1620,6 +1651,49 @@ definitions:
       vipRechargeStandard:
         description: VIP 达标条件
         type: number
+    type: object
+  response.VipUserInfo:
+    properties:
+      amount:
+        description: 累计充值金额
+        type: number
+      appUserId:
+        description: 用户ID
+        type: string
+      avatar:
+        description: 用户头像
+        type: string
+      rechargeIcon:
+        description: 充值页面快捷金额对应小图标
+        type: string
+      rechargeStandard:
+        description: 充值达标金融
+        type: number
+      rechargeStandardList:
+        description: 充值VIP纯数字额度信息
+        items:
+          type: string
+        type: array
+      rechargeStandardList2:
+        description: 充值VIP额度列表对象信息
+        items:
+          $ref: '#/definitions/response.VipRankInfo'
+        type: array
+      tradeTimes:
+        description: 交易次数
+        type: integer
+      tradingStandard:
+        description: 交易达标次数
+        type: integer
+      userLevel:
+        description: 客户当前等级
+        type: integer
+      vipLogoUrl:
+        description: 用户VIP等级图标
+        type: string
+      vipName:
+        description: 会员等级前缀
+        type: string
     type: object
   response.WeekDataList:
     properties:
@@ -4137,10 +4211,10 @@ paths:
         type: string
       - description: 查询用户 VIP 信息的参数
         in: body
-        name: GetLanguagePageParams
+        name: GetSettingVipParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetSettingVipParams'
       produces:
       - application/json
       responses:
@@ -4151,7 +4225,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.VipUserInfo'
       summary: No.08.1-查询用户 VIP 信息
       tags:
       - 8.VIP模块
