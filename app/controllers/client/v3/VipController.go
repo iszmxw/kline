@@ -1,6 +1,7 @@
 package v3
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"goapi/app/models"
@@ -11,6 +12,7 @@ import (
 	"goapi/pkg/echo"
 	"goapi/pkg/mysql"
 	"goapi/pkg/validate"
+	"strings"
 )
 
 // 银行模块
@@ -87,17 +89,47 @@ func (h *VipController) GetUserVipHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "个人中心页会员标识列表的参数"
+// @Param GetSettingVipParams body requests.GetSettingVipParams true "个人中心页会员标识列表的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.VipRuleInfo "data数据结构体"
 // @Router /No.08.2/app/v3/vip/getSettingVip.json [post]
 func (h *VipController) GetSettingVipHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.GetSettingVipParams
+	var result []response.VipRuleInfo
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
+	}
+	if len(params.DeviceType) == 0 {
+		echo.Error(c, "ParamsCanNotBeNull", "")
+		return
+	}
+	var list []response.VipRuleInfo
+	mysql.DB.Debug().Model(models.TSettingVipRule{}).Where(map[string]interface{}{
+		"item_code": params.ItemCode,
+		"nation":    params.Nation,
+		"is_valid":  1,
+	}).Order("vip_level desc").Find(&list)
+	for _, sendRechargeRule := range list {
+		var standardShowWord []response.StandardShowWord
+		var welfareShowWord []response.WelfareShowWord
+		var widrawFeeJson response.VipWidrawFeeJson
+		var color response.VipColor
+		_ = json.Unmarshal([]byte(sendRechargeRule.StandardShowWord.(string)), &standardShowWord)
+		_ = json.Unmarshal([]byte(sendRechargeRule.WelfareShowWord.(string)), &welfareShowWord)
+		_ = json.Unmarshal([]byte(sendRechargeRule.WithdrawFeeJson.(string)), &widrawFeeJson)
+		_ = json.Unmarshal([]byte(sendRechargeRule.Color.(string)), &color)
+		if strings.EqualFold("android", params.DeviceType) {
+			sendRechargeRule.Color = color.Andorid
+		}
+		if strings.EqualFold("ios", params.DeviceType) {
+			sendRechargeRule.Color = color.Ios
+		}
+		sendRechargeRule.StandardShowWord = standardShowWord
+		sendRechargeRule.WelfareShowWord = welfareShowWord
+		sendRechargeRule.WithdrawFeeJson = widrawFeeJson
+		result = append(result, sendRechargeRule)
 	}
 	echo.Success(c, result, "ok")
 }

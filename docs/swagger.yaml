@@ -1652,6 +1652,56 @@ definitions:
         description: VIP 达标条件
         type: number
     type: object
+  response.VipRuleInfo:
+    properties:
+      action:
+        description: 提升特权按钮：1去充值、2去交易
+      color:
+        description: 进度条颜色
+      lostReturnRate:
+        description: 亏损返还比例
+        type: number
+      rechargeIcon:
+        description: 充值页面快捷金额对应小图标
+        type: string
+      rechargeShowWord:
+        description: 充值页面快捷金额文案
+        type: string
+      rechargeStandard:
+        description: 充值达标金额
+        type: number
+      standardShowWord:
+        description: 会员达标条件文案
+      tradingStandard:
+        description: 交易达标次数
+        type: integer
+      usdRechargeStandard:
+        description: 是否使用充值金额作为标准 1是 0否
+      usdTrdingStandard:
+        description: 是否使用交易次数作为标准 1是 0否
+      vipBanner:
+        description: 会员卡片图标
+        type: string
+      vipLevel:
+        description: 会员等级
+        type: integer
+      vipLogoUrl:
+        description: 用户VIP等级图标
+        type: string
+      vipName:
+        description: 会员等级前缀
+        type: string
+      welfareShowWord:
+        description: 会员享受福利文案
+      withdrawAmounts:
+        description: 增加单日提现金额
+        type: number
+      withdrawFeeJson:
+        description: 提现手续费规则
+      withdrawTimes:
+        description: 增加单日提现次数
+        type: number
+    type: object
   response.VipUserInfo:
     properties:
       amount:
@@ -4273,10 +4323,10 @@ paths:
         type: string
       - description: 个人中心页会员标识列表的参数
         in: body
-        name: GetLanguagePageParams
+        name: GetSettingVipParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetSettingVipParams'
       produces:
       - application/json
       responses:
@@ -4287,7 +4337,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.VipRuleInfo'
       summary: No.08.2-个人中心页会员标识列表
       tags:
       - 8.VIP模块

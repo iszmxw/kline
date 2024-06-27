@@ -181,7 +181,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			{
 				// 查询用户 VIP 信息 [ok]
 				vip.Any("/getUserVip.json", ClientV3Group.VipController.GetUserVipHandler)
-				// 个人中心页会员标识列表 [todo]
+				// 个人中心页会员标识列表 [ok]
 				vip.Any("/getSettingVip.json", ClientV3Group.VipController.GetSettingVipHandler)
 			}
 

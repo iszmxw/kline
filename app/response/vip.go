@@ -35,3 +35,26 @@ type TradeOrderInfo struct {
 	TradeTimes  int     `json:"tradeTimes"`  // 交易次数
 	TradeAmount float64 `json:"tradeAmount"` // 交易累计金额
 }
+
+type StandardShowWord struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	Type    string `json:"type"`
+}
+
+type WelfareShowWord struct {
+	Icon    string `json:"icon"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	Type    string `json:"type"`
+}
+
+type VipWidrawFeeJson struct {
+	Basic   string `json:"basic"`
+	FeeRate string `json:"feeRate"`
+}
+
+type VipColor struct {
+	Andorid string `json:"andorid"`
+	Ios     string `json:"ios"`
+}
