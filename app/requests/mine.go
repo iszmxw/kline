@@ -23,3 +23,9 @@ type GetUserMailMessageParams struct {
 	DeviceType string `json:"deviceType"` // 设备类型
 	PageInfo
 }
+
+type SubmitPaymentVoucher struct {
+	Base
+	OrderId string `json:"orderId"`                   // 支付订单号
+	Photo   string `json:"photo" validate:"required"` // 支付凭证照片
+}

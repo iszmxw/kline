@@ -538,6 +538,32 @@ definitions:
     - languageCode
     - nation
     type: object
+  requests.SubmitPaymentVoucher:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      orderId:
+        description: 支付订单号
+        type: string
+      photo:
+        description: 支付凭证照片
+        type: string
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    - photo
+    type: object
   requests.SubmitUpdateUserInfo:
     properties:
       appOsType:
@@ -1430,6 +1456,12 @@ definitions:
         type: number
       thisEmail:
         description: 邮箱
+        type: string
+    type: object
+  response.UploadPhoto:
+    properties:
+      url:
+        description: 图片地址
         type: string
     type: object
   response.UserBankCardsParam:
@@ -3489,10 +3521,10 @@ paths:
         type: string
       - description: 上传照片参数
         in: body
-        name: GetLanguagePageParams
+        name: SubmitPaymentVoucher
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.SubmitPaymentVoucher'
       produces:
       - application/json
       responses:
@@ -3503,7 +3535,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.UploadPhoto'
       summary: No.04.8-上传照片
       tags:
       - 5.我的模块

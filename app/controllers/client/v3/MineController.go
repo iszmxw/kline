@@ -686,17 +686,67 @@ func (h *MineController) GetUserMailMessageHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "上传照片参数"
+// @Param SubmitPaymentVoucher body requests.SubmitPaymentVoucher true "上传照片参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.UploadPhoto "data数据结构体"
 // @Router /No.04.8/app/v3/mine/uploadPhoto.json [post]
 func (h *MineController) UploadPhotoHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.SubmitPaymentVoucher
+	var result response.UploadPhoto
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	// 上传操作
+	var uploadData *models.TSystemDataDictionary
+	mysql.DB.Debug().Model(models.TSystemDataDictionary{}).Where(map[string]interface{}{
+		"name": SystemDataDictionaryParams.Info(SystemDataDictionaryParams.IMAGES_UPLOAD_ADDRESS).Name,
+	}).Find(&uploadData)
+	if nil == uploadData {
+		logger.Error(errors.New("检查数据库配置"))
+		echo.Error(c, "Failed", "")
+		return
+	}
+	paramsMap := map[string]interface{}{
+		"serviceType": "qrt",
+		"sourceType":  "qrt",
+		"extName":     "png",
+		"base64Str":   params.Photo,
+	}
+	marshal, err := json.Marshal(paramsMap)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
+		return
+	}
+	payload := strings.NewReader(string(marshal))
+	resp, err := http.Post(uploadData.Value, "application/json", payload)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err = Body.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	var fileUrlResJson response.RespUploadBase64Str
+	err = json.Unmarshal(body, &fileUrlResJson)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
+		return
+	}
+	if !fileUrlResJson.Success {
+		logger.Error(errors.New("上传失败"))
+		echo.Error(c, "Failed", "")
+		return
+	}
+	// 赋值
+	result.Url = fileUrlResJson.Data.Url
 	echo.Success(c, result, "ok")
 }

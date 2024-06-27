@@ -56,3 +56,7 @@ type GetUserMailMessage struct {
 	Total int64                   `json:"total"` // 总条数
 	Data  []UserMailMessageResult `json:"data"`  // 列表数据
 }
+
+type UploadPhoto struct {
+	Url string `json:"url"` // 图片地址
+}

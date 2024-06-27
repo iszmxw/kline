@@ -146,7 +146,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				mine.Any("/getInvitationCode.json", ClientV3Group.MineController.GetInvitationCodeHandler)
 				// 获取站内信列表 [ok]
 				mine.Any("/getUserMailMessage.json", ClientV3Group.MineController.GetUserMailMessageHandler)
-				// 上传照片 [todo]
+				// 上传照片 [ok]
 				mine.Any("/uploadPhoto.json", ClientV3Group.MineController.UploadPhotoHandler)
 			}
 
