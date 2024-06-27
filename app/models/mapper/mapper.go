@@ -165,3 +165,76 @@ func GetMineInvitUserList(itemCode, referralCode, index, ends, nation string) (i
 	mysql.DB.Raw(sqlStr).Scan(&invitUserResults)
 	return
 }
+
+func GetUserMailMessageListCounts(itemCode, appUserId, deviceType, nation string, date int64) (total int64) {
+	sqlStr := `
+		SELECT
+      count(tomsl.app_user_id)
+      FROM t_notice_log tomsl
+      LEFT JOIN t_notice_message toms ON toms.message_id = tomsl.message_id
+      LEFT JOIN t_notice tom ON tom.mail_id = tomsl.mail_id
+      WHERE
+      tomsl.item_code = #{itemCode}
+      AND tomsl.nation = #{nation}
+      AND tomsl.decive_brand = #{deviceType}
+      AND (tomsl.app_user_id = #{appUserId} OR tomsl.app_user_id = 'ALL')
+      AND tom.send_state = 1
+      AND tom.send_time <![CDATA[>=]]> #{date}
+      AND (tom.send_time / 1000) >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(),INTERVAL 7 DAY))
+      ORDER BY tom.send_time DESC
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", deviceType)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{date}", fmt.Sprintf("%v", date))
+	mysql.DB.Raw(sqlStr).Scan(&total)
+	return
+}
+
+func GetUserMailMessageList(itemCode, appUserId, deviceType, nation string, date int64) (userMailMessageList []response.UserMailMessageResult) {
+	sqlStr := `
+		SELECT toms.mail_title as title,
+      toms.notice_content AS content,
+      toms.url AS jumpUrl,
+      tom.send_time AS sendTime ,
+      tomsl.is_show AS isFirstShow
+      FROM t_notice_log tomsl
+      LEFT JOIN t_notice_message toms ON toms.message_id = tomsl.message_id
+      LEFT JOIN t_notice tom ON tom.mail_id = tomsl.mail_id
+      WHERE
+      tomsl.item_code = #{itemCode}
+      AND tomsl.nation = #{nation}
+      AND tomsl.decive_brand = #{deviceType}
+      AND (tomsl.app_user_id = #{appUserId} OR tomsl.app_user_id = 'ALL')
+      AND tom.send_state = 1
+      AND tom.send_time <![CDATA[>=]]> #{date}
+      AND (tom.send_time / 1000) >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(),INTERVAL 7 DAY))
+      ORDER BY tom.send_time DESC
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", deviceType)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{date}", fmt.Sprintf("%v", date))
+	mysql.DB.Raw(sqlStr).Scan(&userMailMessageList)
+	return
+}
+
+func UpdateMailStatus(itemCode, nation, deviceType, appUserId string) {
+	sqlStr := `
+		update t_notice_log tomsl
+      set tomsl.read_state = 1
+      where tomsl.is_show = 1
+      AND tomsl.item_code = #{itemCode}
+      AND tomsl.nation = #{nation}
+      AND tomsl.decive_brand = #{deviceType}
+      AND (tomsl.app_user_id = #{appUserId} OR tomsl.app_user_id = 'ALL')
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", deviceType)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	mysql.DB.Exec(sqlStr)
+	return
+}

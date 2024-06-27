@@ -17,3 +17,9 @@ type MineInvitUserParams struct {
 	ReferralCode string `json:"referralCode" validate:"required"` // 埋点事件类型  1完成教程 2跳过教程
 	PageInfo
 }
+
+type GetUserMailMessageParams struct {
+	Base
+	DeviceType string `json:"deviceType"` // 设备类型
+	PageInfo
+}

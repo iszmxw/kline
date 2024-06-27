@@ -43,3 +43,16 @@ type InvitationCodes struct {
 	InvitationCode string `json:"invitationCode"` // 邀请码
 	ParentCode     string `json:"parentCode"`     // 父邀请码
 }
+
+type UserMailMessageResult struct {
+	Title       string `json:"title"`         // 标题
+	Content     string `json:"content"`       // 站内信内容
+	JumpUrl     string `json:"jump_url"`      // 跳转地址
+	SendTime    int64  `json:"send_time"`     // 发送时间
+	IsFirstShow int    `json:"is_first_show"` // 是否首次展示
+}
+
+type GetUserMailMessage struct {
+	Total int64                   `json:"total"` // 总条数
+	Data  []UserMailMessageResult `json:"data"`  // 列表数据
+}

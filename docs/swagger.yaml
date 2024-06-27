@@ -338,6 +338,34 @@ definitions:
     - languageCode
     - nation
     type: object
+  requests.GetUserMailMessageParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      deviceType:
+        description: 设备类型
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.GetUserRankParams:
     properties:
       appOsType:
@@ -1088,6 +1116,17 @@ definitions:
         description: 亏损返还比例
         type: number
     type: object
+  response.GetUserMailMessage:
+    properties:
+      data:
+        description: 列表数据
+        items:
+          $ref: '#/definitions/response.UserMailMessageResult'
+        type: array
+      total:
+        description: 总条数
+        type: integer
+    type: object
   response.GetUserWithdrawList:
     properties:
       bankList:
@@ -1416,6 +1455,24 @@ definitions:
       isConfig:
         description: 是否默认 1是0否
         type: integer
+    type: object
+  response.UserMailMessageResult:
+    properties:
+      content:
+        description: 站内信内容
+        type: string
+      is_first_show:
+        description: 是否首次展示
+        type: integer
+      jump_url:
+        description: 跳转地址
+        type: string
+      send_time:
+        description: 发送时间
+        type: integer
+      title:
+        description: 标题
+        type: string
     type: object
   response.UserOperationRuleBean:
     properties:
@@ -3312,10 +3369,10 @@ paths:
         type: string
       - description: 获取站内信列表的参数
         in: body
-        name: GetLanguagePageParams
+        name: GetUserMailMessageParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetUserMailMessageParams'
       produces:
       - application/json
       responses:
@@ -3326,7 +3383,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.GetUserMailMessage'
       summary: No.04.7-获取站内信列表
       tags:
       - 5.我的模块

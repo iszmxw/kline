@@ -629,18 +629,48 @@ func (h *MineController) GetInvitationCodeHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取站内信列表的参数"
+// @Param GetUserMailMessageParams body requests.GetUserMailMessageParams true "获取站内信列表的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.GetUserMailMessage "data数据结构体"
 // @Router /No.04.7/app/v3/mine/getUserMailMessage.json [post]
 func (h *MineController) GetUserMailMessageHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.GetUserMailMessageParams
+	var result response.GetUserMailMessage
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	if len(params.DeviceType) == 0 {
+		agent := c.GetHeader("User-Agent")
+		if strings.Contains(agent, "Android") || strings.Contains(agent, "okhttp") {
+			params.DeviceType = "android"
+		} else if strings.Contains(agent, "iPhone") ||
+			strings.Contains(agent, "iPod") ||
+			strings.Contains(agent, "iPad") ||
+			strings.Contains(agent, "CFNetwork") ||
+			strings.Contains(agent, "SmartIOS") {
+			params.DeviceType = "apple"
+		} else {
+			params.DeviceType = agent
+		}
+	}
+	var tAppUser models.AppUser
+	appUser, _ := c.Get("user")
+	User := appUser.(response.ClientUserBeans)
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", User.AppUserId).Find(&tAppUser)
+	queryTime := tAppUser.CreateTs
+	nation := tAppUser.Nation
+	itemCode := tAppUser.ItemCode
+	total := mapper.GetUserMailMessageListCounts(itemCode, User.AppUserId, params.DeviceType, nation, queryTime)
+	if params.PageSize*(params.PageNum-1) > int(total) {
+		echo.Error(c, "NextPageIsGone", "")
+		return
+	}
+	userMailMessageList := mapper.GetUserMailMessageList(itemCode, User.AppUserId, params.DeviceType, nation, queryTime)
+	result.Total = total
+	result.Data = userMailMessageList
+	mapper.UpdateMailStatus(itemCode, nation, params.DeviceType, User.AppUserId)
 	echo.Success(c, result, "ok")
 }
 
