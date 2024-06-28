@@ -805,6 +805,10 @@ func PushToast(ws *wss.WsConn) {
 // 推送Rate socket消息
 
 func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
+	var AppUser response.AppUser
+	mysql.DB.Model(models.AppUser{}).
+		Where("app_user_id", ws.AppUserId).
+		Find(&AppUser)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		if len(params.ItemCode) <= 0 {
@@ -813,17 +817,22 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 		if len(params.Nation) <= 0 {
 			params.Nation = "Indonesia"
 		}
-		var PushRateData []response.PushRateData
+		var list []response.PushRateData
 		DB := mysql.DB
-		err := DB.Model(models.TradingAssets{}).Find(&PushRateData).Error
+		err := DB.Model(models.TradingAssets{}).Find(&list).Error
 		if err != nil {
 			SocketResp(ws, websocket.TextMessage, NoData)
 			logger.Error(err)
 			return
 		}
+		for i := range list {
+			if AppUser.IsNew == 1 {
+				list[i].ReturnRate = 0.75
+			}
+		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "09",
-			"data": PushRateData,
+			"data": list,
 		})
 		if err != nil {
 			SocketResp(ws, websocket.TextMessage, NoData)
