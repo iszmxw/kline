@@ -17,3 +17,23 @@ type UserTradeMessage struct {
 	HisTradingCount      int     `json:"hisTradingCount"`      // 历史交易次数
 	HisTradingAmounts    float64 `json:"hisTradingAmounts"`    // 历史交易金额
 }
+
+type GetTradingAssetsResult struct {
+	TradingAssetsList []TradingAssetsBean `json:"tradingAssetsList"` // 用户ID
+	Total             int                 `json:"total"`             // 是否新客户 1是 0否
+}
+
+// TradingAssetsBean 表示交易资产的结构体
+type TradingAssetsBean struct {
+	Id             int64   `json:"id"`             // 资产表主键ID
+	AssetsName     string  `json:"assetsName"`     // 资产名称
+	AssetsCode     string  `json:"assetsCode"`     // 资产编码
+	AssetsLogoUrl  string  `json:"assetsLogoUrl"`  // 资产logo链接
+	ReturnRate     float64 `json:"returnRate"`     // 收益率
+	AssetsStatus   int     `json:"assetsStatus"`   // 资产状态 1正常 2休市 3下架
+	IsValid        int     `json:"isValid"`        // 是否有效 1是 0否
+	IsShow         int     `json:"isShow"`         // 是否展示 1是 0否
+	PointNumber    int     `json:"pointNumber"`    // 保留小数点位数
+	AssetsTypeCode string  `json:"assetsTypeCode"` // 资产类型编码
+	AssetsTypeName string  `json:"assetsTypeName"` // 资产类型名称
+}

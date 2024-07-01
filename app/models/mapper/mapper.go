@@ -267,3 +267,29 @@ func QueryUserVipInfo(appUserId string) (VipUserInfo response.VipUserInfo) {
 	mysql.DB.Raw(sqlStr).Scan(&VipUserInfo)
 	return
 }
+
+func GetTradingAssets(assetsName string, index, ends *int) (TradingAssetsBean []response.TradingAssetsBean) {
+	sqlStr := `
+		select a.id,
+		       a.assets_name as 'assetsName',
+		       a.assets_code as 'assetsCode',
+		       a.assets_logo_url as 'assetsLogoUrl',
+		       a.return_rate as 'returnRate',
+		       a.assets_status as 'assetsStatus',
+			   a.is_valid as 'isValid',
+			   a.is_show as 'isShow',
+		       a.point_number as 'pointNumber',
+		       a.assets_type_code as 'assetsTypeCode' ,
+		       a.assets_type_name as 'assetsTypeName' 
+		from t_trading_assets as a 
+		where 1=1
+		${assetsName}
+		ORDER BY a.sort ASC
+		LIMIT #{index},#{ends}
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "${assetsName}", fmt.Sprintf(`and a.assets_name like '%%%v%%'`, assetsName))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
+	mysql.DB.Raw(sqlStr).Scan(&TradingAssetsBean)
+	return
+}

@@ -232,6 +232,34 @@ definitions:
     - languageCode
     - nation
     type: object
+  requests.GetAssetsListParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      assetsName:
+        description: 资产名称
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.GetBonusRecordsParams:
     properties:
       activityCode:
@@ -4509,10 +4537,10 @@ paths:
         type: string
       - description: 获取资产列表的参数
         in: body
-        name: GetLanguagePageParams
+        name: GetAssetsListParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetAssetsListParams'
       produces:
       - application/json
       responses:

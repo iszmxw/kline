@@ -5,16 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
+	"goapi/app/models/mapper"
 	"goapi/app/requests"
+	"goapi/app/response"
 	goadjust "goapi/pkg/adjust"
 	"goapi/pkg/commonUtils"
+	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
+	"goapi/pkg/page"
+	"goapi/pkg/validate"
 	wss "goapi/pkg/websocket"
 	"goapi/service/binary-monitoring/pkg"
 	"strings"
@@ -784,12 +790,48 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取资产列表的参数"
+// @Param GetAssetsListParams body requests.GetAssetsListParams true "获取资产列表的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
 // @Router /No.10.1/app/v3/trade/getAssetsList.json [post]
 func (h *TradeController) GetAssetsListHandler(c *gin.Context) {
-	return
+	var params requests.GetAssetsListParams
+	var result response.GetTradingAssetsResult
+	var appUser models.AppUser
+	var relist []response.TradingAssetsBean
+	var total int64
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	if params.PageSize == 0 || params.PageNum == 0 {
+		params.PageNum = 1
+		params.PageSize = 10
+	}
+	user, _ := c.Get("user")
+	mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", user.(response.ClientUserBeans).AppUserId).Find(&appUser)
+	where := cmap.New().Items()
+	if len(params.AssetsName) > 0 {
+		where["assets_name"] = params.AssetsName
+	}
+	mysql.DB.Debug().Model(models.TradingAssets{}).Where(where).Count(&total)
+	if total > 0 {
+		pagea := page.NewPageApple(params.PageSize, params.PageNum)
+		list := mapper.GetTradingAssets(params.AssetsName, pagea.Index, pagea.Ends)
+		for _, tTradingAssets := range list {
+			if tTradingAssets.IsValid == 0 {
+				tTradingAssets.AssetsStatus = 2
+			}
+			if appUser.IsNew == 1 {
+				tTradingAssets.ReturnRate = 0.75
+			}
+			relist = append(relist, tTradingAssets)
+		}
+	}
+	result.Total = int(total)
+	result.TradingAssetsList = relist
+	echo.Success(c, result, "ok")
 }
 
 // GetTradeHistoryHandler
