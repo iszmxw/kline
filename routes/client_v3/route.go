@@ -198,7 +198,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			{
 				// 获取资产列表 [ok]
 				trade.Any("/getAssetsList.json", ClientV3Group.TradeController.GetAssetsListHandler)
-				// 查询交易历史 [todo]
+				// 查询交易历史 [ok]
 				trade.Any("/getTradeHistorys.json", ClientV3Group.TradeController.GetTradeHistoryHandler)
 			}
 

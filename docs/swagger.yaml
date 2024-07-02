@@ -363,6 +363,40 @@ definitions:
     - languageCode
     - nation
     type: object
+  requests.GetTradeHistorysParams:
+    properties:
+      amountType:
+        description: 交易类型
+        type: string
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+      today:
+        description: 是否今日 1-是 0-否
+        type: string
+      tradeOrderId:
+        description: 订单号
+        type: string
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.GetUserBankCards:
     properties:
       appOsType:
@@ -1177,6 +1211,37 @@ definitions:
       total:
         type: integer
     type: object
+  response.GetTradeHistorys:
+    properties:
+      NextPage:
+        description: 资产名称
+        type: integer
+      list:
+        description: 资产名称
+        items:
+          $ref: '#/definitions/response.TradingOrderList'
+        type: array
+      nowDate:
+        description: 资产名称
+        type: string
+      pageNum:
+        description: 资产名称
+        type: integer
+      total:
+        description: 资产表主键ID
+        type: integer
+    type: object
+  response.GetTradingAssetsResult:
+    properties:
+      total:
+        description: 是否新客户 1是 0否
+        type: integer
+      tradingAssetsList:
+        description: 用户ID
+        items:
+          $ref: '#/definitions/response.TradingAssetsBean'
+        type: array
+    type: object
   response.GetUserLossReturn:
     properties:
       todayBonusReturn:
@@ -1506,6 +1571,105 @@ definitions:
         type: number
       thisEmail:
         description: 邮箱
+        type: string
+    type: object
+  response.TradingAssetsBean:
+    properties:
+      assetsCode:
+        description: 资产编码
+        type: string
+      assetsLogoUrl:
+        description: 资产logo链接
+        type: string
+      assetsName:
+        description: 资产名称
+        type: string
+      assetsStatus:
+        description: 资产状态 1正常 2休市 3下架
+        type: integer
+      assetsTypeCode:
+        description: 资产类型编码
+        type: string
+      assetsTypeName:
+        description: 资产类型名称
+        type: string
+      id:
+        description: 资产表主键ID
+        type: integer
+      isShow:
+        description: 是否展示 1是 0否
+        type: integer
+      isValid:
+        description: 是否有效 1是 0否
+        type: integer
+      pointNumber:
+        description: 保留小数点位数
+        type: integer
+      returnRate:
+        description: 收益率
+        type: number
+    type: object
+  response.TradingOrderList:
+    properties:
+      amountType:
+        description: 订单交易金额类型
+        type: integer
+      amounts:
+        description: 交易金额
+        type: number
+      assetsLogoUrl:
+        description: 资产logo的URL
+        type: string
+      assetsName:
+        description: 资产名称
+        type: string
+      beginAssetsPrice:
+        description: 起始资产指数值
+        type: string
+      currencyType:
+        description: 货币类型
+        type: string
+      duration:
+        description: 时长
+        type: integer
+      endAssetsPrice:
+        description: 截止资产指数值
+        type: number
+      planGainAmounts:
+        description: 预估收益金额
+        type: number
+      pointNumber:
+        description: 保留小数点位数
+        type: integer
+      quizResult:
+        description: 竞猜结果 1对 0错
+        type: integer
+      realGainAmounts:
+        description: 真实收益金额
+        type: number
+      returnRate:
+        description: 收益
+        type: number
+      showAmounts:
+        description: 展示交易金额
+        type: string
+      showPlanGainAmounts:
+        description: 展示预估收益金额
+        type: string
+      showRealGainAmounts:
+        description: 展示收益金额
+        type: string
+      tradeBeginDate:
+        description: 交易起始日期
+        type: string
+      tradeEndDate:
+        description: 交易截止日期
+        type: string
+      tradeOrderId:
+        description: 订单ID
+        type: string
+      upDownType:
+        description: 买涨买跌类型
         type: string
     type: object
   response.UploadPhoto:
@@ -4551,7 +4715,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.GetTradingAssetsResult'
       summary: No.10.1-获取资产列表
       tags:
       - 10.交易模块
@@ -4599,10 +4763,10 @@ paths:
         type: string
       - description: 查询交易历史的参数
         in: body
-        name: GetLanguagePageParams
+        name: GetTradeHistorysParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.GetTradeHistorysParams'
       produces:
       - application/json
       responses:
@@ -4613,7 +4777,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.GetTradeHistorys'
       summary: No.10.2-查询交易历史
       tags:
       - 10.交易模块

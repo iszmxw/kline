@@ -293,3 +293,130 @@ func GetTradingAssets(assetsName string, index, ends *int) (TradingAssetsBean []
 	mysql.DB.Raw(sqlStr).Scan(&TradingAssetsBean)
 	return
 }
+
+func GetTradingOrderVirtual(appUserId, itemCode, tradeOrderId, nation string, amountType []string, index, ends *int) (GetTradingOrderParams []response.GetTradingOrderParams) {
+	sqlStr := `
+		SELECT a.*,
+		       b.point_number AS 'pointNumber'
+		FROM(
+	        select
+	        a.trade_order_id AS tradeOrderId,
+	        a.app_user_id AS appUserId,
+	        a.amounts AS amounts,
+	        a.plan_gain_amounts AS planGainAmounts,
+			(a.real_gain_amounts + IFNULL(a.equal_return_amounts, 0))  AS realGainAmounts,
+	        a.item_code AS itemCode,
+	        a.assets_id AS assetsId,
+	        a.assets_name AS assetsName,
+	        a.assets_logo_url AS assetsLogoUrl,
+	        a.begin_assets_price AS beginAssetsPrice,
+	        a.end_assets_price AS endAssetsPrice,
+	        a.trade_begin_date AS tradeBeginDate,
+	        a.trade_end_date AS tradeEndDate,
+	        a.quiz_result AS quizResult,
+	        a.is_valid AS isValid,
+	        a.create_date AS createDate,
+	        a.update_date AS updateDate,
+	        a.amount_type AS amountType,
+	        a.up_down_type AS upDownType,
+	        a.real_cost_amounts  AS realCostAmounts,
+	        a.return_rate AS returnRate,
+			a.currency_type AS currencyType
+	        from t_trading_order_virtual a
+	        where a.is_valid = 1
+	        AND a.app_user_id = #{appUserId}
+	        AND a.item_code = #{itemCode}
+	        `
+	if len(amountType) > 0 {
+		sqlStr += ` AND a.amount_type in(#{amountType})`
+	}
+	if len(tradeOrderId) > 0 {
+		sqlStr += ` and a.trade_order_id = #{tradeOrderId}`
+	}
+	if len(nation) > 0 {
+		sqlStr += ` and a.nation = #{nation}`
+	}
+	sqlStr += `
+        ) AS a 
+		INNER JOIN t_trading_assets AS b
+		ON a.assetsId = b.id
+		where 1=1
+	    ORDER BY a.createDate DESC 
+		LIMIT #{index},#{ends}
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{amountType}", fmt.Sprintf("%v", strings.Join(amountType, ",")))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{tradeOrderId}", tradeOrderId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
+	mysql.DB.Raw(sqlStr).Scan(&GetTradingOrderParams)
+	return
+}
+
+func GetTradingOrder(appUserId, itemCode, tradeOrderId, nation string, Now int64, amountType []string, index, ends *int) (GetTradingOrderParams []response.GetTradingOrderParams) {
+	sqlStr := `
+		SELECT a.*,
+		       b.point_number AS 'pointNumber'
+		FROM(
+		        select
+	            a.trade_order_id AS tradeOrderId,
+	            a.app_user_id AS appUserId,
+	            a.amounts AS amounts,
+	            a.plan_gain_amounts AS planGainAmounts,
+				(a.real_gain_amounts + IFNULL(a.equal_return_amounts, 0)) AS realGainAmounts,
+	            a.item_code AS itemCode,
+	            a.assets_id AS assetsId,
+	            a.assets_name AS assetsName,
+	            a.assets_logo_url AS assetsLogoUrl,
+	            a.begin_assets_price AS beginAssetsPrice,
+	            a.end_assets_price AS endAssetsPrice,
+	            a.trade_begin_date AS tradeBeginDate,
+	            a.trade_end_date AS tradeEndDate,
+	            a.quiz_result AS quizResult,
+	            a.is_valid AS isValid,
+	            a.create_date AS createDate,
+	            a.update_date AS updateDate,
+	            a.amount_type AS amountType,
+	            a.up_down_type AS upDownType,
+	            a.real_cost_amounts  AS realCostAmounts,
+	            a.user_gain_amounts AS userGainAmounts,
+	            a.return_rate AS returnRate,
+	            a.currency_type AS currencyType
+	        from t_trading_order a
+	        where a.is_valid = 1
+	            AND a.app_user_id = #{appUserId}
+	            AND a.item_code = #{itemCode}
+`
+	if len(amountType) > 0 {
+		sqlStr += ` AND a.amount_type in(#{amountType})`
+	}
+	if len(tradeOrderId) > 0 {
+		sqlStr += ` and a.trade_order_id = #{tradeOrderId}`
+	}
+	if Now > 0 {
+		sqlStr += ` and a.create_ts >= #{Now}}`
+	}
+	if len(nation) > 0 {
+		sqlStr += ` and a.nation = #{nation}`
+	}
+	sqlStr += `
+        ) AS a 
+		INNER JOIN t_trading_assets AS b
+		ON a.assetsId = b.id
+		where 1=1
+	    ORDER BY a.createDate DESC
+		LIMIT #{index},#{ends}
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{amountType}", fmt.Sprintf("%v", strings.Join(amountType, ",")))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{tradeOrderId}", tradeOrderId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{Now}", fmt.Sprintf("%v", Now))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
+	mysql.DB.Raw(sqlStr).Scan(&GetTradingOrderParams)
+	return
+}

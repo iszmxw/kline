@@ -13,8 +13,10 @@ import (
 	"goapi/app/models/mapper"
 	"goapi/app/requests"
 	"goapi/app/response"
+	"goapi/app/service/login"
 	goadjust "goapi/pkg/adjust"
 	"goapi/pkg/commonUtils"
+	"goapi/pkg/decimal"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
@@ -22,6 +24,7 @@ import (
 	"goapi/pkg/page"
 	"goapi/pkg/validate"
 	wss "goapi/pkg/websocket"
+	"goapi/pkg/xtime"
 	"goapi/service/binary-monitoring/pkg"
 	"strings"
 	"time"
@@ -792,7 +795,7 @@ func UpdateUserBonusBalance(sourceIndex, appUserId, types string, amount float64
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
 // @Param GetAssetsListParams body requests.GetAssetsListParams true "获取资产列表的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.GetTradingAssetsResult "data数据结构体"
 // @Router /No.10.1/app/v3/trade/getAssetsList.json [post]
 func (h *TradeController) GetAssetsListHandler(c *gin.Context) {
 	var params requests.GetAssetsListParams
@@ -846,10 +849,104 @@ func (h *TradeController) GetAssetsListHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "查询交易历史的参数"
+// @Param GetTradeHistorysParams body requests.GetTradeHistorysParams true "查询交易历史的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.GetTradeHistorys "data数据结构体"
 // @Router /No.10.2/app/v3/trade/getTradeHistorys.json [post]
 func (h *TradeController) GetTradeHistoryHandler(c *gin.Context) {
-	return
+	var params requests.GetTradeHistorysParams
+	var result response.GetTradeHistorys
+	var Now time.Time
+	var tTradingOrders []response.GetTradingOrderParams
+	_ = c.ShouldBindBodyWith(&params, binding.JSON)
+	// 数据验证
+	if validate.ParamsError(c, params) {
+		return
+	}
+	if params.PageSize == 0 || params.PageNum == 0 {
+		params.PageNum = 1
+		params.PageSize = 10
+	}
+	user, _ := c.Get("user")
+	appItems := login.GetAppItem(params.Nation)
+	stringList := strings.Split(params.AmountType, ",")
+	pagea := page.NewPageApple(params.PageSize, params.PageNum)
+	if stringList[0] == "3" { // 虚拟交易
+		tTradingOrders = mapper.GetTradingOrderVirtual(user.(response.ClientUserBeans).AppUserId, params.ItemCode, params.TradeOrderId, params.Nation, stringList, pagea.Index, pagea.Ends)
+	} else {
+		if strings.EqualFold("1", params.Today) {
+			Now = xtime.GetTodayStartTime(appItems.TimeZone)
+		}
+		tTradingOrders = mapper.GetTradingOrder(user.(response.ClientUserBeans).AppUserId, params.ItemCode, params.TradeOrderId, params.Nation, Now.Unix(), stringList, pagea.Index, pagea.Ends)
+	}
+	var List []response.TradingOrderList
+	for _, tTradingOrder := range tTradingOrders {
+		var hashMap response.TradingOrderList
+		hashMap.AssetsLogoUrl = tTradingOrder.AssetsLogoUrl
+		hashMap.AssetsName = tTradingOrder.AssetsName
+		hashMap.Amounts = helpers.StrToFloat64(decimal.PreserveDecimalPlaces(tTradingOrder.Amounts, appItems.NumberPoint))
+		hashMap.ShowAmounts = decimal.SplitDisplay(tTradingOrder.Amounts, params.Nation, appItems.NumberPoint)
+		hashMap.PlanGainAmounts = helpers.StrToFloat64(decimal.PreserveDecimalPlaces(tTradingOrder.PlanGainAmounts, appItems.NumberPoint))
+		hashMap.ShowPlanGainAmounts = decimal.SplitDisplay(tTradingOrder.PlanGainAmounts, params.Nation, appItems.NumberPoint)
+		if 3 == tTradingOrder.AmountType {
+			hashMap.RealGainAmounts = helpers.StrToFloat64(decimal.PreserveDecimalPlaces(tTradingOrder.RealGainAmounts, appItems.NumberPoint))
+			if tTradingOrder.RealGainAmounts > 0 {
+				hashMap.ShowRealGainAmounts = decimal.SplitDisplay(tTradingOrder.RealGainAmounts, params.Nation, appItems.NumberPoint)
+			} else {
+				hashMap.ShowRealGainAmounts = decimal.SplitDisplay(tTradingOrder.Amounts*-1, params.Nation, appItems.NumberPoint)
+			}
+		} else {
+			// 真实收益金额
+			realGainAmounts := 0.0
+			if tTradingOrder.AmountType == 1 {
+				realGainAmounts = tTradingOrder.RealGainAmounts
+			} else {
+				if tTradingOrder.RealGainAmounts > 0 {
+					realGainAmounts = tTradingOrder.RealGainAmounts
+				}
+			}
+			hashMap.RealGainAmounts = helpers.StrToFloat64(decimal.PreserveDecimalPlaces(realGainAmounts, appItems.NumberPoint))
+			// 展示收益金额
+			if tTradingOrder.RealGainAmounts > 0 {
+				hashMap.ShowRealGainAmounts = decimal.SplitDisplay(realGainAmounts, params.Nation, appItems.NumberPoint)
+			} else {
+				hashMap.ShowRealGainAmounts = decimal.SplitDisplay(tTradingOrder.Amounts*-1, params.Nation, appItems.NumberPoint)
+			}
+		}
+		// 起始资产指数值
+		hashMap.BeginAssetsPrice = ""
+		// 截止资产指数值
+		if tTradingOrder.EndAssetsPrice != 0 {
+			hashMap.EndAssetsPrice = helpers.Decimal(tTradingOrder.EndAssetsPrice, appItems.NumberPoint)
+		} else {
+			hashMap.EndAssetsPrice = tTradingOrder.EndAssetsPrice
+		}
+		// 交易起始日期
+		hashMap.TradeBeginDate = tTradingOrder.TradeBeginDate
+		// 交易截止日期
+		hashMap.TradeEndDate = tTradingOrder.TradeEndDate
+		// 竞猜结果 1对 0错
+		hashMap.QuizResult = tTradingOrder.QuizResult
+		// 订单交易金额类型
+		hashMap.AmountType = tTradingOrder.AmountType
+		// 收益
+		hashMap.ReturnRate = tTradingOrder.ReturnRate
+		// 买涨买跌类型
+		hashMap.UpDownType = tTradingOrder.UpDownType
+		// 时长
+		hashMap.Duration = 60
+		// 保留小数点位数
+		hashMap.PointNumber = tTradingOrder.PointNumber
+		// 订单ID
+		hashMap.TradeOrderId = tTradingOrder.TradeOrderId
+		// 货币类型
+		hashMap.CurrencyType = tTradingOrder.CurrencyType
+		List = append(List, hashMap)
+	}
+	result.Total = int64(len(tTradingOrders))
+	result.NextPage = 0
+	result.PageNum = *pagea.GetPageNumber()
+	result.NowDate = time.Now().Format(xtime.TimeFormat)
+	result.List = List
+	echo.Success(c, result, "ok")
 }
