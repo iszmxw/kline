@@ -188,7 +188,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			// 9.认证模块
 			credit := V3Route.Group("/credit")
 			{
-				// 提交邮箱、身份认证 [todo]
+				// 提交邮箱、身份认证 [ok]
 				credit.Any("/submitCredit.json", ClientV3Group.CreditController.SubmitCreditHandler)
 				// 获取用户认证状态和认证信息 [todo]
 				credit.Any("/getUserCreditMessage.json", ClientV3Group.CreditController.GetUserCreditMessageHandler)

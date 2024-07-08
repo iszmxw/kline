@@ -622,6 +622,70 @@ definitions:
     - languageCode
     - nation
     type: object
+  requests.SubmitCreditParams:
+    properties:
+      account:
+        description: 验证账号
+        type: string
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      bankCardNo:
+        description: 银行卡号
+        type: string
+      bankCode:
+        description: IFSC银行编码
+        type: string
+      bankHolder:
+        description: 持卡人
+        type: string
+      bankId:
+        description: 银行ID
+        type: integer
+      bankName:
+        description: 银行名称
+        type: string
+      gender:
+        description: 性别 性别0女 1男
+        type: integer
+      idBackUrl:
+        description: 证件反面链接
+        type: string
+      idFrontUrl:
+        description: 证件正面链接
+        type: string
+      identityNo:
+        description: 认证证件身份ID
+        type: string
+      invitCode:
+        description: 邀请码
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      otpCode:
+        description: 验证码
+        type: string
+      submitType:
+        description: 提交类型 1验证手机号 2验证邮箱 3认证证件 4绑定银行卡 5提交父级邀请码
+        type: integer
+      userBankId:
+        description: 客户银行卡ID
+        type: integer
+      userName:
+        description: 用户姓名
+        type: string
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.SubmitPaymentVoucher:
     properties:
       appOsType:
@@ -4577,10 +4641,10 @@ paths:
         type: string
       - description: 提交邮箱、身份认证的参数
         in: body
-        name: GetLanguagePageParams
+        name: SubmitCreditParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.SubmitCreditParams'
       produces:
       - application/json
       responses:
