@@ -93,3 +93,35 @@ func GetVipInfo(itemCode, nation string, vipLevel int) *models.TSettingVipRule {
 	return resp
 
 }
+
+// GetWithdrawType 获取国家支持的提现类型
+func GetWithdrawType(nation, itemCode string) string {
+	WithdrawType := "0"
+	isBlock := false
+	isBank := false
+	var list []models.TTipartiteConfiguration
+	mysql.DB.Debug().Model(models.TTipartiteConfiguration{}).Where(map[string]interface{}{
+		"item_code": itemCode,
+		"nation":    nation,
+		"is_valid":  1,
+		"use_type":  "withdraw",
+	}).Find(&list)
+	for _, item := range list {
+		fmt.Println(item)
+		if strings.EqualFold("broPay", item.PartnerCode) {
+			isBlock = true
+		} else {
+			isBank = true
+		}
+	}
+	if isBlock {
+		WithdrawType = "2" // 数字货币提现
+	}
+	if isBank {
+		WithdrawType = "3" // 银行卡提现
+	}
+	if isBlock && isBank {
+		WithdrawType = "1" // 银行卡和数字货币都支持
+	}
+	return WithdrawType
+}

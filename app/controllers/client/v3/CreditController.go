@@ -1,7 +1,9 @@
 package v3
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	cmap "github.com/orcaman/concurrent-map"
@@ -11,11 +13,13 @@ import (
 	"goapi/app/response"
 	"goapi/app/service/credit"
 	"goapi/app/service/user"
+	"goapi/pkg/commonUtils"
 	"goapi/pkg/echo"
 	"goapi/pkg/email"
 	"goapi/pkg/logger"
 	"goapi/pkg/mobile"
 	"goapi/pkg/mysql"
+	"goapi/pkg/redis"
 	"goapi/pkg/validate"
 	"strings"
 )
@@ -44,7 +48,6 @@ type CreditController struct {
 // @Router /No.09.1/app/v3/credit/submitCredit.json [post]
 func (h *CreditController) SubmitCreditHandler(c *gin.Context) {
 	var params requests.SubmitCreditParams
-	var result response.SuccessLanguagePageV2
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
@@ -193,7 +196,7 @@ func (h *CreditController) SubmitCreditHandler(c *gin.Context) {
 		break
 
 	}
-	echo.Success(c, result, "ok")
+	echo.Success(c, nil, "ok")
 }
 
 // GetUserCreditMessageHandler
@@ -208,17 +211,63 @@ func (h *CreditController) SubmitCreditHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取用户认证状态和认证信息的参数"
+// @Param Params body requests.Base true "获取用户认证状态和认证信息的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.UserCreditMessage "data数据结构体"
 // @Router /No.09.2/app/v3/credit/getUserCreditMessage.json [post]
 func (h *CreditController) GetUserCreditMessageHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.Base
+	var result response.UserCreditMessage
+	var credit *models.AppUserCredit
+	var creditMessage response.CreditMessage
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	appUser, _ := c.Get("user")
+	appUserId := appUser.(response.ClientUserBeans).AppUserId
+	tAppUser := user.GetUser(appUserId)
+	if tAppUser != nil {
+		result.RejectReason = tAppUser.RejectReason
+		creditMessage = response.CreditMessage{
+			CreditMobile: tAppUser.CreditMobile,
+			CreditEmail:  tAppUser.Email,
+			IdentityNo:   tAppUser.IdentityNo,
+			IdBackUrl:    tAppUser.IdBackUrl,
+			IdFrontUrl:   tAppUser.IdFrontUrl,
+			Gender:       int(tAppUser.Gender),
+			UserName:     tAppUser.UserName,
+			ParentCode:   tAppUser.ParentCode,
+			ReferralCode: tAppUser.ReferralCode,
+		}
+	}
+	mysql.DB.Debug().Model(models.AppUserCredit{}).Where("app_user_id", tAppUser.AppUserId).Find(&credit)
+	if credit != nil {
+		result.IdentityCredit = credit.IdentityCredit
+		result.IsFinishCredit = credit.IsFinishCredit
+		result.MobileCredit = credit.MobileCredit
+		result.EmailCredit = credit.EmailCredit
+		result.BankCredit = credit.BankCredit
+	}
+	rule, _ := redis.Client.WebGet(fmt.Sprintf("%v%v%v%v", "IQOPTION", params.Nation, params.ItemCode, "USEING_CREDIT_RULE"))
+	if len(rule) > 0 {
+		ruleJson := map[string]interface{}{}
+		err := json.Unmarshal([]byte(rule), &ruleJson)
+		if err != nil {
+			echo.Error(c, "ParamsCanNotBeNull", "")
+			return
+		}
+		result.HadOcr = ruleJson["hadOcr"].(int)
+		result.IdentityCreditMSP = ruleJson["identityCreditMSP"].([]string)
+		result.BankCreditMSP = ruleJson["bankCreditMSP"].([]string)
+	} else {
+		result.HadOcr = 0
+		result.IdentityCreditMSP = []string{}
+		result.BankCreditMSP = []string{}
+	}
+	result.CreditMessage = creditMessage
+	withdrawType := commonUtils.GetWithdrawType(params.Nation, params.ItemCode)
+	result.WithdrawType = withdrawType // 当前国家支持的提现类型 0 暂无支持的提现渠道 1 银行卡和数字货币都支持  2 数字货币提现  3 银行卡提现
 	echo.Success(c, result, "ok")
 }

@@ -1180,6 +1180,36 @@ definitions:
         description: 可提现余额
         type: string
     type: object
+  response.CreditMessage:
+    properties:
+      creditEmail:
+        description: 认证邮箱
+        type: string
+      creditMobile:
+        description: 认证手机号
+        type: string
+      gender:
+        description: 性别 0女 1男
+        type: integer
+      idBackUrl:
+        description: 证件反面链接
+        type: string
+      idFrontUrl:
+        description: 证件正面链接
+        type: string
+      identityNo:
+        description: 认证证件身份ID
+        type: string
+      parentCode:
+        description: 父级邀请码
+        type: string
+      referralCode:
+        description: 我的邀请码
+        type: string
+      userName:
+        description: 用户姓名
+        type: string
+    type: object
   response.ExistingCountry:
     properties:
       isStart:
@@ -1765,6 +1795,47 @@ definitions:
       isConfig:
         description: 是否默认 1是0否
         type: integer
+    type: object
+  response.UserCreditMessage:
+    properties:
+      bankCredit:
+        description: 银行卡认证
+        type: integer
+      bankCreditMSP:
+        description: 银行卡认证MSP
+        items:
+          type: string
+        type: array
+      creditMessage:
+        allOf:
+        - $ref: '#/definitions/response.CreditMessage'
+        description: 信用信息消息
+      emailCredit:
+        description: 邮箱认证状态 1已认证 0未认证
+        type: integer
+      hadOcr:
+        description: 是否有OCR识别 1有 0没有[没有的情况下，客户直接提交照片，手动输入ID和姓名]
+        type: integer
+      identityCredit:
+        description: 证件认证状态 1已认证 0未认证
+        type: integer
+      identityCreditMSP:
+        description: 证件认证MSP
+        items:
+          type: string
+        type: array
+      isFinishCredit:
+        description: 是否完成KYC认证 1是 0否
+        type: integer
+      mobileCredit:
+        description: 手机号认证状态 1已认证 0未认证
+        type: integer
+      rejectReason:
+        description: 拒绝原因
+        type: string
+      withdrawType:
+        description: 当前国家支持的提现类型 0 暂无支持的提现渠道 1 银行卡和数字货币都支持 2 数字货币提现 3 银行卡提现
+        type: string
     type: object
   response.UserMailMessageResult:
     properties:
@@ -4703,10 +4774,10 @@ paths:
         type: string
       - description: 获取用户认证状态和认证信息的参数
         in: body
-        name: GetLanguagePageParams
+        name: Params
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.Base'
       produces:
       - application/json
       responses:
@@ -4717,7 +4788,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.UserCreditMessage'
       summary: No.09.2-获取用户认证状态和认证信息
       tags:
       - 9.认证模块

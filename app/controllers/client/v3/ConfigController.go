@@ -41,38 +41,6 @@ func onlineOnlyKeyId() string {
 	return onlineOnlyKey
 }
 
-// 获取国家支持的提现类型
-func getWithdrawType(nation, itemCode string) string {
-	WithdrawType := "0"
-	isBlock := false
-	isBank := false
-	var list []models.TTipartiteConfiguration
-	mysql.DB.Debug().Model(models.TTipartiteConfiguration{}).Where(map[string]interface{}{
-		"item_code": itemCode,
-		"nation":    nation,
-		"is_valid":  1,
-		"use_type":  "withdraw",
-	}).Find(&list)
-	for _, item := range list {
-		fmt.Println(item)
-		if strings.EqualFold("broPay", item.PartnerCode) {
-			isBlock = true
-		} else {
-			isBank = true
-		}
-	}
-	if isBlock {
-		WithdrawType = "2" // 数字货币提现
-	}
-	if isBank {
-		WithdrawType = "3" // 银行卡提现
-	}
-	if isBlock && isBank {
-		WithdrawType = "1" // 银行卡和数字货币都支持
-	}
-	return WithdrawType
-}
-
 // 获取 15 库的所有键值对
 
 func (h *ConfigController) SetKlineToken(c *gin.Context) {
@@ -249,29 +217,29 @@ func (h *ConfigController) GetLanguagePageV2Handler(c *gin.Context) {
 	WebUrlPre := make(map[string]interface{})
 	_ = json.Unmarshal([]byte(appItem.WebUrl), &WebUrl)
 	_ = json.Unmarshal([]byte(appItem.WebUrlPre), &WebUrlPre)
-	result.LanguageData = languageData                                               // 多语言
-	result.PageVersion = appItem.PageVersion                                         // 页面版本
-	result.WebUrl = WebUrl                                                           // 网页的地址
-	result.WebUrlPre = WebUrlPre                                                     // 网页的地址 预发布版本
-	result.NationConfig.CurrencyDigits = appItem.NumberPoint                         // 小数点保留位数
-	result.NationConfig.MonetaryUnit = appItem.MonetaryUnit                          // 货币符号
-	result.NationConfig.CurrencyType = appItem.CurrencyType                          // 货币类型
-	result.AppVersion = appItem.AppVersion                                           // app版本
-	result.EmailAddress = appItem.Email                                              // 公司邮件
-	result.Address = appItem.Address                                                 // 公司地址
-	result.ServicePhone = appItem.ServicePhone                                       // 公司电话
-	result.AppOpendState = 1                                                         // 应用开放状态 1开放 0限制
-	result.OpendStateTips = "YOUR AREA IS BANNED!"                                   // 应用开放状态提示语
-	result.IsMustHadGogleService = 0                                                 // 是否必须安装谷歌服务 1是 0否
-	result.MustHadGogleServiceTips = "Your mobile phone must install Google service" // 未安装谷歌服务提示语
-	result.TimeZone = appItem.TimeZone                                               // 时区
-	result.WithdrawType = getWithdrawType(params.Nation, params.ItemCode)            // 当前国家支持的提现类型 0 暂无支持的提现渠道 1 银行卡和数字货币都支持  2 数字货币提现  3 银行卡提现
-	result.OnlineOnlyKeyId = onlineOnlyKeyId()                                       // 生成设备唯一id
-	result.VipIsValid = VipIsValid                                                   // 是否启用 vip 1是 0否
-	result.Google = 1                                                                // 是否开启谷歌登录1是，2否
-	result.Facebook = 1                                                              // 是否开启fackbook登录，1是2否
-	result.Mobile = 1                                                                // 是否开启mobile登录，1是2否
-	result.Email = 1                                                                 // 是否开启email登录，1是2否
+	result.LanguageData = languageData                                                // 多语言
+	result.PageVersion = appItem.PageVersion                                          // 页面版本
+	result.WebUrl = WebUrl                                                            // 网页的地址
+	result.WebUrlPre = WebUrlPre                                                      // 网页的地址 预发布版本
+	result.NationConfig.CurrencyDigits = appItem.NumberPoint                          // 小数点保留位数
+	result.NationConfig.MonetaryUnit = appItem.MonetaryUnit                           // 货币符号
+	result.NationConfig.CurrencyType = appItem.CurrencyType                           // 货币类型
+	result.AppVersion = appItem.AppVersion                                            // app版本
+	result.EmailAddress = appItem.Email                                               // 公司邮件
+	result.Address = appItem.Address                                                  // 公司地址
+	result.ServicePhone = appItem.ServicePhone                                        // 公司电话
+	result.AppOpendState = 1                                                          // 应用开放状态 1开放 0限制
+	result.OpendStateTips = "YOUR AREA IS BANNED!"                                    // 应用开放状态提示语
+	result.IsMustHadGogleService = 0                                                  // 是否必须安装谷歌服务 1是 0否
+	result.MustHadGogleServiceTips = "Your mobile phone must install Google service"  // 未安装谷歌服务提示语
+	result.TimeZone = appItem.TimeZone                                                // 时区
+	result.WithdrawType = commonUtils.GetWithdrawType(params.Nation, params.ItemCode) // 当前国家支持的提现类型 0 暂无支持的提现渠道 1 银行卡和数字货币都支持  2 数字货币提现  3 银行卡提现
+	result.OnlineOnlyKeyId = onlineOnlyKeyId()                                        // 生成设备唯一id
+	result.VipIsValid = VipIsValid                                                    // 是否启用 vip 1是 0否
+	result.Google = 1                                                                 // 是否开启谷歌登录1是，2否
+	result.Facebook = 1                                                               // 是否开启fackbook登录，1是2否
+	result.Mobile = 1                                                                 // 是否开启mobile登录，1是2否
+	result.Email = 1                                                                  // 是否开启email登录，1是2否
 	var TAppItemVersion models.TAppItemVersion
 	where2 := cmap.New().Items()
 	where2["item_code"] = params.ItemCode
