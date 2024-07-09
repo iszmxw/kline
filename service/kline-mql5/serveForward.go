@@ -79,7 +79,7 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	for {
-		message, err := reader.ReadBytes('\n')
+		message, err := reader.ReadBytes('}')
 		if err != nil {
 			if err == io.EOF {
 				logger.Error(errors.New("客户端链接关闭"))
@@ -121,11 +121,9 @@ func checkExists(code string) KlineCommon.Info {
 
 func Forward(index, item string) {
 	serves := []string{
-		//"http://47.243.109.20:7104",
 		"http://172.31.0.4:7104",
-		"https://goclientio.smosignal.com",
 		"https://huobiapi.smooption.com",
-		"https://goclient.smarttradess.com",
+		"https://goclient.qr-trade.com",
 	}
 	for _, HOST := range serves {
 		baseURL := HOST + "/app/v3/other/pushList.json"
