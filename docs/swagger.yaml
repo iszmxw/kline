@@ -169,6 +169,35 @@ definitions:
     - languageCode
     - nation
     type: object
+  requests.CashFlowParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      orderType:
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+      today:
+        type: string
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.ChangePasswordParams:
     properties:
       appOsType:
@@ -1057,6 +1086,45 @@ definitions:
         description: 活动名称
         type: string
     type: object
+  response.CashFlow:
+    properties:
+      amount:
+        description: 金额
+        type: number
+      arrivalTime:
+        description: 到账时间
+        type: integer
+      currencyType:
+        description: 货币符号
+        type: string
+      failureReason:
+        description: 拒绝理由
+        type: string
+      isUpload:
+        description: 是否需要上传 1-是 0-否
+        type: string
+      orderId:
+        description: 订单ID
+        type: string
+      orderType:
+        description: 订单类型
+        type: string
+      paymentChannel:
+        description: 渠道
+        type: string
+      photoPaymentVoucher:
+        description: 照片支付凭证
+        type: string
+      showAmount:
+        description: 格式化后的展示金额
+        type: string
+      status:
+        description: 状态
+        type: string
+      submitTime:
+        description: 提交时间
+        type: integer
+    type: object
   response.ClientUserBeans:
     properties:
       accountEmail:
@@ -1285,6 +1353,19 @@ definitions:
           type: string
         description: types 键值对 key->value
         type: object
+    type: object
+  response.GetCashFlow:
+    properties:
+      hasNextPage:
+        type: boolean
+      list:
+        items:
+          $ref: '#/definitions/response.CashFlow'
+        type: array
+      total:
+        type: integer
+      totalPage:
+        type: integer
     type: object
   response.GetInvitUsers:
     properties:
@@ -4526,10 +4607,10 @@ paths:
         type: string
       - description: 获取资金流水列表的参数
         in: body
-        name: GetLanguagePageParams
+        name: CashFlowParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.CashFlowParams'
       produces:
       - application/json
       responses:
@@ -4540,7 +4621,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.GetCashFlow'
       summary: No.06.4-获取资金流水列表
       tags:
       - 7.订单模块

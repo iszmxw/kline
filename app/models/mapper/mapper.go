@@ -420,3 +420,167 @@ func GetTradingOrder(appUserId, itemCode, tradeOrderId, nation string, Now int64
 	mysql.DB.Raw(sqlStr).Scan(&GetTradingOrderParams)
 	return
 }
+
+func CashFlowList(itemCode, nation, today, orderType, appUserId string, Now int64, index, ends *int) (list []response.CashFlow) {
+	sqlStr := `
+		SELECT
+            t.orderid,
+            t.amount,
+            t.status,
+            t.payment_channel as paymentChannel,
+            t.submit_time as submitTime,
+            t.arrival_time as arrivalTime,
+            t.order_type as orderType,
+            t.failure_reason as failureReason,
+            t.currency_type as currencyType,
+            t.photoPaymentVoucher
+        FROM
+            (
+`
+	if len(orderType) == 0 || strings.EqualFold("recharge", orderType) {
+		sqlStr += `
+                SELECT
+                    t1.only_code as orderid,
+                    t1.amount,
+                    t1.status,
+                    t1.bind_pay_channel as payment_channel,
+                    t1.create_ts as submit_time,
+                    t1.update_ts as arrival_time,
+                    'Recharge' as order_type,
+                    t1.err_code_des as failure_reason,
+                    t1.currency_type,
+                    t1.photo as photoPaymentVoucher
+                FROM
+                    t_recharge_order t1
+                WHERE
+                    t1.app_user_id = #{appUserId}
+`
+		if len(today) > 0 {
+			sqlStr += `
+                    AND t1.create_ts >= #{Now}
+`
+		}
+	}
+
+	if len(orderType) == 0 {
+		sqlStr += `
+			UNION ALL
+`
+	}
+	if len(orderType) == 0 || strings.EqualFold("withdraw", orderType) {
+		sqlStr += `
+                SELECT
+                    t2.out_trade_no as orderid,
+                    t2.amount,
+                    t2.end_status as status,
+                    t2.bind_pay_channel as payment_channel,
+                    t2.create_ts as submit_time,
+                    t2.update_ts as arrival_time,
+                    'Withdrawal' as order_type,
+                    t2.return_msg as failure_reason,
+                    t2.currency_type,
+                    '' as photoPaymentVoucher
+                FROM
+                    t_withdraw_order t2
+                WHERE
+                    t2.app_user_id = #{appUserId}
+`
+		if len(today) > 0 {
+			sqlStr += `
+                    AND t2.create_ts >= #{Now}
+`
+		}
+	}
+
+	sqlStr += `
+            ) AS t
+        ORDER BY
+            t.submit_time DESC
+		LIMIT #{index},#{ends}
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{Now}", fmt.Sprintf("%v", Now))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
+	mysql.DB.Raw(sqlStr).Scan(&list)
+	return
+}
+
+func CashFlowListCount(itemCode, nation, today, orderType, appUserId string, Now int64, index, ends *int) (count int64) {
+	sqlStr := `
+		SELECT
+            count(t.orderid)
+        FROM
+            (
+`
+	if len(orderType) == 0 || strings.EqualFold("recharge", orderType) {
+		sqlStr += `
+                SELECT
+                    t1.only_code as orderid,
+                    t1.amount,
+                    t1.status,
+                    t1.bind_pay_channel as payment_channel,
+                    t1.create_ts as submit_time,
+                    t1.update_ts as arrival_time,
+                    'Recharge' as order_type,
+                    t1.err_code_des as failure_reason,
+                    t1.currency_type,
+                    t1.photo as photoPaymentVoucher
+                FROM
+                    t_recharge_order t1
+                WHERE
+                    t1.app_user_id = #{appUserId}
+`
+		if len(today) > 0 {
+			sqlStr += `
+                    AND t1.create_ts >= #{Now}
+`
+		}
+	}
+
+	if len(orderType) == 0 {
+		sqlStr += `
+			UNION ALL
+`
+	}
+	if len(orderType) == 0 || strings.EqualFold("withdraw", orderType) {
+		sqlStr += `
+                SELECT
+                    t2.out_trade_no as orderid,
+                    t2.amount,
+                    t2.end_status as status,
+                    t2.bind_pay_channel as payment_channel,
+                    t2.create_ts as submit_time,
+                    t2.update_ts as arrival_time,
+                    'Withdrawal' as order_type,
+                    t2.return_msg as failure_reason,
+                    t2.currency_type,
+                    '' as photoPaymentVoucher
+                FROM
+                    t_withdraw_order t2
+                WHERE
+                    t2.app_user_id = #{appUserId}
+`
+		if len(today) > 0 {
+			sqlStr += `
+                    AND t2.create_ts >= #{Now}
+`
+		}
+	}
+
+	sqlStr += `
+            ) AS t
+        ORDER BY
+            t.submit_time DESC
+`
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{Now}", fmt.Sprintf("%v", Now))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
+	mysql.DB.Raw(sqlStr).Scan(&count)
+	return
+}

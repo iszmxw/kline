@@ -20,13 +20,12 @@ import (
 	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
+	"goapi/pkg/xstring"
 	"goapi/service/binary-monitoring/pkg"
-	"golang.org/x/text/unicode/norm"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
-	"unicode/utf8"
 )
 
 // k线图服务
@@ -59,25 +58,6 @@ func (h *ConfigController) SetKlineToken(c *gin.Context) {
 	echo.Error(c, "Failed", "")
 }
 
-func isAllChinese(s string) bool {
-	// 将字符串规范化为NFC格式
-	s = norm.NFC.String(s)
-
-	// 遍历字符串的每个字符
-	for len(s) > 0 {
-		// 读取第一个字符
-		r, size := utf8.DecodeRuneInString(s)
-		// 如果字符不是中文字符，则返回false
-		if r < 0x4e00 || r > 0x9fff {
-			return false
-		}
-		// 去除已经读取的字符
-		s = s[size:]
-	}
-	// 所有字符都是中文字符，则返回true
-	return true
-}
-
 // 检查多语言是否包含中文，然后发送警告
 
 func (h *ConfigController) CheckLanguage(c *gin.Context) {
@@ -93,7 +73,7 @@ func (h *ConfigController) CheckLanguage(c *gin.Context) {
 		return
 	}
 	for _, item := range list {
-		if isAllChinese(item.ShowWord) {
+		if xstring.IsAllChinese(item.ShowWord) {
 			// 收集等于中文的语言包
 			result = append(result, item)
 		}

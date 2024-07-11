@@ -172,7 +172,7 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 				order.Any("/submitWithdraw.json", ClientV3Group.OrderController.SubmitWithdrawHandler)
 				// 获取订单详细信息 [todo]
 				order.Any("/orderDetail.json", ClientV3Group.OrderController.OrderDetailHandler)
-				// 获取资金流水列表 [todo]
+				// 获取资金流水列表 [ok]
 				order.Any("/getCashFlow.json", ClientV3Group.OrderController.GetCashFlowHandler)
 			}
 
