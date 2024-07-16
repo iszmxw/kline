@@ -166,9 +166,9 @@ func RegisterClientRoutes(router *gin.RouterGroup) {
 			// 7.订单模块
 			order := V3Route.Group("/order")
 			{
-				// 生成充值码 [todo]
+				// 生成充值码 [ok]
 				order.Any("/createPaidCode.json", ClientV3Group.OrderController.CreatePaidCodeHandler)
-				// 提交提现 [todo]
+				// 提交提现 [ok]
 				order.Any("/submitWithdraw.json", ClientV3Group.OrderController.SubmitWithdrawHandler)
 				// 获取订单详细信息 [ok]
 				order.Any("/orderDetail.json", ClientV3Group.OrderController.OrderDetailHandler)

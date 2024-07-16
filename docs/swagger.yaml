@@ -239,6 +239,45 @@ definitions:
     - nation
     - smsCode
     type: object
+  requests.CreatePaidCodeParams:
+    properties:
+      amounts:
+        description: 充值金额
+        type: number
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      channelId:
+        description: 充值渠道ID
+        type: integer
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      lastStayPage:
+        description: 最后停留的页面
+        type: string
+      mobile:
+        description: 客户手机号
+        type: integer
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+    required:
+    - amounts
+    - channelId
+    - itemCode
+    - languageCode
+    - nation
+    type: object
   requests.ExistingCountryParams:
     properties:
       appOsType:
@@ -798,6 +837,48 @@ definitions:
     - languageCode
     - nation
     - submitType
+    type: object
+  requests.SubmitWithdrawParams:
+    properties:
+      address:
+        description: address
+        type: string
+      amounts:
+        description: 提现金额
+        type: number
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      channel:
+        description: channel
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+      type:
+        description: type 1-银行卡提现 2-数字货币提现
+        type: string
+      userBankId:
+        description: 提现银行ID
+        type: integer
+    required:
+    - amounts
+    - itemCode
+    - languageCode
+    - nation
+    - userBankId
     type: object
   requests.SumbmitPartnerEventByTypeParams:
     properties:
@@ -4292,10 +4373,10 @@ paths:
         type: string
       - description: 生成充值码的参数
         in: body
-        name: GetLanguagePageParams
+        name: CreatePaidCodeParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.CreatePaidCodeParams'
       produces:
       - application/json
       responses:
@@ -4306,7 +4387,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/echo.Response'
       summary: No.06.1-生成充值码
       tags:
       - 7.订单模块
@@ -4412,10 +4493,10 @@ paths:
         type: string
       - description: 提交提现的参数
         in: body
-        name: GetLanguagePageParams
+        name: SubmitWithdrawParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.SubmitWithdrawParams'
       produces:
       - application/json
       responses:
@@ -4426,7 +4507,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/echo.Response'
       summary: No.06.2-提交提现
       tags:
       - 7.订单模块

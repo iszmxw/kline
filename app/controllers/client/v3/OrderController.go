@@ -1,6 +1,7 @@
 package v3
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -19,6 +20,9 @@ import (
 	"goapi/pkg/validate"
 	"goapi/pkg/xstring"
 	"goapi/pkg/xtime"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -41,16 +45,43 @@ type OrderController struct {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "生成充值码的参数"
+// @Param CreatePaidCodeParams body requests.CreatePaidCodeParams true "生成充值码的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} echo.Response "data数据结构体"
 // @Router /No.06.1/app/v3/order/createPaidCode.json [post]
 func (h *OrderController) CreatePaidCodeHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.CreatePaidCodeParams
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
+		return
+	}
+	AddressUrl := "" // 充值地址
+	marshal, err := json.Marshal(params)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
+		return
+	}
+	payload := strings.NewReader(string(marshal))
+	resp, err := http.Post(AddressUrl, "application/json", payload)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err = Body.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	var result map[string]interface{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
 		return
 	}
 	echo.Success(c, result, "ok")
@@ -68,16 +99,43 @@ func (h *OrderController) CreatePaidCodeHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "提交提现的参数"
+// @Param SubmitWithdrawParams body requests.SubmitWithdrawParams true "提交提现的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} echo.Response "data数据结构体"
 // @Router /No.06.2/app/v3/order/submitWithdraw.json [post]
 func (h *OrderController) SubmitWithdrawHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.SubmitWithdrawParams
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
+		return
+	}
+	AddressUrl := "" // 提现地址
+	marshal, err := json.Marshal(params)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
+		return
+	}
+	payload := strings.NewReader(string(marshal))
+	resp, err := http.Post(AddressUrl, "application/json", payload)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err = Body.Close()
+		if err != nil {
+			logger.Error(err)
+		}
+	}(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	var result map[string]interface{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		logger.Error(err)
+		echo.Error(c, "Failed", "")
 		return
 	}
 	echo.Success(c, result, "ok")
