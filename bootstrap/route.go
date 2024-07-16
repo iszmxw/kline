@@ -25,7 +25,7 @@ func SetupRoute() *gin.Engine {
 		requestId, _ := context.Get("Tracking-Id")
 		num := redis.Client.SCard("onlineUsers")
 		onlineConnectNum := redis.Client.SCard("onlineConnect")
-		context.String(200, fmt.Sprintf("Hello World!：%v\n\n--onlineUsers-%v\n\nonlineConnect-%v\n\n\n", requestId, num, onlineConnectNum))
+		context.String(200, fmt.Sprintf("Hello World1234!：%v\n\n--onlineUsers-%v\n\nonlineConnect-%v\n\n\n", requestId, num, onlineConnectNum))
 		//context.String(200, "下面是所有接口服务：\n\n\n")
 		//routers := router.Routes()
 		//for _, v := range routers {

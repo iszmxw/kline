@@ -63,7 +63,7 @@ docker push iszmxw/iqoption-kline:latest
 
 ```shell
 # 运行 client
-docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/client:/home/yezhiming/binary/client/config -p 7104:7104 --name=xw-client --network="host" -d iszmxw/iqoption-client:latest
+docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/client:/home/yezhiming/binary/client -p 7104:7104 --name=xw-client --network="host" -d iszmxw/iqoption-client:latest
 # 运行 email
 docker run -e=CONFIG_FILE=./config -v=/home/yezhiming/binary/email:/home/yezhiming/binary/email/config -p 7107:7107 --name=xw-email --network="host" -d iszmxw/iqoption-email:latest
 # 运行 web
