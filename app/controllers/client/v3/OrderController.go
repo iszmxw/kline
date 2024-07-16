@@ -1,15 +1,20 @@
 package v3
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"goapi/app/models"
 	"goapi/app/models/mapper"
 	"goapi/app/requests"
 	"goapi/app/response"
 	"goapi/app/service/login"
+	"goapi/app/service/user"
 	"goapi/pkg/decimal"
 	"goapi/pkg/echo"
 	"goapi/pkg/helpers"
+	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	"goapi/pkg/page"
 	"goapi/pkg/validate"
 	"goapi/pkg/xstring"
@@ -90,18 +95,43 @@ func (h *OrderController) SubmitWithdrawHandler(c *gin.Context) {
 // @Param nationlanguage header string true "国家语言" example(in)
 // @Param User-Agent header string true "用户代理" example(okhttp/4.9.1)
 // @Param Content-Type header string true "内容类型" example(application/json;charset=UTF-8)
-// @Param GetLanguagePageParams body requests.GetLanguagePageParams true "获取订单详细信息的参数"
+// @Param OrderDetailParams body requests.OrderDetailParams true "获取订单详细信息的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
-// @Success 1 {object} response.SuccessLanguagePageV2 "data数据结构体"
+// @Success 1 {object} response.OrderDetail "data数据结构体"
 // @Router /No.06.3/app/v3/order/orderDetail.json [post]
 func (h *OrderController) OrderDetailHandler(c *gin.Context) {
-	var params requests.GetLanguagePageParams
-	var result response.SuccessLanguagePageV2
+	var params requests.OrderDetailParams
+	var result response.OrderDetail
+	var tRechargeOrder *models.TRechargeOrder
 	_ = c.ShouldBindBodyWith(&params, binding.JSON)
 	// 数据验证
 	if validate.ParamsError(c, params) {
 		return
 	}
+	mysql.DB.Debug().Model(models.TRechargeOrder{}).Where(map[string]interface{}{
+		"only_code":        params.OrderId,
+		"bind_pay_channel": "broPay",
+	}).Find(&tRechargeOrder)
+	if nil == tRechargeOrder {
+		logger.Error(errors.New("订单不存在"))
+		echo.Error(c, "Failed", "")
+		return
+	}
+	appUser := user.GetUser(tRechargeOrder.AppUserId)
+	if nil == appUser {
+		logger.Error(errors.New("用户不存在"))
+		echo.Error(c, "Failed", "")
+		return
+	}
+	appItem := login.GetAppItem(tRechargeOrder.Nation)
+	currencyType := appItem.CurrencyType
+	result.Status = tRechargeOrder.RechargeOrderStatus
+	result.PayCurrency = tRechargeOrder.Channel
+	result.Account = appUser.Email
+	result.Address = tRechargeOrder.PayCode
+	result.Amount = tRechargeOrder.Amount
+	result.CurrencyType = currencyType
+	result.AmountPay = tRechargeOrder.AmountPay
 	echo.Success(c, result, "ok")
 }
 

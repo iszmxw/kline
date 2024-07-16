@@ -589,6 +589,35 @@ definitions:
     - nation
     - referralCode
     type: object
+  requests.OrderDetailParams:
+    properties:
+      appOsType:
+        description: 系统类型 1安卓 2IOS 3html
+        type: string
+      itemCode:
+        description: 项目编码
+        type: string
+      languageCode:
+        description: 语言编码
+        type: string
+      nation:
+        description: 国家编码
+        type: string
+      orderId:
+        description: 订ID
+        type: string
+      pageNum:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 单页条数
+        type: integer
+    required:
+    - itemCode
+    - languageCode
+    - nation
+    - orderId
+    type: object
   requests.SendSMSByTypeParams:
     properties:
       account:
@@ -1550,6 +1579,30 @@ definitions:
       monetaryUnit:
         description: 货币单位
         type: string
+    type: object
+  response.OrderDetail:
+    properties:
+      account:
+        description: 账户邮箱或者手机号
+        type: string
+      address:
+        description: 地址
+        type: string
+      amount:
+        description: 交易金额
+        type: number
+      amountPay:
+        description: 交易金额
+        type: number
+      currencyType:
+        description: 货币符号
+        type: string
+      payCurrency:
+        description: 支付类型
+        type: string
+      status:
+        description: 状态
+        type: integer
     type: object
   response.RechargeChannelBeans:
     properties:
@@ -4483,10 +4536,10 @@ paths:
         type: string
       - description: 获取订单详细信息的参数
         in: body
-        name: GetLanguagePageParams
+        name: OrderDetailParams
         required: true
         schema:
-          $ref: '#/definitions/requests.GetLanguagePageParams'
+          $ref: '#/definitions/requests.OrderDetailParams'
       produces:
       - application/json
       responses:
@@ -4497,7 +4550,7 @@ paths:
         "1":
           description: data数据结构体
           schema:
-            $ref: '#/definitions/response.SuccessLanguagePageV2'
+            $ref: '#/definitions/response.OrderDetail'
       summary: No.06.3-获取订单详细信息
       tags:
       - 7.订单模块

@@ -22,3 +22,14 @@ type CashFlow struct {
 	PhotoPaymentVoucher string  `json:"photoPaymentVoucher"` // 照片支付凭证
 	IsUpload            string  `json:"isUpload"`            // 是否需要上传 1-是 0-否
 }
+
+// OrderDetail 订单详情
+type OrderDetail struct {
+	Status       int64   `json:"status"`       // 状态
+	PayCurrency  string  `json:"payCurrency"`  // 支付类型
+	Account      string  `json:"account"`      // 账户邮箱或者手机号
+	Address      string  `json:"address"`      // 地址
+	Amount       float64 `json:"amount"`       // 交易金额
+	CurrencyType string  `json:"currencyType"` // 货币符号
+	AmountPay    float64 `json:"amountPay"`    // 交易金额
+}
