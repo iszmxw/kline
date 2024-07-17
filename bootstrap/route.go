@@ -75,7 +75,7 @@ func SetupRouteEmail() *gin.Engine {
 	router.NoRoute(NoResponse)
 	router.GET("/", func(context *gin.Context) {
 		requestId, _ := context.Get("Tracking-Id")
-		context.String(200, "Hello Email!："+requestId.(string)+"\n\n\n")
+		context.String(200, "123Hello Email!："+requestId.(string)+"\n\n\n")
 	})
 	// 二元 Email 接口
 	routes.RegisterEmailRoutes(router.Group("/"))
