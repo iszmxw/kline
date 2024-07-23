@@ -78,8 +78,8 @@ func (h *ActivityController) GetUserLossReturnHandler(c *gin.Context) {
 	appItem := login.GetAppItem(params.Nation)
 	todayStartTime := xtime.GetTodayStartTime(appItem.TimeZone)
 	todayEndTime := xtime.GetTodayEndTime(appItem.TimeZone)
-	today8Timestamp := todayStartTime.UnixMicro() + 60*60*8*1000
-	yesterdayStartTime := todayStartTime.UnixMicro() - 60*60*24*1000
+	today8Timestamp := todayStartTime.UnixMilli() + 60*60*8*1000
+	yesterdayStartTime := todayStartTime.UnixMilli() - 60*60*24*1000
 	now := time.Now().UnixMilli()
 	temp2 := cmap.New().Items()
 	if now < today8Timestamp {
