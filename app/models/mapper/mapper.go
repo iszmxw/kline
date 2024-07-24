@@ -84,9 +84,9 @@ FROM (
      ) AS e ON a.biao = e.biao
 `
 	timeZone := strings.SplitAfter(appItem.TimeZone, "T")
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", tAppUser.AppUserId)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", tAppUser.Nation)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{timeZone}", timeZone[1])
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", tAppUser.AppUserId))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", tAppUser.Nation))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{timeZone}", fmt.Sprintf("'%v'", timeZone[1]))
 	err = mysql.DB.Debug().Raw(sqlStr).Scan(&userTradeMessage).Error
 	return userTradeMessage, err
 }
@@ -179,14 +179,14 @@ func GetUserMailMessageListCounts(itemCode, appUserId, deviceType, nation string
       AND tomsl.decive_brand = #{deviceType}
       AND (tomsl.app_user_id = #{appUserId} OR tomsl.app_user_id = 'ALL')
       AND tom.send_state = 1
-      AND tom.send_time <![CDATA[>=]]> #{date}
+      AND tom.send_time >= #{date}
       AND (tom.send_time / 1000) >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(),INTERVAL 7 DAY))
       ORDER BY tom.send_time DESC
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", deviceType)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", fmt.Sprintf("'%v'", itemCode))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", appUserId))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", fmt.Sprintf("'%v'", deviceType))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", nation))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{date}", fmt.Sprintf("%v", date))
 	mysql.DB.Raw(sqlStr).Scan(&total)
 	return
@@ -208,14 +208,14 @@ func GetUserMailMessageList(itemCode, appUserId, deviceType, nation string, date
       AND tomsl.decive_brand = #{deviceType}
       AND (tomsl.app_user_id = #{appUserId} OR tomsl.app_user_id = 'ALL')
       AND tom.send_state = 1
-      AND tom.send_time <![CDATA[>=]]> #{date}
+      AND tom.send_time >= #{date}
       AND (tom.send_time / 1000) >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(),INTERVAL 7 DAY))
       ORDER BY tom.send_time DESC
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", deviceType)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", fmt.Sprintf("'%v'", itemCode))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", appUserId))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", fmt.Sprintf("'%v'", deviceType))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", nation))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{date}", fmt.Sprintf("%v", date))
 	mysql.DB.Raw(sqlStr).Scan(&userMailMessageList)
 	return
@@ -231,10 +231,10 @@ func UpdateMailStatus(itemCode, nation, deviceType, appUserId string) {
       AND tomsl.decive_brand = #{deviceType}
       AND (tomsl.app_user_id = #{appUserId} OR tomsl.app_user_id = 'ALL')
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", deviceType)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", fmt.Sprintf("'%v'", itemCode))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", nation))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{deviceType}", fmt.Sprintf("'%v'", deviceType))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", appUserId))
 	mysql.DB.Exec(sqlStr)
 	return
 }
@@ -263,7 +263,7 @@ func QueryUserVipInfo(appUserId string) (VipUserInfo response.VipUserInfo) {
         WHERE
         b.app_user_id = #{appUserId}
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", appUserId))
 	mysql.DB.Raw(sqlStr).Scan(&VipUserInfo)
 	return
 }
@@ -344,11 +344,11 @@ func GetTradingOrderVirtual(appUserId, itemCode, tradeOrderId, nation string, am
 	    ORDER BY a.createDate DESC 
 		LIMIT #{index},#{ends}
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", appUserId))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", fmt.Sprintf("'%v'", itemCode))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{amountType}", fmt.Sprintf("%v", strings.Join(amountType, ",")))
-	sqlStr = strings.ReplaceAll(sqlStr, "#{tradeOrderId}", tradeOrderId)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{tradeOrderId}", fmt.Sprintf("'%v'", tradeOrderId))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", nation))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
 	mysql.DB.Raw(sqlStr).Scan(&GetTradingOrderParams)
@@ -409,12 +409,12 @@ func GetTradingOrder(appUserId, itemCode, tradeOrderId, nation string, Now int64
 	    ORDER BY a.createDate DESC
 		LIMIT #{index},#{ends}
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", appUserId))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", fmt.Sprintf("'%v'", itemCode))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{amountType}", fmt.Sprintf("%v", strings.Join(amountType, ",")))
-	sqlStr = strings.ReplaceAll(sqlStr, "#{tradeOrderId}", tradeOrderId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{tradeOrderId}", fmt.Sprintf("'%v'", tradeOrderId))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{Now}", fmt.Sprintf("%v", Now))
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", nation))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
 	mysql.DB.Raw(sqlStr).Scan(&GetTradingOrderParams)
@@ -498,9 +498,9 @@ func CashFlowList(itemCode, nation, today, orderType, appUserId string, Now int6
             t.submit_time DESC
 		LIMIT #{index},#{ends}
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", fmt.Sprintf("'%v'", itemCode))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", nation))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", appUserId))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{Now}", fmt.Sprintf("%v", Now))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
@@ -575,9 +575,9 @@ func CashFlowListCount(itemCode, nation, today, orderType, appUserId string, Now
         ORDER BY
             t.submit_time DESC
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", appUserId)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", fmt.Sprintf("'%v'", itemCode))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", nation))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{appUserId}", fmt.Sprintf("'%v'", appUserId))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{Now}", fmt.Sprintf("%v", Now))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
 	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))

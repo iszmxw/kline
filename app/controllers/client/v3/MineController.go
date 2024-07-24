@@ -640,6 +640,9 @@ func (h *MineController) GetUserMailMessageHandler(c *gin.Context) {
 	}
 	userMailMessageList := mapper.GetUserMailMessageList(itemCode, User.AppUserId, params.DeviceType, nation, queryTime)
 	result.Total = total
+	if userMailMessageList == nil {
+		userMailMessageList = []response.UserMailMessageResult{}
+	}
 	result.Data = userMailMessageList
 	mapper.UpdateMailStatus(itemCode, nation, params.DeviceType, User.AppUserId)
 	echo.Success(c, result, "ok")
