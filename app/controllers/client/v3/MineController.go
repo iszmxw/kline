@@ -241,7 +241,7 @@ func (h *MineController) GetUserAccountMessageHandler(c *gin.Context) {
 }
 
 // SubmitUpdateUserInfoHandler
-// @Summary No.04.3-更新用户信息
+// @Summary No.04.2-更新用户信息
 // @Description 更新用户信息的详细描述
 // @Accept application/json
 // @Produce application/json
@@ -255,7 +255,7 @@ func (h *MineController) GetUserAccountMessageHandler(c *gin.Context) {
 // @Param SubmitUpdateUserInfo body requests.SubmitUpdateUserInfo true "更新用户信息的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "data数据结构体"
-// @Router /No.04.3/app/v3/mine/submitUpdateUserInfo.json [post]
+// @Router /No.04.2/app/v3/mine/submitUpdateUserInfo.json [post]
 func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
 	var params requests.SubmitUpdateUserInfo
 	var tAppUser *models.AppUser
@@ -398,7 +398,7 @@ func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
 }
 
 // SumbmitPartnerEventByTypeHandler
-// @Summary No.04.4-上报新手教程完成状态
+// @Summary No.04.3-上报新手教程完成状态
 // @Description 上报新手教程完成状态的详细描述
 // @Accept application/json
 // @Produce application/json
@@ -412,7 +412,7 @@ func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
 // @Param SumbmitPartnerEventByTypeParams body requests.SumbmitPartnerEventByTypeParams true "上报新手教程完成状态的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} echo.Response "data数据结构体"
-// @Router /No.04.4/app/v3/mine/sumbmitPartnerEventByType.json [post]
+// @Router /No.04.3/app/v3/mine/sumbmitPartnerEventByType.json [post]
 func (h *MineController) SumbmitPartnerEventByTypeHandler(c *gin.Context) {
 	var params requests.SumbmitPartnerEventByTypeParams
 	var tAppUser *models.AppUser
@@ -453,7 +453,7 @@ func (h *MineController) SumbmitPartnerEventByTypeHandler(c *gin.Context) {
 }
 
 // GetInvitUsersHandler
-// @Summary No.04.5-获取邀请用户进度
+// @Summary No.04.4-获取邀请用户进度
 // @Description 获取邀请用户进度的详细描述
 // @Accept application/json
 // @Produce application/json
@@ -467,7 +467,7 @@ func (h *MineController) SumbmitPartnerEventByTypeHandler(c *gin.Context) {
 // @Param MineInvitUserParams body requests.MineInvitUserParams true "获取邀请用户进度的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.GetInvitUsers "data数据结构体"
-// @Router /No.04.5/app/v3/mine/getInvitUsers.json [post]
+// @Router /No.04.4/app/v3/mine/getInvitUsers.json [post]
 func (h *MineController) GetInvitUsersHandler(c *gin.Context) {
 	var params requests.MineInvitUserParams
 	var result response.GetInvitUsers
@@ -585,7 +585,7 @@ func (h *MineController) GetInvitUsersHandler(c *gin.Context) {
 }
 
 // GetInvitationCodeHandler
-// @Summary No.04.6-获取用户邀请码及父邀请码
+// @Summary No.04.5-获取用户邀请码及父邀请码
 // @Description 获取用户邀请码及父邀请码的详细描述
 // @Accept application/json
 // @Produce application/json
@@ -599,7 +599,7 @@ func (h *MineController) GetInvitUsersHandler(c *gin.Context) {
 // @Param Params body requests.Base true "获取用户邀请码及父邀请码的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.InvitationCodes "data数据结构体"
-// @Router /No.04.6/app/v3/mine/getInvitationCode.json [post]
+// @Router /No.04.5/app/v3/mine/getInvitationCode.json [post]
 func (h *MineController) GetInvitationCodeHandler(c *gin.Context) {
 	var params requests.Base
 	var result response.InvitationCodes
@@ -618,7 +618,7 @@ func (h *MineController) GetInvitationCodeHandler(c *gin.Context) {
 }
 
 // GetUserMailMessageHandler
-// @Summary No.04.7-获取站内信列表
+// @Summary No.04.6-获取站内信列表
 // @Description 获取站内信列表的详细描述
 // @Accept application/json
 // @Produce application/json
@@ -632,7 +632,7 @@ func (h *MineController) GetInvitationCodeHandler(c *gin.Context) {
 // @Param GetUserMailMessageParams body requests.GetUserMailMessageParams true "获取站内信列表的参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.GetUserMailMessage "data数据结构体"
-// @Router /No.04.7/app/v3/mine/getUserMailMessage.json [post]
+// @Router /No.04.6/app/v3/mine/getUserMailMessage.json [post]
 func (h *MineController) GetUserMailMessageHandler(c *gin.Context) {
 	var params requests.GetUserMailMessageParams
 	var result response.GetUserMailMessage
@@ -675,7 +675,7 @@ func (h *MineController) GetUserMailMessageHandler(c *gin.Context) {
 }
 
 // UploadPhotoHandler
-// @Summary No.04.8-上传照片
+// @Summary No.04.7-上传照片
 // @Description 上传照片的详细描述
 // @Accept application/json
 // @Produce application/json
@@ -689,7 +689,7 @@ func (h *MineController) GetUserMailMessageHandler(c *gin.Context) {
 // @Param SubmitPaymentVoucher body requests.SubmitPaymentVoucher true "上传照片参数"
 // @Failure 0 {object} echo.Response "不是1就是失败的"
 // @Success 1 {object} response.UploadPhoto "data数据结构体"
-// @Router /No.04.8/app/v3/mine/uploadPhoto.json [post]
+// @Router /No.04.7/app/v3/mine/uploadPhoto.json [post]
 func (h *MineController) UploadPhotoHandler(c *gin.Context) {
 	var params requests.SubmitPaymentVoucher
 	var result response.UploadPhoto
