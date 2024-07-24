@@ -111,8 +111,8 @@ func GetInvitTop1Info(params requests.MineInvitUserParams, beginTimestamp, endTi
         ORDER BY invitBonus DESC
             LIMIT 1
 `
-	sqlStr2 = strings.ReplaceAll(sqlStr2, "#{itemCode}", params.ItemCode)
-	sqlStr2 = strings.ReplaceAll(sqlStr2, "#{nation}", params.Nation)
+	sqlStr2 = strings.ReplaceAll(sqlStr2, "#{itemCode}", fmt.Sprintf("'%v'", params.ItemCode))
+	sqlStr2 = strings.ReplaceAll(sqlStr2, "#{nation}", fmt.Sprintf("'%v'", params.Nation))
 	sqlStr2 = strings.ReplaceAll(sqlStr2, "#{beginTimestamp}", fmt.Sprintf("%v", beginTimestamp.UnixMilli()))
 	sqlStr2 = strings.ReplaceAll(sqlStr2, "#{endTimestamp}", fmt.Sprintf("%v", endTimestamp.UnixMilli()))
 	mysql.DB.Raw(sqlStr2).Scan(&invitTop1Info)
@@ -157,11 +157,11 @@ func GetMineInvitUserList(itemCode, referralCode, index, ends, nation string) (i
                 LIMIT #{index},#{ends}
             ) ot
 `
-	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", nation)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{referralCode}", referralCode)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", itemCode)
-	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", fmt.Sprintf("%v", index))
-	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", fmt.Sprintf("%v", ends))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{nation}", fmt.Sprintf("'%v'", nation))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{referralCode}", fmt.Sprintf("'%v'", referralCode))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{itemCode}", fmt.Sprintf("'%v'", itemCode))
+	sqlStr = strings.ReplaceAll(sqlStr, "#{index}", index)
+	sqlStr = strings.ReplaceAll(sqlStr, "#{ends}", ends)
 	mysql.DB.Raw(sqlStr).Scan(&invitUserResults)
 	return
 }

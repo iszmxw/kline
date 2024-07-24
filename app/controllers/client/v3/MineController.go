@@ -467,8 +467,8 @@ func (h *MineController) GetInvitUsersHandler(c *gin.Context) {
 	invitUserResults = mapper.GetMineInvitUserList(
 		params.ItemCode,
 		params.ReferralCode,
-		fmt.Sprintf("%v", pagea.Index),
-		fmt.Sprintf("%v", pagea.Ends),
+		fmt.Sprintf("%v", *pagea.Index),
+		fmt.Sprintf("%v", *pagea.Ends),
 		params.Nation,
 	)
 	for i, userResult := range invitUserResults {
@@ -501,10 +501,9 @@ func (h *MineController) GetInvitUsersHandler(c *gin.Context) {
 	appItem := login.GetAppItem(params.Nation)
 	beginTimestamp := xtime.GetFirstDateOfATimeZoneWeek(0, appItem.TimeZone)
 	endTimestamp := xtime.GetEndDateOfATimeZoneWeek(0, appItem.TimeZone) // 一周的最后一天
-	var invitTop1Info *response.UserInvitTopOneResult
-	invitTop1Info = mapper.GetInvitTop1Info(params, beginTimestamp, endTimestamp)
+	invitTop1Info := mapper.GetInvitTop1Info(params, beginTimestamp, endTimestamp)
 	var thisWeek response.ThisWeek
-	if invitTop1Info != nil {
+	if invitTop1Info == nil {
 		s, _ := redis.Client.Get(keyenum.KeyInfo(keyenum.THIS_WEEK_INVIT_TOP_ONE_INFO).Key + params.Nation)
 		exp := endTimestamp.Unix() - time.Now().Unix()
 		if len(s) == 0 {
@@ -546,6 +545,9 @@ func (h *MineController) GetInvitUsersHandler(c *gin.Context) {
 		}
 	}
 	result.Total = int(total)
+	if invitUserResults == nil {
+		invitUserResults = []response.MineInvitUserResults{}
+	}
 	result.InvitUser = invitUserResults
 	result.InvitBonus = jsonObject["amounts"].(float64)
 	result.MyBonus = invitBonus
