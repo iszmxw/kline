@@ -26,11 +26,9 @@ import (
 	"goapi/pkg/page"
 	"goapi/pkg/redis"
 	"goapi/pkg/validate"
+	"goapi/pkg/xhttp"
 	"goapi/pkg/xstring"
 	"goapi/pkg/xtime"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"time"
 )
@@ -271,7 +269,7 @@ func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
 		echo.Error(c, "Failed", "")
 		return
 	}
-	if 1 == params.SubmitType {
+	if strings.EqualFold("1", params.SubmitType) {
 		if len(params.Photo) <= 0 {
 			echo.Error(c, "ParamsCanNotBeNull", "")
 			return
@@ -288,32 +286,17 @@ func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
 				echo.Error(c, "Failed", "")
 				return
 			}
-			paramsMap := map[string]interface{}{
+			body, err := xhttp.FormData(uploadData.Value, map[string]string{
 				"serviceType": "iqo",
 				"sourceType":  "iqo",
 				"extName":     "png",
 				"base64Str":   params.Photo,
-			}
-			marshal, err := json.Marshal(paramsMap)
+			})
 			if err != nil {
 				logger.Error(err)
 				echo.Error(c, "Failed", "")
 				return
 			}
-			payload := strings.NewReader(string(marshal))
-			resp, err := http.Post(uploadData.Value, "application/json", payload)
-			if err != nil {
-				logger.Error(err)
-				echo.Error(c, "Failed", "")
-				return
-			}
-			defer func(Body io.ReadCloser) {
-				err = Body.Close()
-				if err != nil {
-					logger.Error(err)
-				}
-			}(resp.Body)
-			body, err := ioutil.ReadAll(resp.Body)
 			var fileUrlResJson response.RespUploadBase64Str
 			err = json.Unmarshal(body, &fileUrlResJson)
 			if err != nil {
@@ -348,30 +331,16 @@ func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
 				return
 			}
 			indexOf := xstring.LastIndexOf(tAppUser.NewAvatar, "/")
-			paramsMap := map[string]interface{}{
+			paramsMap := map[string]string{
 				"base64Str": params.Photo,
-				"fileName":  tAppUser.NewAvatar[indexOf:],
+				"fileName":  tAppUser.NewAvatar[indexOf+1:],
 			}
-			marshal, err := json.Marshal(paramsMap)
+			body, err := xhttp.FormData(uploadData.Value, paramsMap)
 			if err != nil {
 				logger.Error(err)
 				echo.Error(c, "Failed", "")
 				return
 			}
-			payload := strings.NewReader(string(marshal))
-			resp, err := http.Post(uploadData.Value, "application/json", payload)
-			if err != nil {
-				logger.Error(err)
-				echo.Error(c, "Failed", "")
-				return
-			}
-			defer func(Body io.ReadCloser) {
-				err = Body.Close()
-				if err != nil {
-					logger.Error(err)
-				}
-			}(resp.Body)
-			body, err := ioutil.ReadAll(resp.Body)
 			var fileUrlResJson response.RespUploadBase64Str
 			err = json.Unmarshal(body, &fileUrlResJson)
 			if err != nil {
@@ -386,7 +355,7 @@ func (h *MineController) SubmitUpdateUserInfoHandler(c *gin.Context) {
 			}
 		}
 	}
-	if 2 == params.SubmitType {
+	if strings.EqualFold("2", params.SubmitType) {
 		err := mysql.DB.Debug().Model(models.AppUser{}).Where("app_user_id", tAppUser.AppUserId).Update("gender", params.UserSex).Error
 		if err != nil {
 			logger.Error(err)
@@ -708,32 +677,18 @@ func (h *MineController) UploadPhotoHandler(c *gin.Context) {
 		echo.Error(c, "Failed", "")
 		return
 	}
-	paramsMap := map[string]interface{}{
+	paramsMap := map[string]string{
 		"serviceType": "qrt",
 		"sourceType":  "qrt",
 		"extName":     "png",
 		"base64Str":   params.Photo,
 	}
-	marshal, err := json.Marshal(paramsMap)
+	body, err := xhttp.FormData(uploadData.Value, paramsMap)
 	if err != nil {
 		logger.Error(err)
 		echo.Error(c, "Failed", "")
 		return
 	}
-	payload := strings.NewReader(string(marshal))
-	resp, err := http.Post(uploadData.Value, "application/json", payload)
-	if err != nil {
-		logger.Error(err)
-		echo.Error(c, "Failed", "")
-		return
-	}
-	defer func(Body io.ReadCloser) {
-		err = Body.Close()
-		if err != nil {
-			logger.Error(err)
-		}
-	}(resp.Body)
-	body, err := ioutil.ReadAll(resp.Body)
 	var fileUrlResJson response.RespUploadBase64Str
 	err = json.Unmarshal(body, &fileUrlResJson)
 	if err != nil {
