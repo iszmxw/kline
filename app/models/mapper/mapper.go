@@ -242,16 +242,16 @@ func UpdateMailStatus(itemCode, nation, deviceType, appUserId string) {
 func QueryUserVipInfo(appUserId string) (VipUserInfo response.VipUserInfo) {
 	sqlStr := `
 		SELECT
-        b.user_level AS userLevel,
+        b.user_level AS UserLevel,
         IFNULL(b.new_avatar,b.avatar) AS avatar,
-        a.vip_logo_url AS vipLogoUrl,
-        a.recharge_icon AS rechargeIcon,
+        a.vip_logo_url AS VipLogoUrl,
+        a.recharge_icon AS RechargeIcon,
         IFNULL( SUM( c.amount ), 0 ) AS amount,
-        IFNULL( count(c.recharge_id), 0 ) AS tradeTimes,
-        b.app_user_id AS appUserId,
-        a.vip_name AS vipName,
-        a.recharge_standard AS rechargeStandard,
-        a.trading_standard AS tradingStandard
+        IFNULL( count(c.recharge_id), 0 ) AS TradeTimes,
+        b.app_user_id AS AppUserId,
+        a.vip_name AS VipName,
+        a.recharge_standard AS RechargeStandard,
+        a.trading_standard AS TradingStandard
         FROM
         t_setting_vip_rule a
         LEFT JOIN t_app_user b ON a.vip_level = b.user_level

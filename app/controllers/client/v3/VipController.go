@@ -65,7 +65,7 @@ func (h *VipController) GetUserVipHandler(c *gin.Context) {
 	mysql.DB.Debug().Model(models.TSettingVipRule{}).Where(map[string]interface{}{
 		"nation":    params.Nation,
 		"item_code": params.ItemCode,
-	}).Select("recharge_standard as rankAmount,vip_name as rankName").Find(&rechargeStandardList2)
+	}).Select("recharge_standard as RankAmount,vip_name as RankName").Find(&rechargeStandardList2)
 	var rechargeStandardList []string
 	mysql.DB.Debug().Model(models.TSettingVipRule{}).Where(map[string]interface{}{
 		"nation":    params.Nation,
