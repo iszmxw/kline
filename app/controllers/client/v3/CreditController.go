@@ -261,16 +261,16 @@ func (h *CreditController) GetUserCreditMessageHandler(c *gin.Context) {
 			echo.Error(c, "ParamsCanNotBeNull", "")
 			return
 		}
-		result.HadOcr = ruleJson["hadOcr"].(int)
-		result.IdentityCreditMSP = ruleJson["identityCreditMSP"].([]string)
-		result.BankCreditMSP = ruleJson["bankCreditMSP"].([]string)
+		result.HadOcr = int(ruleJson["hadOcr"].(float64))
+		result.IdentityCreditMSP = ruleJson["identityCreditMSP"].([]interface{})
+		result.BankCreditMSP = ruleJson["bankCreditMSP"].([]interface{})
 	} else {
 		result.HadOcr = 0
-		result.IdentityCreditMSP = []string{}
-		result.BankCreditMSP = []string{}
+		result.IdentityCreditMSP = []interface{}{}
+		result.BankCreditMSP = []interface{}{}
 	}
 	result.CreditMessage = creditMessage
 	withdrawType := commonUtils.GetWithdrawType(params.Nation, params.ItemCode)
 	result.WithdrawType = withdrawType // 当前国家支持的提现类型 0 暂无支持的提现渠道 1 银行卡和数字货币都支持  2 数字货币提现  3 银行卡提现
-	echo.Success(c, result, "ok")
+	echo.Success(c, result, "SUCCESS")
 }
