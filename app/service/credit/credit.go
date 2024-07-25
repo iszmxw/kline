@@ -2,6 +2,7 @@ package credit
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	cmap "github.com/orcaman/concurrent-map"
 	"goapi/app/models"
@@ -360,7 +361,7 @@ func UpdateIdentity(c *gin.Context, params requests.SubmitCreditParams, appUser 
 	}
 }
 
-func UpdateBank(c *gin.Context, params requests.SubmitCreditParams, appUser *models.AppUser, configBank *models.TConfigBankInfo) {
+func UpdateBank(c *gin.Context, params requests.SubmitCreditParams, appUser *models.AppUser, configBank *models.TConfigBankInfo) (error error, codeName string) {
 	var relist []models.TAppUserBank
 	var flagRecord *models.TAppUserBank
 	var flag = false
@@ -370,8 +371,7 @@ func UpdateBank(c *gin.Context, params requests.SubmitCreditParams, appUser *mod
 		"is_valid": 1,
 	}).Find(&relist)
 	if len(relist) > 0 {
-		echo.Error(c, "CardNumberIsBound", "")
-		return
+		return errors.New(""), "CardNumberIsBound"
 	}
 	if params.UserBankId > 0 {
 		mysql.DB.Debug().Model(models.TAppUserBank{}).Where("id", params.UserBankId).Find(&flagRecord)
@@ -420,13 +420,13 @@ func UpdateBank(c *gin.Context, params requests.SubmitCreditParams, appUser *mod
 		err := mysql.DB.Debug().Model(models.AppUserCredit{}).Where("app_user_id", appUser.AppUserId).Updates(&credit).Error
 		if err != nil {
 			logger.Error(err)
-			echo.Error(c, "Failed", err.Error())
-			return
+			return err, "Failed"
 		}
 		user, _ := c.Get("user")
 		ClientUserBeans := user.(response.ClientUserBeans)
 		updateToken(request.GetParam(c, "token"), ClientUserBeans, credit)
 	}
+	return nil, ""
 }
 
 // SubmitInvit 提交受邀请

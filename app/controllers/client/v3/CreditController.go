@@ -180,7 +180,11 @@ func (h *CreditController) SubmitCreditHandler(c *gin.Context) {
 					return
 				}
 			}
-			credit.UpdateBank(c, params, tAppUser, configBank)
+			err, codeName := credit.UpdateBank(c, params, tAppUser, configBank)
+			if err != nil {
+				echo.Error(c, codeName, "")
+				return
+			}
 		}
 		break
 	case SubmitTypeCode.Info(SubmitTypeCode.InvitCredit).Code:
@@ -194,7 +198,6 @@ func (h *CreditController) SubmitCreditHandler(c *gin.Context) {
 		break
 	default:
 		break
-
 	}
 	echo.Success(c, nil, "ok")
 }

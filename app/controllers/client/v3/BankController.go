@@ -74,7 +74,7 @@ func (h *BankController) GetUserBankCardsHandler(c *gin.Context) {
 	var total int64
 	DB.Count(&total)
 	var userBankCards []response.UserBankCardsParam
-	DB.Order(" a.update_date desc").Offset(*pagea.Index).Limit(*pagea.Ends).Find(&userBankCards)
+	DB.Select("a.id as BankId,a.bank,a.cardholder,a.card_no as CardNo,a.is_config as IsConfig,a.card_type as CardType,a.bank_code as BankCode").Order(" a.update_date desc").Offset(*pagea.Index).Limit(*pagea.Ends).Find(&userBankCards)
 	result.Total = total
 	result.UserBankCards = userBankCards
 	echo.Success(c, result, "ok")
