@@ -80,9 +80,9 @@ type VipRuleInfo struct {
 	UsdRechargeStandard interface{} `json:"usdRechargeStandard"` // 是否使用充值金额作为标准 1是 0否
 	UsdTradingStandard  interface{} `json:"usdTrdingStandard"`   // 是否使用交易次数作为标准 1是 0否
 	LostReturnRate      float64     `json:"lostReturnRate"`      // 亏损返还比例
-	WithdrawTimes       float64     `json:"withdrawTimes"`       // 增加单日提现次数
+	WithdrawTimes       int         `json:"withdrawTimes"`       // 增加单日提现次数
 	WithdrawAmounts     float64     `json:"withdrawAmounts"`     // 增加单日提现金额
-	WithdrawFeeJson     interface{} `json:"withdrawFeeJson"`     // 提现手续费规则
+	WidrawFeeJson       interface{} `json:"widrawFeeJson"`       // 提现手续费规则
 	StandardShowWord    interface{} `json:"standardShowWord"`    // 会员达标条件文案
 	WelfareShowWord     interface{} `json:"welfareShowWord"`     // 会员享受福利文案
 	RechargeShowWord    string      `json:"rechargeShowWord"`    // 充值页面快捷金额文案

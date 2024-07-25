@@ -50,11 +50,11 @@ type WelfareShowWord struct {
 }
 
 type VipWidrawFeeJson struct {
-	Basic   string `json:"basic"`
-	FeeRate string `json:"feeRate"`
+	Basic   interface{} `json:"basic"`
+	FeeRate interface{} `json:"feeRate"`
 }
 
 type VipColor struct {
-	Andorid string `json:"andorid"`
-	Ios     string `json:"ios"`
+	Andorid interface{} `json:"andorid"`
+	Ios     interface{} `json:"ios"`
 }

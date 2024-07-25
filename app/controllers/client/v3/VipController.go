@@ -105,31 +105,51 @@ func (h *VipController) GetSettingVipHandler(c *gin.Context) {
 		echo.Error(c, "ParamsCanNotBeNull", "")
 		return
 	}
-	var list []response.VipRuleInfo
+	var list []models.TSettingVipRule
 	mysql.DB.Debug().Model(models.TSettingVipRule{}).Where(map[string]interface{}{
 		"item_code": params.ItemCode,
 		"nation":    params.Nation,
 		"is_valid":  1,
-	}).Order("vip_level desc").Find(&list)
+	}).
+		Select("vip_level AS VipLevel,vip_name AS VipName,vip_logo_url AS VipLogoUrl,recharge_icon AS RechargeIcon,vip_banner AS VipBanner,color as Color,action as Action,recharge_standard AS RechargeStandard,trading_standard AS TradingStandard,usd_recharge_standard AS UsdRechargeStandard,usd_trding_standard AS UsdTrdingStandard,lost_return_rate AS LostReturnRate,withdraw_times AS WithdrawTimes,withdraw_amounts AS WithdrawAmounts,widraw_fee_json AS WidrawFeeJson,standard_show_word AS StandardShowWord,welfare_show_word AS WelfareShowWord,recharge_show_word AS RechargeShowWord").
+		Order("vip_level desc").
+		Find(&list)
 	for _, sendRechargeRule := range list {
 		var standardShowWord []response.StandardShowWord
 		var welfareShowWord []response.WelfareShowWord
 		var widrawFeeJson response.VipWidrawFeeJson
 		var color response.VipColor
-		_ = json.Unmarshal([]byte(sendRechargeRule.StandardShowWord.(string)), &standardShowWord)
-		_ = json.Unmarshal([]byte(sendRechargeRule.WelfareShowWord.(string)), &welfareShowWord)
-		_ = json.Unmarshal([]byte(sendRechargeRule.WithdrawFeeJson.(string)), &widrawFeeJson)
-		_ = json.Unmarshal([]byte(sendRechargeRule.Color.(string)), &color)
+		_ = json.Unmarshal([]byte(sendRechargeRule.StandardShowWord), &standardShowWord)
+		_ = json.Unmarshal([]byte(sendRechargeRule.WelfareShowWord), &welfareShowWord)
+		_ = json.Unmarshal([]byte(sendRechargeRule.WidrawFeeJson), &widrawFeeJson)
+		_ = json.Unmarshal([]byte(sendRechargeRule.Color), &color)
+		vipinfo := response.VipRuleInfo{
+			VipLevel:            sendRechargeRule.VipLevel,
+			VipName:             sendRechargeRule.VipName,
+			VipLogoUrl:          sendRechargeRule.VipLogoUrl,
+			RechargeIcon:        sendRechargeRule.RechargeIcon,
+			VipBanner:           sendRechargeRule.VipBanner,
+			Color:               sendRechargeRule.Color,
+			Action:              sendRechargeRule.Action,
+			RechargeStandard:    sendRechargeRule.RechargeStandard,
+			TradingStandard:     sendRechargeRule.TradingStandard,
+			UsdRechargeStandard: sendRechargeRule.UsdRechargeStandard,
+			UsdTradingStandard:  sendRechargeRule.UsdTrdingStandard,
+			LostReturnRate:      sendRechargeRule.LostReturnRate,
+			WithdrawTimes:       sendRechargeRule.WithdrawTimes,
+			WithdrawAmounts:     sendRechargeRule.WithdrawAmounts,
+			WidrawFeeJson:       widrawFeeJson,
+			StandardShowWord:    standardShowWord,
+			WelfareShowWord:     welfareShowWord,
+			RechargeShowWord:    sendRechargeRule.RechargeShowWord,
+		}
 		if strings.EqualFold("android", params.DeviceType) {
-			sendRechargeRule.Color = color.Andorid
+			vipinfo.Color = color.Andorid
 		}
 		if strings.EqualFold("ios", params.DeviceType) {
-			sendRechargeRule.Color = color.Ios
+			vipinfo.Color = color.Ios
 		}
-		sendRechargeRule.StandardShowWord = standardShowWord
-		sendRechargeRule.WelfareShowWord = welfareShowWord
-		sendRechargeRule.WithdrawFeeJson = widrawFeeJson
-		result = append(result, sendRechargeRule)
+		result = append(result, vipinfo)
 	}
 	echo.Success(c, result, "ok")
 }
