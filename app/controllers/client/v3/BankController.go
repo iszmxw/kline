@@ -171,7 +171,7 @@ func (h *BankController) GetPaidFastAmountsHandler(c *gin.Context) {
 	}).Count(&total)
 	if total > 0 {
 		// vip 快捷充值信息组装
-		var vipRuleInfoList []response.VipRuleInfo
+		var vipRuleInfoList []models.TSettingVipRule
 		var relist []models.TRechargeFastAmount
 		mysql.DB.Debug().Model(models.TSettingVipRule{}).Where(map[string]interface{}{
 			"item_code": params.ItemCode,
