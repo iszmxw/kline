@@ -247,9 +247,10 @@ func (h *BankController) GetPaidFastAmountsHandler(c *gin.Context) {
 	}
 	var userRechargeAmounts float64
 	mysql.DB.Debug().Model(models.TRechargeOrder{}).Where(map[string]interface{}{
-		"item_code":   params.ItemCode,
-		"nation":      params.Nation,
-		"app_user_id": appUserId,
+		"item_code":             params.ItemCode,
+		"nation":                params.Nation,
+		"app_user_id":           appUserId,
+		"recharge_order_status": 1,
 	}).Select("IFNULL(SUM( amount ),0) AS userRechargeAmounts").Scan(&userRechargeAmounts)
 	result.VipList = vipList
 	result.List = list
