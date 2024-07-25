@@ -308,18 +308,22 @@ func (h *BankController) GetPaidTypeHandler(c *gin.Context) {
 		"is_valid":  1,
 		"is_used":   1,
 		"nation":    params.Nation,
-	}).Group("channel_code").Order("channel_soft desc").Find(&rechargeChannels)
+	}).
+		Select("id as ChannelId,channel_code as ChannelCode,channel_logo_url as ChannelLogoUrl,channel_light_logo_url as ChannelLightLogoUrl,need_mobile as NeedMobile,channel_type as ChannelType,currency_type as CurrencyType,soft").
+		Group("channel_code").Order("channel_soft desc").Find(&rechargeChannels)
 	// 打包充值渠道
 	for _, tRechargeChannel := range rechargeChannels {
-		beans := data[tRechargeChannel.ChannelType].(*response.RechargeTypeBeans)
-		if beans != nil {
+		beans := data[tRechargeChannel.ChannelType].(response.RechargeTypeBeans)
+		if len(beans.PayPartner) > 0 {
 			if params.IsLightMode != 0 {
 				tRechargeChannel.ChannelLogoUrl = tRechargeChannel.ChannelLightLogoUrl
-				var channels []response.RechargeChannelBeans
-				channels = append(channels, tRechargeChannel)
-				beans.RechargeChannels = channels
 			}
+			var channels []response.RechargeChannelBeans
+			channels = append(channels, tRechargeChannel)
+			beans.RechargeChannels = channels
+			beans.ChannelTotals = len(beans.RechargeChannels)
 		}
+		data[tRechargeChannel.ChannelType] = beans
 	}
 	echo.Success(c, data, "ok")
 }
