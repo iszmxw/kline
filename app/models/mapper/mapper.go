@@ -268,19 +268,19 @@ func QueryUserVipInfo(appUserId string) (VipUserInfo response.VipUserInfo) {
 	return
 }
 
-func GetTradingAssets(assetsName string, index, ends *int) (TradingAssetsBean []response.TradingAssetsBean) {
+func GetTradingAssets(assetsName string, index, ends int) (TradingAssetsBean []response.TradingAssetsBean) {
 	sqlStr := `
 		select a.id,
-		       a.assets_name as 'assetsName',
-		       a.assets_code as 'assetsCode',
-		       a.assets_logo_url as 'assetsLogoUrl',
-		       a.return_rate as 'returnRate',
-		       a.assets_status as 'assetsStatus',
-			   a.is_valid as 'isValid',
-			   a.is_show as 'isShow',
-		       a.point_number as 'pointNumber',
-		       a.assets_type_code as 'assetsTypeCode' ,
-		       a.assets_type_name as 'assetsTypeName' 
+		       a.assets_name as AssetsName,
+		       a.assets_code as AssetsCode,
+		       a.assets_logo_url as AssetsLogoUrl,
+		       a.return_rate as ReturnRate,
+		       a.assets_status as AssetsStatus,
+			   a.is_valid as IsValid,
+			   a.is_show as IsShow,
+		       a.point_number as PointNumber,
+		       a.assets_type_code as AssetsTypeCode ,
+		       a.assets_type_name as AssetsTypeName 
 		from t_trading_assets as a 
 		where 1=1
 		${assetsName}
@@ -294,34 +294,34 @@ func GetTradingAssets(assetsName string, index, ends *int) (TradingAssetsBean []
 	return
 }
 
-func GetTradingOrderVirtual(appUserId, itemCode, tradeOrderId, nation string, amountType []string, index, ends *int) (GetTradingOrderParams []response.GetTradingOrderParams) {
+func GetTradingOrderVirtual(appUserId, itemCode, tradeOrderId, nation string, amountType []string, index, ends int) (GetTradingOrderParams []response.GetTradingOrderParams) {
 	sqlStr := `
 		SELECT a.*,
-		       b.point_number AS 'pointNumber'
+		       b.point_number AS 'PointNumber'
 		FROM(
 	        select
-	        a.trade_order_id AS tradeOrderId,
-	        a.app_user_id AS appUserId,
+	        a.trade_order_id AS TradeOrderId,
+	        a.app_user_id AS AppUserId,
 	        a.amounts AS amounts,
-	        a.plan_gain_amounts AS planGainAmounts,
-			(a.real_gain_amounts + IFNULL(a.equal_return_amounts, 0))  AS realGainAmounts,
-	        a.item_code AS itemCode,
-	        a.assets_id AS assetsId,
-	        a.assets_name AS assetsName,
-	        a.assets_logo_url AS assetsLogoUrl,
-	        a.begin_assets_price AS beginAssetsPrice,
-	        a.end_assets_price AS endAssetsPrice,
-	        a.trade_begin_date AS tradeBeginDate,
-	        a.trade_end_date AS tradeEndDate,
-	        a.quiz_result AS quizResult,
-	        a.is_valid AS isValid,
-	        a.create_date AS createDate,
-	        a.update_date AS updateDate,
-	        a.amount_type AS amountType,
-	        a.up_down_type AS upDownType,
-	        a.real_cost_amounts  AS realCostAmounts,
-	        a.return_rate AS returnRate,
-			a.currency_type AS currencyType
+	        a.plan_gain_amounts AS PlanGainAmounts,
+			(a.real_gain_amounts + IFNULL(a.equal_return_amounts, 0))  AS RealGainAmounts,
+	        a.item_code AS ItemCode,
+	        a.assets_id AS AssetsId,
+	        a.assets_name AS AssetsName,
+	        a.assets_logo_url AS AssetsLogoUrl,
+	        a.begin_assets_price AS BeginAssetsPrice,
+	        a.end_assets_price AS EndAssetsPrice,
+	        a.trade_begin_date AS TradeBeginDate,
+	        a.trade_end_date AS TradeEndDate,
+	        a.quiz_result AS QuizResult,
+	        a.is_valid AS IsValid,
+	        a.create_date AS CreateDate,
+	        a.update_date AS UpdateDate,
+	        a.amount_type AS AmountType,
+	        a.up_down_type AS UpDownType,
+	        a.real_cost_amounts  AS RealCostAmounts,
+	        a.return_rate AS ReturnRate,
+			a.currency_type AS CurrencyType
 	        from t_trading_order_virtual a
 	        where a.is_valid = 1
 	        AND a.app_user_id = #{appUserId}
@@ -355,35 +355,35 @@ func GetTradingOrderVirtual(appUserId, itemCode, tradeOrderId, nation string, am
 	return
 }
 
-func GetTradingOrder(appUserId, itemCode, tradeOrderId, nation string, Now int64, amountType []string, index, ends *int) (GetTradingOrderParams []response.GetTradingOrderParams) {
+func GetTradingOrder(appUserId, itemCode, tradeOrderId, nation string, Now int64, amountType []string, index, ends int) (GetTradingOrderParams []response.GetTradingOrderParams) {
 	sqlStr := `
 		SELECT a.*,
-		       b.point_number AS 'pointNumber'
+		       b.point_number AS 'PointNumber'
 		FROM(
 		        select
-	            a.trade_order_id AS tradeOrderId,
-	            a.app_user_id AS appUserId,
+	            a.trade_order_id AS TradeOrderId,
+	            a.app_user_id AS AppUserId,
 	            a.amounts AS amounts,
-	            a.plan_gain_amounts AS planGainAmounts,
-				(a.real_gain_amounts + IFNULL(a.equal_return_amounts, 0)) AS realGainAmounts,
-	            a.item_code AS itemCode,
-	            a.assets_id AS assetsId,
-	            a.assets_name AS assetsName,
-	            a.assets_logo_url AS assetsLogoUrl,
-	            a.begin_assets_price AS beginAssetsPrice,
-	            a.end_assets_price AS endAssetsPrice,
-	            a.trade_begin_date AS tradeBeginDate,
-	            a.trade_end_date AS tradeEndDate,
-	            a.quiz_result AS quizResult,
-	            a.is_valid AS isValid,
-	            a.create_date AS createDate,
-	            a.update_date AS updateDate,
-	            a.amount_type AS amountType,
-	            a.up_down_type AS upDownType,
-	            a.real_cost_amounts  AS realCostAmounts,
-	            a.user_gain_amounts AS userGainAmounts,
-	            a.return_rate AS returnRate,
-	            a.currency_type AS currencyType
+	            a.plan_gain_amounts AS PlanGainAmounts,
+				(a.real_gain_amounts + IFNULL(a.equal_return_amounts, 0)) AS RealGainAmounts,
+	            a.item_code AS ItemCode,
+	            a.assets_id AS AssetsId,
+	            a.assets_name AS AssetsName,
+	            a.assets_logo_url AS AssetsLogoUrl,
+	            a.begin_assets_price AS BeginAssetsPrice,
+	            a.end_assets_price AS EndAssetsPrice,
+	            a.trade_begin_date AS TradeBeginDate,
+	            a.trade_end_date AS TradeEndDate,
+	            a.quiz_result AS QuizResult,
+	            a.is_valid AS IsValid,
+	            a.create_date AS CreateDate,
+	            a.update_date AS UpdateDate,
+	            a.amount_type AS AmountType,
+	            a.up_down_type AS UpDownType,
+	            a.real_cost_amounts  AS RealCostAmounts,
+	            a.user_gain_amounts AS UserGainAmounts,
+	            a.return_rate AS ReturnRate,
+	            a.currency_type AS CurrencyType
 	        from t_trading_order a
 	        where a.is_valid = 1
 	            AND a.app_user_id = #{appUserId}

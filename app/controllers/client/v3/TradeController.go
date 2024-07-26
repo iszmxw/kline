@@ -821,7 +821,7 @@ func (h *TradeController) GetAssetsListHandler(c *gin.Context) {
 	mysql.DB.Debug().Model(models.TradingAssets{}).Where(where).Count(&total)
 	if total > 0 {
 		pagea := page.NewPageApple(params.PageSize, params.PageNum)
-		list := mapper.GetTradingAssets(params.AssetsName, pagea.Index, pagea.Ends)
+		list := mapper.GetTradingAssets(params.AssetsName, *pagea.Index, *pagea.Ends)
 		for _, tTradingAssets := range list {
 			if tTradingAssets.IsValid == 0 {
 				tTradingAssets.AssetsStatus = 2
@@ -872,12 +872,12 @@ func (h *TradeController) GetTradeHistoryHandler(c *gin.Context) {
 	stringList := strings.Split(params.AmountType, ",")
 	pagea := page.NewPageApple(params.PageSize, params.PageNum)
 	if stringList[0] == "3" { // 虚拟交易
-		tTradingOrders = mapper.GetTradingOrderVirtual(user.(response.ClientUserBeans).AppUserId, params.ItemCode, params.TradeOrderId, params.Nation, stringList, pagea.Index, pagea.Ends)
+		tTradingOrders = mapper.GetTradingOrderVirtual(user.(response.ClientUserBeans).AppUserId, params.ItemCode, params.TradeOrderId, params.Nation, stringList, *pagea.Index, *pagea.Ends)
 	} else {
 		if strings.EqualFold("1", params.Today) {
 			Now = xtime.GetTodayStartTime(appItems.TimeZone)
 		}
-		tTradingOrders = mapper.GetTradingOrder(user.(response.ClientUserBeans).AppUserId, params.ItemCode, params.TradeOrderId, params.Nation, Now.Unix(), stringList, pagea.Index, pagea.Ends)
+		tTradingOrders = mapper.GetTradingOrder(user.(response.ClientUserBeans).AppUserId, params.ItemCode, params.TradeOrderId, params.Nation, Now.Unix(), stringList, *pagea.Index, *pagea.Ends)
 	}
 	var List []response.TradingOrderList
 	for _, tTradingOrder := range tTradingOrders {
