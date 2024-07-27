@@ -421,19 +421,19 @@ func GetTradingOrder(appUserId, itemCode, tradeOrderId, nation string, Now int64
 	return
 }
 
-func CashFlowList(itemCode, nation, today, orderType, appUserId string, Now int64, index, ends *int) (list []response.CashFlow) {
+func CashFlowList(itemCode, nation, today, orderType, appUserId string, Now int64, index, ends int) (list []response.CashFlow) {
 	sqlStr := `
 		SELECT
-            t.orderid,
+            t.orderid as OrderId,
             t.amount,
             t.status,
-            t.payment_channel as paymentChannel,
-            t.submit_time as submitTime,
-            t.arrival_time as arrivalTime,
-            t.order_type as orderType,
-            t.failure_reason as failureReason,
-            t.currency_type as currencyType,
-            t.photoPaymentVoucher
+            t.payment_channel as PaymentChannel,
+            t.submit_time as SubmitTime,
+            t.arrival_time as ArrivalTime,
+            t.order_type as OrderType,
+            t.failure_reason as FailureReason,
+            t.currency_type as CurrencyType,
+            t.photoPaymentVoucher as PhotoPaymentVoucher
         FROM
             (
 `
@@ -508,7 +508,7 @@ func CashFlowList(itemCode, nation, today, orderType, appUserId string, Now int6
 	return
 }
 
-func CashFlowListCount(itemCode, nation, today, orderType, appUserId string, Now int64, index, ends *int) (count int64) {
+func CashFlowListCount(itemCode, nation, today, orderType, appUserId string, Now int64, index, ends int) (count int64) {
 	sqlStr := `
 		SELECT
             count(t.orderid)

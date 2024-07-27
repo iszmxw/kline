@@ -227,10 +227,10 @@ func (h *OrderController) GetCashFlowHandler(c *gin.Context) {
 	appItems := login.GetAppItem(params.Nation)
 	numberPoint := appItems.NumberPoint
 	Now := xtime.GetTodayStartTime(appItems.TimeZone)
-	user, _ := c.Get("user")
+	u, _ := c.Get("user")
 	pagea := page.NewPageApple(params.PageSize, params.PageNum)
-	total := mapper.CashFlowListCount(params.ItemCode, nation, params.Today, params.OrderType, user.(response.ClientUserBeans).AppUserId, Now.UnixMilli(), pagea.Index, pagea.Ends)
-	list := mapper.CashFlowList(params.ItemCode, nation, params.Today, params.OrderType, user.(response.ClientUserBeans).AppUserId, Now.UnixMilli(), pagea.Index, pagea.Ends)
+	total := mapper.CashFlowListCount(params.ItemCode, nation, params.Today, params.OrderType, u.(response.ClientUserBeans).AppUserId, Now.UnixMilli(), *pagea.Index, *pagea.Ends)
+	list := mapper.CashFlowList(params.ItemCode, nation, params.Today, params.OrderType, u.(response.ClientUserBeans).AppUserId, Now.UnixMilli(), *pagea.Index, *pagea.Ends)
 	arr := []string{"成功", "已过期"}
 	for i, flow := range list {
 		if helpers.InArray(flow.FailureReason, arr) {
