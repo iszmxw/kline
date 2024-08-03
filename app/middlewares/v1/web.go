@@ -23,6 +23,7 @@ func Web() gin.HandlerFunc {
 		switch path {
 		case "/web/v1/kanban/getRedisKey.json":
 		case "/web/v1/config/setKlineToken.json":
+		case "/web/v1/config/IQ":
 			// 继续往下面执行
 			c.Next()
 			break
