@@ -39,8 +39,6 @@ func RegisterWebRoutes(ApiRoute *gin.RouterGroup) {
 		Config.Any("/getRedisKey.json", WebV1Group.KlineController.GetRedisKeyHandler)
 		// 【E37】 设置token
 		Config.Any("/setKlineToken.json", WebV1Group.KlineController.SetKlineToken)
-		// 重新登录IQ
-		Config.Any("/IQ", WebV1Group.KlineController.IQ)
 	}
 
 }

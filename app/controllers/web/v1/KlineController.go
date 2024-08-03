@@ -21,9 +21,6 @@ import (
 	"goapi/pkg/utils"
 	"goapi/pkg/validate"
 	wss "goapi/pkg/websocket"
-	"goapi/service/binary-monitoring/pkg"
-	"goapi/service/kline-iqoption/iqoption/api"
-	"math/rand"
 	"reflect"
 	"strings"
 	"time"
@@ -645,24 +642,4 @@ func (h *KlineController) SetKlineToken(c *gin.Context) {
 	}
 	echo.Error(c, "Failed", "")
 	return
-}
-
-func (h *KlineController) IQ(c *gin.Context) {
-	credentials := []api.Credentials{
-		{Username: "iszmxw@yopmail.com", Password: "y9cmiRA8dN6XvBt"},
-		{Username: "iqoptionsmo@yopmail.com", Password: "Snz_WK4BifM/_7W"},
-		{Username: "iqoptionsmt@yopmail.com", Password: "m!Q5zp2yxh%.RDV"},
-		{Username: "iqoptionios@yopmail.com", Password: "6y*Z@2@YuSN!G2G"},
-		{Username: "iqoptiontest@yopmail.com", Password: "C%9CFgz4cV#Qqu%"},
-	}
-	rand.Seed(time.Now().UnixNano())
-	randomIndex := rand.Intn(len(credentials))
-	randomCredentials := credentials[randomIndex]
-	fmt.Println(randomCredentials)
-	IqToken := api.GetIqToken(randomCredentials.Username, randomCredentials.Password)
-	if len(IqToken) > 0 {
-		_, _ = redis.Client.SelectDbAdd(15, "token:iqoption", IqToken, 0)
-		pkg.Notice(fmt.Sprintf("IqOption 重新登录 Ssid【%s】", IqToken))
-	}
-	echo.Success(c, nil, fmt.Sprintf("IqOption 重新登录 Ssid【%s】", IqToken))
 }
