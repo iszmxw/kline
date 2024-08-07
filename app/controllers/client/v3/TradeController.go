@@ -11,6 +11,7 @@ import (
 	"goapi/app/models"
 	"goapi/app/requests"
 	goadjust "goapi/pkg/adjust"
+	"goapi/pkg/bcgame"
 	"goapi/pkg/helpers"
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
@@ -714,6 +715,12 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 		DB.Rollback()
 		return false
 	}
+	bcgame.NewService().PushUserBalanceChange(bcgame.BCPushUserBalanceChangeParams{
+		PlayerId:           appUser.AppUserId,
+		Currency:           []string{appUser.CurrencyType},
+		ChangeAmount:       changeBalance,
+		BeforeChangeAmount: appUser.Balance,
+	})
 	DB.Commit()
 	return true
 }
