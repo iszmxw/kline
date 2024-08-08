@@ -715,12 +715,14 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 		DB.Rollback()
 		return false
 	}
-	bcgame.NewService().PushUserBalanceChange(bcgame.BCPushUserBalanceChangeParams{
-		PlayerId:           appUser.AppUserId,
-		Currency:           []string{appUser.CurrencyType},
-		ChangeAmount:       changeBalance,
-		BeforeChangeAmount: appUser.Balance,
-	})
+	if appUser.IsBcgame == 1 { // 是否bcgame 0否 1是
+		bcgame.NewService().PushUserBalanceChange(bcgame.BCPushUserBalanceChangeParams{
+			PlayerId:           appUser.AppUserId,
+			Currency:           []string{appUser.CurrencyType},
+			ChangeAmount:       changeBalance,
+			BeforeChangeAmount: appUser.Balance,
+		})
+	}
 	DB.Commit()
 	return true
 }

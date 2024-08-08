@@ -5,6 +5,7 @@ import "time"
 type AppUser struct {
 	AppUserId                  string     `json:"app_user_id"`                  // app用户表
 	AgentUserId                string     `json:"agent_user_id"`                // 归属代理
+	IsBcgame                   int        `json:"is_bcgame"`                    // 是否bcgame 0否 1是
 	IsVisit                    int        `json:"is_visit"`                     // 是否游客登陆
 	Mobile                     string     `json:"mobile"`                       // 手机号
 	Email                      string     `json:"email"`                        // 邮箱
