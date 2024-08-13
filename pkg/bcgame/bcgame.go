@@ -127,7 +127,7 @@ func (s *BcGame) PushUserBalanceChange(params BCPushUserBalanceChangeParams) {
 	url := s.cfg.Host + "/merchants/webhook/push/balance/change"
 	jsonData, err := json.Marshal(params)
 	if err != nil {
-		fmt.Println("Error marshaling balance change params:", err)
+		logger.Error(err)
 		return
 	}
 	Header := http.Header{}
@@ -141,6 +141,7 @@ func (s *BcGame) PushUserBalanceChange(params BCPushUserBalanceChangeParams) {
 	post, _, err := request.Post(url, Header, string(jsonData), nil)
 	if err != nil {
 		logger.Error(err)
+		return
 	}
 	if len(post) > 0 {
 		code := post["code"]
