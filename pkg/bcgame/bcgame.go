@@ -19,20 +19,6 @@ import (
 
 var cfg Config
 
-func init() {
-	var data models.TSystemDataDictionary
-	mysql.DB.Debug().Model(&models.TSystemDataDictionary{}).Where("name", "BCGAME").Find(&data)
-	if len(data.Value) == 0 {
-		logger.Error(errors.New("没有配置"))
-		return
-	}
-	err := json.Unmarshal([]byte(data.Value), &cfg)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-}
-
 type Config struct {
 	Host        string `json:"host"`
 	Mkey        string `json:"mkey"`
@@ -53,6 +39,17 @@ type BcGame struct {
 
 // NewService 创建一个新的 BcGame 实例
 func NewService() *BcGame {
+	var data models.TSystemDataDictionary
+	mysql.DB.Debug().Model(models.TSystemDataDictionary{}).Where("name", "BCGAME").Find(&data)
+	if len(data.Value) == 0 {
+		logger.Error(errors.New("没有配置"))
+		return nil
+	}
+	err := json.Unmarshal([]byte(data.Value), &cfg)
+	if err != nil {
+		logger.Error(err)
+		return nil
+	}
 	return &BcGame{cfg: cfg}
 }
 
