@@ -718,7 +718,7 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 	if appUser.IsBcgame == 1 { // 是否bcgame 0否 1是
 		data := bcgame.BCPushUserBalanceChangeParams{
 			PlayerId:           appUser.AppUserId,
-			Currency:           []string{appUser.CurrencyType},
+			Currency:           []string{appUser.CurrencyType + "FIAT"},
 			ChangeAmount:       changeBalance,
 			BeforeChangeAmount: appUser.Balance,
 		}
