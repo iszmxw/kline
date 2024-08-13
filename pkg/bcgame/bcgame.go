@@ -26,10 +26,10 @@ type Config struct {
 }
 
 type BCPushUserBalanceChangeParams struct {
-	PlayerId           string   `json:"playerId"`
-	Currency           []string `json:"currency"`
-	ChangeAmount       float64  `json:"changeAmount"`
-	BeforeChangeAmount float64  `json:"beforeChangeAmount"`
+	PlayerId           string  `json:"playerId"`
+	CurrencyName       string  `json:"currencyName"`
+	ChangeAmount       float64 `json:"changeAmount"`
+	BeforeChangeAmount float64 `json:"beforeChangeAmount"`
 }
 
 // BcGame 是对 BCGame 系统进行操作的服务

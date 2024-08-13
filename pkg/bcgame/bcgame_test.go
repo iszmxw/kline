@@ -10,7 +10,7 @@ func TestBcGameService_CreateUserToken(t *testing.T) {
 	token := service.CreateUserToken("45B764D7A32", "best111", "https://fileupload.ssmartoption.com/file/download/0a3d5de4-2eb2-4001-93ea-f7c051ec3e5e.png")
 	service.PushUserBalanceChange(BCPushUserBalanceChangeParams{
 		PlayerId:           "",
-		Currency:           nil,
+		CurrencyName:       "",
 		ChangeAmount:       0,
 		BeforeChangeAmount: 0,
 	})
