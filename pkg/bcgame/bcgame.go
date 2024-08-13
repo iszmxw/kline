@@ -150,6 +150,8 @@ func (s *BcGame) PushUserBalanceChange(params BCPushUserBalanceChangeParams) {
 		if 0 != code.(float64) {
 			logger.Error(errors.New(post["msg"].(string)))
 		}
+	} else {
+		logger.Info("post", post)
 	}
 }
 

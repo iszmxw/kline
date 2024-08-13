@@ -716,12 +716,14 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 		return false
 	}
 	if appUser.IsBcgame == 1 { // 是否bcgame 0否 1是
-		bcgame.NewService().PushUserBalanceChange(bcgame.BCPushUserBalanceChangeParams{
+		data := bcgame.BCPushUserBalanceChangeParams{
 			PlayerId:           appUser.AppUserId,
 			Currency:           []string{appUser.CurrencyType},
 			ChangeAmount:       changeBalance,
 			BeforeChangeAmount: appUser.Balance,
-		})
+		}
+		logger.Info("BCPushUserBalanceChangeParams", data)
+		bcgame.NewService().PushUserBalanceChange(data)
 	}
 	DB.Commit()
 	return true
