@@ -723,7 +723,7 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 			BeforeChangeAmount: appUser.Balance,
 		}
 		logger.Info("BCPushUserBalanceChangeParams", data)
-		bcgame.NewService().PushUserBalanceChange(data)
+		go bcgame.NewService().PushUserBalanceChange(data)
 	}
 	DB.Commit()
 	return true

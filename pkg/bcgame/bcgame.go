@@ -123,6 +123,7 @@ func (s *BcGame) CreateUserToken(appUserId, name, avatar string) (token string) 
 
 // PushUserBalanceChange 推送用户余额变更到BCGame平台
 func (s *BcGame) PushUserBalanceChange(params BCPushUserBalanceChangeParams) {
+	logger.Info("PushUserBalanceChange")
 	// 将参数转换为JSON格式
 	url := s.cfg.Host + "/merchants/webhook/push/balance/change"
 	jsonData, err := json.Marshal(params)
