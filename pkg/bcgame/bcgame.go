@@ -21,7 +21,7 @@ var cfg Config
 
 func init() {
 	var data models.TSystemDataDictionary
-	mysql.DB.Debug().Model(models.TSystemDataDictionary{}).Where("name", "BCGAME").Find(&data)
+	mysql.DB.Debug().Model(&models.TSystemDataDictionary{}).Where("name", "BCGAME").Find(&data)
 	if len(data.Value) == 0 {
 		logger.Error(errors.New("没有配置"))
 		return
