@@ -132,7 +132,7 @@ func (s *BcGame) PushUserBalanceChange(params BCPushUserBalanceChangeParams) {
 	}
 	Header := http.Header{}
 	expTime := 5
-	timestamp := fmt.Sprintf("%v", time.Now().Unix()+(int64(expTime)*60*1000))
+	timestamp := fmt.Sprintf("%v", time.Now().UnixMilli()+(int64(expTime)*60*1000))
 	sign := s.Signature(string(jsonData), timestamp, s.cfg.SecurityKey, url)
 	Header.Set("sign", sign)
 	Header.Set("t", timestamp)
