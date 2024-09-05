@@ -280,6 +280,10 @@ func (h *AgentController) PushStatistics(ws *wss.WsConn, SubBodyStr interface{})
 			min = 30
 			max = 50
 		}
+		if strings.EqualFold(SubBody.Nation, "Mexico") {
+			min = 30
+			max = 50
+		}
 		randTradeAmount := int64(rand.Intn(max-min) + min)
 		num, _ := redis.Client.Get(KeyTradeAmount)
 		if len(num) == 0 {

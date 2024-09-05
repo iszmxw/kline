@@ -14,6 +14,7 @@ type SubmitTradeParams struct {
 	AppUserId        string  `json:"app_user_id"`                          // 用户id
 	LanguageCode     string  `json:"languageCode"`                         // languageCode
 	Nation           string  `json:"nation"`                               // nation
+	DeviceId         string  `json:"deviceId"`                             // 设备ID
 }
 
 type TradeOrderInfo struct {

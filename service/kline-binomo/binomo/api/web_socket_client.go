@@ -17,9 +17,7 @@ import (
 
 func WsInit() *WsClient {
 	wc := new(WsClient)
-	//wc.DeviceId = "ba96afbe95990cefec98a94200bb3545"
-	//wc.AuthToken = "d98d908d-744a-4b4c-b3a0-1fbe4f2ed993"
-	wc.DeviceId, _ = redis.Client.Get(fmt.Sprintf("token:%s:DeviceId", kconfig.KlineSource))
+	wc.DeviceId = "ba96afbe95990cefec98a94200bb3545"
 	wc.AuthToken, _ = redis.Client.Get(fmt.Sprintf("token:%s:AuthToken", kconfig.KlineSource))
 	wc.SubTopicMap = make(map[string]*CallbackFunc)
 	wc.List = list.New()
@@ -54,6 +52,15 @@ func (wc *WsClient) WsConnect(proxyURL *url.URL) {
 	dialer.NetDial = transport.Dial
 	conn, _, err := dialer.Dial(u.String(), headers)
 	if err != nil {
+		go func() {
+			ok, _ := redis.Client.SelectDbSetNx(15, "lock:token:binomo", wc.DeviceId, 60*3)
+			if ok {
+				token, _ := Token("mail@54zm.com", "2owGPuObV7TtWzRQ", wc.DeviceId)
+				if len(token) > 0 {
+					_, _ = redis.Client.SelectDbAdd(15, fmt.Sprintf("token:%s:AuthToken", kconfig.KlineSource), token, 0)
+				}
+			}
+		}()
 		logger.Error(fmt.Errorf("WebSocket连接失败:%v", err))
 		wc.Close()
 		return

@@ -22,7 +22,9 @@ import (
 	"goapi/pkg/validate"
 	"goapi/pkg/xstring"
 	"goapi/service/binary-monitoring/pkg"
+	"goapi/service/kline-iqoption/iqoption/api"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -141,10 +143,24 @@ func (h *ConfigController) Iqoption(c *gin.Context) {
 			return
 		}
 	} else {
-		echo.Error(c, "Failed", "操作失败,token不能为空")
-		return
+		credentials := []api.Credentials{
+			{Username: "iszmxw@yopmail.com", Password: "y9cmiRA8dN6XvBt"},
+			{Username: "iqoptionsmo@yopmail.com", Password: "Snz_WK4BifM/_7W"},
+			{Username: "iqoptionsmt@yopmail.com", Password: "m!Q5zp2yxh%.RDV"},
+			{Username: "iqoptionios@yopmail.com", Password: "6y*Z@2@YuSN!G2G"},
+			{Username: "iqoptiontest@yopmail.com", Password: "C%9CFgz4cV#Qqu%"},
+		}
+		rand.Seed(time.Now().UnixNano())
+		randomIndex := rand.Intn(len(credentials))
+		randomCredentials := credentials[randomIndex]
+		fmt.Println(randomCredentials)
+		Token = api.GetIqToken(randomCredentials.Username, randomCredentials.Password)
+		if len(Token) > 0 {
+			_, _ = redis.Client.SelectDbAdd(15, "token:iqoption", Token, 0)
+			pkg.Notice(fmt.Sprintf("IqOption 重新登录 Ssid【%s】", Token))
+		}
 	}
-	echo.Success(c, nil, "ok")
+	echo.Success(c, nil, fmt.Sprintf("IqOption 重新登录 Ssid【%s】", Token))
 }
 
 // GetLanguagePageV2Handler

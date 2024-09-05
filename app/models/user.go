@@ -5,14 +5,15 @@ import "time"
 type AppUser struct {
 	AppUserId                  string     `json:"app_user_id"`                  // app用户表
 	AgentUserId                string     `json:"agent_user_id"`                // 归属代理
-	IsVisit                    int        `json:"is_visit"`                     // 是否游客登陆 0-正式 1-游客
+	IsBcgame                   int        `json:"is_bcgame"`                    // 是否bcgame 0否 1是
+	IsVisit                    int        `json:"is_visit"`                     // 是否游客登陆
 	Mobile                     string     `json:"mobile"`                       // 手机号
 	Email                      string     `json:"email"`                        // 邮箱
 	Password                   string     `json:"password"`                     // 密码
 	CreateDate                 time.Time  `json:"create_date"`                  // 创建日期
 	UpdateDate                 time.Time  `json:"update_date"`                  // 更新日期
 	ItemCode                   string     `json:"item_code"`                    // 关联项目编码
-	BlackList                  int32      `json:"black_list"`                   // 是否黑名单 1是 0否
+	BlackList                  int        `json:"black_list"`                   // 是否黑名单 1是 0否
 	Balance                    float64    `json:"balance"`                      // 余额
 	VirtualBalance             float64    `json:"virtual_balance"`              // 虚拟余额
 	BonusBalance               float64    `json:"bonus_balance"`                // 奖励余额

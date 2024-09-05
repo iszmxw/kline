@@ -15,6 +15,7 @@ import (
 	"goapi/app/response"
 	"goapi/app/service/login"
 	goadjust "goapi/pkg/adjust"
+	"goapi/pkg/bcgame"
 	"goapi/pkg/commonUtils"
 	"goapi/pkg/decimal"
 	"goapi/pkg/echo"
@@ -22,6 +23,7 @@ import (
 	"goapi/pkg/logger"
 	"goapi/pkg/mysql"
 	"goapi/pkg/page"
+	"goapi/pkg/redis"
 	"goapi/pkg/validate"
 	wss "goapi/pkg/websocket"
 	"goapi/pkg/xtime"
@@ -211,7 +213,7 @@ func SubmitTrade(ws *wss.WsConn, params requests.SubmitTradeParams) {
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
 			return
 		}
-		if total > TSettingVipRule.ParallelTrans {
+		if total >= TSettingVipRule.ParallelTrans {
 			// 添加文案，您当前的 vip 等级只够同时交易 5 笔
 			SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "ParallelTrans", fmt.Sprintf("%v", TSettingVipRule.ParallelTrans)))
 			return
@@ -266,6 +268,10 @@ func SubmitTrade(ws *wss.WsConn, params requests.SubmitTradeParams) {
 			"tradeOrderId": orderId,
 		},
 	})
+	params.DeviceId = ws.DeviceId
+	// 标记是哪一个设备下的单，稍后推送给对应设备
+	logger.Info(fmt.Sprintf("用户:%v,当前设备id:%v,创建了一个订单：%v", ws.AppUserId, ws.DeviceId, orderId))
+	_, _ = redis.Client.Add(fmt.Sprintf("Notice:Order:Result:Device:%v", orderId), ws.DeviceId, 60*60*2) // 两小时过期
 	if err != nil {
 		logger.Error(err)
 		SocketResp(ws, websocket.TextMessage, getMessage(params.LanguageCode, params.Nation, "FailOperate"))
@@ -609,6 +615,9 @@ func createTradingOrder(orderId string, params requests.SubmitTradeParams, appUs
 
 // 创建虚拟交易订单
 func createVirtualTradingOrder(orderId string, params requests.SubmitTradeParams, appUser models.AppUser, asset models.TradingAssets) bool {
+	if appUser.IsNew == 1 {
+		asset.ReturnRate = 0.75
+	}
 	createOrder := new(models.TradingOrderVirtual)
 	createOrder.TradeOrderId = orderId
 	createOrder.Amounts = params.Amounts
@@ -715,6 +724,16 @@ func UpdateUserBalance(sourceIndex, appUserId, types string, amount float64, cha
 		logger.Error(err)
 		DB.Rollback()
 		return false
+	}
+	if appUser.IsBcgame == 1 { // 是否bcgame 0否 1是
+		data := bcgame.BCPushUserBalanceChangeParams{
+			PlayerId:           appUser.AppUserId,
+			CurrencyName:       appUser.CurrencyType + "FIAT",
+			ChangeAmount:       changeBalance,
+			BeforeChangeAmount: appUser.Balance,
+		}
+		logger.Info("BCPushUserBalanceChangeParams", data)
+		go bcgame.NewService().PushUserBalanceChange(data)
 	}
 	DB.Commit()
 	return true

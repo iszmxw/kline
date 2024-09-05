@@ -65,6 +65,12 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	NoLogin := c.GetBool("NoLogin")
 	isVest, _ := c.GetQuery("isvest")
 	Uuid, _ := c.GetQuery("uuid")
+	DeviceId, _ := c.GetQuery("deviceId")
+	if len(DeviceId) == 0 || strings.EqualFold(DeviceId, "null") {
+		logger.Info("设备ID不存在", DeviceId)
+		wss.WsClose(ws)
+		return
+	}
 	ws.Confuse, _ = c.GetQuery("confuse")
 	if len(isVest) == 0 {
 		isVest = "0"
@@ -77,6 +83,7 @@ func (h *KlineController) WsIndexHandler(c *gin.Context) {
 	ws.AppUserId = AppUserId
 	ws.SecWebSocketKey = socketId
 	ws.Uuid = Uuid
+	ws.DeviceId = DeviceId
 	var AppUser response.AppUser
 	mysql.DB.Model(models.AppUser{}).Where("app_user_id", AppUserId).Find(&AppUser)
 	ws.ItemCode = AppUser.ItemCode
@@ -669,7 +676,7 @@ func PushNoticePlus(ws *wss.WsConn) {
 	}
 	ip := helpers.IP()
 	for !ws.IsClose {
-		key := fmt.Sprintf("Notice:Order:Result:Queue:%v", appUserId)
+		key := fmt.Sprintf("Notice:Order:Result:Queue:%v:%v", appUserId, ws.DeviceId)
 		num, _ := redis.Client.LLen(key)
 		if num <= 0 {
 			time.Sleep(100 * time.Millisecond)
@@ -798,6 +805,10 @@ func PushToast(ws *wss.WsConn) {
 // 推送Rate socket消息
 
 func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
+	var AppUser response.AppUser
+	mysql.DB.Model(models.AppUser{}).
+		Where("app_user_id", ws.AppUserId).
+		Find(&AppUser)
 	// 为了释放for死循环的资源
 	for !ws.IsClose {
 		if len(params.ItemCode) <= 0 {
@@ -806,17 +817,22 @@ func PushRate(ws *wss.WsConn, params requests.SubNationInfo) {
 		if len(params.Nation) <= 0 {
 			params.Nation = "Indonesia"
 		}
-		var PushRateData []response.PushRateData
+		var list []response.PushRateData
 		DB := mysql.DB
-		err := DB.Model(models.TradingAssets{}).Find(&PushRateData).Error
+		err := DB.Model(models.TradingAssets{}).Find(&list).Error
 		if err != nil {
 			SocketResp(ws, websocket.TextMessage, NoData)
 			logger.Error(err)
 			return
 		}
+		for i := range list {
+			if AppUser.IsNew == 1 {
+				list[i].ReturnRate = 0.75
+			}
+		}
 		marshal, err := json.Marshal(gin.H{
 			"id":   "09",
-			"data": PushRateData,
+			"data": list,
 		})
 		if err != nil {
 			SocketResp(ws, websocket.TextMessage, NoData)
