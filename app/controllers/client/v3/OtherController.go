@@ -24,8 +24,8 @@ type OtherController struct {
 func (h *OtherController) Info(c *gin.Context) {
 	data := cmap.New().Items()
 	data["name"] = "SmartOption3.0"
-	data["url"] = "http://192.168.192.95:7104/doc/swagger.json"
-	data["location"] = "http://192.168.192.95:7104/doc/swagger.json"
+	data["url"] = "http://192.168.192.140:7104/doc/swagger.json"
+	data["location"] = "http://192.168.192.140:7104/doc/swagger.json"
 	data["swaggerVersion"] = "3.0"
 	var result []map[string]interface{}
 	result = append(result, data)
