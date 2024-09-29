@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"time"
 )
 
 const LinearSwapDefaultHost = "ws.iqoption.com"
@@ -34,6 +33,6 @@ func SubKey(code string) string {
 }
 
 func ListKey(code string) string {
-	LKey := fmt.Sprintf("listKey:%v:%v", ChKey(code), time.Now().Hour())
+	LKey := fmt.Sprintf("listKey:%v:%v", ChKey(code), KlineSource)
 	return LKey
 }
