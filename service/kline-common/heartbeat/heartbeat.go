@@ -61,8 +61,8 @@ func CheckListData(Source string, info KlineCommon.Info) {
 	} else {
 		_, _ = redis.Client.Add(KeyStatus, "1", 0) // 正常，绿色
 	}
-	// 大于 3000个点的话也要删除掉
-	if len(floatList) > 3000 {
+	// 大于 1000 个点的话也要删除掉
+	if len(floatList) > 1000 {
 		redis.Client.Delete(kconfig.ListKey(info.ContractCode))
 	}
 	// 第二波检测

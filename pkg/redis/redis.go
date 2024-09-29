@@ -211,8 +211,7 @@ func (rdb *Redis) SelectDbGet(db int, key string) (string, error) {
 }
 
 func (rdb *Redis) LRange(key string, start, stop int64) *redis.StringSliceCmd {
-	cmd := redis.NewStringSliceCmd(
-		"lrange",
+	cmd := rdb.Client.LRange(
 		Set(key),
 		start,
 		stop,
