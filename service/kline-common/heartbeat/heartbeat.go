@@ -2,12 +2,12 @@ package heartbeat
 
 import (
 	"fmt"
+	"goapi/app/models"
 	"goapi/pkg/logger"
+	"goapi/pkg/mysql"
 	"goapi/pkg/redis"
 	"goapi/service/kline-common"
 	"goapi/service/kline-common/source"
-	"goapi/service/kline-iqoption/iqoption/api"
-	kconfig "goapi/service/kline-iqoption/iqoption/config"
 	"strings"
 	"time"
 )
@@ -38,33 +38,38 @@ func CheckOutStatus(Source string, info KlineCommon.Info) {
 // 检测列表数据
 
 func CheckListData(Source string, info KlineCommon.Info) {
-	// iqoption 新的数据源活跃度检测方法
-	floatList := api.GetListData(kconfig.ListKey(info.ContractCode))
-	fmt.Println(floatList)
-	if len(floatList) < 100 {
-		// 少于100个数据点，就不进行检测了
-		return
+	health := "4" // 警告，延迟过高
+	var KlineData models.KlineLog
+	err := mysql.DB.Debug().
+		Model(models.KlineLog{}).
+		Select("log_id,ts").
+		Where("kline_source", Source).
+		Where("contract_code", info.ContractCode).
+		Order("ts desc").
+		Limit(1).
+		Find(&KlineData).Error
+	if err != nil {
+		logger.Error(err)
 	}
-	firstNum := floatList[0]
-	// 健康
-	health := false
-	for _, item := range floatList {
-		if item != firstNum {
-			health = true
+	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", Source, info.ContractCode)
+	if KlineData.ID > 0 {
+		// 差
+		SystemTs := time.Now().UnixMilli()
+		diff := (SystemTs - KlineData.Ts) / 1000
+		switch true {
+		case diff < 60*1:
+			health = "1" // 正常，绿色
+			break
+		case (diff >= 60) && (diff < 60*2):
+			health = "2" // 延迟，黄色
+			break
+		case (diff >= 60*2) && (diff < 60*3):
+			health = "3" // 警告，延迟过高
+			break
+		case diff >= 60*3:
+			health = "4" // 警告，延迟过高
 			break
 		}
 	}
-	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", Source, info.ContractCode)
-	// 不健康
-	if health == false {
-		_, _ = redis.Client.Add(KeyStatus, "4", 0) // 警告，延迟过高
-	} else {
-		_, _ = redis.Client.Add(KeyStatus, "1", 0) // 正常，绿色
-	}
-	// 大于 1000 个点的话也要删除掉
-	if len(floatList) > 1000 {
-		redis.Client.Delete(kconfig.ListKey(info.ContractCode))
-	}
-	// 第二波检测
-	//CheckOutStatus(Source, info)
+	_, _ = redis.Client.Add(KeyStatus, health, 0) // 警告，延迟过高
 }

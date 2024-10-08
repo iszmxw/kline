@@ -71,8 +71,6 @@ func SocketIqoption(info KlineCommon.Info) {
 				logger.Error(redisErr)
 				return
 			}
-			listKey := config.ListKey(info.ContractCode)
-			_, _ = redis.Client.Lpush(listKey, data.Tick.Close)
 			// 当前数据源匹配就入库
 			KlineSource := response.KlineSource(info.ContractCode)
 			logger.Info(KlineSource, info.ContractCode)
