@@ -71,6 +71,7 @@ func CheckListData(Source string, info KlineCommon.Info) {
 			health = "4" // 警告，延迟过高
 			break
 		}
+		logger.Info("KlineData.ID=", KlineData.ID)
 	} else {
 		logger.Error(errors.New("查询数据为空"))
 	}
