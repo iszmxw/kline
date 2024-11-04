@@ -14,8 +14,10 @@ import (
 )
 
 func GetSourceStatus(KlineSource, AssetsCode string) int64 {
-	state, _ := redis.Client.SelectDbGet(15, fmt.Sprintf("status:%v:market.%v.index.1min", KlineSource, AssetsCode))
+	keyStr := fmt.Sprintf("status:%v:market.%v.index.1min", KlineSource, AssetsCode)
+	state, _ := redis.Client.SelectDbGet(15, keyStr)
 	status := helpers.StringToInt64(state)
+	logger.Info("keyStr--", keyStr, "status--", status)
 	if status == 0 {
 		return 4
 	}

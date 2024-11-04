@@ -80,6 +80,7 @@ func TickerCheckTodaySleep(isTicker bool) {
 			go func(data models.TradingAssets) {
 				// 检查当前数据源健康状况，只查询redis里面的，不健康的就进行置灰休市处理
 				status := GetSourceStatus(response.KlineSource(data.AssetsCode), data.AssetsCode)
+				logger.Info("数据源延迟状态打印：", data.AssetsCode, status)
 				if 1 != status {
 					if data.AssetsStatus == 1 || data.IsValid == 1 {
 						logger.Info(fmt.Sprintf("%v,结束交易准备开始休市", data.AssetsCode))
