@@ -17,7 +17,7 @@ import (
 
 func Start(num time.Duration, Source string, CodeData []KlineCommon.Info) {
 	logger.Info("等待当前数据订阅5分钟后开始心跳检测")
-	time.Sleep(time.Minute * 1)
+	time.Sleep(time.Minute * 5)
 	ticker := time.NewTicker(num * time.Second) // 每隔 num 秒检查一次
 	for range ticker.C {
 		for _, info := range CodeData {
@@ -71,13 +71,12 @@ func CheckListData(Source string, info KlineCommon.Info) {
 			health = "4" // 警告，延迟过高
 			break
 		}
-		logger.Info("KlineData.ID=", KlineData.ID)
+		_, _ = redis.Client.Add(KeyStatus, health, 0) // 警告，延迟过高
 	} else {
 		logger.Error(errors.New("查询数据为空"))
 	}
 	if strings.EqualFold("4", health) {
-		logger.Info(KeyStatus, "数据源异常", health)
-		logger.Info(fmt.Sprintf("(SystemTs(%v)-KlineData.Ts(%v))/1000=%v", SystemTs, KlineData.Ts, (SystemTs-KlineData.Ts)/1000))
+		logger.Info("KlineData.ID=", KlineData.ID, "KeyStatus=", KeyStatus, "数据源异常", health)
+		logger.Info(fmt.Sprintf("KlineData.ID=(%v)(SystemTs(%v)-KlineData.Ts(%v))/1000=%v", KlineData.ID, SystemTs, KlineData.Ts, (SystemTs-KlineData.Ts)/1000))
 	}
-	_, _ = redis.Client.Add(KeyStatus, health, 0) // 警告，延迟过高
 }
