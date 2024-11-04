@@ -53,9 +53,9 @@ func CheckListData(Source string, info KlineCommon.Info) {
 		logger.Error(err)
 	}
 	KeyStatus := fmt.Sprintf("status:%v:market.%v.index.1min", Source, info.ContractCode)
+	SystemTs := time.Now().UnixMilli()
 	if KlineData.ID > 0 {
 		// 差
-		SystemTs := time.Now().UnixMilli()
 		diff := (SystemTs - KlineData.Ts) / 1000
 		switch true {
 		case diff < 60*1:
@@ -73,6 +73,10 @@ func CheckListData(Source string, info KlineCommon.Info) {
 		}
 	} else {
 		logger.Error(errors.New("查询数据为空"))
+	}
+	if strings.EqualFold("4", health) {
+		logger.Info(KeyStatus, "数据源异常", health)
+		logger.Info(fmt.Sprintf("(SystemTs(%v)-KlineData.Ts(%v))/1000=%v", SystemTs, KlineData.Ts, (SystemTs-KlineData.Ts)/1000))
 	}
 	_, _ = redis.Client.Add(KeyStatus, health, 0) // 警告，延迟过高
 }
