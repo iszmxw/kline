@@ -1,6 +1,7 @@
 package heartbeat
 
 import (
+	"errors"
 	"fmt"
 	"goapi/app/models"
 	"goapi/pkg/logger"
@@ -70,6 +71,8 @@ func CheckListData(Source string, info KlineCommon.Info) {
 			health = "4" // 警告，延迟过高
 			break
 		}
+	} else {
+		logger.Error(errors.New("查询数据为空"))
 	}
 	_, _ = redis.Client.Add(KeyStatus, health, 0) // 警告，延迟过高
 }
