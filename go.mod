@@ -14,7 +14,7 @@ require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/golang-module/carbon/v2 v2.2.2
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/websocket v1.5.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/gostudys/huobi_contract_golang v1.0.7
 	github.com/graarh/golang-socketio v0.0.0-20170510162725-2c44953b9b5f
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
